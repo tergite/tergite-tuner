@@ -150,7 +150,7 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
             dim="qubit",
         )
         return self.probabilities
-    
+
     def plotter(self, figures_dictionary):
         fig, axs = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
         target_probabilities = self.target_qubit_probabilities.sel({"state": 1})
