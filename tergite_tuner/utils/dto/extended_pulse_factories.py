@@ -29,6 +29,8 @@ from quantify_scheduler.backends.qblox.operations import (
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.operations import pulse_library
 
+from tergite_autocalibration.utils.logging import logger
+
 
 def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     square_amp: float,
@@ -78,17 +80,19 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     :
         SquarePulse operation.
     """
-    # composite_pulse = pulse_library.ResetClockPhase(clock=square_clock,t0=t0)
 
-    # Start the flux pulse
-    # square_amp = 0
-    # composite_pulse.add_pulse(pulse_library.SoftSquarePulse(
-    composite_pulse = pulse_library.SoftSquarePulse(
-        amp=square_amp,
-        duration=square_duration,
-        port=square_port,
-        clock=square_clock,
-        t0=t0,
+    composite_pulse = pulse_library.IdlePulse(
+        duration=4e-9
+    )
+
+    composite_pulse.add_pulse(
+        pulse_library.SoftSquarePulse(
+            amp=square_amp,
+            duration=square_duration,
+            port=square_port,
+            clock=square_clock,
+            t0=t0,
+        )
     )
     # )
 
@@ -113,6 +117,19 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
             t0=t0,
         )
     )
+
+    composite_pulse.add_pulse(
+        pulse_library.IdlePulse(
+            4e-9
+        )
+    )
+
+    logger.info(f'{square_amp=}')
+    logger.info(f'{square_duration=}')
+    logger.info(f'{square_port=}')
+    logger.info(f'{square_clock=}')
+    logger.info(f'{virt_z_child_qubit_clock=}, {virt_z_child_qubit_phase=}')
+    logger.info(f'{virt_z_parent_qubit_clock=}, {virt_z_parent_qubit_phase=}')
 
     return composite_pulse
 

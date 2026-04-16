@@ -375,7 +375,8 @@ class CouplerNode(BaseNode):
                 return
             currents_dict[coupler] = parking_current
         logger.status("Setting updated DC currents")
-        self.spi_manager.set_dac_current(currents_dict)
+        # self.spi_manager.set_dac_current(currents_dict)
+        logger.info('Skip current operation...')
 
     def get_coupled_qubits(self) -> list:
         coupled_qubits = []

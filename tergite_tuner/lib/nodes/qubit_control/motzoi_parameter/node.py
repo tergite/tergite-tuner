@@ -97,9 +97,9 @@ class MotzoiParameter12Node(QubitNode):
         self.schedule_keywords["qubit_state"] = self.qubit_state
         self.schedule_samplespace = {
             "mw_motzois": {
-                qubit: np.linspace(-0.3, 0.3, 51) for qubit in self.all_qubits
+                qubit: np.linspace(-0.4, 0.1, 41) for qubit in self.all_qubits
             },
-            "X_repetitions": {qubit: np.arange(1, 8, 2) for qubit in self.all_qubits},
+            "X_repetitions": {qubit: np.arange(1, 13, 4) for qubit in self.all_qubits},
         }
 
     def generate_dummy_dataset(self):

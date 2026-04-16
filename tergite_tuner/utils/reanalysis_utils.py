@@ -29,7 +29,7 @@ def is_day_folder(path_to_something: Path | str):
     Determine whether the path argument is a day folder.
 
     The folder has to exist and has to match the regex:
-        ^(\d{4}-\d{2}-\d{2})$
+        '^(\d{4}-\d{2}-\d{2})$'
     """
     f = Path(path_to_something).resolve()
     return f.exists() and f.is_dir() and REGEX_DAY_FOLDER.match(f.name)
@@ -40,7 +40,7 @@ def is_run_folder(path_to_something: Path | str):
     Determine whether the path argument is a run folder.
 
     The folder has to exist and has to match the regex:
-        ^(\d{2}-\d{2}-\d{2})_[\w]+-[\w]+$
+        '^(\d{2}-\d{2}-\d{2})_[\w]+-[\w]+$'
     """
     f = Path(path_to_something).resolve()
     return f.exists() and f.is_dir() and REGEX_RUN_FOLDER.match(f.name)
@@ -51,7 +51,7 @@ def is_measurement_folder(path_to_something: Path | str):
     Determine whether the path argument is a measurement folder.
 
     The folder has to exist and has to match the regex:
-        ^(\d{8}-\d{6})-\d{3}-[0-9a-f]{6}-[\w]+$
+        '^(\d{8}-\d{6})-\d{3}-[0-9a-f]{6}-[\w]+$'
     """
     f = Path(path_to_something).resolve()
     return f.exists() and f.is_dir() and REGEX_MSMT_FOLDER.match(f.name)

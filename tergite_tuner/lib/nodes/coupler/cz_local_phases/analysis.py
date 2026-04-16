@@ -114,21 +114,27 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
         phi_gate_off = phi_fits.sel({self.gate_mode_coord: False})
         phi_01_rad = (phi_gate_on - phi_gate_off).item()
         self.phase_01 = np.rad2deg(phi_01_rad)
+        self.cz_dynamic_target = np.rad2deg(phi_01_rad)
+        if self.target_qubit_data_var.qubit in ['q11', 'q13']:
+            self.cz_dynamic_target = -self.cz_dynamic_target
 
         # phase 10 correction
         phi_swaped_gate_on = phi_swaped_fits.sel({self.gate_mode_coord: True})
         phi_swaped_gate_off = phi_swaped_fits.sel({self.gate_mode_coord: False})
         phi_10_rad = (phi_swaped_gate_on - phi_swaped_gate_off).item()
         self.phase_10 = np.rad2deg(phi_10_rad)
+        self.cz_dynamic_control = np.rad2deg(phi_10_rad)
+        if self.control_qubit_data_var.qubit in ['q11', 'q13']:
+            self.cz_dynamic_control = -self.cz_dynamic_control
 
         analysis_succesful = True
         analysis_result = {
-            "control_local_phase": {
-                "value": self.phase_10,
+            "cz_dynamic_control": {
+                "value": self.cz_dynamic_control,
                 "error": 0,
             },
-            "target_local_phase": {
-                "value": self.phase_01,
+            "cz_dynamic_target": {
+                "value": self.cz_dynamic_target,
                 "error": 0,
             },
         }

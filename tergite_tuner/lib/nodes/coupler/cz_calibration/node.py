@@ -57,11 +57,19 @@ class CZCalibrationNode(CouplerNode):
         self.schedule_keywords["coupler_dict"] = self.gate_qubit_types_dict()
         self.validate()
 
-        self.outer_schedule_samplespace = {
-            "working_points": {
-                coupler: self.working_points(coupler) for coupler in self.couplers
+        if self.session.is_recalibration:
+            self.outer_schedule_samplespace = {
+                "working_points": {
+                    coupler: self.working_points_fixed_duration(coupler) for coupler in self.couplers
+                }
             }
-        }
+        else:
+            self.outer_schedule_samplespace = {
+                "working_points": {
+                    coupler: self.working_points(coupler) for coupler in self.couplers
+                }
+            }
+
         self.schedule_samplespace = {
             "ramsey_phases": {
                 qubit: np.linspace(0, 420, 30) for qubit in self.coupled_qubits
@@ -92,8 +100,21 @@ class CZCalibrationNode(CouplerNode):
         working_points_array = np.array(list(working_points))
         return working_points_array
 
+    def working_points_fixed_duration(self, coupler: str):
+        cz_pulse_duration = float(self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_duration"))
+        cz_pulse_frequency = float(self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency"))
+        sweep_range = 0.5e6
+        number_of_points = 20
+        sweep_frequencies = np.linspace(
+            cz_pulse_frequency - sweep_range, cz_pulse_frequency + sweep_range, number_of_points
+        )
+        working_points_fixed_duration_array = np.array(list(zip(sweep_frequencies, [cz_pulse_duration] * number_of_points)))
+        return working_points_fixed_duration_array
+
     def initial_operation(self):
-        self.spi_manager.set_initial_parking_currents(self.couplers)
+        # don't set parking currents when recalibration is happening
+        if not self.session.is_recalibration:
+            self.spi_manager.set_initial_parking_currents(self.couplers)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()

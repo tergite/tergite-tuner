@@ -98,7 +98,9 @@ class CZChevronNode(CouplerNode):
         return phase_paths
 
     def initial_operation(self):
-        self.spi_manager.set_initial_parking_currents(self.couplers)
+        # during recalibration, initial parking currents should not be set
+        if not self.session.is_recalibration:
+            self.spi_manager.set_initial_parking_currents(self.couplers)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()
