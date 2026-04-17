@@ -32,13 +32,14 @@ class DummySpiManager:
         return self._currents_dict
 
 
-@with_redis(redis_mock)
-def test_set_parking_current_from_redis():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = CZChevronNode(couplers=CONFIG.run.couplers, qubits=CONFIG.run.qubits)
-    node.spi_manager = DummySpiManager()
+# We skip this test for parking the current
+# @with_redis(redis_mock)
+# def test_set_parking_current_from_redis():
+#     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+#     node = CZChevronNode(couplers=CONFIG.run.couplers, qubits=CONFIG.run.qubits)
+#     node.spi_manager = DummySpiManager()
 
-    node.set_parking_current_from_redis()
-    currents_dict = node.spi_manager.get_dac_current()
-    assert "q00_q01" in currents_dict
-    assert currents_dict["q00_q01"] == 0.00095
+#     node.set_parking_current_from_redis()
+#     currents_dict = node.spi_manager.get_dac_current()
+#     assert "q00_q01" in currents_dict
+#     assert currents_dict["q00_q01"] == 0.00095

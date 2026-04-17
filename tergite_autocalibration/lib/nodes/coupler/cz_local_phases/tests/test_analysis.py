@@ -26,7 +26,7 @@ _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values = os.path.join(_test_data_dir, "redis-coupler-run-2026-02.json")
 
 
-# @with_redis(_redis_values)
+@with_redis(_redis_values)
 def test_cz_local_phases():
     file_path = os.path.join(_test_data_dir, "dataset_cz_local_phases.hdf5")
     dataset = xr.open_dataset(file_path)
@@ -45,7 +45,7 @@ def test_cz_local_phases():
     assert pytest.approx(cz_dynamic_target) == 89.75702796008106
 
 
-# @with_redis(_redis_values)
+@with_redis(_redis_values)
 def test_plotting():
     """
     Test that the plotter produces a figure with the right number of axes
