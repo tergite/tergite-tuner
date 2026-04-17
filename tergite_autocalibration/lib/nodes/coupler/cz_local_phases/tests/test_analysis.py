@@ -40,12 +40,15 @@ def test_cz_local_phases():
     cz_dynamic_control = qoi.analysis_result["cz_dynamic_control"]["value"]
     cz_dynamic_target = qoi.analysis_result["cz_dynamic_target"]["value"]
 
+    import pdb
+    pdb.set_trace()
+
     assert qoi.analysis_successful
     assert pytest.approx(cz_dynamic_control) == 67.06800415096974
     assert pytest.approx(cz_dynamic_target) == 89.75702796008106
 
 
-@with_redis(_redis_values)
+# @with_redis(_redis_values)
 def test_plotting():
     """
     Test that the plotter produces a figure with the right number of axes
@@ -68,3 +71,6 @@ def test_plotting():
     figure = figures_dictionary["q13_q14"][0]
 
     assert len(figure.get_axes()) == 4
+
+if __name__ == "__main__":
+    test_cz_local_phases()
