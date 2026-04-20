@@ -143,7 +143,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             self.control_diffs = control_state_2 - control_state_1  # - control_state_2
             self.target_diffs = target_state_0 - target_state_1  # - control_state_0
         else:
-            raise ValueError("Invalid phase path")
+            raise ValueError(f"Invalid phase path:{self.phase_path}")
 
         self.combined_data = self.control_diffs + self.target_diffs
 

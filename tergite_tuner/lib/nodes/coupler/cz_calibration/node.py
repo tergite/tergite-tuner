@@ -57,19 +57,12 @@ class CZCalibrationNode(CouplerNode):
         self.schedule_keywords["coupler_dict"] = self.gate_qubit_types_dict()
         self.validate()
 
-        if self.session.is_recalibration:
-            self.outer_schedule_samplespace = {
-                "working_points": {
-                    coupler: self.working_points_fixed_duration(coupler) for coupler in self.couplers
-                }
+        self.outer_schedule_samplespace = {
+            "working_points": {
+                coupler: self.working_points(coupler) for coupler in self.couplers
+                # coupler: self.working_points_fixed_duration(coupler) for coupler in self.couplers
             }
-        else:
-            self.outer_schedule_samplespace = {
-                "working_points": {
-                    coupler: self.working_points(coupler) for coupler in self.couplers
-                }
-            }
-
+        }
         self.schedule_samplespace = {
             "ramsey_phases": {
                 qubit: np.linspace(0, 420, 30) for qubit in self.coupled_qubits

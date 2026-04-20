@@ -114,7 +114,7 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         self.standard_fit_y = model.eval(
             fit_result.params, **{model.independent_vars[0]: self.fit_n_cliffords}
         )
-        self.fidelity = fit_result.params["p"].value
+        self.standard_p_value = fit_result.params["p"].value
 
         # Gives an initial guess for the model parameters and then fits the model to the data.
         guess2 = model.guess(
@@ -158,9 +158,15 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
             self.interleaved_fit_y = model.eval(
                 fit_result.params, **{model.independent_vars[0]: self.fit_n_cliffords}
             )
-            self.interleaved_fidelity = fit_result.params["p"].value
+            self.interleaved_p_value = fit_result.params["p"].value
 
         analysis_successful = True
+
+        if self.interleaved_gate is None:
+            self.fidelity = self.standard_p_value
+        else:
+
+            self.fidelity = 1 - 0.5 * (1 - self.interleaved_p_value / self.standard_p_value)
 
         analysis_result = {
             "fidelity": {
