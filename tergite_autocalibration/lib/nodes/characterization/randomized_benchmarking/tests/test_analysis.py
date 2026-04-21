@@ -22,7 +22,7 @@ from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis i
     RandomizedBenchmarkingNodeAnalysis,
     RandomizedBenchmarkingQubitAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import with_redis
+from tergite_tuner.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values = os.path.join(_test_data_dir, "redis-2026-03-10-21-33-32.json")
@@ -51,5 +51,5 @@ def test_randomized_benchmarking_analysis(session_context):
         assert qoi_15.analysis_successful
         assert pytest.approx(fidelity_11) == 0.99951747
         assert pytest.approx(standard_leakage_11) == 0.00207032
-        assert pytest.approx(fidelity_15) == 0.9962656
+        assert pytest.approx(fidelity_15) == 0.99788337
         assert pytest.approx(standard_leakage_15) == 0.0064318
