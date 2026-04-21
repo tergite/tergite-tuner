@@ -165,6 +165,8 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         if self.interleaved_gate is None:
             self.fidelity = self.standard_p_value
         else:
+            print(self.interleaved_p_value)
+            print(self.standard_p_value)
 
             self.fidelity = 1 - 0.5 * (1 - self.interleaved_p_value / self.standard_p_value)
 
