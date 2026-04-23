@@ -160,6 +160,8 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
             qubits.sort(
                 key=lambda x: int(x[1:])
             )  # TODO: move this to configure_dataset
+        else:
+            qubits = [qubits]
         for this_qubit in qubits:
             # TODO: this object is created for every single qubit
             qubit_analysis: BaseQubitAnalysis = self.single_qubit_analysis_cls(

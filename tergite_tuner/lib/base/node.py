@@ -259,7 +259,6 @@ class BaseNode(ABC):
             dataset.attrs["elements"].append(element)
         # take the set of elements because couplers appear duplicated
         dataset.attrs["elements"] = list(set(dataset.attrs["elements"]))
-
         return dataset
 
 
