@@ -98,6 +98,8 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
 
                         shot.add(X90(target_qubit), ref_op=starting_op)
 
+                        shot.add(IdlePulse(4e-9))
+
                         if gate_mode:
                             shot.add(
                                 SoftSquarePulse(
@@ -109,6 +111,8 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
                             )
                         else:
                             shot.add(IdlePulse(cz_duration))
+
+                        shot.add(IdlePulse(4e-9))
 
                         final = shot.add(
                             Rxy(theta=90, phi=local_phase, qubit=target_qubit)
