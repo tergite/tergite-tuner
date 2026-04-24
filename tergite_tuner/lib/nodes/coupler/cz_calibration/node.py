@@ -97,7 +97,7 @@ class CZCalibrationNode(CouplerNode):
         cz_pulse_duration = float(self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_duration"))
         cz_pulse_frequency = float(self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency"))
         sweep_range = 0.5e6
-        number_of_points = 15
+        number_of_points = 20
         sweep_frequencies = np.linspace(
             cz_pulse_frequency - sweep_range, cz_pulse_frequency + sweep_range, number_of_points
         )

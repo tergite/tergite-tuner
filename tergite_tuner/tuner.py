@@ -343,21 +343,6 @@ def _tune(session: SessionContext) -> None:
 
     logger.info("Node Manager is initialized")
 
-    # Handle CZ chain insertion for THREE_STATE_DISCRIMINATION
-    cz_chain = [
-        NodeEnum.CZ_PARAMETRIZATION,
-        NodeEnum.CZ_CHEVRON,
-        NodeEnum.CZ_CALIBRATION,
-        NodeEnum.CZ_LOCAL_PHASES,
-        NodeEnum.CZ_RB,
-    ]
-    is_cz_calibration = session.target_node in cz_chain
-    if is_cz_calibration:
-        for index, ordered_node in enumerate(topo_order):
-            if ordered_node in cz_chain:
-                topo_order.insert(index, NodeEnum.THREE_STATE_DISCRIMINATION)
-                break
-
     logger.info("Starting System Calibration")
     number_of_qubits = len(session.qubits)
 
