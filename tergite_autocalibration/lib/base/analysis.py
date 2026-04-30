@@ -344,7 +344,6 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
         Analyze the node and save the results to redis.
         Args:
             data_path: Path to the dataset
-            index: Index of the dataset to be analyzed
 
         Returns:
             analysis_results: Dictionary with the analysis results for each qubit

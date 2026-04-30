@@ -104,52 +104,6 @@ def test_is_measurement_folder():
     }
 
 
-def test_select_measurement_for_analysis_error_handling():
-    """Test that the error handling for the reanalysis utils is working"""
-    with pytest.raises(FileNotFoundError, match=r"^'apple' is not a run folder.$"):
-        ra_utils.select_measurement_for_analysis("apple")
-
-    run_dir = Path(
-        os.path.join(
-            get_fixture_path(),
-            "data",
-            "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
-        )
-    )
-
-    with pytest.raises(
-        FileNotFoundError,
-        match=(r"^The node name 'apple' was specified, but the run folder[\s\S]+"),
-    ):
-        ra_utils.select_measurement_for_analysis(run_dir, node_name="apple")
-
-
-def test_select_measurement_for_analysis_can_find_measurement():
-    """Test that we can create the measurement info for one of the measurement folder fixtures"""
-    run_dir = Path(
-        os.path.join(
-            get_fixture_path(),
-            "data",
-            "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
-        )
-    )
-
-    info = ra_utils.select_measurement_for_analysis(
-        run_dir, node_name="ramsey_correction"
-    )
-
-    assert info.timestamp == datetime(2025, 7, 28, 16, 52, 37)
-    assert info.tuid == "20250728-165237-029-8e7bcc"
-    assert info.msmt_idx == 4
-    assert info.node_name == "ramsey_correction"
-    assert info.measurement_folder_path == run_dir / f"{info.tuid}-{info.node_name}"
-    assert info.run_folder_path == run_dir
-    assert (
-        info.dataset_path
-        == info.measurement_folder_path / "dataset_ramsey_correction.hdf5"
-    )
-
-
 def test_save_dataset(tmp_path):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopyNode(CONFIG.run.qubits, CONFIG.run.couplers)

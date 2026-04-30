@@ -54,7 +54,7 @@ if is_pytest():
     )
 else:
     # Try to load the .env file from the default locations
-    ENV = EnvironmentConfiguration.from_dot_env()
+    ENV = EnvironmentConfiguration.from_dot_env(ignore_missing=True)
 
 # Creates a redis instance
 REDIS_CONNECTION = redis.Redis(decode_responses=True, port=ENV.redis_port)

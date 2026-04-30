@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     from tergite_autocalibration.lib.base.node import BaseNode
 
 
+# FIXME: Get rid of all this reflection. It makes the code difficult to understand
+
+
 class NodeFactory:
     _instance: "NodeFactory" = None
 

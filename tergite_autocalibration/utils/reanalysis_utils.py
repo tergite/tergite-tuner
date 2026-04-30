@@ -10,7 +10,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import typer
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Tuple, Dict  # , Iterator
@@ -158,99 +157,6 @@ def _classify_subfolders_by_hdf5(
             without_hdf5[idx] = info
 
     return with_hdf5, without_hdf5
-
-
-def select_measurement_for_analysis(
-    path_to_run_folder: Path | str, node_name: str | None = None
-) -> MeasurementInfo:
-    """
-    Selects a measurement info from a run folder for re-analysis.
-
-    If `node_name` is provided, it attempts to find and return the corresponding
-    measurement directly. If not provided, the user will be prompted via CLI to
-    select a measurement from the available ones.
-
-    The prompt can be cancelled with by inputting '0' during selection.
-
-    Parameters:
-        path_to_run_folder (Path | str): Path to the run folder containing measurement subfolders.
-        node_name (str | None, optional): Name of the node to select directly. If None, prompts user.
-
-    Returns:
-        MeasurementInfo: The selected measurement folder info.
-
-    Raises:
-        FileNotFoundError: If the folder is not a valid run folder, contains no measurement data,
-                           or the specified node name is not found.
-        typer.Abort: If the user chooses to cancel from the CLI prompt.
-    """
-    path_to_run_folder = Path(path_to_run_folder)
-
-    if not is_run_folder(path_to_run_folder):
-        raise FileNotFoundError(f"'{path_to_run_folder}' is not a run folder.")
-
-    with_data, without_data = _classify_subfolders_by_hdf5(path_to_run_folder)
-
-    if len(with_data) == 0:
-        raise FileNotFoundError(
-            f"The folder '{path_to_run_folder}' contains no measurement data."
-        )
-
-    if len(without_data) > 0:
-        _dataless_folders = [
-            info.measurement_folder_path.name for info in without_data.values()
-        ]
-        logger.info(
-            f"Filtering away: {_dataless_folders} since these folders do not contain measurement data."
-        )
-
-    existing_measurements_str = (
-        "\n".join(
-            [
-                f"{idx}: {info.node_name} (measured: {info.timestamp})"
-                for idx, info in sorted(with_data.items(), key=lambda t: t[1].timestamp)
-            ]
-        )
-        + "\n"
-    )
-
-    if node_name:
-        try:
-            # NOTE: Assumes that a node is only visited once during a run
-            #       since it returns as soon as it finds the node_name
-            return next(
-                filter(lambda info: info.node_name == node_name, with_data.values())
-            )
-
-        # StopIteration can happen during e.g. node_name misspelling
-        except StopIteration:
-            raise FileNotFoundError(
-                f"The node name '{node_name}' was specified, but the run folder does not "
-                + "contain a measurement with this node name. Existing measurements:\n"
-                + existing_measurements_str
-            ) from None
-
-    # If the user did not specify which node to analyse, then prompt them
-    num_folders_with_data = len(with_data)
-    typer.echo(
-        "Detected the following measurements in the specified folder:\n"
-        + existing_measurements_str
-    )
-    while True:
-        number = typer.prompt(
-            "Which would you like to reanalyse? "
-            f"Please enter a number between 1 and {num_folders_with_data} to re-analyse. Enter 0 to cancel",
-            type=int,
-        )
-        if number == 0:
-            raise typer.Abort()
-        if 1 <= number <= len(with_data):
-            break
-        typer.echo(
-            f"Number must be between 1 and {num_folders_with_data} to re-analyse. Enter 0 to cancel"
-        )
-
-    return with_data[number]
 
 
 def get_run_infos(path_to_day_folder: Path | str) -> list[RunInfo]:

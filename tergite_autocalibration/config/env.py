@@ -24,7 +24,10 @@ from dotenv import dotenv_values, set_key
 
 from tergite_autocalibration.config.base import BaseConfigurationFile
 from tergite_autocalibration.utils.misc.reflections import ASTParser
-from tergite_autocalibration.utils.misc.types import safe_str_to_bool_int_float
+from tergite_autocalibration.utils.misc.types import (
+    safe_str_to_bool_int_float,
+    str_to_bool,
+)
 
 
 def _get_default_env_path() -> Union[str, Path]:
@@ -66,35 +69,48 @@ class EnvironmentConfiguration(BaseConfigurationFile):
         # If this convention is not followed, it is not possible to automatically update the .env file
         # through the getters and setters.
 
-        self.default_prefix: str = getpass.getuser().replace(" ", "")
-
-        self.file_log_level: int = 10
-        self.stdout_log_level: int = 25
-
-        self.root_dir: "Path" = Path(__file__).parent.parent.parent
-        self.data_dir: "Path" = self.root_dir.joinpath("out")
-        self.config_dir: "Path" = self.root_dir
-
-        self.backend_config: "Path" = (
-            Path(__file__).parent / "backend_config_default.toml"
+        self.default_prefix: str = os.environ.get(
+            "DEFAULT_PREFIX", getpass.getuser().replace(" ", "")
         )
 
-        self.cluster_ip: str = "0.0.0.0"
-        self.spi_serial_port: str = "/dev/ttyACM0"
+        self.file_log_level: int = int(os.environ.get("FILE_LOG_LEVEL", "10"))
+        self.stdout_log_level: int = int(os.environ.get("STDOUT_LOG_LEVEL", "25"))
 
-        self.redis_port: int = 6379
-        self.plotting: bool = False
+        self.root_dir: "Path" = Path(
+            os.environ.get("ROOT_DIR", Path(__file__).parent.parent.parent)
+        )
+        self.data_dir: "Path" = Path(
+            os.environ.get("DATA_DIR", self.root_dir.joinpath("out"))
+        )
+        self.config_dir: "Path" = Path(os.environ.get("CONFIG_DIR", self.root_dir))
 
-        self.data_browser_host: str = "127.0.0.1"
-        self.data_browser_port: int = 8179
+        self.backend_config: "Path" = Path(
+            os.environ.get(
+                "BACKEND_CONFIG", Path(__file__).parent / "backend_config_default.toml"
+            )
+        )
 
-        self.hw_config_generator_host: str = "127.0.0.1"
-        self.hw_config_generator_port: int = 8079
+        self.cluster_ip: str = os.environ.get("CLUSTER_IP", "0.0.0.0")
+        self.spi_serial_port: str = os.environ.get("SPI_SERIAL_PORT", "/dev/ttyACM0")
+
+        self.redis_port: int = int(os.environ.get("REDIS_PORT", "6379"))
+        self.plotting: bool = str_to_bool(os.environ.get("PLOTTING", "False"))
+
+        self.data_browser_host: str = os.environ.get("DATA_BROWSER_HOST", "127.0.0.1")
+        self.data_browser_port: int = int(os.environ.get("DATA_BROWSER_PORT", "8179"))
+
+        self.hw_config_generator_host: str = os.environ.get(
+            "HW_CONFIG_GENERATOR_HOST", "127.0.0.1"
+        )
+        self.hw_config_generator_port: int = int(
+            os.environ.get("HW_CONFIG_GENERATOR_PORT", "8079")
+        )
 
     @staticmethod
     def from_dot_env(
         filepath: Union[str, Path] = _get_default_env_path(),
         write_env: bool = False,
+        ignore_missing: bool = False,
     ) -> "EnvironmentConfiguration":
         """
         Load the values from the .env file actually into the os environment.
@@ -104,6 +120,7 @@ class EnvironmentConfiguration(BaseConfigurationFile):
                       location instead.
             write_env: If write_env is set to true, then values that are written to this configuration
                       will be written to the .env file. Can be also set in the .env file itself.
+            ignore_missing: If set to true, then no error is raised if the file is missing; default = False
 
         Returns:
             An instance of `EnvironmentConfiguration` which has all values from the environment set.
@@ -117,7 +134,7 @@ class EnvironmentConfiguration(BaseConfigurationFile):
         return_obj._write_env = write_env
 
         # Check whether the .env file exists
-        if not os.path.exists(filepath):
+        if not os.path.exists(filepath) and not ignore_missing:
             raise EnvironmentError("The .env file configuration cannot be found.")
 
         # Then write the filepath also to the return object, so, it can be used later on
@@ -127,7 +144,8 @@ class EnvironmentConfiguration(BaseConfigurationFile):
         logger.info(f"Loading .env values from {filepath}")
         env_values_ = dotenv_values(filepath)
         for env_key_, env_value_ in env_values_.items():
-            os.environ[env_key_] = env_value_
+            # default to the value in the env already
+            os.environ[env_key_] = os.environ.get(env_key_, env_value_)
 
         # Iterate over the variables in the constructor and set them from the environment
         for variable_name_ in ASTParser.get_init_attribute_names(

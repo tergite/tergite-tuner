@@ -38,8 +38,6 @@ class OptimalResult:
         """
         Parameters
         ----------
-        id
-            Id of the data, e.g., tuid
         sweep_para
             The para to be swept
         unit
@@ -188,7 +186,7 @@ class ResetChevronQubitAnalysis(BaseQubitAnalysis):
                 amps = np.array(amps)
                 # The longest gate times is less than 500ns, which means that p[1] must be less than 0.5*1e3.
                 # Thus, cs must be greater than 2*1e-3.
-                freq = freq[period_fit < 500]
+                freq = freqs[period_fit < 500]
                 amps = amps[period_fit < 500]
                 period_fit = period_fit[period_fit < 500]
                 if len(period_fit) < 4:
