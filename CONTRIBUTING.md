@@ -1,4 +1,4 @@
-# Contributing to tergite-autocalibration
+# Contributing to tergite-autocalibration-lite
 
 **This project is currently not accepting pull requests from the general public yet.**
 
@@ -61,8 +61,8 @@ Alternatively, you could also simply have [Python 3.12](https://www.python.org/d
 Clone the repo and enter its root folder:
 
 ```bash
-git clone git@github.com:tergite/tergite-autocalibration.git
-cd tergite-autocalibration
+git clone git@github.com:tergite/tergite-autocalibration-lite.git
+cd tergite-autocalibration-lite
 ```
 
 Create the conda environment

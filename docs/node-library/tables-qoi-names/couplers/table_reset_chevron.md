@@ -1,4 +1,0 @@
-|Redis QOI name|
-|---------| 
-|reset_amplitude_qc    |
-|reset_duration_qc      |

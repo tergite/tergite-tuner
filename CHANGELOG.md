@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Changed
+
+- Stripped away all code that is not relevant for running this app as a library
+
 ## [2026.03.0] - 2026-03-06
 
 - No Change

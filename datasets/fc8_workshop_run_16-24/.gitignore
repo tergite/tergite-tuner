@@ -1,5 +1,0 @@
-# Ignore everything in this directory
-*.png
-
-# But do not ignore this file
-!.gitignore

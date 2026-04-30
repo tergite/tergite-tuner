@@ -15,7 +15,7 @@ requires = ["setuptools>=61.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tergite-autocalibration"
+name = "tergite-autocalibration-lite"
 version = "2026.03.0"
 description = "Commandline application to calibrate the WACQT quantum computers automatically"
 readme = "README.md"
@@ -28,7 +28,9 @@ authors = [
     { name = "Joel Sandås", email = "sandas@chalmers.se" },
     { name = "Pontus Vikstål", email = "pontus.vikstal@chalmersnextlabs.se" },
     { name = "Michele Faucci Giannelli", email = "faucci@chalmers.se" },
-    { name = "Axel Erik Andersson", email = "axean@chalmers.se" }
+    { name = "Axel Erik Andersson", email = "axean@chalmers.se" },
+    { name = "Martin Ahindura", email = "ahindura@chalmers.se"},
+    { name = "Adilet Tuleuov", email = "adilet@chalmers.se"},
 ]
 maintainers = [
     { name = "Chalmers Next Labs AB", email = "contact@quantum.chalmersnextlabs.se" }
@@ -75,17 +77,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "jupyter>=1.0.0",
     "black>=24.10.0",
     "isort>=5.12.0",
     "pylint>=3.3.8"
-]
-docs = [
-    "mkdocs-material==9.6.14",
-    "mkdocstrings[python]~=0.29",
-    "mkdocs-gen-files==0.5.0",
-    "mkdocs-literate-nav==0.6.2",
-    "mkdocs-jupyter==0.25.1",
 ]
 test = [
     "pytest>=8.3.3",
@@ -93,9 +87,6 @@ test = [
     "pytest-cov>=7.0.0",
     "fakeredis>=2.32.1"
 ]
-
-[project.scripts]
-acli = "tergite_autocalibration.tools.cli:cli"
 
 [tool.setuptools]
 packages = ["tergite_autocalibration"]

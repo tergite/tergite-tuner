@@ -1,6 +1,0 @@
-|Redis QOI name|
-|---------| 
-|clock_freqs:readout      |
-| Ql     |
-| resonator_minimum       |
-|minimum_resonator_relaxation      |
