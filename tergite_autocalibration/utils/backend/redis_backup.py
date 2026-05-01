@@ -13,7 +13,7 @@
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Union, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, Union
 
 if TYPE_CHECKING:
     import redis

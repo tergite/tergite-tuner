@@ -13,15 +13,12 @@
 import numpy as np
 
 from tergite_autocalibration.lib.base.node import QubitNode
-from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.analysis import (
-    PurityBenchmarkingNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.measurement import (
-    PurityBenchmarkingMeasurement,
-)
-from tergite_autocalibration.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.analysis import \
+    PurityBenchmarkingNodeAnalysis
+from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.measurement import \
+    PurityBenchmarkingMeasurement
+from tergite_autocalibration.lib.nodes.external_parameter_node import \
+    ExternalParameterNode
 
 
 class PurityBenchmarkingNode(QubitNode):

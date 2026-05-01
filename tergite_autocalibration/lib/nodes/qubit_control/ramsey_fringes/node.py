@@ -18,12 +18,9 @@ import xarray
 
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.qubit_control.ramsey_fringes.analysis import (
-    RamseyDetunings01NodeAnalysis,
-    RamseyDetunings12NodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.qubit_control.ramsey_fringes.measurement import (
-    RamseyDetuningsMeasurement,
-)
+    RamseyDetunings01NodeAnalysis, RamseyDetunings12NodeAnalysis)
+from tergite_autocalibration.lib.nodes.qubit_control.ramsey_fringes.measurement import \
+    RamseyDetuningsMeasurement
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.analysis_models import RamseyModel
 

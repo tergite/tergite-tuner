@@ -19,11 +19,11 @@ import numpy as np
 import pytest
 
 from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
-from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.node import (
-    ROAmplitudeThreeStateOptimizationNode,
-)
+from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.node import \
+    ROAmplitudeThreeStateOptimizationNode
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 
 _test_data_dir = os.path.join(
     Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"

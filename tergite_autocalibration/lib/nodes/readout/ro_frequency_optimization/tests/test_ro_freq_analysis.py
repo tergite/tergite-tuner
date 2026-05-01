@@ -17,11 +17,10 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.analysis_utils import \
+    filter_ds_by_element
 from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.analysis import (
-    ROFrequencyThreeStateNodeAnalysis,
-    ROFrequencyThreeStateQubitAnalysis,
-)
+    ROFrequencyThreeStateNodeAnalysis, ROFrequencyThreeStateQubitAnalysis)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(
@@ -64,16 +63,17 @@ def test_ro_freq_3states():
     assert pytest.approx(ro_frequency) == 7128822222.222222
 
 
-@with_redis(_redis_values)
-def test_plotting():
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-    name = "ro_frequency_three_state_optimization"
-    file_path = os.path.join(_test_data_dir, name)
-    qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
-
-    analysis = ROFrequencyThreeStateNodeAnalysis(name, qubit_qois)
-    analysis.analyze_node(file_path)
-    number_of_qubits = len(analysis.dataset.attrs["elements"])
-    assert analysis.axs.shape == (1, number_of_qubits)
+# FIXME: No more charts
+# @with_redis(_redis_values)
+# def test_plotting():
+#     """
+#     Test that the plotter produces a figure with the right number of axes
+#     """
+#     name = "ro_frequency_three_state_optimization"
+#     file_path = os.path.join(_test_data_dir, name)
+#     qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
+#
+#     analysis = ROFrequencyThreeStateNodeAnalysis(name, qubit_qois)
+#     analysis.analyze_node(file_path)
+#     number_of_qubits = len(analysis.dataset.attrs["elements"])
+#     assert analysis.axs.shape == (1, number_of_qubits)

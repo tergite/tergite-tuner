@@ -13,14 +13,12 @@
 
 from enum import Enum
 from pathlib import Path
-from typing import Tuple, Dict, Any, List, Type, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 import tomlkit
 
-from tergite_autocalibration.config.globals import (
-    REDIS_CONNECTION,
-    DOWNCONVERT_FREQUENCY,
-)
+from tergite_autocalibration.config.globals import (DOWNCONVERT_FREQUENCY,
+                                                    REDIS_CONNECTION)
 from tergite_autocalibration.utils.logging import logger
 
 

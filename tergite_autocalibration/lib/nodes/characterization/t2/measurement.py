@@ -15,10 +15,12 @@
 import numpy as np
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import Reset, X90, Measure, X
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
+
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 
 from ....base.measurement import BaseMeasurement
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 class T2Measurement(BaseMeasurement):

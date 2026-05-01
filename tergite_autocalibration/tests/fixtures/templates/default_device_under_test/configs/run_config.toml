@@ -3,9 +3,7 @@
 target_node = "ro_amplitude_two_state_optimization"
 qubits = ["q00", "q01"]
 couplers = ["q00_q01"]
-cooldown = "13/05/2025"
 name = "no_name_for_this_run_set"
-is_internal = true
 runner_logo = ""
 
 #   --------------

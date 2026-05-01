@@ -16,20 +16,15 @@ import numpy as np
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import (
-    IdlePulse,
-)
-from quantify_scheduler.operations.pulse_library import (
-    RampPulse,
-)
+from quantify_scheduler.operations.pulse_library import IdlePulse, RampPulse
 from quantify_scheduler.resources import ClockResource
 
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
-from tergite_autocalibration.utils.dto.extended_coupler_edge import (
-    ExtendedCompositeSquareEdge,
-)
+from tergite_autocalibration.utils.dto.extended_coupler_edge import \
+    ExtendedCompositeSquareEdge
 from tergite_autocalibration.utils.dto.extended_gates import Rxy_12
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 
 
 class ResetChevronDCMeasurement(BaseMeasurement):

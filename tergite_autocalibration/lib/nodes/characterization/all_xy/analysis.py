@@ -14,9 +14,8 @@ import numpy as np
 import xarray as xr
 
 from tergite_autocalibration.lib.base.analysis import BaseAnalysis
-from tergite_autocalibration.lib.nodes.characterization.all_xy.measurement import (
-    all_XY_angles,
-)
+from tergite_autocalibration.lib.nodes.characterization.all_xy.measurement import \
+    all_XY_angles
 
 
 class AllXYAnalysis(BaseAnalysis):

@@ -12,9 +12,7 @@
 
 import pytest
 
-from tergite_autocalibration.utils.misc.regex import (
-    camel_to_snake,
-)
+from tergite_autocalibration.utils.misc.regex import camel_to_snake
 from tergite_autocalibration.utils.misc.types import is_bool, str_to_bool
 
 

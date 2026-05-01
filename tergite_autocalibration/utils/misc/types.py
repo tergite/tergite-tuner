@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Union, Type
+from typing import Type, Union
 
 
 def safe_str_to_bool_int_float(

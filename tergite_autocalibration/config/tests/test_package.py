@@ -27,7 +27,6 @@ def mock_toml_file(tmp_path):
     toml_content = """
     path_prefix = "config"
     [files]
-    run_config = "run_config.toml"
     cluster_config = "cluster_config.toml"
     """
     toml_file = tmp_path / "configuration.meta.toml"
@@ -55,7 +54,6 @@ def mock_toml_file_without_path_prefix_keyword(tmp_path):
     """
     toml_content = """
     [files]
-    run_config = "run_config.toml"
     cluster_config = "cluster_config.toml"
     """
     toml_file = tmp_path / "configuration.meta.toml"
@@ -69,9 +67,6 @@ def test_from_toml_valid(mock_toml_file):
     """
     package = ConfigurationPackage.from_toml(str(mock_toml_file))
     assert package.meta_path == str(mock_toml_file)
-    assert package.config_files["run_config"] == str(
-        mock_toml_file.parent / "config/run_config.toml"
-    )
     assert package.config_files["cluster_config"] == str(
         mock_toml_file.parent / "config/cluster_config.toml"
     )
@@ -148,18 +143,12 @@ def test_copy_creates_new_package(mock_default_device_under_test_package_to_copy
     # Check if the meta configuration file was copied
     assert os.path.isfile(os.path.join(destination_path, "configuration.meta.toml"))
 
-    # Check if the config file was copied
-    assert os.path.isfile(os.path.join(destination_path, "configs", "run_config.toml"))
-
     # Check if the misc folder was copied
     assert os.path.isdir(os.path.join(destination_path, "misc"))
 
     # Verify the new ConfigurationPackage instance points to the correct new paths
     assert new_package.meta_path == str(
         os.path.join(destination_path, "configuration.meta.toml")
-    )
-    assert new_package.config_files["run_config"] == str(
-        os.path.join(destination_path, "configs", "run_config.toml")
     )
     assert new_package.misc_filepaths["miscellaneous_files"] == str(
         os.path.join(destination_path, "misc")

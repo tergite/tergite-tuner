@@ -12,7 +12,7 @@
 
 import os
 from pathlib import Path
-from typing import Union, List, Iterator
+from typing import Iterator, List, Union
 
 
 def iter_module_files(

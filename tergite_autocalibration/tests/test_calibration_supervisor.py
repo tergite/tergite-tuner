@@ -13,17 +13,14 @@
 from qblox_instruments import Cluster
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
+from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.scripts.calibration_supervisor import (
-    CalibrationConfig,
-    CalibrationSupervisor,
-    HardwareManager,
-    NodeManager,
-)
-from tergite_autocalibration.utils.dto.enums import DataStatus, MeasurementMode
+    CalibrationSupervisor, HardwareManager, NodeManager)
+from tergite_autocalibration.utils.dto.enums import MeasurementMode
 
 
 def test_instantiate_calibration_config():
-    confg = CalibrationConfig(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
+    confg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
     assert confg.cluster_mode == MeasurementMode.dummy
     assert confg.cluster_ip is None
     assert confg.cluster_timeout == 222
@@ -40,7 +37,7 @@ def test_instantiate_calibration_config():
 
 
 def test_instantiate_calibration_supervisor():
-    cfg = CalibrationConfig(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
+    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
     calib_sup = CalibrationSupervisor(config=cfg)
 
     assert isinstance(calib_sup.hardware_manager, HardwareManager)
@@ -62,7 +59,7 @@ def test_instantiate_calibration_supervisor():
 
 
 def test_hardware_manager_creates_dummy_cluster():
-    cfg = CalibrationConfig(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
+    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
     calib_sup = CalibrationSupervisor(config=cfg)
     hw_manager = calib_sup.hardware_manager
     cl = hw_manager.cluster
@@ -80,7 +77,7 @@ def test_hardware_manager_creates_dummy_cluster():
 
 
 def test_hardware_manager_creates_ic():
-    cfg = CalibrationConfig(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
+    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
     calib_sup = CalibrationSupervisor(config=cfg)
     hw_manager = calib_sup.hardware_manager
     assert isinstance(hw_manager.lab_ic, InstrumentCoordinator)
@@ -88,7 +85,7 @@ def test_hardware_manager_creates_ic():
 
 
 def test_output_attenuation_is_set_to_value_in_device_config(caplog):
-    cfg = CalibrationConfig(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
+    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
 
     # output attenuation is set during the instantiation of the HardwareManager
     # which in turn is created during the instantiation of the CalibrationSupervisor

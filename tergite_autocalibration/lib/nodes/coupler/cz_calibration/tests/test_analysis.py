@@ -19,9 +19,8 @@ import pytest
 import xarray as xr
 
 from tergite_autocalibration.lib.base.analysis import BaseAllCouplersAnalysis
-from tergite_autocalibration.lib.nodes.coupler.cz_calibration.analysis import (
-    CZCalibrationCouplerAnalysis,
-)
+from tergite_autocalibration.lib.nodes.coupler.cz_calibration.analysis import \
+    CZCalibrationCouplerAnalysis
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")

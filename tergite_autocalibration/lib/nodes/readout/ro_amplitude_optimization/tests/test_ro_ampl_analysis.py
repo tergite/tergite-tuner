@@ -17,11 +17,10 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.analysis_utils import \
+    filter_ds_by_element
 from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.analysis import (
-    ROThreeStateAmplitudeNodeAnalysis,
-    ROThreeStateAmplitudeQubitAnalysis,
-)
+    ROThreeStateAmplitudeNodeAnalysis, ROThreeStateAmplitudeQubitAnalysis)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(
@@ -88,24 +87,25 @@ def test_ro_ampl_3states():
     assert pytest.approx(omega_20) == 10.16925296
 
 
-@with_redis(_redis_values)
-def test_plotting():
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-    name = "ro_amplitude_three_state_optimization"
-    file_path = os.path.join(_test_data_dir, name)
-    qubit_qois = [
-        "measure_3state_opt:pulse_amp",
-        "centroid_I",
-        "centroid_Q",
-        "omega_01",
-        "omega_12",
-        "omega_20",
-        "inv_cm_opt",
-    ]
-
-    analysis = ROThreeStateAmplitudeNodeAnalysis(name, qubit_qois)
-    analysis.analyze_node(file_path)
-    number_of_qubits = len(analysis.dataset.attrs["elements"])
-    assert analysis.axs.shape == (3, number_of_qubits)
+# FIXME: No more charts
+# @with_redis(_redis_values)
+# def test_plotting():
+#     """
+#     Test that the plotter produces a figure with the right number of axes
+#     """
+#     name = "ro_amplitude_three_state_optimization"
+#     file_path = os.path.join(_test_data_dir, name)
+#     qubit_qois = [
+#         "measure_3state_opt:pulse_amp",
+#         "centroid_I",
+#         "centroid_Q",
+#         "omega_01",
+#         "omega_12",
+#         "omega_20",
+#         "inv_cm_opt",
+#     ]
+#
+#     analysis = ROThreeStateAmplitudeNodeAnalysis(name, qubit_qois)
+#     analysis.analyze_node(file_path)
+#     number_of_qubits = len(analysis.dataset.attrs["elements"])
+#     assert analysis.axs.shape == (3, number_of_qubits)

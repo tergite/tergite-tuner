@@ -17,12 +17,10 @@ import numpy as np
 import xarray
 
 from tergite_autocalibration.lib.base.node import QubitNode
-from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.analysis import (
-    RandomizedBenchmarkingNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.measurement import (
-    RandomizedBenchmarkingMeasurement,
-)
+from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.analysis import \
+    RandomizedBenchmarkingNodeAnalysis
+from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.measurement import \
+    RandomizedBenchmarkingMeasurement
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
 

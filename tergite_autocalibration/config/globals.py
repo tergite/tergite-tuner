@@ -20,9 +20,11 @@ import redis
 from tergite_autocalibration.config.env import EnvironmentConfiguration
 from tergite_autocalibration.config.handler import ConfigurationHandler
 from tergite_autocalibration.config.package import ConfigurationPackage
-from tergite_autocalibration.utils.handlers.exit import exit_handler, exception_handler
+from tergite_autocalibration.utils.handlers.exit import (exception_handler,
+                                                         exit_handler)
 from tergite_autocalibration.utils.logging import logger
-from tergite_autocalibration.utils.logging.decorators import is_logging_suppressed
+from tergite_autocalibration.utils.logging.decorators import \
+    is_logging_suppressed
 from tergite_autocalibration.utils.misc.tests import is_pytest
 
 ### BEGIN Explicit global variables

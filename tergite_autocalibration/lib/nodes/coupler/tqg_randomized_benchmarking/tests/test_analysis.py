@@ -14,12 +14,11 @@
 import os
 from pathlib import Path
 
-import xarray as xr
 import pytest
+import xarray as xr
 
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
-    CZRBCouplerAnalysis,
-)
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import \
+    CZRBCouplerAnalysis
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")

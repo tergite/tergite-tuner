@@ -18,13 +18,10 @@ from quantify_core.analysis import fitting_models as fm
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.analysis import (
-    ResonatorSpectroscopy1NodeAnalysis,
-    ResonatorSpectroscopy2NodeAnalysis,
-    ResonatorSpectroscopyNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.measurement import (
-    ResonatorSpectroscopyMeasurement,
-)
+    ResonatorSpectroscopy1NodeAnalysis, ResonatorSpectroscopy2NodeAnalysis,
+    ResonatorSpectroscopyNodeAnalysis)
+from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.measurement import \
+    ResonatorSpectroscopyMeasurement
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.samplespace import resonator_samples
 

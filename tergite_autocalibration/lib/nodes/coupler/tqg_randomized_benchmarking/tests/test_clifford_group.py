@@ -4,11 +4,11 @@
 # Copyright (C) Chalmers Next Labs 2025
 
 import unittest
+
 import numpy as np
+
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group import (
-    SingleQubitClifford,
-    TwoQubitClifford,
-)
+    SingleQubitClifford, TwoQubitClifford)
 
 
 class TestClifford(unittest.TestCase):

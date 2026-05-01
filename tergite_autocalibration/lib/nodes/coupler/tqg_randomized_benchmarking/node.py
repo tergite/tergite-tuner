@@ -18,12 +18,10 @@ import xarray as xr
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
-    CZRBNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
-    CZRBMeasurement,
-)
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import \
+    CZRBNodeAnalysis
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import \
+    CZRBMeasurement
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
 RB_REPEATS = 7

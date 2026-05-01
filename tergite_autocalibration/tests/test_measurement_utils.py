@@ -14,9 +14,7 @@ import numpy as np
 import pytest
 
 from tergite_autocalibration.utils.measurement_utils import (
-    reduce_samplespace,
-    samplespace_dimensions,
-)
+    reduce_samplespace, samplespace_dimensions)
 
 # Small samplespace for easy tests
 _simple_samplespace = {

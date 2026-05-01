@@ -12,10 +12,8 @@
 
 import pytest
 
-from tergite_autocalibration.utils.misc.types import (
-    safe_str_to_bool_int_float,
-    is_none_str,
-)  # Adjust the import according to your project structure
+from tergite_autocalibration.utils.misc.types import (  # Adjust the import according to your project structure
+    is_none_str, safe_str_to_bool_int_float)
 
 
 def test_safe_str_to_type_bool():

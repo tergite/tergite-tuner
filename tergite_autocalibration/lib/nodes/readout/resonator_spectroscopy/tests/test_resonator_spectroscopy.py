@@ -18,9 +18,8 @@ import matplotlib.pyplot as plt
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.analysis import (
-    ResonatorSpectroscopyQubitAnalysis,
-)
+from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.analysis import \
+    ResonatorSpectroscopyQubitAnalysis
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

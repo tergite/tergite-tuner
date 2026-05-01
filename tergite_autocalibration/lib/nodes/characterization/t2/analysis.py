@@ -15,15 +15,15 @@
 # that they have been altered from the originals.
 
 from abc import ABC, abstractmethod
-import lmfit
-from matplotlib.axes import Axes
-import numpy as np
-from quantify_core.analysis.fitting_models import ExpDecayModel, fft_freq_phase_guess
 
-from tergite_autocalibration.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+import lmfit
+import numpy as np
+from matplotlib.axes import Axes
+from quantify_core.analysis.fitting_models import (ExpDecayModel,
+                                                   fft_freq_phase_guess)
+
+from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
+                                                       BaseQubitAnalysis)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

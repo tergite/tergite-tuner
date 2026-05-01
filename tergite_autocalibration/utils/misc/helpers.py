@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import List, Dict
+from typing import Dict, List
 
 
 def generate_n_qubit_list(n_qubits: int, starting_from: int = 1) -> List[str]:

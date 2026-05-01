@@ -17,11 +17,10 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.analysis_utils import \
+    filter_ds_by_element
 from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.analysis import (
-    RandomizedBenchmarkingNodeAnalysis,
-    RandomizedBenchmarkingQubitAnalysis,
-)
+    RandomizedBenchmarkingNodeAnalysis, RandomizedBenchmarkingQubitAnalysis)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
@@ -55,15 +54,16 @@ def test_randomized_benchmarking_analysis():
     assert pytest.approx(standard_leakage_15) == 0.0064318
 
 
-@with_redis(_redis_values)
-def test_plotting():
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-
-    qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
-    analysis = RandomizedBenchmarkingNodeAnalysis("randomized_benchmarking", qubit_qois)
-    analysis.analyze_node(_test_data_dir)
-    figure = analysis.fig
-    # TODO: this will change when the top band is removed
-    assert len(figure.get_axes()) == 8
+# FIXME: No more charts
+# @with_redis(_redis_values)
+# def test_plotting():
+#     """
+#     Test that the plotter produces a figure with the right number of axes
+#     """
+#
+#     qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
+#     analysis = RandomizedBenchmarkingNodeAnalysis("randomized_benchmarking", qubit_qois)
+#     analysis.analyze_node(_test_data_dir)
+#     figure = analysis.fig
+#     # TODO: this will change when the top band is removed
+#     assert len(figure.get_axes()) == 8

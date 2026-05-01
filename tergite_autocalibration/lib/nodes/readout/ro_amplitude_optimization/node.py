@@ -17,12 +17,9 @@ import xarray
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.analysis import (
-    ROThreeStateAmplitudeNodeAnalysis,
-    OptimalROTwoStateAmplitudeNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.measurement import (
-    ROAmplitudeOptimizationMeasurement,
-)
+    OptimalROTwoStateAmplitudeNodeAnalysis, ROThreeStateAmplitudeNodeAnalysis)
+from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.measurement import \
+    ROAmplitudeOptimizationMeasurement
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.functions import isosceles_triangle
 

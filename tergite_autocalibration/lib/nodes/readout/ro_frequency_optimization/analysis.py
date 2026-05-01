@@ -16,10 +16,8 @@ import numpy as np
 from quantify_core.analysis import fitting_models as fm
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
-from tergite_autocalibration.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
+                                                       BaseQubitAnalysis)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 model = fm.ResonatorModel()
@@ -166,18 +164,20 @@ class OptimalRO01FrequencyNodeAnalysis(BaseAllQubitsAnalysis):
         self.plots_per_qubit = 3
 
     def _fill_plots(self):
-        for index, analysis in enumerate(self.qubit_analyses):
-            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-
-            list_of_secondary_axes = []
-            for plot_indx in range(1, self.plots_per_qubit):
-                secondary_plot_row = primary_plot_row + plot_indx
-                list_of_secondary_axes.append(
-                    self.axs[secondary_plot_row, index % self.column_grid]
-                )
-
-            analysis.plotter(primary_axis, list_of_secondary_axes)
+        # FIXME: No more charts
+        pass
+        # for index, analysis in enumerate(self.qubit_analyses):
+        #     primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
+        #     primary_axis = self.axs[primary_plot_row, index % self.column_grid]
+        #
+        #     list_of_secondary_axes = []
+        #     for plot_indx in range(1, self.plots_per_qubit):
+        #         secondary_plot_row = primary_plot_row + plot_indx
+        #         list_of_secondary_axes.append(
+        #             self.axs[secondary_plot_row, index % self.column_grid]
+        #         )
+        #
+        #     analysis.plotter(primary_axis, list_of_secondary_axes)
 
 
 class ROFrequencyThreeStateNodeAnalysis(BaseAllQubitsAnalysis):

@@ -14,9 +14,7 @@ from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.tests.utils.decorators import with_redis
 from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
 from tergite_autocalibration.utils.backend.reset_redis_node import (
-    reset_redis_nodes,
-    reset_all_redis_nodes,
-)
+    reset_all_redis_nodes, reset_redis_nodes)
 
 _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
 

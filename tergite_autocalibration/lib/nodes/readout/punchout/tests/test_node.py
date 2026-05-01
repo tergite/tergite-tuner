@@ -14,9 +14,8 @@
 import pytest
 
 from tergite_autocalibration.config.globals import CONFIG
-from tergite_autocalibration.lib.nodes.readout.punchout.node import (
-    PunchoutNode,
-)
+from tergite_autocalibration.lib.nodes.readout.punchout.node import \
+    PunchoutNode
 
 
 @pytest.mark.skip(

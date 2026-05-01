@@ -21,16 +21,15 @@ from typing import List
 
 import cf_xarray as cf
 import matplotlib.pyplot as plt
-
 # TODO: we should have a conditional import depending on a feature flag here
 import numpy as np
 import xarray as xr
 
 from tergite_autocalibration.config.globals import CONFIG
-from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
-from tergite_autocalibration.lib.base.utils.figure_utils import (
-    create_figure_with_top_band,
-)
+from tergite_autocalibration.lib.base.utils.analysis_utils import \
+    filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.figure_utils import \
+    create_figure_with_top_band
 from tergite_autocalibration.utils.dto.qoi import QOI
 from tergite_autocalibration.utils.logging import logger
 
@@ -84,8 +83,10 @@ class BaseNodeAnalysis(ABC):
         self.dataset = None
         self.data_vars = None
         self.coords = None
-        self.fig = None
-        self.axs = None
+
+        # FIXME: No more charts
+        # self.fig = None
+        # self.axs = None
 
     @property
     def qoi(self) -> "QOI":
@@ -127,20 +128,24 @@ class BaseNodeAnalysis(ABC):
         return dataset
 
     def _manage_plots(self, column_grid: int, plots_per_qubit: int):
-        n_vars = len(self.data_vars)
-        nrows = int(np.ceil(n_vars / column_grid)) * plots_per_qubit
-        ncols = min(column_grid, n_vars)
-
-        fig, axs = create_figure_with_top_band(nrows, ncols)
-        return fig, axs
+        # FIXME: No more charts
+        pass
+        # n_vars = len(self.data_vars)
+        # nrows = int(np.ceil(n_vars / column_grid)) * plots_per_qubit
+        # ncols = min(column_grid, n_vars)
+        #
+        # fig, axs = create_figure_with_top_band(nrows, ncols)
+        # return fig, axs
 
     def _save_plots(self):
-        preview_path = self.data_path / f"{self.name}_preview.png"
-        full_path = self.data_path / f"{self.name}.png"
-        logger.info("Saving Plots")
-        self.fig.savefig(preview_path, bbox_inches="tight", dpi=100)
-        self.fig.savefig(full_path, bbox_inches="tight", dpi=400)
-        logger.info(f"Plots saved to {preview_path} and {full_path}")
+        # FIXME: No more charts
+        pass
+        # preview_path = self.data_path / f"{self.name}_preview.png"
+        # full_path = self.data_path / f"{self.name}.png"
+        # logger.info("Saving Plots")
+        # self.fig.savefig(preview_path, bbox_inches="tight", dpi=100)
+        # self.fig.savefig(full_path, bbox_inches="tight", dpi=400)
+        # logger.info(f"Plots saved to {preview_path} and {full_path}")
 
     def _save_other_plots(self):
         pass
@@ -180,7 +185,10 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         self.dataset = self.open_dataset()
         self.coords = self.dataset.coords
         self.data_vars = self.dataset.data_vars
-        self.fig, self.axs = self._manage_plots(self.column_grid, self.plots_per_qubit)
+
+        # FIXME: No more charts
+        # self.fig, self.axs = self._manage_plots(self.column_grid, self.plots_per_qubit)
+
         analysis_results = self._analyze_all_qubits()
         self._fill_plots()
         self._save_plots()
@@ -209,10 +217,12 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         return analysis_results
 
     def _fill_plots(self):
-        for index, analysis in enumerate(self.qubit_analyses):
-            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-            analysis.plot(primary_axis)
+        # FIXME: No more charts
+        pass
+        # for index, analysis in enumerate(self.qubit_analyses):
+        #     primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
+        #     primary_axis = self.axs[primary_plot_row, index % self.column_grid]
+        #     analysis.plot(primary_axis)
 
 
 class BaseQubitAnalysis(BaseAnalysis, ABC):

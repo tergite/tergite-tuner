@@ -22,23 +22,23 @@ from numpy.typing import NDArray
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import CZ, X90, Y90, Reset, Rxy, X, Y
+from quantify_scheduler.operations.gate_library import (CZ, X90, Y90, Reset,
+                                                        Rxy, X, Y)
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.resources import ClockResource
 
 from tergite_autocalibration.config.globals import DOWNCONVERT_FREQUENCY
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (
-    randomized_benchmarking_sequence,
-)
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
-    TwoQubitClifford,
-)
-from tergite_autocalibration.utils.dto.extended_coupler_edge import (
-    ExtendedCompositeSquareEdge,
-)
-from tergite_autocalibration.utils.dto.extended_gates import Measure_RO_3state_Opt
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import \
+    randomized_benchmarking_sequence
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import \
+    TwoQubitClifford
+from tergite_autocalibration.utils.dto.extended_coupler_edge import \
+    ExtendedCompositeSquareEdge
+from tergite_autocalibration.utils.dto.extended_gates import \
+    Measure_RO_3state_Opt
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 from tergite_autocalibration.utils.logging import logger
 
 # Constants

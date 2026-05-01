@@ -10,9 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from tergite_autocalibration.utils.io.parsers import (
-    parse_input_qubits,
-)
+from tergite_autocalibration.utils.io.parsers import parse_input_qubits
 
 
 def test_single_space_separated():

@@ -24,50 +24,27 @@ from types import MappingProxyType
 from typing import FrozenSet, List, Union
 
 from colorama import Fore, Style
-from colorama import init as colorama_init
 from qblox_instruments import Cluster
 from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.instrument_coordinator.components.qblox import \
+    ClusterComponent
 
-from tergite_autocalibration.config.globals import (
-    CLUSTER_IP,
-    CONFIG,
-    ENV,
-    REDIS_CONNECTION,
-)
+from tergite_autocalibration.config.globals import (CLUSTER_IP, CONFIG, ENV,
+                                                    REDIS_CONNECTION)
 from tergite_autocalibration.config.package import ConfigurationPackage
+from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode
 from tergite_autocalibration.lib.utils.graph import filtered_topological_order
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.backend.redis_utils import (
-    populate_initial_parameters,
-    populate_node_parameters,
-    populate_quantities_of_interest,
-    revert_node_parameters,
-)
+    populate_initial_parameters, populate_node_parameters,
+    populate_quantities_of_interest, revert_node_parameters)
 from tergite_autocalibration.utils.dto.enums import DataStatus, MeasurementMode
 from tergite_autocalibration.utils.hardware.spi import SpiDAC
 from tergite_autocalibration.utils.io.dataset import create_node_data_path
 from tergite_autocalibration.utils.logging import logger
 from tergite_autocalibration.utils.logging.visuals import draw_arrow_chart
-
-colorama_init()
-
-
-@dataclass
-class CalibrationConfig:
-    """
-    Configuration settings for the calibration process.
-    """
-
-    cluster_mode: "MeasurementMode" = MeasurementMode.real
-    cluster_ip: "IPv4Address" = CLUSTER_IP
-    cluster_timeout: int = 222
-    qubits: List[str] = field(default_factory=lambda: CONFIG.run.qubits)
-    couplers: List[str] = field(default_factory=lambda: CONFIG.run.couplers)
-    target_node_name: str = CONFIG.run.target_node
-    user_samplespace: dict = field(default_factory=lambda: CONFIG.samplespace())
 
 
 class HardwareManager:
@@ -75,7 +52,7 @@ class HardwareManager:
     Manages hardware setup, including initializing clusters and instrument coordinators.
     """
 
-    def __init__(self, config: "CalibrationConfig") -> None:
+    def __init__(self, config: "SessionContext") -> None:
         # Store the configuration settings and initialize the instrument coordinator
         self.config = config
         self.lab_ic: InstrumentCoordinator = None
@@ -253,7 +230,7 @@ class NodeManager:
     """
 
     def __init__(
-        self, lab_ic: "InstrumentCoordinator", config: "CalibrationConfig"
+        self, lab_ic: "InstrumentCoordinator", config: "SessionContext"
     ) -> None:
         self.config = config
         self.node_factory = NodeFactory()
@@ -312,9 +289,9 @@ class NodeManager:
 
             # Determine the data path for calibration
             data_path = (
-                CONFIG.run.log_dir
+                self.config.log_dir
                 if self.config.cluster_mode == MeasurementMode.re_analyse
-                else create_node_data_path(node.name)
+                else create_node_data_path(self.config, node_name=node.name)
             )
 
             # Perform calibration
@@ -333,7 +310,7 @@ class NodeManager:
 
         # Update node samplespace
         if node.name in self.config.user_samplespace:
-            logger.info(f"Using user_samplespace.py for {node.name}")
+            logger.info(f"Using user_samplespace for {node.name}")
             self.update_to_user_samplespace(node, self.config.user_samplespace)
 
         # Since the node is respomsible for compiling its schedule
@@ -381,7 +358,7 @@ class NodeManager:
 
 
 class CalibrationSupervisor:
-    def __init__(self, config: CalibrationConfig) -> None:
+    def __init__(self, config: SessionContext) -> None:
         self.config = config
         self.hardware_manager = HardwareManager(config=config)
         self.lab_ic = self.hardware_manager.get_instrument_coordinator()

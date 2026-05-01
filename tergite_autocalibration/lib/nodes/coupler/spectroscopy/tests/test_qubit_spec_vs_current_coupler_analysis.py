@@ -20,12 +20,11 @@ import xarray as xr
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION, CONFIG
-from tergite_autocalibration.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
+from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
+from tergite_autocalibration.lib.base.analysis import (BaseAnalysis,
+                                                       BaseCouplerAnalysis)
 from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
-    CouplerAnticrossingAnalysis,
-    ResonatorSpectroscopyVsCurrentCouplerAnalysis,
-)
+    CouplerAnticrossingAnalysis, ResonatorSpectroscopyVsCurrentCouplerAnalysis)
 from tergite_autocalibration.lib.utils.redis import update_redis_trusted_values
 from tergite_autocalibration.tests.utils.decorators import with_os_env
 from tergite_autocalibration.utils.dto.qoi import QOI

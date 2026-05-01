@@ -15,13 +15,10 @@ import importlib
 import os
 from functools import wraps
 from pathlib import Path
-from typing import Dict, Any, Union
+from typing import Any, Dict, Union
 
 from tergite_autocalibration.utils.backend.redis_backup import (
-    load_json_to_redis,
-    dump_redis,
-    load_redis,
-)
+    dump_redis, load_json_to_redis, load_redis)
 
 
 def with_os_env(variables: Dict[str, Any]):
@@ -113,8 +110,10 @@ def with_config(path_: Union[Path, str]):
         @wraps(fn_)
         def wrapper(*args, **kwargs):
             import tergite_autocalibration.config.globals as glb
-            from tergite_autocalibration.config.handler import ConfigurationHandler
-            from tergite_autocalibration.config.package import ConfigurationPackage
+            from tergite_autocalibration.config.handler import \
+                ConfigurationHandler
+            from tergite_autocalibration.config.package import \
+                ConfigurationPackage
 
             temp_config = copy.deepcopy(glb.CONFIG)
             importlib.reload(glb)

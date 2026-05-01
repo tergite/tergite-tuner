@@ -27,8 +27,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import numpy as np
 from typing import Literal
+
+import numpy as np
 
 I = np.eye(4)
 

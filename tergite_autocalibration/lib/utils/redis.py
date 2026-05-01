@@ -18,14 +18,15 @@ import re
 from typing import List, Union
 
 import numpy as np
-from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
+from quantify_scheduler.json_utils import (SchedulerJSONDecoder,
+                                           SchedulerJSONEncoder)
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.utils.dto import extended_transmon_element
-from tergite_autocalibration.utils.dto.extended_coupler_edge import (
-    ExtendedCompositeSquareEdge,
-)
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_coupler_edge import \
+    ExtendedCompositeSquareEdge
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 from tergite_autocalibration.utils.dto.qoi import QOI
 from tergite_autocalibration.utils.logging import logger
 

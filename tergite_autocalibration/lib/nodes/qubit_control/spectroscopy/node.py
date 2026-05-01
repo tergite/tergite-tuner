@@ -18,17 +18,11 @@ from lmfit.models import LorentzianModel
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.qubit_control.spectroscopy.analysis import (
-    QubitSpectroscopy12NodeAnalysis,
-    QubitSpectroscopyNodeAnalysis,
-)
+    QubitSpectroscopy12NodeAnalysis, QubitSpectroscopyNodeAnalysis)
 from tergite_autocalibration.lib.nodes.qubit_control.spectroscopy.measurement import (
-    TwoTonesAmplitudeMeasurement,
-    TwoTonesMultidimMeasurement,
-)
-from tergite_autocalibration.lib.nodes.schedule_node import (
-    OuterScheduleNode,
-    ScheduleNode,
-)
+    TwoTonesAmplitudeMeasurement, TwoTonesMultidimMeasurement)
+from tergite_autocalibration.lib.nodes.schedule_node import (OuterScheduleNode,
+                                                             ScheduleNode)
 from tergite_autocalibration.lib.utils.samplespace import qubit_samples
 
 peak = LorentzianModel()

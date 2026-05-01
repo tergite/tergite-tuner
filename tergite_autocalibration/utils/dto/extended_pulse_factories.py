@@ -23,10 +23,10 @@ and use that to create an instance of the operation itself.
 from __future__ import annotations
 
 from quantify_core.utilities import deprecated
-from quantify_scheduler.backends.qblox.operations import (
-    pulse_factories as qblox_pulse_factories,
-)
-from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
+from quantify_scheduler.backends.qblox.operations import \
+    pulse_factories as qblox_pulse_factories
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import \
+    StitchedPulse
 from quantify_scheduler.operations import pulse_library
 
 

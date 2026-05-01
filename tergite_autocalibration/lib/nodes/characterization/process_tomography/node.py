@@ -15,12 +15,10 @@
 import numpy as np
 
 from tergite_autocalibration.lib.base.node import QubitNode
-from tergite_autocalibration.lib.nodes.characterization.process_tomography.analysis import (
-    ProcessTomographyNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.characterization.process_tomography.measurement import (
-    ProcessTomographyMeasurement,
-)
+from tergite_autocalibration.lib.nodes.characterization.process_tomography.analysis import \
+    ProcessTomographyNodeAnalysis
+from tergite_autocalibration.lib.nodes.characterization.process_tomography.measurement import \
+    ProcessTomographyMeasurement
 
 
 class ProcessTomographySSRONode(QubitNode):

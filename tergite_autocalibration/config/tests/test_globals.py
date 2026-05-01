@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 from tergite_autocalibration.config.env import EnvironmentConfiguration
-from tergite_autocalibration.config.globals import ENV, CONFIG
+from tergite_autocalibration.config.globals import CONFIG, ENV
 from tergite_autocalibration.config.handler import ConfigurationHandler
 from tergite_autocalibration.config.package import ConfigurationPackage
 from tergite_autocalibration.tests.utils.decorators import preserve_os_env
@@ -49,6 +49,4 @@ def test_global_configuration():
         )
     )
 
-    assert configuration_handler.run.filepath == CONFIG.run.filepath
-    assert configuration_handler.samplespace.filepath == CONFIG.samplespace.filepath
     assert configuration_handler.device.filepath == CONFIG.device.filepath

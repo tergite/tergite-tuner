@@ -17,9 +17,7 @@ import fakeredis
 import pytest
 
 from tergite_autocalibration.utils.backend.redis_backup import (
-    dump_redis_to_json,
-    load_json_to_redis,
-)
+    dump_redis_to_json, load_json_to_redis)
 
 
 @pytest.fixture

@@ -10,9 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Union, TYPE_CHECKING
-
 import json
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -21,8 +20,7 @@ if TYPE_CHECKING:
 from tergite_autocalibration.config.device import DeviceConfiguration
 from tergite_autocalibration.config.node import NodeConfiguration
 from tergite_autocalibration.config.package import ConfigurationPackage
-from tergite_autocalibration.config.run import RunConfiguration
-from tergite_autocalibration.config.samplespace import SamplespaceConfiguration
+from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.config.spi import SpiConfiguration
 
 
@@ -32,8 +30,7 @@ class ConfigurationHandler:
     """
 
     def __init__(self):
-        self.run: "RunConfiguration"
-        self.samplespace: "SamplespaceConfiguration"
+        self.run: "SessionContext"
         self._cluster: "QbloxHardwareCompilationConfig"
         self._cluster_lazy_import_path: Union[str, Path]
 
@@ -57,12 +54,7 @@ class ConfigurationHandler:
         """
         return_obj = ConfigurationHandler()
 
-        return_obj.run = RunConfiguration(
-            configuration_package.config_files["run_config"]
-        )
-        return_obj.samplespace = SamplespaceConfiguration(
-            configuration_package.config_files["user_samplespace"]
-        )
+        return_obj.samplespace = {}
 
         # Loading the path to the QBLOX hardware configuration
         return_obj._cluster_lazy_import_path = configuration_package.config_files[
@@ -86,9 +78,8 @@ class ConfigurationHandler:
         if not self._cluster_lazy_import_path:
             raise AttributeError("Cannot find cluster configuration.")
         if not self._cluster:
-            from quantify_scheduler.backends.qblox_backend import (
-                QbloxHardwareCompilationConfig,
-            )
+            from quantify_scheduler.backends.qblox_backend import \
+                QbloxHardwareCompilationConfig
 
             with open(self._cluster_lazy_import_path, "r") as f_:
                 cluster_config_json = json.load(f_)

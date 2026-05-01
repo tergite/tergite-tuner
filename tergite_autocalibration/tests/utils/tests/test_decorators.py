@@ -14,12 +14,10 @@ import os
 
 import pytest
 
-from tergite_autocalibration.tests.utils.decorators import (
-    with_os_env,
-    preserve_os_env,
-    with_config,
-    with_redis,
-)
+from tergite_autocalibration.tests.utils.decorators import (preserve_os_env,
+                                                            with_config,
+                                                            with_os_env,
+                                                            with_redis)
 from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
 
 

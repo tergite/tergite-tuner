@@ -21,13 +21,10 @@ import xarray as xr
 from scipy.stats import spearmanr
 
 from tergite_autocalibration.lib.base.analysis import BaseAllCouplersAnalysis
-from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationAnalysis,
-)
+from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.analysis import \
+    CZParametrizationAnalysis
 from tergite_autocalibration.lib.utils.analysis_models import (
-    QuadraticModel,
-    SineOscillatingModel,
-)
+    QuadraticModel, SineOscillatingModel)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

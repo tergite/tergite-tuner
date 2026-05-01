@@ -15,10 +15,8 @@ from pathlib import Path
 import pytest
 import toml
 
-from tergite_autocalibration.config.base import (
-    BaseConfigurationFile,
-    TOMLConfigurationFile,
-)
+from tergite_autocalibration.config.base import (BaseConfigurationFile,
+                                                 TOMLConfigurationFile)
 
 
 class TestConfigurationFile(BaseConfigurationFile):

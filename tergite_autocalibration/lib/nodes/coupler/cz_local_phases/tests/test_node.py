@@ -15,18 +15,16 @@ import os
 from pathlib import Path
 
 from tergite_autocalibration.lib.base.node import CouplerNode
-from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.analysis import (
-    CZLocalPhasesNodeAnalysis,
-)
-from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.measurement import (
-    CZLocalPhasesMeasurement,
-)
-from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.node import (
-    CZLocalPhasesNode,
-)
+from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.analysis import \
+    CZLocalPhasesNodeAnalysis
+from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.measurement import \
+    CZLocalPhasesMeasurement
+from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.node import \
+    CZLocalPhasesNode
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values_path = os.path.join(_test_data_dir, "redis-2026-02-06-18.json")

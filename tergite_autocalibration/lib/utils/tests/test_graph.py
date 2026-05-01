@@ -17,8 +17,7 @@ import pytest
 
 from tergite_autocalibration.lib.utils.graph import (
     get_dependencies_in_topological_order,
-    range_dependencies_in_topological_order,
-)
+    range_dependencies_in_topological_order)
 
 
 def _check_no_ancestors_behind(

@@ -24,86 +24,6 @@ from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.utils.logging import logger
 
 
-def _add_top_band(axes_tuple):
-
-    ax_left, ax_center, ax_right = axes_tuple
-
-    # Shared background color
-    for ax in axes_tuple:
-        ax.set_facecolor("#f0f0f0")
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis("off")  # turns off everything: ticks, labels, spines
-
-    # Divider line
-    line = Line2D(
-        [0.01, 0.99],
-        [0, 0],
-        color="black",
-        linewidth=1,
-        transform=ax_center.transAxes,
-        zorder=10,
-    )
-    ax_center.add_line(line)
-
-    # Add left logo, this is hardcoded as it is the Tergite logo.
-    logo_path = os.path.join(Path(__file__).parent, "logo.png")
-
-    if logo_path:
-        try:
-            logo = mpimg.imread(logo_path)
-            ax_left.imshow(logo, extent=[0, 1, 0, 1], aspect="auto")
-        except Exception as e:
-            logger.error(f"Left logo load failed: {e}")
-
-    # Center text block
-    acquisition_date = _infer_date_from_path(CONFIG.run.data_dir)
-    analysis_date = datetime.now().strftime("%d-%m-%Y")
-
-    if acquisition_date is None:
-        acquisition_date = "Unknown"
-
-    date_info = f"Acquisition: {acquisition_date}"
-    if analysis_date:
-        date_info += f" | Analysis: {analysis_date}"
-
-    # Add text info (fill the rest of the band)
-    chip_name = CONFIG.device.name
-    chip_owner = CONFIG.device.owner
-    cooldown = CONFIG.run.cooldown
-    right_logo_path = CONFIG.run.runner_logo
-
-    label = None
-    if CONFIG.run.is_internal:
-        label = "Internal"
-
-    full_text = f"{chip_owner} {chip_name} | CL: {cooldown} | {date_info}"
-    if label is not None:
-        full_text += f" | {label}"
-
-    ax_center.text(
-        0.02,
-        0.5,
-        full_text,
-        va="center",
-        ha="left",
-        fontsize=14,
-        weight="bold",
-        transform=ax_center.transAxes,
-        zorder=10,
-    )
-
-    if right_logo_path:
-        try:
-            logo = mpimg.imread(right_logo_path)
-            width = 0.8
-            ax_right.imshow(
-                logo, extent=[0.1, 0.1 + width * 0.8, 0.1, 0.9], aspect="auto"
-            )
-        except Exception as e:
-            logger.error(f"Right logo load failed: {e}")
-
-
 def _infer_date_from_path(path: str) -> str:
     try:
         path = Path(path)
@@ -183,9 +103,5 @@ def create_figure_with_top_band(nrows, ncols) -> tuple:
         ax.set_yticks([])
         for spine in ax.spines.values():
             spine.set_visible(False)
-
-    top_band_axes = (ax_left, ax_center, ax_right)
-
-    _add_top_band(top_band_axes)
 
     return fig, axs

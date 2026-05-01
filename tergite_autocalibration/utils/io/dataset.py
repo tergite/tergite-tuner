@@ -24,6 +24,7 @@ import cf_xarray as cf
 import xarray
 
 from tergite_autocalibration.config.globals import CONFIG
+from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.utils.logging import logger
 
 
@@ -33,11 +34,12 @@ def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
     return ds
 
 
-def create_node_data_path(node_name: str) -> Path:
+def create_node_data_path(session_config: SessionContext, node_name: str) -> Path:
     """
     Create the folder where measurement results, plots and logs specific to the node are stored.
 
     Args:
+        session_config: the configuration for the current session
         node_name: to create a data path for.
 
     Returns:
@@ -48,7 +50,7 @@ def create_node_data_path(node_name: str) -> Path:
     measurement_id = (
         f"{now_.strftime('%Y%m%d-%H%M%S-%f')[:19]}-{str(uuid4())[:6]}-{node_name}"
     )
-    data_path = Path(os.path.join(CONFIG.run.log_dir, measurement_id))
+    data_path = Path(os.path.join(session_config.log_dir, measurement_id))
     return data_path
 
 

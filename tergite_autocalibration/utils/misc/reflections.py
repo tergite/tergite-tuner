@@ -16,7 +16,7 @@ import inspect
 import os
 import textwrap
 from pathlib import Path
-from typing import Set, Type, Any, Dict, List, Union
+from typing import Any, Dict, List, Set, Type, Union
 
 from tergite_autocalibration.utils.logging import logger
 

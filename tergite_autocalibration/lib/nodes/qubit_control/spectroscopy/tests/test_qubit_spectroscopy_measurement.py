@@ -13,15 +13,12 @@
 
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.qubit_control.spectroscopy.node import (
-    Qubit01SpectroscopyAmplitudeNode,
-    Qubit01SpectroscopyNode,
-    Qubit12SpectroscopyNode,
-)
-from tergite_autocalibration.lib.nodes.schedule_node import (
-    OuterScheduleNode,
-    ScheduleNode,
-)
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+    Qubit01SpectroscopyAmplitudeNode, Qubit01SpectroscopyNode,
+    Qubit12SpectroscopyNode)
+from tergite_autocalibration.lib.nodes.schedule_node import (OuterScheduleNode,
+                                                             ScheduleNode)
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 
 
 def test_measurement_01_type():

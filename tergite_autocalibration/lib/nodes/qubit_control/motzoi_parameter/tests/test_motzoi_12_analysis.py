@@ -18,11 +18,10 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.analysis_utils import \
+    filter_ds_by_element
 from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.analysis import (
-    Motzoi12NodeAnalysis,
-    Motzoi12QubitAnalysis,
-)
+    Motzoi12NodeAnalysis, Motzoi12QubitAnalysis)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(
@@ -63,16 +62,17 @@ def test_motzoi_parameter():
     assert pytest.approx(motzoi_12) == -0.036
 
 
-@with_redis(_redis_values)
-def test_plotting():
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-    name = "motzoi_12_parameter"
-    file_path = os.path.join(_test_data_dir, name)
-    qubit_qois = ["r12:ef_motzoi"]
-
-    analysis = Motzoi12NodeAnalysis(name, qubit_qois)
-    analysis.analyze_node(file_path)
-    number_of_qubits = len(analysis.dataset.attrs["elements"])
-    assert analysis.axs.shape == (1, number_of_qubits)
+# FIXME: No more charts
+# @with_redis(_redis_values)
+# def test_plotting():
+#     """
+#     Test that the plotter produces a figure with the right number of axes
+#     """
+#     name = "motzoi_12_parameter"
+#     file_path = os.path.join(_test_data_dir, name)
+#     qubit_qois = ["r12:ef_motzoi"]
+#
+#     analysis = Motzoi12NodeAnalysis(name, qubit_qois)
+#     analysis.analyze_node(file_path)
+#     number_of_qubits = len(analysis.dataset.attrs["elements"])
+#     assert analysis.axs.shape == (1, number_of_qubits)

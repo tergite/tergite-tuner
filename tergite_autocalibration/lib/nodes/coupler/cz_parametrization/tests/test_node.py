@@ -16,19 +16,16 @@ import pytest
 
 from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
-from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationAnalysis,
-)
-from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.measurement import (
-    CZParametrizationMeasurement,
-)
-from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.node import (
-    CZParametrizationNode,
-)
-from tergite_autocalibration.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
-from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.analysis import \
+    CZParametrizationAnalysis
+from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.measurement import \
+    CZParametrizationMeasurement
+from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.node import \
+    CZParametrizationNode
+from tergite_autocalibration.lib.nodes.external_parameter_node import \
+    ExternalParameterNode
+from tergite_autocalibration.utils.dto.extended_transmon_element import \
+    ExtendedTransmon
 
 
 def test_cannotCreateCorrectType():

@@ -14,7 +14,7 @@ import os
 import shutil
 from typing import Dict, Union
 
-from tomlkit import parse, TOMLDocument
+from tomlkit import TOMLDocument, parse
 
 from tergite_autocalibration.utils.logging import logger
 
@@ -31,12 +31,10 @@ class ConfigurationPackage:
         # The configuration files are not stored in here directly, but just passed as strings of the path
         # This allows the file to be more lightweight and having a behaviour similar to pointers in C.
         self.config_files: Dict[str, Union[str, None]] = {
-            "run_config": None,
             "cluster_config": None,
             "device_config": None,
             "spi_config": None,
             "node_config": None,
-            "user_samplespace": None,
         }
         self.misc_filepaths = {}
 

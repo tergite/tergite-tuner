@@ -10,11 +10,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from pathlib import Path
-from dataclasses import dataclass
-from typing import Tuple, Dict  # , Iterator
 import re
-from datetime import datetime, time, date
+from dataclasses import dataclass
+from datetime import date, datetime, time
+from pathlib import Path
+from typing import Dict, Tuple  # , Iterator
 
 from tergite_autocalibration.utils.logging import logger
 

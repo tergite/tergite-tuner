@@ -23,13 +23,6 @@ path_prefix = 'configs'
 # This section contains the relative paths plus the path_prefix to the configuration files
 [files]
 
-# ---
-# Run-time related configurations
-# ---
-# run_config is all information related to the current run of the autocalibration
-# This is e.g. the target node, qubits and couplers
-run_config = 'run_config.toml'
-
 
 # ---
 # Instruments-related configuration
@@ -52,10 +45,6 @@ spi_config = 'spi_config.toml'
 # ---
 # NODE_CONFIG contains all values for the runtime of the program.
 node_config = 'node_config.toml'
-
-# USER_SAMPLESPACE gives the possibility to define custom samplespaces.
-user_samplespace = 'user_samplespace.py'
-
 
 [misc]
 

@@ -8,19 +8,11 @@ import unittest
 import numpy as np
 
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group import (
-    SingleQubitClifford,
-    TwoQubitClifford,
-)
+    SingleQubitClifford, TwoQubitClifford)
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.pauli_transfer_matrices import (
-    CZ,
-    I,
-    X_theta,
-    Y_theta,
-)
+    CZ, I, X_theta, Y_theta)
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (
-    calculate_net_clifford,
-    randomized_benchmarking_sequence,
-)
+    calculate_net_clifford, randomized_benchmarking_sequence)
 
 
 class TestRandomizedBenchmarkingSequence(unittest.TestCase):

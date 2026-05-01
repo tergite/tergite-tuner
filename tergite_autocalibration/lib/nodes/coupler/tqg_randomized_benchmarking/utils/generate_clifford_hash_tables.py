@@ -27,9 +27,7 @@ from zlib import crc32
 import numpy as np
 
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
-    SingleQubitClifford,
-    TwoQubitClifford,
-)
+    SingleQubitClifford, TwoQubitClifford)
 from tergite_autocalibration.utils.logging import logger
 
 output_dir = join(abspath(dirname(__file__)), "clifford_hash_tables")

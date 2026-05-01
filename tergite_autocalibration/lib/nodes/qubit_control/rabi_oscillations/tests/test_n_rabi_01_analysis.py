@@ -18,11 +18,10 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.analysis_utils import \
+    filter_ds_by_element
 from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.analysis import (
-    NRabiNodeAnalysis,
-    NRabiQubitAnalysis,
-)
+    NRabiNodeAnalysis, NRabiQubitAnalysis)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(
@@ -65,16 +64,17 @@ def test_n_rabi_01():
     assert pytest.approx(amp180) == 0.412374722
 
 
-@with_redis(_redis_values)
-def test_plotting():
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-    name = "n_rabi_oscillations"
-    file_path = os.path.join(_test_data_dir, name)
-    qubit_qois = ["rxy:amp180"]
-
-    analysis = NRabiNodeAnalysis(name, qubit_qois)
-    analysis.analyze_node(file_path)
-    number_of_qubits = len(analysis.dataset.attrs["elements"])
-    assert analysis.axs.shape == (1, number_of_qubits)
+# FIXME: No more charts
+# @with_redis(_redis_values)
+# def test_plotting():
+#     """
+#     Test that the plotter produces a figure with the right number of axes
+#     """
+#     name = "n_rabi_oscillations"
+#     file_path = os.path.join(_test_data_dir, name)
+#     qubit_qois = ["rxy:amp180"]
+#
+#     analysis = NRabiNodeAnalysis(name, qubit_qois)
+#     analysis.analyze_node(file_path)
+#     number_of_qubits = len(analysis.dataset.attrs["elements"])
+#     assert analysis.axs.shape == (1, number_of_qubits)

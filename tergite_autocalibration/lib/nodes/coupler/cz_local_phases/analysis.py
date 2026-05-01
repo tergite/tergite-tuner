@@ -18,14 +18,12 @@ import numpy as np
 import xarray as xr
 from cycler import cycler
 
-from tergite_autocalibration.lib.base.analysis import (
-    BaseAllCouplersAnalysis,
-    BaseCouplerAnalysis,
-)
-from tergite_autocalibration.lib.utils.analysis_models import SineOscillatingModel
-from tergite_autocalibration.lib.utils.classification_functions import (
-    calculate_probabilities,
-)
+from tergite_autocalibration.lib.base.analysis import (BaseAllCouplersAnalysis,
+                                                       BaseCouplerAnalysis)
+from tergite_autocalibration.lib.utils.analysis_models import \
+    SineOscillatingModel
+from tergite_autocalibration.lib.utils.classification_functions import \
+    calculate_probabilities
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 
