@@ -15,8 +15,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy, X
 
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 all_XY_angles = {
     0: ({"theta": 0, "phi": 0}, {"theta": 0, "phi": 0}),

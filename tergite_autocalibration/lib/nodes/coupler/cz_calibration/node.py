@@ -20,10 +20,12 @@ import xarray as xr
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
-from tergite_autocalibration.lib.nodes.coupler.cz_calibration.analysis import \
-    CZCalibrationNodeAnalysis
-from tergite_autocalibration.lib.nodes.coupler.cz_calibration.measurement import \
-    CZCalibrationMeasurement
+from tergite_autocalibration.lib.nodes.coupler.cz_calibration.analysis import (
+    CZCalibrationNodeAnalysis,
+)
+from tergite_autocalibration.lib.nodes.coupler.cz_calibration.measurement import (
+    CZCalibrationMeasurement,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
 

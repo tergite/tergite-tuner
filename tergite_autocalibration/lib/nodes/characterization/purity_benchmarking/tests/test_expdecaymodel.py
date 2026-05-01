@@ -14,8 +14,9 @@ import unittest
 
 import numpy as np
 
-from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.analysis import \
-    ExpDecayModel
+from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.analysis import (
+    ExpDecayModel,
+)
 
 
 class TestExpDecayModel(unittest.TestCase):

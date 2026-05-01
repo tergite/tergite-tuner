@@ -18,15 +18,19 @@ import numpy
 import pytest
 
 from tergite_autocalibration.config.globals import CONFIG
-from tergite_autocalibration.lib.utils.device import (close_device_resources,
-                                                      configure_device,
-                                                      save_serial_device)
+from tergite_autocalibration.lib.utils.device import (
+    close_device_resources,
+    configure_device,
+    save_serial_device,
+)
 from tergite_autocalibration.lib.utils.validators import (
-    get_batched_dimensions, get_number_of_batches, reduce_batch)
+    get_batched_dimensions,
+    get_number_of_batches,
+    reduce_batch,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 

@@ -13,11 +13,12 @@
 
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.node import (
-    ResonatorSpectroscopy1Node, ResonatorSpectroscopy2Node,
-    ResonatorSpectroscopyNode)
+    ResonatorSpectroscopy1Node,
+    ResonatorSpectroscopy2Node,
+    ResonatorSpectroscopyNode,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_measurement_0_type():

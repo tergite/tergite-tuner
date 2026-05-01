@@ -24,7 +24,9 @@ from tergite_autocalibration.utils.logging import logger
 if TYPE_CHECKING:
     from quantify_scheduler.backends import SerialCompiler
     from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
-        CompiledSchedule, InstrumentCoordinator)
+        CompiledSchedule,
+        InstrumentCoordinator,
+    )
 
 
 def execute_schedule(

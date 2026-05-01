@@ -13,7 +13,8 @@
 
 from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingNodeAnalysis,
-    ResonatorSpectroscopyVsCurrentNodeAnalysis)
+    ResonatorSpectroscopyVsCurrentNodeAnalysis,
+)
 
 
 def test_CS_node_analysis_can_be_initialized():

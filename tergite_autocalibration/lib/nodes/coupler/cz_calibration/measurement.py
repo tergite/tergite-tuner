@@ -20,19 +20,20 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.gate_library import X90, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import (IdlePulse,
-                                                         ResetClockPhase,
-                                                         SoftSquarePulse)
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    ResetClockPhase,
+    SoftSquarePulse,
+)
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import LoopOperation
 
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
-from tergite_autocalibration.utils.dto.extended_coupler_edge import \
-    ExtendedCompositeSquareEdge
-from tergite_autocalibration.utils.dto.extended_gates import \
-    Measure_RO_3state_Opt
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_coupler_edge import (
+    ExtendedCompositeSquareEdge,
+)
+from tergite_autocalibration.utils.dto.extended_gates import Measure_RO_3state_Opt
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 class CZCalibrationMeasurement(BaseMeasurement):

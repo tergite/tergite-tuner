@@ -17,13 +17,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.measurement import \
-    RandomizedBenchmarkingMeasurement
-from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.node import \
-    RandomizedBenchmarkingNode
+from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.measurement import (
+    RandomizedBenchmarkingMeasurement,
+)
+from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.node import (
+    RandomizedBenchmarkingNode,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values_path = os.path.join(_test_data_dir, "redis-2026-03-10-21-33-32.json")

@@ -21,7 +21,9 @@ import xarray
 
 from tergite_autocalibration.lib.base.measurement import MeasurementType
 from tergite_autocalibration.utils.measurement_utils import (
-    reduce_samplespace, samplespace_dimensions)
+    reduce_samplespace,
+    samplespace_dimensions,
+)
 
 
 class ExternalParameterNode(MeasurementType):

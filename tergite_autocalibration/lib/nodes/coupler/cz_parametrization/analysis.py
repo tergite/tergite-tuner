@@ -20,10 +20,13 @@ import numpy as np
 import xarray as xr
 from scipy.ndimage import convolve
 
-from tergite_autocalibration.lib.base.analysis import (BaseAllCouplersAnalysis,
-                                                       BaseCouplerAnalysis)
-from tergite_autocalibration.lib.utils.classification_functions import \
-    calculate_probabilities
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllCouplersAnalysis,
+    BaseCouplerAnalysis,
+)
+from tergite_autocalibration.lib.utils.classification_functions import (
+    calculate_probabilities,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

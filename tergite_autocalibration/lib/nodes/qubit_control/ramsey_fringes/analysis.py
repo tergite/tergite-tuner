@@ -16,8 +16,10 @@
 import numpy as np
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
 from tergite_autocalibration.lib.utils.analysis_models import RamseyModel
 from tergite_autocalibration.utils.dto.qoi import QOI
 

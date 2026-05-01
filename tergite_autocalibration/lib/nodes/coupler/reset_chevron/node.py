@@ -14,10 +14,12 @@
 import numpy as np
 
 from tergite_autocalibration.lib.base.node import QubitNode
-from tergite_autocalibration.lib.nodes.coupler.reset_chevron.analysis import \
-    ResetChevronNodeAnalysis
-from tergite_autocalibration.lib.nodes.coupler.reset_chevron.measurement import \
-    ResetChevronDCMeasurement
+from tergite_autocalibration.lib.nodes.coupler.reset_chevron.analysis import (
+    ResetChevronNodeAnalysis,
+)
+from tergite_autocalibration.lib.nodes.coupler.reset_chevron.measurement import (
+    ResetChevronDCMeasurement,
+)
 from tergite_autocalibration.utils.logging import logger
 
 

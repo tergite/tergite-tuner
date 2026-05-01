@@ -18,16 +18,15 @@ from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.validators import Enum
-from quantify_scheduler.backends.graph_compilation import \
-    OperationCompilationConfig
+from quantify_scheduler.backends.graph_compilation import OperationCompilationConfig
 from quantify_scheduler.device_under_test.edge import Edge
-from quantify_scheduler.device_under_test.transmon_element import \
-    pulse_factories
+from quantify_scheduler.device_under_test.transmon_element import pulse_factories
 from quantify_scheduler.helpers.validators import Numbers
 
 # from quantify_scheduler.operations.pulse_factories import composite_square_pulse
-from tergite_autocalibration.utils.dto.extended_pulse_factories import \
-    composite_soft_square_pulse
+from tergite_autocalibration.utils.dto.extended_pulse_factories import (
+    composite_soft_square_pulse,
+)
 
 
 class Spec(InstrumentChannel):

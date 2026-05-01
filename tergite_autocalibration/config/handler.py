@@ -78,8 +78,9 @@ class ConfigurationHandler:
         if not self._cluster_lazy_import_path:
             raise AttributeError("Cannot find cluster configuration.")
         if not self._cluster:
-            from quantify_scheduler.backends.qblox_backend import \
-                QbloxHardwareCompilationConfig
+            from quantify_scheduler.backends.qblox_backend import (
+                QbloxHardwareCompilationConfig,
+            )
 
             with open(self._cluster_lazy_import_path, "r") as f_:
                 cluster_config_json = json.load(f_)

@@ -15,15 +15,13 @@
 import numpy as np
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import (X90, Measure, Reset,
-                                                        Rxy, X)
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X
 from quantify_scheduler.operations.pulse_library import DRAGPulse
 from quantify_scheduler.resources import ClockResource
 
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
 from tergite_autocalibration.utils.dto.extended_gates import Measure_RO1
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 class RamseyDetuningsMeasurement(BaseMeasurement):

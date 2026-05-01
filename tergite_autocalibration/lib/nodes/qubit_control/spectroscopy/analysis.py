@@ -23,8 +23,10 @@ import xarray as xr
 from lmfit.models import LorentzianModel
 from scipy import signal
 
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 from tergite_autocalibration.utils.logging import logger
 

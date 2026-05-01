@@ -19,10 +19,11 @@ import pytest
 
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.node import (
-    MotzoiParameter12Node, MotzoiParameterNode)
+    MotzoiParameter12Node,
+    MotzoiParameterNode,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_dummy_generation():

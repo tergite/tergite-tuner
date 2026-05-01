@@ -19,9 +19,12 @@ from quantify_core.analysis import fitting_models as fm
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.analysis import (
-    OptimalRO01FrequencyNodeAnalysis, ROFrequencyThreeStateNodeAnalysis)
-from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.measurement import \
-    ROFrequencyOptimizationMeasurement
+    OptimalRO01FrequencyNodeAnalysis,
+    ROFrequencyThreeStateNodeAnalysis,
+)
+from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.measurement import (
+    ROFrequencyOptimizationMeasurement,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.samplespace import resonator_samples
 

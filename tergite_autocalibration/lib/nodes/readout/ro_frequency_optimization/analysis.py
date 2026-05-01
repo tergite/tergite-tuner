@@ -16,8 +16,10 @@ import numpy as np
 from quantify_core.analysis import fitting_models as fm
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 model = fm.ResonatorModel()

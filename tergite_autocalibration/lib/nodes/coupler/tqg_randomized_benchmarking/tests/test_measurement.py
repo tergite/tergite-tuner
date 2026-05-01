@@ -16,15 +16,17 @@ from pathlib import Path
 
 import pytest
 
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import \
-    CZRBMeasurement
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.node import \
-    CZRBNode
-from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import \
-    TwoQubitClifford
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
+    CZRBMeasurement,
+)
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.node import (
+    CZRBNode,
+)
+from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
+    TwoQubitClifford,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values_path = os.path.join(_test_data_dir, "redis-2026-02-10-11-23-12.json")

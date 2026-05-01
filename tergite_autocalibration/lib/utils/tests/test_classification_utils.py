@@ -15,8 +15,7 @@ import xarray
 from numpy import exp, pi
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
-from tergite_autocalibration.lib.utils.classification_functions import \
-    assign_state
+from tergite_autocalibration.lib.utils.classification_functions import assign_state
 
 
 def test_assign_state():

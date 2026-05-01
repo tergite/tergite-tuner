@@ -15,15 +15,15 @@ import pytest
 
 from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
-from tergite_autocalibration.lib.nodes.coupler.cz_chevron.analysis import \
-    CZChevronAnalysis
-from tergite_autocalibration.lib.nodes.coupler.cz_chevron.measurement import \
-    CZChevronMeasurement
-from tergite_autocalibration.lib.nodes.coupler.cz_chevron.node import \
-    CZChevronNode
+from tergite_autocalibration.lib.nodes.coupler.cz_chevron.analysis import (
+    CZChevronAnalysis,
+)
+from tergite_autocalibration.lib.nodes.coupler.cz_chevron.measurement import (
+    CZChevronMeasurement,
+)
+from tergite_autocalibration.lib.nodes.coupler.cz_chevron.node import CZChevronNode
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_node_creation():

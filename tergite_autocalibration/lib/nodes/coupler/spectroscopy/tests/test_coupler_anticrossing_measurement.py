@@ -12,12 +12,13 @@
 # that they have been altered from the originals.
 
 from tergite_autocalibration.config.globals import CONFIG
-from tergite_autocalibration.lib.nodes.coupler.spectroscopy.node import \
-    QubitSpectroscopyVsCurrentNode
-from tergite_autocalibration.lib.nodes.external_parameter_node import \
-    ExternalParameterNode
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.lib.nodes.coupler.spectroscopy.node import (
+    QubitSpectroscopyVsCurrentNode,
+)
+from tergite_autocalibration.lib.nodes.external_parameter_node import (
+    ExternalParameterNode,
+)
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_measurement_01_type():

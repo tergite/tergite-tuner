@@ -11,8 +11,7 @@
 # that they have been altered from the originals.
 
 from tergite_autocalibration.config.globals import REDIS_CONNECTION
-from tergite_autocalibration.lib.utils.redis import \
-    _save_parameters_in_transmon
+from tergite_autocalibration.lib.utils.redis import _save_parameters_in_transmon
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

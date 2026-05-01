@@ -17,10 +17,11 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.utils.analysis_utils import \
-    filter_ds_by_element
+from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.analysis import (
-    ROThreeStateAmplitudeNodeAnalysis, ROThreeStateAmplitudeQubitAnalysis)
+    ROThreeStateAmplitudeNodeAnalysis,
+    ROThreeStateAmplitudeQubitAnalysis,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
 
 _test_data_dir = os.path.join(

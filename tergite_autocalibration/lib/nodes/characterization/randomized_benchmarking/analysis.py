@@ -17,11 +17,14 @@ from matplotlib.axes import Axes
 from scipy.linalg import norm
 from scipy.optimize import minimize
 
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
 from tergite_autocalibration.lib.utils.analysis_models import ExpDecayModel
-from tergite_autocalibration.lib.utils.classification_functions import \
-    calculate_probabilities
+from tergite_autocalibration.lib.utils.classification_functions import (
+    calculate_probabilities,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

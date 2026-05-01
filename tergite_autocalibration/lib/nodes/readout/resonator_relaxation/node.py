@@ -13,10 +13,12 @@
 
 import numpy as np
 
-from tergite_autocalibration.lib.nodes.readout.resonator_relaxation.analysis import \
-    ResonatorRelaxationNodeAnalysis
-from tergite_autocalibration.lib.nodes.readout.resonator_relaxation.measurement import \
-    ResonatorRelaxation
+from tergite_autocalibration.lib.nodes.readout.resonator_relaxation.analysis import (
+    ResonatorRelaxationNodeAnalysis,
+)
+from tergite_autocalibration.lib.nodes.readout.resonator_relaxation.measurement import (
+    ResonatorRelaxation,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleQubitNode
 from tergite_autocalibration.lib.utils.samplespace import resonator_samples
 

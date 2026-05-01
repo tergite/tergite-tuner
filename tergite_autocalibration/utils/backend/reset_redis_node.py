@@ -21,7 +21,9 @@ from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.logging import logger
 from tergite_autocalibration.utils.misc.reflections import (
-    find_inheriting_classes_ast_recursive, get_class_attributes)
+    find_inheriting_classes_ast_recursive,
+    get_class_attributes,
+)
 
 
 def reset_all_redis_nodes() -> None:

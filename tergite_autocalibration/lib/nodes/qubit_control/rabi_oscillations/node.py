@@ -19,10 +19,15 @@ import xarray
 
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.analysis import (
-    NRabi_12_NodeAnalysis, NRabiNodeAnalysis, RabiNode12Analysis,
-    RabiNodeAnalysis)
+    NRabi_12_NodeAnalysis,
+    NRabiNodeAnalysis,
+    RabiNode12Analysis,
+    RabiNodeAnalysis,
+)
 from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.measurement import (
-    NRabiOscillationsMeasurement, RabiOscillationsMeasurement)
+    NRabiOscillationsMeasurement,
+    RabiOscillationsMeasurement,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.analysis_models import RabiModel
 

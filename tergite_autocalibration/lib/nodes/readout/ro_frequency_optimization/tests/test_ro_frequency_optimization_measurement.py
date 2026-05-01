@@ -18,11 +18,11 @@ import numpy as np
 import pytest
 
 from tergite_autocalibration.config.globals import CONFIG
-from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.node import \
-    ROFrequencyThreeStateOptimizationNode
+from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.node import (
+    ROFrequencyThreeStateOptimizationNode,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_dummy_generation():

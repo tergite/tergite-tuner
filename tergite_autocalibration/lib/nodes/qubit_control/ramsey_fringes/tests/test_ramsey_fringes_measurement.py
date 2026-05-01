@@ -14,9 +14,10 @@
 
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.qubit_control.ramsey_fringes.node import (
-    RamseyFringes12Node, RamseyFringesNode)
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+    RamseyFringes12Node,
+    RamseyFringesNode,
+)
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_dummy_01_generation():

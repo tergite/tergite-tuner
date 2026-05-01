@@ -17,10 +17,12 @@ import numpy as np
 import xarray as xr
 
 from tergite_autocalibration.lib.base.node import CouplerNode
-from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.analysis import \
-    CZLocalPhasesNodeAnalysis
-from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.measurement import \
-    CZLocalPhasesMeasurement
+from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.analysis import (
+    CZLocalPhasesNodeAnalysis,
+)
+from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.measurement import (
+    CZLocalPhasesMeasurement,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 
 

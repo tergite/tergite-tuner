@@ -13,8 +13,7 @@
 import os
 
 from tergite_autocalibration.tests.utils.decorators import preserve_os_env
-from tergite_autocalibration.utils.logging.decorators import \
-    is_logging_suppressed
+from tergite_autocalibration.utils.logging.decorators import is_logging_suppressed
 
 
 @preserve_os_env

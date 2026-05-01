@@ -12,8 +12,10 @@
 # that they have been altered from the originals.
 
 
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
 
 
 class ResonatorRelaxationAnalysis(BaseQubitAnalysis):

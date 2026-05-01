@@ -20,11 +20,13 @@ import pytest
 
 from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.node import (
-    NRabiOscillations12Node, NRabiOscillationsNode, RabiOscillations12Node,
-    RabiOscillationsNode)
+    NRabiOscillations12Node,
+    NRabiOscillationsNode,
+    RabiOscillations12Node,
+    RabiOscillationsNode,
+)
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.utils.dto.extended_transmon_element import \
-    ExtendedTransmon
+from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_dummy_01_generation():

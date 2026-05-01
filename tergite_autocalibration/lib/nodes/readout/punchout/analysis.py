@@ -17,12 +17,16 @@ import numpy as np
 from matplotlib import patches
 from matplotlib import pyplot as plt
 
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
-from tergite_autocalibration.lib.base.utils.figure_utils import \
-    create_figure_with_top_band
-from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.analysis import \
-    ResonatorSpectroscopyQubitAnalysis
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
+from tergite_autocalibration.lib.base.utils.figure_utils import (
+    create_figure_with_top_band,
+)
+from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.analysis import (
+    ResonatorSpectroscopyQubitAnalysis,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

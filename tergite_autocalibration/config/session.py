@@ -20,8 +20,7 @@ from typing import List, Optional, Self
 from pydantic import BaseModel, PrivateAttr, computed_field, model_validator
 
 from tergite_autocalibration.lib.nodes import NodeEnum
-from tergite_autocalibration.utils.dto.enums import (ApplicationStatus,
-                                                     MeasurementMode)
+from tergite_autocalibration.utils.dto.enums import ApplicationStatus, MeasurementMode
 
 
 class SessionContext(BaseModel):

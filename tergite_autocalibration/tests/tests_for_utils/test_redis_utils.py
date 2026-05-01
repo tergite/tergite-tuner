@@ -17,12 +17,14 @@ import toml
 
 import tergite_autocalibration
 from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
-from tergite_autocalibration.lib.base.node import (BaseNode, CouplerNode,
-                                                   QubitNode)
+from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode, QubitNode
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.backend.redis_utils import (
-    populate_initial_parameters, populate_node_parameters,
-    populate_quantities_of_interest, revert_node_parameters)
+    populate_initial_parameters,
+    populate_node_parameters,
+    populate_quantities_of_interest,
+    revert_node_parameters,
+)
 
 
 def test_populate_inital_parameters():

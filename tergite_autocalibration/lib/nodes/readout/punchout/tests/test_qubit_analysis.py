@@ -15,10 +15,10 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tergite_autocalibration.lib.base.analysis import (BaseAnalysis,
-                                                       BaseQubitAnalysis)
-from tergite_autocalibration.lib.nodes.readout.punchout.analysis import \
-    PunchoutQubitAnalysis
+from tergite_autocalibration.lib.base.analysis import BaseAnalysis, BaseQubitAnalysis
+from tergite_autocalibration.lib.nodes.readout.punchout.analysis import (
+    PunchoutQubitAnalysis,
+)
 
 
 def test_CanCreate():

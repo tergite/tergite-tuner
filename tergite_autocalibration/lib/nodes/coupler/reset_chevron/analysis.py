@@ -21,8 +21,11 @@ from scipy.optimize import leastsq
 
 from tergite_autocalibration.utils.logging import logger
 
-from ....base.analysis import (BaseAllCouplersAnalysis, BaseCouplerAnalysis,
-                               BaseQubitAnalysis)
+from ....base.analysis import (
+    BaseAllCouplersAnalysis,
+    BaseCouplerAnalysis,
+    BaseQubitAnalysis,
+)
 
 
 class SweepResultStatus(Enum):

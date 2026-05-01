@@ -19,11 +19,12 @@ from abc import ABC, abstractmethod
 import lmfit
 import numpy as np
 from matplotlib.axes import Axes
-from quantify_core.analysis.fitting_models import (ExpDecayModel,
-                                                   fft_freq_phase_guess)
+from quantify_core.analysis.fitting_models import ExpDecayModel, fft_freq_phase_guess
 
-from tergite_autocalibration.lib.base.analysis import (BaseAllQubitsAnalysis,
-                                                       BaseQubitAnalysis)
+from tergite_autocalibration.lib.base.analysis import (
+    BaseAllQubitsAnalysis,
+    BaseQubitAnalysis,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

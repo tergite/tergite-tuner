@@ -17,8 +17,10 @@ from typing import Any, Dict, List, Tuple, Type, Union
 
 import tomlkit
 
-from tergite_autocalibration.config.globals import (DOWNCONVERT_FREQUENCY,
-                                                    REDIS_CONNECTION)
+from tergite_autocalibration.config.globals import (
+    DOWNCONVERT_FREQUENCY,
+    REDIS_CONNECTION,
+)
 from tergite_autocalibration.utils.logging import logger
 
 

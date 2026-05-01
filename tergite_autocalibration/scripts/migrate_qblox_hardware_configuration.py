@@ -14,8 +14,7 @@ import json
 import os
 import sys
 
-from quantify_scheduler.backends.qblox_backend import \
-    QbloxHardwareCompilationConfig
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 
 from tergite_autocalibration.utils.logging import logger
 

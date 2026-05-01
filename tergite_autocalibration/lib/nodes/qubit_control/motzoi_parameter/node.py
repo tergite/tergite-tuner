@@ -18,9 +18,12 @@ import xarray
 
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.analysis import (
-    Motzoi01NodeAnalysis, Motzoi12NodeAnalysis)
-from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.measurement import \
-    MotzoiParameterMeasurement
+    Motzoi01NodeAnalysis,
+    Motzoi12NodeAnalysis,
+)
+from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.measurement import (
+    MotzoiParameterMeasurement,
+)
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.analysis_models import RabiModel
 

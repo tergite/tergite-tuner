@@ -19,7 +19,9 @@ import numpy as np
 import xarray as xr
 
 from tergite_autocalibration.lib.nodes.qubit_control.spectroscopy.analysis import (
-    QubitSpectroscopy12MultidimAnalysis, QubitSpectroscopyMultidimAnalysis)
+    QubitSpectroscopy12MultidimAnalysis,
+    QubitSpectroscopyMultidimAnalysis,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

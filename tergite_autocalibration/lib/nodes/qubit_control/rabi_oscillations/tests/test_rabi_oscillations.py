@@ -18,7 +18,9 @@ import matplotlib.pyplot as plt
 import xarray as xr
 
 from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.analysis import (
-    Rabi12QubitAnalysis, RabiQubitAnalysis)
+    Rabi12QubitAnalysis,
+    RabiQubitAnalysis,
+)
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 

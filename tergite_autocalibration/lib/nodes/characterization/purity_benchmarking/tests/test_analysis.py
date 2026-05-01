@@ -19,8 +19,9 @@ import xarray as xr
 from lmfit.model import ModelResult
 from matplotlib.figure import Figure
 
-from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.analysis import \
-    PurityBenchmarkingQubitAnalysis
+from tergite_autocalibration.lib.nodes.characterization.purity_benchmarking.analysis import (
+    PurityBenchmarkingQubitAnalysis,
+)
 
 
 class TestPurityBenchmarkingAnalysis(unittest.TestCase):
