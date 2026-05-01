@@ -20,7 +20,6 @@ import time
 from pathlib import Path
 
 import numpy as np
-import toml
 from colorama import Fore, Style
 from colorama import init as colorama_init
 from qblox_instruments import SpiRack
@@ -92,12 +91,9 @@ class SpiDAC:
             self.dacs_dictionary[coupler] = self.create_spi_dac(coupler)
 
     def create_spi_dac(self, coupler: str):
-        spi_config = toml.load(CONFIG.spi)
-
-        spi_mod_number, dac_name = (
-            spi_config[coupler]["spi_module_number"],
-            spi_config[coupler]["dac_name"],
-        )
+        spi_entry = CONFIG.spi[coupler]
+        spi_mod_number = spi_entry.spi_module_number
+        dac_name = spi_entry.dac_name
 
         spi_mod_name = f"module{spi_mod_number}"
 

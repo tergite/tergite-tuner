@@ -20,7 +20,10 @@ from tergite_autocalibration.tests.utils.decorators import (
     with_os_env,
     with_redis,
 )
-from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_RUN_NAME,
+    get_fixture_path,
+)
 
 
 def test_with_os_env_sets_variables():
@@ -207,32 +210,36 @@ def test_new_variables_cleaned():
 
 def test_load_global_config():
     """
-    Test whether the decorator overwrites CONFIG
-    """
-    from tergite_autocalibration.config.globals import CONFIG
+    Test whether the decorator overwrites CONFIG.
 
-    # Check whether name is as expected
-    assert CONFIG.run.name == "no_name_for_this_run_set"
+    The two fixture configuration packages live at different paths, so we
+    can detect the swap by checking ``CONFIG.meta_path`` from inside vs.
+    outside the decorator.
+    """
+    from tergite_autocalibration.config.globals import CONFIG as outer_config
+
+    original_meta_path = outer_config.meta_path
 
     config_path = get_fixture_path("templates", "default_device_under_test_copy")
+    expected_meta_path = os.path.join(config_path, "configuration.meta.toml")
 
     @with_config(config_path)
     def my_function():
-        from tergite_autocalibration.config.globals import CONFIG
+        from tergite_autocalibration.config.globals import CONFIG as inner_config
 
-        # Check whether the decorator was overwriting the name
-        assert CONFIG.run.name == "no_name_for_this_run_set_copy"
+        # Inside the decorated function, CONFIG should point at the swapped
+        # configuration package.
+        assert os.path.normpath(inner_config.meta_path) == os.path.normpath(
+            expected_meta_path
+        )
 
     # Call function with decorator
     my_function()
 
-    # Check whether name is still the same - the function should not have changed it
-    assert CONFIG.run.name == "no_name_for_this_run_set"
+    # Check whether the decorator restored the original CONFIG after exiting.
+    from tergite_autocalibration.config.globals import CONFIG as restored_config
 
-    # Check whether the name is still the same after importing CONFIG again
-    from tergite_autocalibration.config.globals import CONFIG
-
-    assert CONFIG.run.name == "no_name_for_this_run_set"
+    assert restored_config.meta_path == original_meta_path
 
 
 def test_with_redis_decorator():

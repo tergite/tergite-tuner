@@ -13,8 +13,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import toml
-
 from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode, QubitNode
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
@@ -28,23 +26,12 @@ def populate_initial_parameters(qubits: list, couplers: list, redis_connection):
     # Populate the Redis database with the initial 'reasonable'
     # parameter values from the toml file
 
+    # ``CONFIG.device.qubits`` and ``.couplers`` already merged
+    # ``[device.qubit.all]`` / ``[device.coupler.all]`` defaults into every
+    # entry, so a single per-component loop is sufficient.
     for qubit in qubits:
-        # parameter common to all qubits:
-        if "all" in initial_qubit_parameters.keys():
-            for module_key, module_value in initial_qubit_parameters["all"].items():
-                if isinstance(module_value, dict):
-                    for parameter_key, parameter_value in module_value.items():
-                        sub_module_key = module_key + ":" + parameter_key
-                        redis_connection.hset(
-                            f"transmons:{qubit}", sub_module_key, parameter_value
-                        )
-                else:
-                    redis_connection.hset(
-                        f"transmons:{qubit}", module_key, module_value
-                    )
-
-        # parameter specific to each qubit:
-        for module_key, module_value in initial_qubit_parameters[qubit].items():
+        per_qubit = initial_qubit_parameters.get(qubit, {})
+        for module_key, module_value in per_qubit.items():
             if isinstance(module_value, dict):
                 for parameter_key, parameter_value in module_value.items():
                     sub_module_key = module_key + ":" + parameter_key
@@ -55,13 +42,9 @@ def populate_initial_parameters(qubits: list, couplers: list, redis_connection):
                 redis_connection.hset(f"transmons:{qubit}", module_key, module_value)
 
     for coupler in couplers:
-        if "all" in initial_coupler_parameters.keys():
-            for module_key, module_value in initial_coupler_parameters["all"].items():
-                redis_connection.hset(f"couplers:{coupler}", module_key, module_value)
-
-        if coupler in initial_coupler_parameters:
-            for module_key, module_value in initial_coupler_parameters[coupler].items():
-                redis_connection.hset(f"couplers:{coupler}", module_key, module_value)
+        per_coupler = initial_coupler_parameters.get(coupler, {})
+        for module_key, module_value in per_coupler.items():
+            redis_connection.hset(f"couplers:{coupler}", module_key, module_value)
 
 
 def populate_parking_currents(couplers: list, redis_connection):
@@ -92,7 +75,7 @@ def populate_node_parameters(
     redis_connection,
 ):
     # Populate the Redis database with node specific parameter values from the toml file
-    transmon_configuration = toml.load(CONFIG.node)
+    transmon_configuration = CONFIG.node
     if not node_name in transmon_configuration:
         logger.status(f"{node_name} does not have specific node config")
         return
@@ -125,7 +108,7 @@ def populate_node_parameters(
 
 def revert_node_parameters(node_name: str, qubits: list, redis_connection):
 
-    node_configuration = toml.load(CONFIG.node)
+    node_configuration = CONFIG.node
     if not node_name in node_configuration:
         return  # no node specific config found
 

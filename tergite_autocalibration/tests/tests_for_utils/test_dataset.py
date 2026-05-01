@@ -20,7 +20,6 @@ import pytest
 import xarray as xr
 
 import tergite_autocalibration.utils.reanalysis_utils as ra_utils
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.coupler.cz_calibration.node import (
     CZCalibrationNode,
 )
@@ -28,7 +27,11 @@ from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.node impor
     ResonatorSpectroscopyNode,
 )
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
+    get_fixture_path,
+)
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 from tergite_autocalibration.utils.io.dataset import (
     save_dataset,
@@ -106,7 +109,7 @@ def test_is_measurement_folder():
 
 def test_save_dataset(tmp_path):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopyNode(CONFIG.run.qubits, CONFIG.run.couplers)
+    node = ResonatorSpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     dummy_raw_dataset = node.generate_dummy_dataset()
     result_dataset = node.configure_dataset(dummy_raw_dataset)
     save_dataset(result_dataset, "resonator_spectroscopy", tmp_path)

@@ -12,10 +12,13 @@
 # that they have been altered from the originals.
 
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.coupler.cz_chevron.node import CZChevronNode
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
+    get_fixture_path,
+)
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
@@ -35,7 +38,7 @@ class DummySpiManager:
 @with_redis(redis_mock)
 def test_set_parking_current_from_redis():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = CZChevronNode(couplers=CONFIG.run.couplers, qubits=CONFIG.run.qubits)
+    node = CZChevronNode(couplers=DEFAULT_TEST_COUPLERS, qubits=DEFAULT_TEST_QUBITS)
     node.spi_manager = DummySpiManager()
 
     node.set_parking_current_from_redis()

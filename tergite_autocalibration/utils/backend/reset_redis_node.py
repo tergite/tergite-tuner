@@ -17,7 +17,7 @@
 from pathlib import Path
 from typing import List
 
-from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
+from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.logging import logger
 from tergite_autocalibration.utils.misc.reflections import (
@@ -26,26 +26,32 @@ from tergite_autocalibration.utils.misc.reflections import (
 )
 
 
-def reset_all_redis_nodes() -> None:
+def reset_all_redis_nodes(qubits: List[str], couplers: List[str]) -> None:
     """
-    Wraps reset_redis_nodes() and resets all nodes that have an entry in the factory.
+    Wraps :func:`reset_redis_nodes` and resets all nodes that have an entry
+    in the factory.
+
+    Args:
+        qubits: list of qubit identifiers (e.g. ``["q00", "q01"]``) to reset.
+        couplers: list of coupler identifiers (e.g. ``["q00_q01"]``) to reset.
     """
     node_factory = NodeFactory()
     node_names = node_factory.all_node_names()
-    reset_redis_nodes(node_names)
+    reset_redis_nodes(qubits, couplers, node_names)
 
 
-def reset_redis_nodes(node_names: List[str]) -> None:
+def reset_redis_nodes(
+    qubits: List[str], couplers: List[str], node_names: List[str]
+) -> None:
     """
-    Reset the qubit values for given nodes in redis.
+    Reset the qubit and coupler values for given nodes in redis.
 
     Args:
-        node_names: Names of nodes as list.
+        qubits: list of qubit identifiers (e.g. ``["q00", "q01"]``) to reset.
+        couplers: list of coupler identifiers (e.g. ``["q00_q01"]``) to reset.
+        node_names: names of nodes whose qois should be reset to ``"nan"``.
 
     """
-    qubits = CONFIG.run.qubits
-    couplers = CONFIG.run.couplers
-
     node_factory = NodeFactory()
 
     node_implementation_paths = find_inheriting_classes_ast_recursive(

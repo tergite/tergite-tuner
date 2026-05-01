@@ -113,16 +113,13 @@ def with_config(path_: Union[Path, str]):
         @wraps(fn_)
         def wrapper(*args, **kwargs):
             import tergite_autocalibration.config.globals as glb
-            from tergite_autocalibration.config.handler import ConfigurationHandler
-            from tergite_autocalibration.config.package import ConfigurationPackage
+            from tergite_autocalibration.config.load import load_configuration
 
             temp_config = copy.deepcopy(glb.CONFIG)
             importlib.reload(glb)
 
-            glb.CONFIG = ConfigurationHandler.from_configuration_package(
-                ConfigurationPackage.from_toml(
-                    os.path.join(path_, "configuration.meta.toml")
-                )
+            glb.CONFIG = load_configuration(
+                os.path.join(path_, "configuration.meta.toml")
             )
 
             # This is in a try finally block to ensure that environmental variables are restored even

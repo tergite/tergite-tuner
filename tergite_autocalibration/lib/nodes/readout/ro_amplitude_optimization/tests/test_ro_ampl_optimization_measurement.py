@@ -18,11 +18,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
+from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.node import (
     ROAmplitudeThreeStateOptimizationNode,
 )
 from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
+)
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 _test_data_dir = os.path.join(
@@ -32,18 +36,18 @@ _redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
 def test_dummy_generation():
-    for qubit in CONFIG.run.qubits:
+    for qubit in DEFAULT_TEST_QUBITS:
         REDIS_CONNECTION.hset(f"transmons:{qubit}", "measure:pulse_amp", "0.05")
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_3 = ROAmplitudeThreeStateOptimizationNode(
-        CONFIG.run.qubits, CONFIG.run.couplers
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS
     )
     dummy_dataset = node_3.generate_dummy_dataset()
-    first_qubit = CONFIG.run.qubits[0]
+    first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_ampls = len(node_3.schedule_samplespace["ro_amplitudes"][first_qubit])
     number_of_states = len(node_3.schedule_samplespace["qubit_states"][first_qubit])
 
-    assert len(dummy_dataset.data_vars) == len(CONFIG.run.qubits)
+    assert len(dummy_dataset.data_vars) == len(DEFAULT_TEST_QUBITS)
     assert (
         dummy_dataset.data_vars[0].size
         == number_of_ampls * number_of_states * node_3.loops

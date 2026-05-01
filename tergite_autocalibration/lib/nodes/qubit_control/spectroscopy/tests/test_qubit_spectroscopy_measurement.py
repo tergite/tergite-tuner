@@ -11,7 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.qubit_control.spectroscopy.node import (
     Qubit01SpectroscopyAmplitudeNode,
     Qubit01SpectroscopyNode,
@@ -21,34 +20,38 @@ from tergite_autocalibration.lib.nodes.schedule_node import (
     OuterScheduleNode,
     ScheduleNode,
 )
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
+)
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_measurement_01_type():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_01 = Qubit01SpectroscopyNode(CONFIG.run.qubits, CONFIG.run.couplers)
+    node_01 = Qubit01SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     assert issubclass(node_01.measurement_type, ScheduleNode)
 
 
 def test_measurement_12_type():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_12 = Qubit12SpectroscopyNode(CONFIG.run.qubits, CONFIG.run.couplers)
+    node_12 = Qubit12SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     assert issubclass(node_12.measurement_type, ScheduleNode)
 
 
 def test_measurement_bring_up_type():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_bring_up = Qubit01SpectroscopyAmplitudeNode(
-        CONFIG.run.qubits, CONFIG.run.couplers
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS
     )
     assert issubclass(node_bring_up.measurement_type, OuterScheduleNode)
 
 
 def test_dummy_01_generation():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = Qubit01SpectroscopyNode(CONFIG.run.qubits, CONFIG.run.couplers)
+    node = Qubit01SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     dummy_dataset = node.generate_dummy_dataset()
-    first_qubit = CONFIG.run.qubits[0]
+    first_qubit = DEFAULT_TEST_QUBITS[0]
 
     number_of_frequencies = len(
         node.schedule_samplespace["spec_frequencies"][first_qubit]
@@ -59,15 +62,15 @@ def test_dummy_01_generation():
 
     data_vars = dummy_dataset.data_vars
 
-    assert len(data_vars) == len(CONFIG.run.qubits)
+    assert len(data_vars) == len(DEFAULT_TEST_QUBITS)
     assert data_vars[0].size == number_of_frequencies * number_of_amplitudes
 
 
 def test_dummy_12_generation():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = Qubit12SpectroscopyNode(CONFIG.run.qubits, CONFIG.run.couplers)
+    node = Qubit12SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     dummy_dataset = node.generate_dummy_dataset()
-    first_qubit = CONFIG.run.qubits[0]
+    first_qubit = DEFAULT_TEST_QUBITS[0]
 
     number_of_frequencies = len(
         node.schedule_samplespace["spec_frequencies"][first_qubit]
@@ -78,5 +81,5 @@ def test_dummy_12_generation():
 
     data_vars = dummy_dataset.data_vars
 
-    assert len(data_vars) == len(CONFIG.run.qubits)
+    assert len(data_vars) == len(DEFAULT_TEST_QUBITS)
     assert data_vars[0].size == number_of_frequencies * number_of_amplitudes

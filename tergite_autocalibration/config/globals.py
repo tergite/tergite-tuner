@@ -10,16 +10,26 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""Process-wide configuration singletons.
+
+This module is imported once at startup and exposes the loaded
+:data:`ENV` (parsed ``.env`` file), :data:`CONFIG` (the calibration
+configuration package) and a few derived helpers (redis connection,
+matplotlib backend, log directory). Per-run state belongs on the
+:class:`SessionContext` passed into the calibration supervisor, not
+here.
+"""
+
 import atexit
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 import redis
 
-from tergite_autocalibration.config.env import EnvironmentConfiguration
-from tergite_autocalibration.config.handler import ConfigurationHandler
-from tergite_autocalibration.config.package import ConfigurationPackage
+from tergite_autocalibration.config.files import EnvConfigFile
+from tergite_autocalibration.config.load import Configuration, load_configuration
 from tergite_autocalibration.utils.handlers.exit import exception_handler, exit_handler
 from tergite_autocalibration.utils.logging import logger
 from tergite_autocalibration.utils.logging.decorators import is_logging_suppressed
@@ -35,80 +45,102 @@ DOWNCONVERT_FREQUENCY = 4.4e9
 
 ### END Explicit global variables
 
-# Loads the environmental configuration
-#
-# If there is a test going on, load the standard environment configuration.
-# If you intentionally want to change environmental variables in a test, please take a look at the
-# decorators implemented in tergite_autocalibration.tests.utils.decorators
-if is_pytest():
-    # Take the .env file from the folder for fixtures in the tests
-    ENV = EnvironmentConfiguration.from_dot_env(
-        filepath=os.path.join(
-            str(Path(__file__).parent.parent),
-            "tests",
-            "fixtures",
-            "configs",
-            "env",
-            "default.env",
-        )
-    )
-else:
-    # Try to load the .env file from the default locations
-    ENV = EnvironmentConfiguration.from_dot_env(ignore_missing=True)
 
-# Creates a redis instance
-REDIS_CONNECTION = redis.Redis(decode_responses=True, port=ENV.redis_port)
+def _default_dotenv_path() -> Path:
+    """Find the ``.env`` file shipped alongside the source checkout.
+
+    Looks in the repo root first, then falls back to the current
+    working directory.
+    """
+    repo_root_env = Path(__file__).resolve().parent.parent.parent / ".env"
+    if repo_root_env.exists():
+        return repo_root_env
+    return Path(os.getcwd()) / ".env"
+
+
+def _load_env() -> EnvConfigFile:
+    """Load the ``.env`` file if present, else return defaults.
+
+    During pytest runs the bundled fixture ``.env`` is used so that the
+    test suite is independent of the developer's local environment.
+    """
+    if is_pytest():
+        fixture_env = (
+            Path(__file__).resolve().parent.parent
+            / "tests"
+            / "fixtures"
+            / "configs"
+            / "env"
+            / "default.env"
+        )
+        return EnvConfigFile.from_dotenv(fixture_env)
+    dotenv_path = _default_dotenv_path()
+    if dotenv_path.exists():
+        return EnvConfigFile.from_dotenv(dotenv_path)
+    return EnvConfigFile()
+
+
+def _load_config(env: EnvConfigFile) -> Optional[Configuration]:
+    """Load the configuration package, returning ``None`` if not yet set up.
+
+    During pytest the bundled ``default_device_under_test`` fixture is
+    used. Outside pytest, the meta TOML is expected at
+    ``<config_dir>/configuration.meta.toml``. A missing file is
+    tolerated so that first-time users can run ``acli config load``
+    before the package is in place.
+    """
+    if is_pytest():
+        meta_path = (
+            Path(__file__).resolve().parent.parent
+            / "tests"
+            / "fixtures"
+            / "templates"
+            / "default_device_under_test"
+            / "configuration.meta.toml"
+        )
+    else:
+        meta_path = Path(env.config_dir) / "configuration.meta.toml"
+
+    try:
+        return load_configuration(meta_path)
+    except FileNotFoundError:
+        logger.warning(
+            "Default configuration is not yet loaded. "
+            "If you are in the process of setting up the configuration, "
+            "you can ignore this warning. Please copy configuration files "
+            "to the root_directory or run "
+            "`acli config load -f <YOUR_CONFIGURATION.zip>`."
+        )
+        return None
+
+
+# The parsed .env file
+ENV: EnvConfigFile = _load_env()
+
+# The loaded configuration package, or None if not yet set up
+CONFIG: Optional[Configuration] = _load_config(ENV)
+
+# Creates a redis instance. Under pytest we use fakeredis so the test
+# suite does not require a running Redis server.
+if is_pytest():
+    import fakeredis
+
+    REDIS_CONNECTION = fakeredis.FakeRedis(decode_responses=True)
+else:
+    REDIS_CONNECTION = redis.Redis(decode_responses=True, port=ENV.redis_port)
 
 # This will be set in matplotlib
 PLOTTING_BACKEND = "tkagg" if ENV.plotting else "agg"
 
 
-# If there is no configuration package loaded, this would throw an error
-try:
-    if is_pytest():
-        # Create the ConfigurationPackage from the default_device_under_test template in the fixtures
-        CONFIGURATION_PACKAGE = ConfigurationPackage.from_toml(
-            os.path.join(
-                str(Path(__file__).parent.parent),
-                "tests",
-                "fixtures",
-                "templates",
-                "default_device_under_test",
-                "configuration.meta.toml",
-            )
-        )
-    else:
-        # Create the ConfigurationPackage from the meta configuration in the root directory
-        CONFIGURATION_PACKAGE = ConfigurationPackage.from_toml(
-            os.path.join(ENV.config_dir, "configuration.meta.toml")
-        )
-    CONFIG = ConfigurationHandler.from_configuration_package(CONFIGURATION_PACKAGE)
-
-# In the exception case we create an empty configuration package
-except FileNotFoundError:
-    CONFIGURATION_PACKAGE = ConfigurationPackage()
-    CONFIG = ConfigurationPackage()
-    logger.warning(
-        "Default configuration is not yet loaded. "
-        "If you are in the process of setting up the configuration, you can ignore this warning. "
-        "Please copy configuration files to the root_directory or run `acli config load -f <YOUR_CONFIGURATION.zip>`. "
-    )
-
 # Adding handlers to the logger
-# Everything logged above will be captured by the default handlers
-# Adding the handlers at that stage is necessary, because the run id is not defined earlier
-
-# To determine the log dir, first there is a check whether the configuration is already defined
-# If it is running a pytest, the logs will be in out/pytest
+# Everything logged above will be captured by the default handlers.
+# Until a calibration run kicks off and provides its own SessionContext-
+# derived log_dir, we only need a stable, run-agnostic location.
 if is_pytest():
     _log_dir = "pytest"
-# If logging is suppressed, we store everything to the default directory
 elif is_logging_suppressed():
     _log_dir = "default"
-# If the configuration is defined the log dir can be read, this is the normal case
-elif hasattr(CONFIG, "run"):
-    _log_dir = CONFIG.run.log_dir
-# If there is no configuration, the logs have to go into a default directory
 else:
     _log_dir = "default"
 
@@ -116,10 +148,6 @@ else:
 _log_file_path = os.path.join(ENV.data_dir, _log_dir)
 if not os.path.exists(_log_file_path):
     os.makedirs(_log_file_path, exist_ok=True)
-
-# We set the absolute path in the run configuration to make it usable later
-if hasattr(CONFIG, "run"):
-    CONFIG.run.log_dir = _log_file_path
 
 logger.add_console_handler(log_level=ENV.stdout_log_level)
 logger.add_file_handler(
@@ -137,7 +165,8 @@ CLUSTER_IP = ENV.cluster_ip
 # Default is a folder called 'out' on the root level of the repository
 # NOTE: Please only import DATA_DIR when you are implementing something on the very high level
 #       that directly modifies paths. For files e.g. logs, data or plots that relate to an
-#       active calibration run, please use CONFIG.run.log_dir, which is located inside DATA_DIR.
+#       active calibration run, please use the active SessionContext.log_dir, which lives inside
+#       DATA_DIR.
 DATA_DIR = ENV.data_dir
 
 # If the data directory does not exist, it will be created automatically

@@ -13,15 +13,15 @@
 
 import pytest
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.readout.punchout.node import PunchoutNode
+from tergite_autocalibration.tests.utils.fixtures import DEFAULT_TEST_QUBITS
 
 
 @pytest.mark.skip(
     "Skipping test for PunchoutNode as it requires a full Tergite environment."
 )
 def test_punchout_node_analysis_can_be_initialized():
-    node_analysis = PunchoutNode(CONFIG.run.qubits)
+    node_analysis = PunchoutNode(DEFAULT_TEST_QUBITS)
 
     assert node_analysis.name == "name"
     assert node_analysis.redis_fields == ["measure:pulse_amp"]

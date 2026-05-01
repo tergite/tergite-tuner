@@ -17,7 +17,6 @@ import os
 import numpy
 import pytest
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.utils.device import (
     close_device_resources,
     configure_device,
@@ -29,7 +28,11 @@ from tergite_autocalibration.lib.utils.validators import (
     reduce_batch,
 )
 from tergite_autocalibration.tests.utils.decorators import with_redis
-from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
+    get_fixture_path,
+)
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
@@ -42,7 +45,7 @@ def test_create_serial_device():
     ExtendedTransmon.close_all()
     device_name = "test_device"
     test_device = configure_device(
-        device_name, qubits=CONFIG.run.qubits, couplers=CONFIG.run.couplers
+        device_name, qubits=DEFAULT_TEST_QUBITS, couplers=DEFAULT_TEST_COUPLERS
     )
 
     q00 = test_device.get_element("q00")
@@ -51,8 +54,8 @@ def test_create_serial_device():
     initial_parking_current = q00_q01.coupler_parameters.parking_current()
     cz_phase_path = q00_q01.coupler_parameters.phase_path()
 
-    assert test_device.elements() == CONFIG.run.qubits
-    assert test_device.edges() == CONFIG.run.couplers
+    assert test_device.elements() == DEFAULT_TEST_QUBITS
+    assert test_device.edges() == DEFAULT_TEST_COUPLERS
 
     assert math.isclose(pi_amplitude, 0.7308488204080522)
     assert math.isclose(initial_parking_current, 0.00065)
@@ -67,7 +70,7 @@ def test_save_serial_device(tmp_path):
     ExtendedTransmon.close_all()
     device_name = "test_device"
     test_device = configure_device(
-        device_name, qubits=CONFIG.run.qubits, couplers=CONFIG.run.couplers
+        device_name, qubits=DEFAULT_TEST_QUBITS, couplers=DEFAULT_TEST_COUPLERS
     )
     save_serial_device(test_device, data_path=tmp_path)
 

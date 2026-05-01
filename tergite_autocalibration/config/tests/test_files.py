@@ -136,16 +136,17 @@ def test_device_config_loads_fc8a_template(device_config_path):
     assert dev.device.name == "V8a #1"
     assert dev.device.owner == "QC2"
 
-    # The 'all' defaults section is preserved alongside the per-component sections
-    assert "all" in dev.device.qubit
-    assert "all" in dev.device.resonator
-    assert "all" in dev.device.coupler
+    # The ``[device.*.all]`` defaults are merged into each per-entry block
+    # by the model validator, so ``all`` itself is consumed.
+    assert "all" not in dev.device.qubits
+    assert "all" not in dev.device.resonators
+    assert "all" not in dev.device.couplers
 
     # Sanity-check a few specific entries from the template
-    assert dev.device.resonator["q01"]["VNA_frequency"] == 6433000000.0
-    assert dev.device.qubit["q06"]["VNA_f01_frequency"] == 4635600000.0
-    assert dev.device.coupler["q06_q07"]["control_qubit"] == "q07"
-    assert dev.device.coupler["q06_q07"]["target_qubit"] == "q06"
+    assert dev.device.resonators["q01"]["VNA_frequency"] == 6433000000.0
+    assert dev.device.qubits["q06"]["VNA_f01_frequency"] == 4635600000.0
+    assert dev.device.couplers["q06_q07"]["control_qubit"] == "q07"
+    assert dev.device.couplers["q06_q07"]["target_qubit"] == "q06"
 
     # Layout positions are typed
     assert dev.layout.qubit["q01"].position.column == 0
@@ -173,9 +174,9 @@ def test_device_config_uses_defaults_when_section_missing(tmp_path):
     dev = DeviceConfigFile.from_toml(sample)
     assert dev.device.name == "no_device_name_configured"
     assert dev.device.owner == "no_owner_configured"
-    assert dev.device.resonator == {}
-    assert dev.device.qubit == {}
-    assert dev.device.coupler == {}
+    assert dev.device.resonators == {}
+    assert dev.device.qubits == {}
+    assert dev.device.couplers == {}
 
 
 # ---------------------------------------------------------------------------

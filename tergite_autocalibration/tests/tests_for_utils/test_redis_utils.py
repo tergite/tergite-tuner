@@ -13,8 +13,6 @@
 # that they have been altered from the originals.
 from typing import Union
 
-import toml
-
 import tergite_autocalibration
 from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode, QubitNode
@@ -70,8 +68,7 @@ def test_populate_node_parameters():
     )
 
     # test node config values are correctly uploaded onto redis
-    transmon_configuration = toml.load(CONFIG.node)
-    node_config = transmon_configuration["resonator_spectroscopy"]["all"]
+    node_config = CONFIG.node["resonator_spectroscopy"]["all"]
     reset_duration_config = node_config["reset"]["duration"]
     reset_duration_redis = float(
         REDIS_CONNECTION.hget("transmons:q00", "reset:duration")

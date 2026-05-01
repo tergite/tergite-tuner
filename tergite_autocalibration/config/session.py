@@ -40,6 +40,7 @@ class SessionContext(BaseModel):
         user_samplespace: the user samplespace for this session
         id: the identifier of this session
         _timestamp: the timestamp of when this session started
+        target_node_name: the name of the target node
     """
 
     cluster_ip: Optional["IPv4Address"] = None
@@ -72,3 +73,9 @@ class SessionContext(BaseModel):
     def id(self) -> str:
         """Identifier of the session"""
         return f"{self._timestamp.strftime('%Y-%m-%d--%H-%M-%S')}--tac-run-id"
+
+    @computed_field
+    @cached_property
+    def target_node_name(self) -> str:
+        """Name of the target node"""
+        return self.target_node.to_string()

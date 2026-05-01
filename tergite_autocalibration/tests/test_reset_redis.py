@@ -41,7 +41,11 @@ def test_simple_reset_redis_nodes():
     )
     assert REDIS_CONNECTION.hget("cs:q00", "qubit_01_spectroscopy") == "calibrated"
 
-    reset_redis_nodes(["resonator_spectroscopy", "qubit_01_spectroscopy"])
+    reset_redis_nodes(
+        ["q00", "q01"],
+        ["q00_q01"],
+        ["resonator_spectroscopy", "qubit_01_spectroscopy"],
+    )
 
     assert REDIS_CONNECTION.hget("cs:q00", "resonator_spectroscopy") == "not_calibrated"
     assert REDIS_CONNECTION.hget("transmons:q00", "clock_freqs:readout") == "nan"
@@ -67,7 +71,7 @@ def test_simple_reset_all_redis_nodes():
         == "0.035539772727272725"
     )
 
-    reset_all_redis_nodes()
+    reset_all_redis_nodes(["q00", "q01"], ["q00_q01"])
 
     assert REDIS_CONNECTION.hget("cs:q00", "resonator_spectroscopy") == "not_calibrated"
     assert REDIS_CONNECTION.hget("transmons:q00", "rxy:motzoi") == "0"

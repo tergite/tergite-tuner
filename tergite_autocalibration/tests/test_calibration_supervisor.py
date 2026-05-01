@@ -9,7 +9,9 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import os
 
+import numpy as np
 from qblox_instruments import Cluster
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
@@ -22,31 +24,33 @@ from tergite_autocalibration.scripts.calibration_supervisor import (
 from tergite_autocalibration.utils.dto.enums import MeasurementMode
 
 
-def test_instantiate_calibration_config():
-    confg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
-    assert confg.cluster_mode == MeasurementMode.dummy
-    assert confg.cluster_ip is None
-    assert confg.cluster_timeout == 222
-    assert set(confg.qubits) == {"q00", "q01"}
-    assert set(confg.couplers) == {"q00_q01"}
-    assert len(confg.user_samplespace.keys()) == 1
-    assert "resonator_spectroscopy" in confg.user_samplespace
-    assert "ro_frequencies" in confg.user_samplespace["resonator_spectroscopy"]
-    assert len(confg.user_samplespace["resonator_spectroscopy"].keys()) == 1
+def test_instantiate_calibration_config(session_context):
+    assert session_context.cluster_mode == MeasurementMode.dummy
+    assert session_context.cluster_ip is None
+    assert session_context.cluster_timeout == 222
+    assert set(session_context.qubits) == {"q00", "q01"}
+    assert set(session_context.couplers) == {"q00_q01"}
+    assert len(session_context.user_samplespace.keys()) == 1
+    assert "resonator_spectroscopy" in session_context.user_samplespace
+    assert (
+        "ro_frequencies" in session_context.user_samplespace["resonator_spectroscopy"]
+    )
+    assert len(session_context.user_samplespace["resonator_spectroscopy"].keys()) == 1
     assert set(
-        confg.user_samplespace["resonator_spectroscopy"]["ro_frequencies"].keys()
+        session_context.user_samplespace["resonator_spectroscopy"][
+            "ro_frequencies"
+        ].keys()
     ) == {"q00", "q01"}
-    assert confg.target_node_name == "ro_amplitude_two_state_optimization"
+    assert session_context.target_node_name == "ro_amplitude_two_state_optimization"
 
 
-def test_instantiate_calibration_supervisor():
-    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
-    calib_sup = CalibrationSupervisor(config=cfg)
+def test_instantiate_calibration_supervisor(session_context):
+    calib_sup = CalibrationSupervisor(config=session_context)
 
     assert isinstance(calib_sup.hardware_manager, HardwareManager)
     assert isinstance(calib_sup.node_manager, NodeManager)
     assert isinstance(calib_sup.lab_ic, InstrumentCoordinator)
-    assert calib_sup.config == cfg
+    assert calib_sup.config == session_context
     assert isinstance(calib_sup.topo_order, list)
     assert tuple(calib_sup.topo_order) == (
         "resonator_spectroscopy",
@@ -61,9 +65,8 @@ def test_instantiate_calibration_supervisor():
     )
 
 
-def test_hardware_manager_creates_dummy_cluster():
-    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
-    calib_sup = CalibrationSupervisor(config=cfg)
+def test_hardware_manager_creates_dummy_cluster(session_context):
+    calib_sup = CalibrationSupervisor(config=session_context)
     hw_manager = calib_sup.hardware_manager
     cl = hw_manager.cluster
     assert isinstance(cl, Cluster)
@@ -79,22 +82,19 @@ def test_hardware_manager_creates_dummy_cluster():
     assert cl.module17.is_rf_type and cl.module17.is_qrm_type
 
 
-def test_hardware_manager_creates_ic():
-    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
-    calib_sup = CalibrationSupervisor(config=cfg)
+def test_hardware_manager_creates_ic(session_context):
+    calib_sup = CalibrationSupervisor(config=session_context)
     hw_manager = calib_sup.hardware_manager
     assert isinstance(hw_manager.lab_ic, InstrumentCoordinator)
     assert hw_manager.get_instrument_coordinator().name == hw_manager.lab_ic.name
 
 
-def test_output_attenuation_is_set_to_value_in_device_config(caplog):
-    cfg = SessionContext(cluster_mode=MeasurementMode.dummy, cluster_ip=None)
-
-    # output attenuation is set during the instantiation of the HardwareManager
-    # which in turn is created during the instantiation of the CalibrationSupervisor
-
+def test_output_attenuation_is_set_to_value_in_device_config(caplog, session_context):
+    """Output attenuation is set during the instantiation of the HardwareManager
+    which in turn is created during the instantiation of the CalibrationSupervisor
+    """
     with caplog.at_level("WARNING"):
-        calib_sup = CalibrationSupervisor(config=cfg)
+        calib_sup = CalibrationSupervisor(config=session_context)
 
     # The qubit missing on purpose + all legacy couplers
     assert len(caplog.records) == 9

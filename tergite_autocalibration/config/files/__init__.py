@@ -18,10 +18,16 @@ configuration file lives in its own submodule and exposes a
 ``from_toml`` / ``from_json`` classmethod that loads and validates the
 file in one shot. The pattern loosely follows
 ``tergite-backend/app/libs/device_parameters/dtos.py``.
+
+Note:
+    Importing :class:`ClusterConfigFile` pulls in ``quantify_scheduler``,
+    which has a non-trivial import chain. The calibration tool needs it
+    anyway, so we pay the cost once at startup rather than working
+    around it.
 """
 
 from tergite_autocalibration.config.files.cluster import ClusterConfigFile
-from tergite_autocalibration.config.files.device import DeviceConfigFile
+from tergite_autocalibration.config.files.device import DeviceConfig, DeviceConfigFile
 from tergite_autocalibration.config.files.env import EnvConfigFile
 from tergite_autocalibration.config.files.meta import MetaConfigFile
 from tergite_autocalibration.config.files.node import NodeConfigFile
@@ -29,6 +35,7 @@ from tergite_autocalibration.config.files.spi import SpiConfigFile
 
 __all__ = [
     "ClusterConfigFile",
+    "DeviceConfig",
     "DeviceConfigFile",
     "EnvConfigFile",
     "MetaConfigFile",

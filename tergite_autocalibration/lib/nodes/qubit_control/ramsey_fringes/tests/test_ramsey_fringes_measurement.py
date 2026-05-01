@@ -12,39 +12,42 @@
 # that they have been altered from the originals.
 
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.nodes.qubit_control.ramsey_fringes.node import (
     RamseyFringes12Node,
     RamseyFringesNode,
+)
+from tergite_autocalibration.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
 )
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
 def test_dummy_01_generation():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = RamseyFringesNode(CONFIG.run.qubits, CONFIG.run.couplers)
+    node = RamseyFringesNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     dummy_dataset_01 = node.generate_dummy_dataset()
-    first_qubit = CONFIG.run.qubits[0]
+    first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_delays = len(node.schedule_samplespace["ramsey_delays"][first_qubit])
     number_of_detunings = len(
         node.schedule_samplespace["artificial_detunings"][first_qubit]
     )
 
     data_vars = dummy_dataset_01.data_vars
-    assert len(data_vars) == len(CONFIG.run.qubits)
+    assert len(data_vars) == len(DEFAULT_TEST_QUBITS)
     assert data_vars[0].size == number_of_delays * number_of_detunings
 
 
 def test_dummy_12_generation():
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = RamseyFringes12Node(CONFIG.run.qubits, CONFIG.run.couplers)
+    node = RamseyFringes12Node(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     dummy_dataset = node.generate_dummy_dataset()
-    first_qubit = CONFIG.run.qubits[0]
+    first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_delays = len(node.schedule_samplespace["ramsey_delays"][first_qubit])
     number_of_detunings = len(
         node.schedule_samplespace["artificial_detunings"][first_qubit]
     )
 
     data_vars = dummy_dataset.data_vars
-    assert len(data_vars) == len(CONFIG.run.qubits)
+    assert len(data_vars) == len(DEFAULT_TEST_QUBITS)
     assert data_vars[0].size == number_of_delays * number_of_detunings

@@ -17,9 +17,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from dataclasses import dataclass, field
-from ipaddress import IPv4Address
 from types import MappingProxyType
 from typing import FrozenSet, List, Union
 
@@ -30,12 +27,9 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
 from tergite_autocalibration.config.globals import (
-    CLUSTER_IP,
     CONFIG,
-    ENV,
     REDIS_CONNECTION,
 )
-from tergite_autocalibration.config.package import ConfigurationPackage
 from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode
 from tergite_autocalibration.lib.utils.graph import filtered_topological_order
@@ -399,11 +393,11 @@ class CalibrationSupervisor:
         )
         self.node_manager.spi_manager.set_initial_parking_currents(self.config.couplers)
 
-        # Create a copy of the configuration inside the log directory
-        # This is to be able to replicate errors caused by configuration
-        ConfigurationPackage.from_toml(
-            os.path.join(ENV.config_dir, "configuration.meta.toml")
-        ).copy(str(CONFIG.run.log_dir))
+        # NOTE: The previous behaviour copied the loaded configuration package
+        # into ``self.config.log_dir`` so that runs were reproducible from
+        # their own log directory. That snapshotting hook moved out of the
+        # config layer; if we still need it, do it here against
+        # ``CONFIG.meta_path``'s parent directory.
 
         for calibration_node in calibration_nodes:
             if calibration_node == "three_state_discrimination":
@@ -427,5 +421,5 @@ class CalibrationSupervisor:
         logger.status(
             f"Analysing '{self.config.target_node_name}' with {node.analysis_obj.__name__}"
         )
-        node.post_process(CONFIG.run.log_dir)
+        node.post_process(self.config.log_dir)
         logger.status("Analysis completed.")
