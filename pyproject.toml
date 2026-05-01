@@ -37,9 +37,22 @@ maintainers = [
 ]
 requires-python = ">=3.12, <3.13"
 dependencies = [
+    # ``pyqt5`` is a transitive dependency of ``quantify-core``, but the
+    # constraints below override what ``quantify-core`` requests because of
+    # platform-specific wheel availability:
+    #   - ``pyqt5-qt5==5.15.2`` is the ONLY Windows wheel ever published, and
+    #     also the long-standing manylinux2014 x86_64 wheel for Linux. We pin
+    #     it on Linux/Windows to keep installs reproducible and to avoid pip
+    #     trying to build from source.
+    #   - On macOS (Darwin), 5.15.2 has no Apple Silicon wheel, so we allow
+    #     newer versions there.
+    #   - ``pyqt5>=5.15.11`` ensures the Apple Silicon ``macosx_11_0_arm64``
+    #     wheel is available (it first appeared at 5.15.11).
     "pyqt5-qt5==5.15.2; platform_system == 'Linux'",
     "pyqt5-qt5==5.15.2; platform_system == 'Windows'",
     "pyqt5-qt5>=5.15.2,<6.0.0; platform_system == 'Darwin'",
+    # Required transitively by xarray as the HDF5 backend used when reading
+    # and writing the ``.hdf5`` files via ``to_netcdf`` / ``open_dataset``.
     "h5netcdf==1.4.0",
     "h5py>=3.12.1",
     "numpy>=2.0",
