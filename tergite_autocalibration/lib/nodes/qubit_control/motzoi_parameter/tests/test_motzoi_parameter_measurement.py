@@ -28,6 +28,11 @@ from tergite_autocalibration.tests.utils.fixtures import (
 )
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
+_test_data_dir = os.path.join(
+    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
+)
+_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
+
 
 def test_dummy_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
@@ -55,12 +60,6 @@ def test_dummy_12_generation(session_context):
 
     assert len(dummy_dataset.data_vars) == len(DEFAULT_TEST_QUBITS)
     assert dummy_dataset.data_vars[0].size == number_of_reps * number_of_motzois
-
-
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
-)
-_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
 def test_12_pulse_duration(redis_connection, session_context):

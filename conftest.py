@@ -12,6 +12,11 @@
 
 """Test-suite-wide pytest configuration.
 
+This file lives at the repository root — outside the
+``tergite_autocalibration`` package — so it is automatically discovered
+by pytest for every test in the project but is *not* shipped with the
+built wheel.
+
 The fixtures below build everything a calibration run needs:
 
 * a fakeredis-backed ``redis_connection`` that stands in for a live
@@ -20,9 +25,6 @@ The fixtures below build everything a calibration run needs:
   ``default_device_under_test`` template, and
 * a :class:`SessionContext` that bundles the two together and points
   the calibration at fixture data.
-
-The session is a ``yield`` so the fakeredis client can be flushed
-between sessions if needed in the future.
 """
 
 import fakeredis

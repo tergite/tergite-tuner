@@ -24,9 +24,10 @@ def test_plot_graph(caplog):
             ["resonator_spectroscopy", "qubit_01_spectroscopy", "rabi_oscillations"],
         )
 
-    assert len(caplog.records) == 6
-    assert "Nodes:" in caplog.records[1].message
-    assert "qubit_01_spectroscopy" in caplog.records[3].message
+    assert len(caplog.records) == 1
+    assert "Nodes:" in caplog.records[0].message
+    assert "qubit_01_spectroscopy" in caplog.records[0].message
+    assert "→" in caplog.records[0].message
 
 
 def test_plot_empty_graph(caplog):

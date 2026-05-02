@@ -13,8 +13,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from __future__ import annotations
-
 import math
 from typing import Any, Literal, Optional
 
@@ -24,7 +22,7 @@ from qcodes.utils import validators
 from quantify_scheduler.device_under_test.transmon_element import InstrumentBase
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.validators import Numbers
-from quantify_scheduler.operations.gate_library import Measure, Rxy
+from quantify_scheduler.operations.gate_library import Measure
 
 
 class ExtendedClocksFrequencies(InstrumentChannel):

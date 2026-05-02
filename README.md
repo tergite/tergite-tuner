@@ -2,28 +2,28 @@
 
 ![CI](https://github.com/tergite/tergite-autocalibration/actions/workflows/ci.yml/badge.svg)
 
-A commandline application to calibrate the WACQT quantum computers automatically.  
+A Python library that calibrates the WACQT quantum computers automatically.
 
-This project contains a calibration supervisor, a collection of calibration schedules and a collection of
-post-processing and analysis routines.
-It is developed and tested on WACQT Quantum Computer at Chalmers University of Technology.
+This project contains a calibration runner, a collection of calibration
+schedules, and a collection of post-processing and analysis routines.
+It is developed and tested on the WACQT Quantum Computer at Chalmers
+University of Technology.
 
-**This project is developed by a core group of collaborators.**    
+**This project is developed by a core group of collaborators.**
 **Chalmers Next Labs AB (CNL) takes on the role of managing and maintaining this project.**
 
 Note: The Tergite stack is developed on a separate version control system and mirrored on GitHub.
-If you are reading this on GitHub, then you are looking at a mirror. 
-
+If you are reading this on GitHub, then you are looking at a mirror.
 
 
 ## Quick Start
 
-### Dependencies
+### Requirements
 
-- Ensure you have [conda](https://docs.anaconda.com/free/miniconda/index.html) installed.
-  (_You could simply have python +3.12 installed instead._)
-- Ensure you have [redis server](https://redis.io/) running
-- The standard port for a redis server is `6379`, so, this is going to be filled in the `.env` configuration later.
+- Python ≥ 3.12 (a fresh `conda` or `venv` environment is fine).
+- A reachable redis server. The default URL is
+  `redis://127.0.0.1:6379/0`; override via the `REDIS_URL` env var or
+  the `redis_url` keyword argument when calling the public API.
 
 ```shell
 redis-server
@@ -31,45 +31,93 @@ redis-server
 
 ### Installation
 
-- Clone the repo
-- If you are developing on another server e.g. the development server, please replace the url to clone
-
 ```shell
-git clone git@github.com:tergite/tergite-autocalibration.git
-```
-
-- Create conda environment
-
-```shell
-conda create -n tac -y python=3.12 -y
-conda activate tac
-```
-
-- Install the application
-
-```shell
-cd tergite-autocalibration
+git clone git@github.com:tergite/tergite-autocalibration-lite.git
+cd tergite-autocalibration-lite
+python -m venv .venv && source .venv/bin/activate     # or use conda
 pip install -e .
 ```
 
-- Copy the `.example.env` file to `.env` and 
-  update the environment variables there appropriately.
-- Check out the section about configuration about which other configuration files have to be edited.
+Copy the example environment file and edit it as needed:
 
 ```shell
 cp .example.env .env
 ```
 
-- Start the automatic calibration
+The `.env` file controls the cluster IP, redis URL, target node,
+qubits/couplers under calibration, log levels, and so on. Every field
+on `SessionContext` (see `tergite_autocalibration/config/session.py`)
+can be set here, or passed as a keyword argument to the public API.
 
-```shell
-acli start
+### Public API
+
+The library exposes three entry points from
+`tergite_autocalibration.__init__`:
+
+```python
+from tergite_autocalibration import (
+    calibrate_device,
+    rerun_analysis,
+    generate_bcc_calibration_seed,
+)
 ```
 
-- For more help on other commands, type:
+#### Run the full calibration pipeline
 
-```shell
-acli --help
+```python
+from tergite_autocalibration import calibrate_device
+
+# Use a .env file as the only source of configuration
+calibrate_device(env_file=".env")
+
+# Or override individual SessionContext fields inline
+calibrate_device(
+    env_file=".env",
+    target_node="rabi_oscillations",
+    qubits=["q00", "q01"],
+    couplers=["q00_q01"],
+)
+```
+
+`calibrate_device` constructs a `SessionContext`, walks the dependency
+DAG up to `target_node`, and calibrates any nodes that are not yet
+in spec.
+
+#### Re-run analysis on already-recorded data
+
+```python
+from tergite_autocalibration import rerun_analysis
+
+rerun_analysis(
+    env_file=".env",
+    cluster_mode="re_analyse",
+    log_dir="path/to/run/folder",
+)
+```
+
+#### Export a BCC calibration seed
+
+```python
+from tergite_autocalibration import generate_bcc_calibration_seed
+
+# Reads qubits / couplers / redis_url from the .env file. Returns a
+# dict by default; pass ``format="json"`` or ``format="toml"`` to get
+# a serialised string.
+seed = generate_bcc_calibration_seed(env_file=".env")
+
+# Or override individual SessionContext fields inline:
+seed = generate_bcc_calibration_seed(
+    qubits=["q00", "q01"],
+    couplers=["q00_q01"],
+    redis_url="redis://127.0.0.1:6379/0",
+)
+
+# Or write straight to disk:
+generate_bcc_calibration_seed(
+    env_file=".env",
+    format="toml",
+    output="calibration_seed.toml",
+)
 ```
 
 ### Documentation

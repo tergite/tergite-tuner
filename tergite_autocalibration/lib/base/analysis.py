@@ -30,7 +30,7 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 from tergite_autocalibration.utils.logging import logger
 
 if TYPE_CHECKING:
-    from tergite_autocalibration.config.session import Configuration, SessionContext
+    from tergite_autocalibration.config.session import SessionContext
 
 
 class BaseAnalysis(ABC):

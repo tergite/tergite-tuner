@@ -18,18 +18,18 @@ stages:
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PYTHON_VERSION: "3.12"
-  REDIS_URL: "redis://127.0.0.1:6378/1"
   FF_NETWORK_PER_BUILD: 1
 
 test_lint_build:
   stage: test_lint_build
   image: python:${PYTHON_VERSION}
   script:
-    # Install dependencies
+    # The test suite uses fakeredis, so we don't install / run a real
+    # redis server here. ``ffmpeg``/``libsm6``/``libxext6`` are kept
+    # because ``quantify-scheduler`` pulls them in transitively for
+    # plotting backends.
     - apt-get update
-    - apt-get install redis ffmpeg libsm6 libxext6 -y
-    # Run Redis server
-    - redis-server --daemonize yes --port 6378
+    - apt-get install ffmpeg libsm6 libxext6 -y
     - pip install --upgrade pip
     # Install test dependencies
     - pip install ".[test,dev]"

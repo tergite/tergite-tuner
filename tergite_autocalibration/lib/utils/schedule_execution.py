@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 
 import tqdm
 import xarray
-from colorama import Fore, Style
 
 from tergite_autocalibration.utils.dto.enums import MeasurementMode
 from tergite_autocalibration.utils.logging import logger
@@ -74,9 +73,7 @@ def display_duration_information(
     if measurement[1] > 1:
         measurement_message = f". Measurement {measurement[0] + 1} of {measurement[1]}"
     message = f"{schedule_duration:.2f} sec" + measurement_message
-    logger.info(
-        f"schedule_duration = {Fore.CYAN}{Style.BRIGHT}{message}{Style.RESET_ALL}"
-    )
+    logger.info(f"schedule_duration = {message}")
 
 
 def get_compiler(prefix: str = "default") -> "SerialCompiler":

@@ -120,16 +120,6 @@ class RabiModel(lmfit.model.Model):
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
-def sin_func(
-    x: float,
-    frequency: float,
-    amplitude: float,
-    offset: float,
-    phase: float = 0,
-) -> float:
-    return amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
-
-
 class TwoClassBoundary:
     """
     Converts the boundary encoded in the LDA discriminator.

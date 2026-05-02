@@ -261,10 +261,6 @@ class QubitSpectroscopy12MultidimAnalysis(QubitSpectroscopyMultidimAnalysis):
         return qoi
 
 
-class QubitSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = QubitSpectroscopyAnalysis
-
-
 class QubitSpectroscopy12NodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = QubitSpectroscopy12MultidimAnalysis
 

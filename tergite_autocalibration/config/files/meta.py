@@ -13,7 +13,7 @@
 """Schema for the ``configuration.meta.toml`` file."""
 
 from os import PathLike
-from typing import Dict, Optional
+from typing import Dict
 
 import toml
 from pydantic import BaseModel, ConfigDict, Field

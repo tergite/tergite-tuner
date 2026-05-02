@@ -15,14 +15,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
-from colorama import Fore, Style
-from colorama import init as colorama_init
 from qblox_instruments import SpiRack
 from qcodes import validators
 from rich.progress import Progress
@@ -33,8 +30,6 @@ from tergite_autocalibration.utils.misc.os import OperatingSystem, get_os
 
 if TYPE_CHECKING:
     from tergite_autocalibration.config.session import SessionContext
-
-colorama_init()
 
 
 def _find_and_validate_spi_port(spi_serial_port: str):
@@ -142,7 +137,7 @@ class SpiDAC:
                     "initial parking current is not present on redis."
                     "If you intend to operate at zero DC current, set a zero value at your device_config.toml"
                 )
-                logger.warning(f"{Fore.YELLOW}{Style.DIM}{message}{Style.RESET_ALL}")
+                logger.warning(message)
                 raise ValueError(message)
             parking_current = float(
                 redis_connection.hget(key, "initial_parking_current")
@@ -155,7 +150,7 @@ class SpiDAC:
 
     def set_dac_current(self, dac_values: dict[str, float]) -> None:
         if self.is_dummy:
-            logger.status(
+            logger.info(
                 f"Dummy DAC to current {dac_values}. NO REAL CURRENT is generated"
             )
             return
@@ -168,20 +163,15 @@ class SpiDAC:
         ramp_counter = 0
         couplers = self.dacs_dictionary.keys()
         dacs = self.dacs_dictionary.values()
-        logger.status(f"{Fore.YELLOW}{Style.DIM}{'Ramping current (mA)'}")
-        logger.status(f"{couplers}", end=": ")
+        logger.info("Ramping current (mA)")
+        logger.info(f"{couplers}")
         while any([dac.is_ramping() for dac in dacs]):
             ramp_counter += 1
-            print_termination = " -> "
-            if ramp_counter % 8 == 0:
-                print_termination = "\n"
             these_currents = np.array([dac.current() for dac in dacs])
-            sys.stdout.write(f"{these_currents * 1000}", end=print_termination)
-            sys.stdout.flush()
+            if ramp_counter % 8 == 0:
+                logger.info(f"Current: {these_currents * 1000}")
             time.sleep(1)
-        logger.status(
-            f"{Style.RESET_ALL} Ramping finished at {dac.current() * 1000:.4f} mA"
-        )
+        logger.info(f"Ramping finished at {dac.current() * 1000:.4f} mA")
 
     def ramp_current_serially(self, dac_values: dict[str, float]):
         for coupler, target_current in dac_values.items():
@@ -217,16 +207,16 @@ class SpiDAC:
 
                     except ValueError as e:
                         progress.stop()
-                        logger.error(f"[red]Error reading DAC current: {e}")
+                        logger.error(f"Error reading DAC current: {e}")
                         break
 
-        logger.status(f"{Style.RESET_ALL} Ramping finished")
+        logger.info("Ramping finished")
 
     def print_currents(self):
         for coupler, dac in self.dacs_dictionary.items():
             current = dac.current() * 1000
-            logger.status(f"{coupler}: {current:.4f} mA")
+            logger.info(f"{coupler}: {current:.4f} mA")
 
     def close_spi_rack(self):
         self.spi.close()
-        logger.status(f"{Style.RESET_ALL} Closing SPI rack")
+        logger.info("Closing SPI rack")

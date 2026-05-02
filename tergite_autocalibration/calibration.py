@@ -17,11 +17,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from os import PathLike
 from types import MappingProxyType
 from typing import FrozenSet, List, Optional, Tuple, Type, Union
 
 import networkx as nx
-from colorama import Fore, Style
 from qblox_instruments import Cluster
 from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
@@ -89,12 +89,12 @@ class HardwareManager:
             except ConnectionRefusedError:
                 msg = "Cluster is disconnected. Maybe it has crushed? Try flick it off and on"
                 logger.status("-" * len(msg))
-                logger.status(f"{Fore.LIGHTRED_EX}{Style.BRIGHT}{msg}{Style.RESET_ALL}")
+                logger.status(f"{msg}")
                 logger.status("-" * len(msg))
                 quit()
 
             logger.status(
-                f" \n\u26a0 {Fore.MAGENTA}{Style.BRIGHT}Resetting Cluster at IP *{str(self.config.cluster_ip)[-3:]}{Style.RESET_ALL}\n"
+                f" \n⚠ Resetting Cluster at IP *{str(self.config.cluster_ip)[-3:]}\n"
             )
             cluster.reset()  # Reset the cluster to a default state for consistency
             return cluster
@@ -149,83 +149,6 @@ class HardwareManager:
     def get_instrument_coordinator(self):
         """Access the instrument coordinator for use by other classes."""
         return self.lab_ic
-
-
-# intermediary function in the call stack in case we want to set other cluster settings
-def _configure_cluster_settings(
-    cluster: Cluster,
-    *,
-    connectivity: MappingProxyType[str, FrozenSet[str]],
-    output_attenuation_settings: MappingProxyType[str, MappingProxyType[str, int]],
-):
-    _set_output_attenuations(cluster, connectivity, output_attenuation_settings)
-
-
-def _set_output_attenuations(cluster, connectivity, settings):
-    """
-    Sets the output attenuations for modules in the given cluster based on the provided settings.
-
-    This function iterates over couplers, resonators, and qubits, finds the corresponding output
-    ports from the connectivity map, and applies attenuation settings to the correct output
-    channels (complex_output_0 or complex_output_1) for modules that are part of the cluster.
-
-    Args:
-        cluster: Cluster object to configure
-        connectivity: A mapping that relates device names (with port suffixes) to their physical port paths.
-        settings: A dictionary specifying attenuation values for 'coupler', 'resonator', and 'qubit' devices.
-    """
-    cluster_modules = cluster.get_connected_modules()
-    module_names = frozenset(mod.name for _, mod in cluster_modules.items())
-
-    # read the device configuration (device_config.toml) settings for attenuation
-    # entire file, all couplers, all qubits, all resonators
-    for device_type, quantify_port_suffix in zip(
-        ["coupler", "resonator", "qubit"], [":fl", ":res", ":mw"]
-    ):
-        for name, att in settings[device_type].items():
-            quantify_port = name + quantify_port_suffix
-
-            if quantify_port not in connectivity.keys():
-                logger.warning(
-                    f"Skipping setting attenuation for '{quantify_port}', as it is "
-                    "not in the connectivity graph of the cluster_config.json."
-                )
-                continue
-
-            ports = connectivity[quantify_port]
-            assert len(ports) == 1
-            port_str = next(iter(ports))
-
-            # e.g. "cluster.module1.complex_output_0"
-            cl, mod, port = tuple(port_str.split(sep="."))
-
-            # inputs can also be specified in the connectivity graph, although such
-            # mappings are seldomly used in transmon systems, so just do a simple
-            # check here that we are actually configuring an output
-            assert "output" in port, (name + quantify_port_suffix, port_str)
-
-            # if the cluster that this qubit is mapped to in the connectivity
-            # is not the same as the cluster to be configured, then simply skip
-            if cl != cluster.name:
-                continue
-
-            # skip if the module is not connected
-            if "_".join((cl, mod)) not in module_names:
-                continue
-
-            # otherwise, use the dedicated QCoDeS function
-            # to set the attenuation
-            module_obj = getattr(cluster, mod)
-
-            if port == "complex_output_0":
-                module_obj.out0_att(att)
-            elif port == "complex_output_1":
-                module_obj.out1_att(att)
-            else:
-                raise KeyError(f"Failed to set attenuation for port: {port_str}")
-
-            logger.debug(f"Applied {att}dB attenuation on {port_str}")
-    logger.info("Attenuations are set")
 
 
 class NodeManager:
@@ -308,13 +231,9 @@ class NodeManager:
 
         # Log status
         if status == DataStatus.in_spec:
-            logger.info(
-                f" \u2714  {Fore.GREEN}{Style.BRIGHT}Node {node_name} in spec{Style.RESET_ALL}"
-            )
+            logger.info(f" ✔ Node {node_name} in spec")
         else:
-            logger.warning(
-                f"\u2691\u2691\u2691 {Fore.RED}{Style.BRIGHT}Calibration required for Node {node_name}{Style.RESET_ALL}"
-            )
+            logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
 
             # Initialize node and update samplespace
             calibration_node = self._initialize_node(node)
@@ -398,73 +317,175 @@ class NodeManager:
         return
 
 
-class CalibrationSupervisor:
-    def __init__(
-        self,
-        config: SessionContext,
-    ) -> None:
-        self.config = config
-        self.hardware_manager = HardwareManager(config=config)
-        self.lab_ic = self.hardware_manager.get_instrument_coordinator()
-        self.node_manager = NodeManager(self.lab_ic, session=config)
-        self.topo_order: List[NodeEnum] = self.node_manager.topo_order(
-            self.config.target_node
-        )
-        logger.info("Node Manager is initialized")
+def calibrate_device(
+    env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    **session_options,
+) -> None:
+    """Run the full calibration pipeline up to ``target_node``.
 
-    def calibrate_system(
-        self, node: Optional[NodeEnum] = None, ignore_spec: bool = False
+    Builds a :class:`SessionContext` from ``env_file`` (and any extra
+    ``session_options`` overrides), then walks the dependency DAG up to
+    the configured target node, calibrating any nodes that aren't
+    already in spec.
+
+    Args:
+        env_file: optional path to .env file to load session config from.
+        **session_options: optional keyword arguments to override config settings.
+    """
+    session = SessionContext.from_env(env_file, **session_options)
+    _calibrate(session)
+
+
+def rerun_analysis(
+    env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    **session_options,
+) -> None:
+    """Re-run the analysis of ``target_node`` against an already-recorded dataset.
+
+    Requires ``cluster_mode='re_analyse'``.
+
+    Args:
+        env_file: optional path to .env file to load session config from.
+        **session_options: optional keyword arguments to override config settings.
+    """
+    session = SessionContext.from_env(env_file, **session_options)
+    _rerun_analysis(session)
+
+
+def _calibrate(session: SessionContext) -> None:
+    """Internal function implementing the calibration logic."""
+    hardware_manager = HardwareManager(config=session)
+    lab_ic = hardware_manager.get_instrument_coordinator()
+    node_manager = NodeManager(lab_ic, session=session)
+    topo_order = node_manager.topo_order(session.target_node)
+
+    logger.info("Node Manager is initialized")
+
+    # Handle CZ chain insertion for THREE_STATE_DISCRIMINATION
+    cz_chain = [
+        NodeEnum.CZ_PARAMETRIZATION,
+        NodeEnum.CZ_CHEVRON,
+        NodeEnum.CZ_CALIBRATION,
+        NodeEnum.CZ_LOCAL_PHASES,
+        NodeEnum.CZ_RB,
+    ]
+    is_cz_calibration = session.target_node in cz_chain
+    if is_cz_calibration:
+        for index, ordered_node in enumerate(topo_order):
+            if ordered_node in cz_chain:
+                topo_order.insert(index, NodeEnum.THREE_STATE_DISCRIMINATION)
+                break
+
+    logger.info("Starting System Calibration")
+    number_of_qubits = len(session.qubits)
+
+    draw_arrow_chart(
+        f"Qubits: {number_of_qubits}",
+        [n.value for n in topo_order],
+    )
+
+    # The node manager provides every node with access to the DACS
+    node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
+    node_manager.spi_manager.set_initial_parking_currents(session.couplers)
+
+    for calibration_node in topo_order:
+        ignore_spec = calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION
+        node_manager.inspect_node(calibration_node, ignore_spec=ignore_spec)
+        logger.info(f"{calibration_node.value} node is completed")
+
+
+def _rerun_analysis(session: SessionContext) -> None:
+    """Internal function implementing the re-analysis logic."""
+    if session.cluster_mode != MeasurementMode.re_analyse:
+        raise ValueError(
+            f"Wrong mode for re-analysis: '{session.cluster_mode}', should be: {MeasurementMode.re_analyse}"
+        )
+
+    hardware_manager = HardwareManager(config=session)
+    lab_ic = hardware_manager.get_instrument_coordinator()
+    node_manager = NodeManager(lab_ic, session=session)
+
+    target_node = session.target_node
+    node = node_manager._initialize_node(target_node)
+    logger.status(
+        f"Analysing '{session.target_node_name}' with {node.analysis_cls.__name__}"
+    )
+    node.post_process(session.log_dir)
+    logger.status("Analysis completed.")
+
+
+# intermediary function in the call stack in case we want to set other cluster settings
+def _configure_cluster_settings(
+    cluster: Cluster,
+    *,
+    connectivity: MappingProxyType[str, FrozenSet[str]],
+    output_attenuation_settings: MappingProxyType[str, MappingProxyType[str, int]],
+):
+    _set_output_attenuations(cluster, connectivity, output_attenuation_settings)
+
+
+def _set_output_attenuations(cluster, connectivity, settings):
+    """
+    Sets the output attenuations for modules in the given cluster based on the provided settings.
+
+    This function iterates over couplers, resonators, and qubits, finds the corresponding output
+    ports from the connectivity map, and applies attenuation settings to the correct output
+    channels (complex_output_0 or complex_output_1) for modules that are part of the cluster.
+
+    Args:
+        cluster: Cluster object to configure
+        connectivity: A mapping that relates device names (with port suffixes) to their physical port paths.
+        settings: A dictionary specifying attenuation values for 'coupler', 'resonator', and 'qubit' devices.
+    """
+    cluster_modules = cluster.get_connected_modules()
+    module_names = frozenset(mod.name for _, mod in cluster_modules.items())
+
+    # read the device configuration (device_config.toml) settings for attenuation
+    # entire file, all couplers, all qubits, all resonators
+    for device_type, quantify_port_suffix in zip(
+        ["coupler", "resonator", "qubit"], [":fl", ":res", ":mw"]
     ):
-        cz_chain = [
-            NodeEnum.CZ_PARAMETRIZATION,
-            NodeEnum.CZ_CHEVRON,
-            NodeEnum.CZ_CALIBRATION,
-            NodeEnum.CZ_LOCAL_PHASES,
-            NodeEnum.CZ_RB,
-        ]
-        is_cz_calibration = self.config.target_node in cz_chain
-        if is_cz_calibration:
-            for index, ordered_node in enumerate(self.topo_order):
-                if ordered_node in cz_chain:
-                    self.topo_order.insert(index, NodeEnum.THREE_STATE_DISCRIMINATION)
-                    break
+        for name, att in settings[device_type].items():
+            quantify_port = name + quantify_port_suffix
 
-        logger.info("Starting System Calibration")
-        number_of_qubits = len(self.config.qubits)
+            if quantify_port not in connectivity.keys():
+                logger.warning(
+                    f"Skipping setting attenuation for '{quantify_port}', as it is "
+                    "not in the connectivity graph of the cluster_config.json."
+                )
+                continue
 
-        calibration_nodes = self.topo_order if node is None else [node]
-        draw_arrow_chart(
-            f"Qubits: {number_of_qubits}",
-            [n.value for n in calibration_nodes],
-        )
+            ports = connectivity[quantify_port]
+            assert len(ports) == 1
+            port_str = next(iter(ports))
 
-        # The node manager provides every node with access to the DACS
-        self.node_manager.spi_manager = self.hardware_manager.create_spi(
-            self.config.couplers
-        )
-        self.node_manager.spi_manager.set_initial_parking_currents(self.config.couplers)
+            # e.g. "cluster.module1.complex_output_0"
+            cl, mod, port = tuple(port_str.split(sep="."))
 
-        for calibration_node in calibration_nodes:
-            if calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION:
-                ignore_spec = True
+            # inputs can also be specified in the connectivity graph, although such
+            # mappings are seldomly used in transmon systems, so just do a simple
+            # check here that we are actually configuring an output
+            assert "output" in port, (name + quantify_port_suffix, port_str)
+
+            # if the cluster that this qubit is mapped to in the connectivity
+            # is not the same as the cluster to be configured, then simply skip
+            if cl != cluster.name:
+                continue
+
+            # skip if the module is not connected
+            if "_".join((cl, mod)) not in module_names:
+                continue
+
+            # otherwise, use the dedicated QCoDeS function
+            # to set the attenuation
+            module_obj = getattr(cluster, mod)
+
+            if port == "complex_output_0":
+                module_obj.out0_att(att)
+            elif port == "complex_output_1":
+                module_obj.out1_att(att)
             else:
-                ignore_spec = False
-            self.node_manager.inspect_node(calibration_node, ignore_spec=ignore_spec)
-            logger.info(f"{calibration_node.value} node is completed")
+                raise KeyError(f"Failed to set attenuation for port: {port_str}")
 
-    def rerun_analysis(self):
-        """
-        Reruns the analysis of the target node.
-        """
-        if self.config.cluster_mode != MeasurementMode.re_analyse:
-            raise ValueError(
-                f"Wrong mode for re-analysis: '{self.config.cluster_mode}', should be: {MeasurementMode.re_analyse}"
-            )
-
-        target_node = self.config.target_node
-        node = self.node_manager._initialize_node(target_node)
-        logger.status(
-            f"Analysing '{self.config.target_node_name}' with {node.analysis_cls.__name__}"
-        )
-        node.post_process(self.config.log_dir)
-        logger.status("Analysis completed.")
+            logger.debug(f"Applied {att}dB attenuation on {port_str}")
+    logger.info("Attenuations are set")
