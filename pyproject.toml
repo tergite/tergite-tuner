@@ -15,9 +15,9 @@ requires = ["setuptools>=61.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tergite-autocalibration-lite"
+name = "tergite-tuner"
 version = "2026.03.0"
-description = "Commandline application to calibrate the WACQT quantum computers automatically"
+description = "Library to tune up the WACQT quantum computers"
 readme = "README.md"
 authors = [
     { name = "Eleftherios Moschandreou", email = "elemos@chalmers.se" },
@@ -93,8 +93,8 @@ test = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["tergite_autocalibration*"]
+include = ["tergite_tuner*"]
 exclude = ["*.tests", "*.tests.*"]
 
 [tool.setuptools.exclude-package-data]
-"tergite_autocalibration.config" = ["templates/**"]
+"tergite_tuner.config" = ["templates/**"]

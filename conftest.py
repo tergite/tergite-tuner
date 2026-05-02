@@ -13,7 +13,7 @@
 """Test-suite-wide pytest configuration.
 
 This file lives at the repository root — outside the
-``tergite_autocalibration`` package — so it is automatically discovered
+``tergite_tuner`` package — so it is automatically discovered
 by pytest for every test in the project but is *not* shipped with the
 built wheel.
 
@@ -31,9 +31,9 @@ import fakeredis
 import numpy as np
 import pytest
 
-from tergite_autocalibration.config.session import SessionContext
-from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
-from tergite_autocalibration.utils.dto.enums import MeasurementMode
+from tergite_tuner.config.session import SessionContext
+from tergite_tuner.tests.utils.fixtures import get_fixture_path
+from tergite_tuner.utils.dto.enums import MeasurementMode
 
 _FIXTURE_ENV_FILE = get_fixture_path("configs", "env", "default.env")
 _FIXTURE_CONFIG_DIR = get_fixture_path(

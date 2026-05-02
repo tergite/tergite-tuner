@@ -34,9 +34,9 @@ test_lint_build:
     # Install test dependencies
     - pip install ".[test,dev]"
     # Run tests
-    - pytest tergite_autocalibration --cov=tergite_autocalibration --cov-report xml --cov-report term-missing --junitxml=report.xml
+    - pytest tergite_tuner --cov=tergite_tuner --cov-report xml --cov-report term-missing --junitxml=report.xml
     # Run formatter
-    - black --check tergite_autocalibration
+    - black --check tergite_tuner
   coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     reports:

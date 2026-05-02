@@ -9,9 +9,9 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Added
 
-- Public API exported from `tergite_autocalibration.__init__`:
-  `calibrate_device`, `rerun_analysis`, and
-  `generate_bcc_calibration_seed`. The first two replace the old
+- Public API exported from `tergite_tuner.__init__`:
+  `tune_device`, `re_analyse`, and
+  `extract_bcc_params`. The first two replace the old
   `CalibrationSupervisor` class and accept an env-file path plus
   arbitrary `SessionContext` field overrides as kwargs.
 - `SessionContext` (`config/session.py`): a single per-process pydantic
@@ -31,13 +31,14 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   `GRAPH_DEPENDENCIES` / `CALIBRATION_GRAPH` globals.
 - `loaded_redis(redis_connection, path)` context manager — replaces
   the `@with_redis` decorator.
-- `generate_bcc_calibration_seed(...)` accepts `format="dict" | "json"
+- `extract_bcc_params(...)` accepts `format="dict" | "json"
   | "toml"` and an optional `output` path. The seed shape is now a
   pydantic model (`CalibrationSeed`) with the static unit labels as
   field defaults.
 
 ### Changed
 
+- Renamed to project fork to tergite-tuner
 - Stripped away all code that is not relevant for running this app as
   a library; the calibration entry points are now plain functions
   rather than a `CalibrationSupervisor` class.
@@ -210,7 +211,7 @@ calibration
 ### Changed
 
 - Improved command line interface
-- Renamed from tergite-acl to tergite-autocalibration
+- Renamed from tergite-acl to tergite-tuner
 - Updated the contribution guidelines and government model statements
 
 ### Fixed
