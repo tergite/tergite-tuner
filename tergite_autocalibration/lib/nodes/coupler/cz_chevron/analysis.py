@@ -15,7 +15,6 @@
 
 from dataclasses import dataclass
 
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from scipy.stats import spearmanr
@@ -205,64 +204,9 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
     def processed_dataset(self):
         return self.probabilities
 
-    def plotter(self, figures_dictionary):
-
-        current_probabilities = self.probabilities
-        current_probabilities.plot(
-            x=self.frequencies_coord, cmap="RdBu_r", row="qubit", col="state"
-        )
-
-        fig = plt.gcf()
-        parabolic_fit_frequencies = np.linspace(
-            self.cz_working_frequencies[0], self.cz_working_frequencies[-1], 100
-        )
-        parabolic_fit_durations = self.chevron_fit_result.eval(
-            self.chevron_fit_result.params, x=parabolic_fit_frequencies
-        )
-
-        # if there are no working points return only the faceting plot
-        if self.cz_working_durations_in_ns.size == 0:
-            figures_dictionary[self.coupler] = [fig]
-            return
-
-        # for every one of the six faceting axes, plot the working points and
-        # their parabolic fit
-        for ax in fig.axes:
-            ax.plot(
-                parabolic_fit_frequencies,
-                parabolic_fit_durations,
-                color="grey",
-                lw=5,
-            )
-            ax.plot(
-                self.cz_working_frequencies,
-                self.cz_working_durations_in_ns * 1e-9,
-                marker="8",
-                ls="",
-                color="yellow",
-            )
-            ax.plot(
-                self.selected_frequencies,
-                self.selected_durations_in_ns * 1e-9,
-                marker="*",
-                markersize=12,
-                ls="",
-                color="yellow",
-            )
-
-        figures_dictionary[self.coupler] = [fig]
-
-    # def plot_frequency_slice(self, freq_index: int):
-    #     fig2, ax = plt.subplots()
-    #     probs = self.combined_data.isel({self.frequencies_coord: freq_index})
-    #     probs.plot.line("bo")
-    #     prob_slice = self.fit_plot_probs.isel({self.frequencies_coord: freq_index})
-    #     ax.plot(self.fit_plot_durations, prob_slice, "ro-", ms=4)
-    #     plt.show()
-
 
 class CZChevronAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZChevronCouplerAnalysis
 
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config, **kwargs)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)

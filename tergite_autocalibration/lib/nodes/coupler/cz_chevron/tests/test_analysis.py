@@ -79,33 +79,3 @@ def test_cz_chevron_analysis_bad_data(redis_connection, session_context):
 
         # Make sure that the analysis returns as unsuccessful
         assert qoi.analysis_successful is False
-
-
-def test_plotting(redis_connection, session_context):
-    """
-    Test that the plotter produces a faceted figure
-    """
-    with loaded_redis(redis_connection, _redis_values_0):
-        # Load dataset
-        file_path = os.path.join(_test_data_dir, "data_0", "dataset_cz_chevron_0.hdf5")
-        dataset = xr.open_dataset(file_path)
-        number_of_working_points = 3
-        figures_dictionary = {}
-
-        # Run the single coupler analysis
-        analysis = CZChevronCouplerAnalysis(
-            "cz_chevron",
-            ["cz_working_frequencies", "cz_working_durations_in_ns"],
-            session_context,
-            phase_path="via_20",
-            number_of_working_points=number_of_working_points,
-        )
-        analysis.process_coupler(dataset, "q13_q14")
-        analysis.plotter(figures_dictionary)
-
-        assert "q13_q14" in figures_dictionary
-
-        faceted_graph_fig = figures_dictionary["q13_q14"][0]
-
-        # the faceted graph has 7 axis: 6 for the probabilty heatmaps and one for the colorbar
-        assert len(faceted_graph_fig.get_axes()) == 7

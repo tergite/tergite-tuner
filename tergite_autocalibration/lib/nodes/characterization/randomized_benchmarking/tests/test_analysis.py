@@ -53,18 +53,3 @@ def test_randomized_benchmarking_analysis(redis_connection, session_context):
         assert pytest.approx(standard_leakage_11) == 0.00207032
         assert pytest.approx(standard_fidelity_15) == 0.9962656
         assert pytest.approx(standard_leakage_15) == 0.0064318
-
-
-# FIXME: No more charts
-# @with_redis(_redis_values)
-# def test_plotting():
-#     """
-#     Test that the plotter produces a figure with the right number of axes
-#     """
-#
-#     qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
-#     analysis = RandomizedBenchmarkingNodeAnalysis("randomized_benchmarking", qubit_qois)
-#     analysis.analyze_node(_test_data_dir)
-#     figure = analysis.fig
-#     # TODO: this will change when the top band is removed
-#     assert len(figure.get_axes()) == 8

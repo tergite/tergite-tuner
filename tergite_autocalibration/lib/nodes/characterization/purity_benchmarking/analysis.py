@@ -17,7 +17,6 @@ Module containing classes that model, fit and plot data from the purity benchmar
 
 import lmfit
 import numpy as np
-from matplotlib.axes import Axes
 
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
@@ -68,8 +67,8 @@ class PurityBenchmarkingQubitAnalysis(BaseQubitAnalysis):
     Analysis that fits an exponential decay function to purity benchmarking data.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 
     def analyse_qubit(self):
@@ -192,38 +191,6 @@ class PurityBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         self.fit_results = fit_result
         self.fit_report = fit_result.fit_report()
 
-    def plotter(self, ax: Axes):
-        """
-        Plot the normalized data and fitted exponential decay curve.
-        """
-        # Plot normalized data for each repetition with low transparency
-        for repetition_index, real_values in self.purity_results_dict.items():
-            ax.plot(self.number_of_cliffords, real_values, alpha=0.2)
-            ax.annotate(
-                f"{repetition_index}", (self.number_of_cliffords[-1], real_values[-1])
-            )
-
-        # Plot the fitted curve and add labels
-        ax.plot(
-            self.fit_n_cliffords,
-            self.fit_y,
-            "ro-",
-            lw=2.5,
-            label=f"p = {self.fidelity:.3f}",
-        )
-        ax.plot(
-            self.number_of_cliffords,
-            self.fit_results.best_fit,
-            ls="dashed",
-            color="black",
-        )
-        ax.set_ylabel("Purity")
-        ax.set_xlabel("Number of Cliffords")
-        ax.grid()
-
 
 class PurityBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = PurityBenchmarkingQubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)

@@ -10,21 +10,17 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
 import re
 from pathlib import Path
 
-import matplotlib
 import pytest
 import xarray as xr
-from matplotlib import pyplot as plt
 from numpy import ndarray
 
 from tergite_autocalibration.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
 from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_os_env
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 
@@ -39,10 +35,8 @@ def getCrossingForQubit(qoi: QOI, qubit: str = "q06"):
     results = qoi.analysis_result
     qubit_number = int(re.sub("[^0-9]", "", qubit))
     if qubit_number % 2 == 0:
-        qubit_type = "Control"
         crossing_points = "control_resonator_crossing_points"
     elif qubit_number % 2 == 1:
-        qubit_type = "Target"
         crossing_points = "target_resonator_crossing_points"
     else:
         raise ValueError("Invalid qubit number")
@@ -178,57 +172,3 @@ def test_get_crossings_for_q14_q15(
     q15_crossings = getCrossingForQubit(qoi, "q15")
     assert not q14_crossings
     assert q15_crossings == pytest.approx([-0.00025, 0.000925], abs=1e-6)
-
-
-@with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_coupler_plot_is_created(setup_q06_q07_data, session_context, redis_connection):
-    matplotlib.use("Agg")
-    ds, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name",
-        res_coupler_qois,
-        session_context,
-    )
-    a.process_coupler(ds, coupler)
-
-    figure_path = os.environ["DATA_DIR"] + "/name.png"
-    # Remove the file if it already exists
-    if os.path.exists(figure_path):
-        os.remove(figure_path)
-
-    figures_dictionary = {}
-    a.plotter(figures_dictionary)
-    fig_list = figures_dictionary[coupler]
-    fig = fig_list[0]
-    fig.savefig(figure_path)
-    plt.close()
-    assert os.path.exists(figure_path)
-    from PIL import Image
-
-    with Image.open(figure_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"
-
-
-@pytest.mark.skip()
-@with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_qubit_spectroscopies_for_coupler_are_created(setup_q06_q07_data):
-    matplotlib.use("Agg")
-    ds, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
-    a.process_coupler(ds, coupler)
-
-    path = Path(os.environ["DATA_DIR"])
-    a.plot_spectroscopies(path)
-
-    figure_1_path = os.environ["DATA_DIR"] + "/name_q06_q07_q06_spectroscopies.png"
-    assert os.path.exists(figure_1_path)
-    from PIL import Image
-
-    with Image.open(figure_1_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"
-
-    figure_2_path = os.environ["DATA_DIR"] + "/name_q06_q07_q07_spectroscopies.png"
-    assert os.path.exists(figure_2_path)
-
-    with Image.open(figure_2_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"

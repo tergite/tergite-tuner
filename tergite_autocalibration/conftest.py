@@ -64,14 +64,11 @@ def session_context(redis_connection) -> SessionContext:
     ``session.redis`` cache from leaking a stale fakeredis client
     across tests.
 
-    Plotting is forced off so that we don't try to spin up a TkAgg
-    matplotlib backend in a headless test environment, and the
-    ``config_dir`` is pointed at the bundled fixture device so
+    The ``config_dir`` is pointed at the bundled fixture device so
     ``session.config`` loads the test configuration package.
     """
     return SessionContext.from_env(
         _FIXTURE_ENV_FILE,
-        plotting=False,
         config_dir=_FIXTURE_CONFIG_DIR,
         cluster_mode=MeasurementMode.dummy,
         user_samplespace={

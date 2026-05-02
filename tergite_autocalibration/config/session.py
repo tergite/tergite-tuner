@@ -199,8 +199,6 @@ class SessionContext(BaseModel):
         spi_serial_port: serial port on which the SPI rack is connected.
         redis_url: the URL to the redis server that is to be used effectively
             as RAM for this calibration.
-        plotting: whether plots should be shown during the run. Accepts
-            string values like ``"True"`` / ``"False"`` from env vars.
         data_browser_host: host URL under which the data browser should
             be available.
         data_browser_port: port on which the data browser runs.
@@ -242,7 +240,6 @@ class SessionContext(BaseModel):
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
     redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
-    plotting: bool = True
     data_browser_host: IPvAnyAddress = "127.0.0.1"
     data_browser_port: int = 8179
     hw_config_generator_host: IPvAnyAddress = "127.0.0.1"
@@ -268,14 +265,6 @@ class SessionContext(BaseModel):
             if not stripped:
                 return []
             return [item.strip() for item in stripped.split(",") if item.strip()]
-        return value
-
-    @field_validator("plotting", mode="before")
-    @classmethod
-    def cast_plotting_to_bool(cls, value):
-        """Accept ``"True"`` / ``"False"`` strings from env files / ``os.environ``."""
-        if isinstance(value, str):
-            return value.strip().lower() in {"1", "true", "yes", "y", "on"}
         return value
 
     @field_validator("target_node", mode="before")

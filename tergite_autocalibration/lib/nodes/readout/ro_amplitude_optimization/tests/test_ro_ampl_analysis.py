@@ -86,27 +86,3 @@ def test_ro_ampl_3states(redis_connection, session_context):
         assert pytest.approx(omega_01) == 274.3834996
         assert pytest.approx(omega_12) == 156.0215330
         assert pytest.approx(omega_20) == 10.16925296
-
-
-# FIXME: No more charts
-# @with_redis(_redis_values)
-# def test_plotting():
-#     """
-#     Test that the plotter produces a figure with the right number of axes
-#     """
-#     name = "ro_amplitude_three_state_optimization"
-#     file_path = os.path.join(_test_data_dir, name)
-#     qubit_qois = [
-#         "measure_3state_opt:pulse_amp",
-#         "centroid_I",
-#         "centroid_Q",
-#         "omega_01",
-#         "omega_12",
-#         "omega_20",
-#         "inv_cm_opt",
-#     ]
-#
-#     analysis = ROThreeStateAmplitudeNodeAnalysis(name, qubit_qois)
-#     analysis.analyze_node(file_path)
-#     number_of_qubits = len(analysis.dataset.attrs["elements"])
-#     assert analysis.axs.shape == (3, number_of_qubits)

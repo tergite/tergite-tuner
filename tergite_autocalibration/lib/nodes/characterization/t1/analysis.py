@@ -18,7 +18,6 @@ Module containing a class that fits and plots data from a T1 experiment.
 """
 
 import numpy as np
-from matplotlib.axes import Axes
 from quantify_core.analysis.fitting_models import ExpDecayModel
 
 from tergite_autocalibration.lib.base.analysis import (
@@ -34,8 +33,8 @@ class T1QubitAnalysis(BaseQubitAnalysis):
     and plots the results.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.t1_times = []
         self.offset_times = []
         self.amplitude_times = []
@@ -127,43 +126,6 @@ class T1QubitAnalysis(BaseQubitAnalysis):
 
         return qoi
 
-    def plotter(self, ax: Axes):
-        """
-        Plot the results of the T1 analysis on the provided axes.
-        Args:
-            ax: The axes on which to plot the results.
-        """
-
-        for indx in range(len(self.dataset.coords[self.repetitions_coord])):
-            magnitudes = self.magnitudes[self.data_var].isel(
-                {self.repetitions_coord: indx}
-            )
-            magnitudes_flat = (
-                magnitudes.values.flatten() * 1e6
-            )  # Convert to microseconds
-            ax.plot(self.delays, magnitudes_flat, alpha=0.3)
-
-        # Plot ±1σ shaded region
-        ax.plot(
-            self.fit_delays,
-            self.average_t1_y,
-            color="red",
-            label=f"Mean T1 = {self.average_t1:.1f} ± {self.error:.1f} μs",
-        )
-        ax.fill_between(
-            self.fit_delays,
-            self.average_t1_lower,
-            self.average_t1_upper,
-            color="red",
-            alpha=0.2,
-            label="±1σ",
-        )
-
-        ax.set_xlabel("Delay (μs)")
-        ax.set_ylabel("|S21| (V)")
-        ax.grid()
-        ax.legend()
-
 
 class T1NodeAnalysis(BaseAllQubitsAnalysis):
     """
@@ -171,6 +133,3 @@ class T1NodeAnalysis(BaseAllQubitsAnalysis):
     """
 
     single_qubit_analysis_cls = T1QubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)

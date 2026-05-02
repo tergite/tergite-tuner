@@ -10,11 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
 import unittest
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import xarray as xr
 
 from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.analysis import (
@@ -74,39 +72,3 @@ class TestRabiQubitAnalysis(unittest.TestCase):
         amplitude = qoi.analysis_result["r12:ef_amp180"]["value"]
 
         assert amplitude > 0, f"Amplitude has to be higher than 0: {amplitude}"
-
-    def test_plotting_01(self):
-        os.environ["DATA_DIR"] = str(Path(__file__).parent / "results")
-        test_dir = Path(__file__).parent
-        file_path = test_dir / "data_rabi_01" / "dataset_rabi_oscillations_0.hdf5"
-        dataset = xr.open_dataset(file_path)
-        analysis = RabiQubitAnalysis("name", ["rxy:amp180"])
-        analysis.process_qubit(dataset, "yq06")
-        figure_path = os.environ["DATA_DIR"] + "/Rabi_oscillations_01_q06.png"
-        if os.path.exists(figure_path):
-            os.remove(figure_path)
-        fig, ax = plt.subplots()
-        analysis.plotter(ax)
-        fig.savefig(figure_path)
-        plt.close(fig)
-        assert os.path.exists(
-            figure_path
-        ), f"Expected plot file to be created at {figure_path}"
-
-    def test_plotting_12(self):
-        os.environ["DATA_DIR"] = str(Path(__file__).parent / "results")
-        test_dir = Path(__file__).parent
-        file_path = test_dir / "data_rabi_12" / "dataset_rabi_oscillations_12_0.hdf5"
-        file = xr.open_dataset(file_path)
-        analysis = Rabi12QubitAnalysis("name", ["r12:ef_amp180"])
-        analysis.process_qubit(file, "yq06")
-        figure_path = os.environ["DATA_DIR"] + "/Rabi_oscillations_12_q06.png"
-        if os.path.exists(figure_path):
-            os.remove(figure_path)
-        fig, ax = plt.subplots()
-        analysis.plotter(ax)
-        fig.savefig(figure_path)
-        plt.close(fig)
-        assert os.path.exists(
-            figure_path
-        ), f"Expected plot file to be created at {figure_path}"

@@ -21,8 +21,8 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 
 
 class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
         self.optimal_motzoi = None
 
@@ -42,21 +42,8 @@ class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
 
         self.optimal_motzoi = sums.idxmin()[self.data_var].item()
 
-    def plotter(self, axis):
-        datarray = self.magnitudes[self.data_var]
-        datarray.plot(ax=axis, x=f"mw_motzois{self.qubit}", cmap="RdBu_r")
-
-        # Mark the optimal motzoi on the plot
-        label = f"Optimal Motzoi: {self.optimal_motzoi:.3f}"
-        styles = dict(c="k", lw=4, linestyle="--", label=label)
-        axis.axvline(self.optimal_motzoi, **styles)
-        axis.legend()
-
 
 class Motzoi01QubitAnalysis(MotzoiBaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         self._analyse_motzoi()
 
@@ -69,9 +56,6 @@ class Motzoi01QubitAnalysis(MotzoiBaseQubitAnalysis):
 
 
 class Motzoi12QubitAnalysis(MotzoiBaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         self._analyse_motzoi()
 
@@ -86,12 +70,6 @@ class Motzoi12QubitAnalysis(MotzoiBaseQubitAnalysis):
 class Motzoi01NodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = Motzoi01QubitAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
 
 class Motzoi12NodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = Motzoi12QubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)

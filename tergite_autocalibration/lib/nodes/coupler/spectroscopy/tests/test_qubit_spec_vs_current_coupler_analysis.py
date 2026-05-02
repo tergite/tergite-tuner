@@ -11,14 +11,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
 import re
 from pathlib import Path
 
-import matplotlib
 import pytest
 import xarray as xr
-from matplotlib import pyplot as plt
 from numpy import ndarray
 
 from tergite_autocalibration.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
@@ -27,7 +24,6 @@ from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
 from tergite_autocalibration.lib.utils.redis import update_redis_trusted_values
-from tergite_autocalibration.tests.utils.decorators import with_os_env
 from tergite_autocalibration.utils.dto.qoi import QOI
 
 
@@ -242,50 +238,6 @@ def test_get_crossings_for_q14_q15(
     assert q15_crossings == pytest.approx([-0.0018, -0.00095, 0.00165], abs=1e-6)
 
 
-@with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_coupler_plot_is_created(setup_q06_q07_data, session_context):
-    matplotlib.use("Agg")
-    ds_res, ds_qu, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current",
-        res_coupler_qois,
-        session_context,
-    )
-    qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
-    )
-
-    b = CouplerAnticrossingAnalysis(
-        "qubit_spectroscopy_vs_current",
-        qubit_coupler_qois,
-        session_context,
-    )
-    qoi = b.process_coupler(ds_qu, coupler)
-
-    figure_path = os.environ["DATA_DIR"] + "/qubit_spectroscopy_vs_current.png"
-    # Remove the file if it already exists
-    if os.path.exists(figure_path):
-        os.remove(figure_path)
-
-    figures_dictionary = {}
-    b.plotter(figures_dictionary)
-    fig_list = figures_dictionary[coupler]
-    fig = fig_list[0]
-    fig.savefig(figure_path)
-    plt.close()
-
-    assert os.path.exists(figure_path)
-    from PIL import Image
-
-    with Image.open(figure_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"
-
-
 @pytest.fixture(autouse=False)
 def setup_q16_q17_data():
     dataset_path = (
@@ -302,7 +254,7 @@ def setup_q16_q17_data():
 
 @pytest.mark.skip()
 def test_no_crossings_for_q16_q17(
-    setup_q16_q17_data: tuple[xr.Dataset, str, ndarray, ndarray],
+    setup_q16_q17_data: tuple[xr.Dataset, str],
     session_context,
 ):
     ds, coupler = setup_q16_q17_data
@@ -313,83 +265,3 @@ def test_no_crossings_for_q16_q17(
     q17_crossings = getCrossingForQubit(qoi, "q17")
     assert q16_crossings == pytest.approx([0.000975], abs=1e-6)
     assert len(q17_crossings) == 0
-
-
-@pytest.mark.skip()
-@with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_qubit_spectroscopies_for_coupler_are_created(
-    setup_q06_q07_data, session_context
-):
-    matplotlib.use("Agg")
-    ds_res, ds_qu, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current",
-        res_coupler_qois,
-        session_context,
-    )
-    qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
-    )
-
-    b = CouplerAnticrossingAnalysis(
-        "qs_vs_current", qubit_coupler_qois, session_context
-    )
-    qoi = b.process_coupler(ds_qu, coupler)
-
-    path = Path(os.environ["DATA_DIR"])
-    b.plot_spectroscopies(path)
-
-    figure_1_path = (
-        os.environ["DATA_DIR"] + "/qs_vs_current_q06_q07_q06_spectroscopies.png"
-    )
-    assert os.path.exists(figure_1_path)
-    from PIL import Image
-
-    with Image.open(figure_1_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"
-
-    figure_2_path = (
-        os.environ["DATA_DIR"] + "/qs_vs_current_q06_q07_q07_spectroscopies.png"
-    )
-    assert os.path.exists(figure_2_path)
-
-    with Image.open(figure_2_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"
-
-
-@pytest.mark.skip()
-@with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_qubit_spectroscopies_for_coupler_are_created_when_no_crossings(
-    setup_q16_q17_data, session_context
-):
-    matplotlib.use("Agg")
-    ds, coupler = setup_q16_q17_data
-    a = CouplerAnticrossingAnalysis(
-        "qs_vs_current", qubit_coupler_qois, session_context
-    )
-    qoi = a.process_coupler(ds, coupler)
-
-    path = Path(os.environ["DATA_DIR"])
-    a.plot_spectroscopies(path)
-
-    figure_1_path = (
-        os.environ["DATA_DIR"] + "/qs_vs_current_q16_q17_q16_spectroscopies.png"
-    )
-    assert os.path.exists(figure_1_path)
-    from PIL import Image
-
-    with Image.open(figure_1_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"
-
-    figure_2_path = (
-        os.environ["DATA_DIR"] + "/qs_vs_current_q16_q17_q17_spectroscopies.png"
-    )
-    assert os.path.exists(figure_2_path)
-
-    with Image.open(figure_2_path) as img:
-        assert img.format == "PNG", "File should be a PNG image"

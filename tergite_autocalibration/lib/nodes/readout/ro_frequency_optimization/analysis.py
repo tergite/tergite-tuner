@@ -30,9 +30,6 @@ class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
     and extractst the optimal RO frequency.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         for coord in self.S21.coords:
             if "frequencies" in str(coord):
@@ -66,60 +63,8 @@ class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
 
         return qoi
 
-    def plotter(self, ax, secondary_axes):
-        """
-        primary axis: the |0> and |1> resonator traces on the IQ plane.
-            The points for which the distance between the traces is maximized is denoted.
-        magnitude_axis: s21 magnitudes in terms of the frequency for both
-            the |0> and |1> resonator traces. Optimal frequency is denoted.
-        phase_axis: s21 phases in terms of the frequency for both
-            the |0> and |1> resonator traces. Optimal frequency is denoted.
-        """
-
-        ro_freq = float(
-            self.session.redis.hget(f"transmons:{self.qubit}", "clock_freqs:readout")
-        )
-        ro_freq_1 = float(
-            self.session.redis.hget(
-                f"transmons:{self.qubit}", "extended_clock_freqs:readout_1"
-            )
-        )
-        ax.set_xlabel("I quadrature (V)")
-        ax.set_ylabel("Q quadrature (V)")
-
-        f0 = self.s21_0[self.index_of_max_distance]
-        f1 = self.s21_1[self.index_of_max_distance]
-        label_text = f"opt_ro: {int(self.optimal_frequency)}\n"
-        label_text += f"|0>_ro: {int(ro_freq)}\n"
-        label_text += f"|1>_ro: {int(ro_freq_1)}"
-
-        styles = dict(marker="*", c="black", s=100, label=label_text, zorder=5)
-        ax.scatter([f0.real, f1.real], [f0.imag, f1.imag], **styles)
-
-        ax.plot(self.s21_0.real, self.s21_0.imag, "bo-", lw=2, ms=4)
-        ax.plot(self.s21_1.real, self.s21_1.imag, "ro-", lw=2, ms=4)
-
-        ax.legend()
-        ax.grid()
-
-        magnitude_axis = secondary_axes[0]
-        phase_axis = secondary_axes[1]
-        magnitude_axis.plot(
-            self.frequencies, self.magnitudes_0, "o-", ms=2, color="blue"
-        )
-        magnitude_axis.plot(
-            self.frequencies, self.magnitudes_1, "o-", ms=2, color="red"
-        )
-        magnitude_axis.axvline(self.optimal_frequency, color="black")
-        phase_axis.plot(self.frequencies, self.phase_0, "o-", ms=2, color="blue")
-        phase_axis.plot(self.frequencies, self.phase_1, "o-", ms=2, color="red")
-        phase_axis.axvline(self.optimal_frequency, color="black")
-
 
 class ROFrequencyThreeStateQubitAnalysis(OptimalRO01FrequencyQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         super().analyse_qubit()
         self.s21_2 = self.S21[self.data_var].sel({self.qubit_state_coord: 2})
@@ -160,29 +105,6 @@ class ROFrequencyThreeStateQubitAnalysis(OptimalRO01FrequencyQubitAnalysis):
 class OptimalRO01FrequencyNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = OptimalRO01FrequencyQubitAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-        self.plots_per_qubit = 3
-
-    def _fill_plots(self):
-        # FIXME: No more charts
-        pass
-        # for index, analysis in enumerate(self.qubit_analyses):
-        #     primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-        #     primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-        #
-        #     list_of_secondary_axes = []
-        #     for plot_indx in range(1, self.plots_per_qubit):
-        #         secondary_plot_row = primary_plot_row + plot_indx
-        #         list_of_secondary_axes.append(
-        #             self.axs[secondary_plot_row, index % self.column_grid]
-        #         )
-        #
-        #     analysis.plotter(primary_axis, list_of_secondary_axes)
-
 
 class ROFrequencyThreeStateNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = ROFrequencyThreeStateQubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)

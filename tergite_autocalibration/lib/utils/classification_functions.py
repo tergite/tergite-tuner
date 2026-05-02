@@ -90,11 +90,6 @@ def calculate_probabilities(iq_data_var: xr.DataArray, redis_connection):
     return state_probabilities
 
 
-import matplotlib.pyplot as plt
-
-fig, ax = plt.subplots(1, 1)
-
-
 def generate_iq_shots(
     probabilities: np.ndarray, qubit: str, loops: int, redis_connection
 ) -> np.ndarray:
@@ -145,7 +140,6 @@ def generate_iq_shots(
     number_of_pixels = probabilities.size // 3
     probabilities = probabilities.T.reshape(number_of_pixels, 3)
 
-    angle_spread_in_deg = 1
     radius_spread_in_mV = 0.1
     mean_radius_in_mV = 2
     rng = np.random.default_rng()

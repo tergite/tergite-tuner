@@ -12,12 +12,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import matplotlib.patches as mpatches
 import numpy as np
 import xarray as xr
 from numpy.linalg import inv
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.metrics import confusion_matrix
 
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
@@ -34,9 +33,6 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 
 
 class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def populate_coords(self):
         for coord in self.S21.coords:
             if "amplitudes" in str(coord):
@@ -152,40 +148,8 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
 
         return
 
-    def plot_iq_scatter(
-        self, ax, iq_points: np.ndarray, marker: str, color: str, label: str = ""
-    ):
-        self.mark_size = 40
-        styles = {"marker": marker, "s": self.mark_size, "color": color}
-        ax.scatter(iq_points[:, 0], iq_points[:, 1], **styles, label=label)
-
-    def primary_plotter(self, ax):
-        punchout_amplitude = float(
-            self.session.redis.hget(f"transmons:{self.qubit}", "measure:pulse_amp")
-        )
-        ax.axvline(punchout_amplitude, color="black", label="punchout value")
-        ax.set_xlabel("RO amplitude")
-        ax.set_ylabel("assignment fidelity")
-        ax.plot(self.amplitudes, self.fidelities)
-        ax.plot(self.optimal_amplitude, self.fidelities[self.optimal_index], "*", ms=14)
-        ax.grid()
-
-    def plot(self, primary_axis, secondary_axes):
-        self.plotter(
-            primary_axis, secondary_axes
-        )  # Assuming node_analysis object is available
-
-        # Customize plot as needed
-        handles, labels = primary_axis.get_legend_handles_labels()
-        patch = mpatches.Patch(color="red", label=f"{self.qubit}")
-        handles.append(patch)
-        primary_axis.legend(handles=handles, fontsize="small")
-
 
 class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         self.populate_coords()
         self.run_initial_fitting()
@@ -268,71 +232,8 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
         return qoi
 
-    def plotter(self, ax, secondary_axes):
-        self.primary_plotter(ax)
-        iq_axis = secondary_axes[0]
-
-        optimal_iq_axis = secondary_axes[0]
-        optimal_iq_axis.set_xlim(*self.x_limits)
-        optimal_iq_axis.set_ylim(*self.y_limits)
-        self.plot_iq_scatter(
-            iq_axis, self.IQ0_tp, ".", "blue", label="send 0 and read 0"
-        )
-        self.plot_iq_scatter(iq_axis, self.IQ0_fp, "x", "dodgerblue")
-        self.plot_iq_scatter(
-            iq_axis, self.IQ1_tp, ".", "red", label="send 1 and read 1"
-        )
-        self.plot_iq_scatter(iq_axis, self.IQ1_fp, "x", "orange")
-        iq_axis.scatter(
-            self.centers[:, 0],
-            self.centers[:, 1],
-            s=2 * self.mark_size,
-            color="brown",
-            zorder=10,
-        )
-        iq_axis.scatter(
-            0,
-            self.y_intercept,
-            s=2 * self.mark_size,
-            marker="P",
-            color="black",
-            zorder=11,
-        )
-
-        iq_axis.plot(
-            self.x_space,
-            self.lamda * self.x_space + self.y_intercept,
-            lw=2,
-            label=f"angle: {self.rotation_angle_degrees:0.1f}" r"$\degree$",
-        )
-        optimal_iq_axis.legend()
-        optimal_iq_axis.axhline(0, color="black")
-        optimal_iq_axis.axvline(0, color="black")
-        rotated_iq_axis = secondary_axes[1]
-        self.plot_iq_scatter(
-            rotated_iq_axis, self.rotated_IQ0_tp, ".", "blue", label="send 0 and read 0"
-        )
-        self.plot_iq_scatter(rotated_iq_axis, self.rotated_IQ0_fp, "x", "dodgerblue")
-        self.plot_iq_scatter(
-            rotated_iq_axis, self.rotated_IQ1_tp, ".", "red", label="send 1 and read 1"
-        )
-        self.plot_iq_scatter(rotated_iq_axis, self.rotated_IQ1_fp, "x", "orange")
-        rotated_iq_axis.axvline(
-            self.threshold,
-            color="purple",
-            lw=3,
-            label=f"threshold: {self.threshold:0.4f}",
-        )
-
-        rotated_iq_axis.legend()
-        rotated_iq_axis.axhline(0, color="black")
-        rotated_iq_axis.axvline(0, color="black")
-
 
 class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def three_state_classification(self):
         """
         Classify all iq points for all amplitudes and store them in
@@ -428,112 +329,16 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
         return qoi
 
-    def plot_classified_IQ_points(self, iq_axis, amplitude_index: int):
-
-        angle = 0
-        rotation_angle_rad = np.deg2rad(angle)
-        rotation_matrix = np.array(
-            [
-                [np.cos(rotation_angle_rad), -np.sin(rotation_angle_rad)],
-                [np.sin(rotation_angle_rad), np.cos(rotation_angle_rad)],
-            ]
-        )
-        iq0_tp = self.IQ0_tp @ rotation_matrix.T
-        iq1_tp = self.IQ1_tp @ rotation_matrix.T
-        iq2_tp = self.IQ2_tp @ rotation_matrix.T
-
-        self.plot_iq_scatter(iq_axis, iq0_tp, ".", "blue", label="send 0 and read 0")
-        self.plot_iq_scatter(iq_axis, self.IQ0_fp, "x", "dodgerblue")
-        self.plot_iq_scatter(iq_axis, iq1_tp, ".", "red", label="send 1 and read 1")
-        self.plot_iq_scatter(iq_axis, self.IQ1_fp, "x", "orange")
-        self.plot_iq_scatter(iq_axis, iq2_tp, ".", "green", label="send 2 and read 2")
-        self.plot_iq_scatter(iq_axis, self.IQ2_fp, "x", "lime")
-
-    def plotter(self, ax, secondary_axes):
-        self.primary_plotter(ax)
-
-        iq_axis = secondary_axes[0]
-        self.plot_classified_IQ_points(iq_axis, self.optimal_index)
-        iq_axis.plot(
-            self.boundary.boundary_line(0, 1)[0],
-            self.boundary.boundary_line(0, 1)[1],
-            color="blueviolet",
-            lw=4,
-        )
-        iq_axis.plot(
-            self.boundary.boundary_line(1, 2)[0],
-            self.boundary.boundary_line(1, 2)[1],
-            color="firebrick",
-            lw=4,
-        )
-        iq_axis.plot(
-            self.boundary.boundary_line(2, 0)[0],
-            self.boundary.boundary_line(2, 0)[1],
-            color="cyan",
-            lw=4,
-        )
-        iq_axis.scatter(
-            self.centroid_I, self.centroid_Q, marker="*", s=480, color="black", zorder=2
-        )
-
-        cm_axis = secondary_axes[1]
-        optimal_confusion_matrix = self.cms[self.optimal_index]
-        disp = ConfusionMatrixDisplay(confusion_matrix=optimal_confusion_matrix)
-        disp.plot(ax=cm_axis)
-
 
 class OptimalROTwoStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = OptimalROTwoStateAmplitudeQubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-        self.plots_per_qubit = 3
-
-    def _fill_plots(self):
-        # FIXME: No more charts
-        pass
-        # for index, analysis in enumerate(self.qubit_analyses):
-        #     primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-        #     primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-        #
-        #     list_of_secondary_axes = []
-        #     for plot_indx in range(1, self.plots_per_qubit):
-        #         secondary_plot_row = primary_plot_row + plot_indx
-        #         list_of_secondary_axes.append(
-        #             self.axs[secondary_plot_row, index % self.column_grid]
-        #         )
-        #
-        #     analysis.plot(primary_axis, list_of_secondary_axes)
 
 
 class ROThreeStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = ROThreeStateAmplitudeQubitAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-        self.plots_per_qubit = 3
-
-    def _fill_plots(self):
-        # FIXME: No more charts
-        pass
-        # for index, analysis in enumerate(self.qubit_analyses):
-        #     primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-        #     primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-        #
-        #     list_of_secondary_axes = []
-        #     for plot_indx in range(1, self.plots_per_qubit):
-        #         secondary_plot_row = primary_plot_row + plot_indx
-        #         list_of_secondary_axes.append(
-        #             self.axs[secondary_plot_row, index % self.column_grid]
-        #         )
-        #
-        #     analysis.plot(primary_axis, list_of_secondary_axes)
-
 
 class OptimalRO2not2AmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def run_initial_fitting(self):
         """
         Classify all iq points for all amplitudes and store them in
@@ -654,94 +459,6 @@ class OptimalRO2not2AmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         qoi = QOI(analysis_result, analysis_succesful)
         return qoi
 
-    def plotter(self, ax, secondary_axes):
-        self.primary_plotter(ax)
-
-        self.mark_size = 40
-
-        iq_axis = secondary_axes[0]
-        iq_axis.set_xlim(*self.x_limits)
-        iq_axis.set_ylim(*self.y_limits)
-
-        self.plot_iq_scatter(iq_axis, self.IQ2_tp, ".", "green")
-        self.plot_iq_scatter(iq_axis, self.IQ2_fp, "x", "yellow")
-        self.plot_iq_scatter(iq_axis, self.IQnot2_tp, ".", "purple")
-        self.plot_iq_scatter(iq_axis, self.IQnot2_fp, "x", "pink")
-
-        iq_axis.scatter(
-            self.centers[:, 0],
-            self.centers[:, 1],
-            s=2 * self.mark_size,
-            color="brown",
-            zorder=10,
-        )
-        iq_axis.scatter(
-            0,
-            self.y_intercept,
-            s=2 * self.mark_size,
-            marker="P",
-            color="black",
-            zorder=11,
-        )
-
-        iq_axis.plot(
-            self.x_space,
-            self.lamda * self.x_space + self.y_intercept,
-            lw=2,
-            label=f"angle: {self.rotation_angle_degrees:0.1f}" r"$\degree$",
-        )
-        iq_axis.legend()
-        iq_axis.axhline(0, color="black")
-        iq_axis.axvline(0, color="black")
-
-        rotated_iq_axis = secondary_axes[1]
-        self.plot_iq_scatter(
-            rotated_iq_axis,
-            self.rotated_IQ2_tp,
-            ".",
-            "green",
-            label="send 2 and read 2",
-        )
-        self.plot_iq_scatter(rotated_iq_axis, self.rotated_IQ2_fp, "x", "yellow")
-        self.plot_iq_scatter(
-            rotated_iq_axis,
-            self.rotated_IQnot2_tp,
-            ".",
-            "purple",
-            label="send not2 and read not2",
-        )
-        self.plot_iq_scatter(rotated_iq_axis, self.rotated_IQnot2_fp, "x", "pink")
-        rotated_iq_axis.axvline(
-            self.threshold,
-            color="purple",
-            lw=3,
-            label=f"threshold: {self.threshold:0.4f}",
-        )
-
-        rotated_iq_axis.legend()
-        rotated_iq_axis.axhline(0, color="black")
-        rotated_iq_axis.axvline(0, color="black")
-
 
 class OptimalRO2Not2AmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = OptimalRO2not2AmplitudeQubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-        self.plots_per_qubit = 3
-
-    def _fill_plots(self):
-        # FIXME: No more charts
-        pass
-        # for index, analysis in enumerate(self.qubit_analyses):
-        #     primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-        #     primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-        #
-        #     list_of_secondary_axes = []
-        #     for plot_indx in range(1, self.plots_per_qubit):
-        #         secondary_plot_row = primary_plot_row + plot_indx
-        #         list_of_secondary_axes.append(
-        #             self.axs[secondary_plot_row, index % self.column_grid]
-        #         )
-        #
-        #     analysis.plot(primary_axis, list_of_secondary_axes)

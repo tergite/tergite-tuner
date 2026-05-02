@@ -24,8 +24,8 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 
 
 class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = ""
 
     def _analyse_ramsey(self):
@@ -78,29 +78,10 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
             self.qubit_frequency + self.frequency_correction
         )
 
-    def plotter(self, ax):
-        ax.plot(self.artificial_detunings, self.fitted_detunings, "bo", ms=5.0)
-        ax.axvline(
-            self.frequency_correction,
-            color="red",
-            label=f"correction: {int(self.frequency_correction) / 1e3} kHz",
-        )
-        ax.plot(
-            self.artificial_detunings,
-            self.poly1d_fn(self.artificial_detunings),
-            "--b",
-            lw=1,
-        )
-        ax.axvline(0, color="black", lw=1)
-        ax.set_xlabel("Artificial detuning (Hz)")
-        ax.set_ylabel("Fitted detuning (Hz)")
-
-        ax.grid()
-
 
 class RamseyDetunings01QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = "clock_freqs:f01"
 
     def analyse_qubit(self):
@@ -120,8 +101,8 @@ class RamseyDetunings01QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
 
 
 class RamseyDetunings12QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = "clock_freqs:f12"
 
     def analyse_qubit(self):
@@ -143,12 +124,6 @@ class RamseyDetunings12QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
 class RamseyDetunings01NodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = RamseyDetunings01QubitAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
 
 class RamseyDetunings12NodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = RamseyDetunings12QubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)

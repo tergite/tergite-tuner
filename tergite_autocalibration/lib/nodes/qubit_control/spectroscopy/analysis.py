@@ -38,8 +38,8 @@ class QubitSpectroscopyAnalysis(BaseQubitAnalysis):
     The resulting fit can be analyzed to determine if a peak was found or not.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 
     def _analyse_spectroscopy(self):
@@ -114,28 +114,6 @@ class QubitSpectroscopyAnalysis(BaseQubitAnalysis):
         self.hasPeak = True
         return self.hasPeak
 
-    def plotter(self, ax):
-        # Plots the data and the fitted model of a qubit spectroscopy experiment
-        if self.hasPeak:
-            ax.plot(self.fit_freqs, self.fit_y, "r-", lw=3.0)
-            min = np.min(self.magnitudes)
-
-            ax.plot(
-                self.fit_freqs,
-                self.fit_y,
-                "r-",
-                lw=3.0,
-                label=f"freq = {self.freq:.6E} (Hz)",
-            )
-
-        x_dataarray = self.magnitudes.to_dataarray()
-        x = x_dataarray.values[0].flatten
-        ax.plot(self.frequencies_value, x, "bo-", ms=3.0)
-        ax.set_title(f"Qubit Spectroscopy for {self.qubit}")
-        ax.set_xlabel("frequency (Hz)")
-        ax.set_ylabel("|S21| (V)")
-        ax.grid()
-
 
 class QubitSpectroscopyMaxThresholdQubitAnalysis:
     """
@@ -182,9 +160,6 @@ class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
     Analysis that fits a Lorentzian function to qubit spectroscopy data.
     The resulting fit can be analyzed to determine if a peak was found or not.
     """
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
 
     def _analyse_spectroscopy(self):
         for coord in self.dataset[self.data_var].coords:
@@ -267,17 +242,8 @@ class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
         self.hasPeak = True
         return self.hasPeak
 
-    def plotter(self, ax):
-        self.magnitudes[self.data_var].plot(
-            ax=ax, x=self.frequency_coords
-        )  # Here, `self.frequency_coords` is the coordinate name
-        ax.scatter(self.qubit_freq, self.spec_ampl, s=52, c="red")
-
 
 class QubitSpectroscopy12MultidimAnalysis(QubitSpectroscopyMultidimAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         self._analyse_spectroscopy()
         analysis_successful = True
@@ -298,19 +264,10 @@ class QubitSpectroscopy12MultidimAnalysis(QubitSpectroscopyMultidimAnalysis):
 class QubitSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = QubitSpectroscopyAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
 
 class QubitSpectroscopy12NodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = QubitSpectroscopy12MultidimAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
 
 class QubitSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = QubitSpectroscopyMultidimAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)

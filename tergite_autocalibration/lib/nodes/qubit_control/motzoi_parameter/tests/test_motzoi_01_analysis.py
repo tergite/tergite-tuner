@@ -61,19 +61,3 @@ def test_motzoi_parameter(redis_connection, session_context):
 
         assert qoi.analysis_successful
         assert pytest.approx(motzoi_01) == -0.0923076923077
-
-
-# FIXME: No more charts
-# @with_redis(_redis_values)
-# def test_plotting():
-#     """
-#     Test that the plotter produces a figure with the right number of axes
-#     """
-#     name = "motzoi_parameter"
-#     file_path = os.path.join(_test_data_dir, name)
-#     qubit_qois = ["rxy:motzoi"]
-#
-#     analysis = Motzoi01NodeAnalysis(name, qubit_qois)
-#     analysis.analyze_node(file_path)
-#     number_of_qubits = len(analysis.dataset.attrs["elements"])
-#     assert analysis.axs.shape == (1, number_of_qubits)

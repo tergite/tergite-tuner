@@ -49,7 +49,6 @@ def clean_environ(monkeypatch):
         "CLUSTER_IP",
         "SPI_SERIAL_PORT",
         "REDIS_URL",
-        "PLOTTING",
         "DATA_BROWSER_HOST",
         "DATA_BROWSER_PORT",
         "HW_CONFIG_GENERATOR_HOST",
@@ -78,7 +77,6 @@ def test_session_loads_example_env(example_env_path, clean_environ):
     assert str(session.cluster_ip) == "192.14.2.1"
     assert session.spi_serial_port == "/dev/ttyACM0"
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
-    assert session.plotting is True
     assert str(session.data_browser_host) == "127.0.0.1"
     assert session.data_browser_port == 8179
     assert str(session.hw_config_generator_host) == "127.0.0.1"
@@ -101,7 +99,6 @@ def test_session_constructs_with_no_args(clean_environ):
     session = SessionContext()
 
     assert session.stdout_log_level == 25
-    assert session.plotting is True
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.data_dir == session.root_dir / "out"
     assert session.config_dir == session.root_dir
@@ -132,14 +129,11 @@ def test_session_coerces_string_values(tmp_path, clean_environ):
     """Values from the ``.env`` file (always strings) are coerced to the field type."""
     sample = tmp_path / ".env"
     sample.write_text(
-        "REDIS_URL='redis://127.0.0.1:6380/0'\n"
-        "PLOTTING='False'\n"
-        "STDOUT_LOG_LEVEL='30'\n"
+        "REDIS_URL='redis://127.0.0.1:6380/0'\n" "STDOUT_LOG_LEVEL='30'\n"
     )
 
     session = SessionContext.from_env(sample)
     assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
-    assert session.plotting is False
     assert session.stdout_log_level == 30
 
 
@@ -158,13 +152,12 @@ def test_session_rejects_non_integer_port(tmp_path, clean_environ):
 def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
     """When a field is absent from the ``.env`` file, ``os.environ`` is consulted."""
     sample = tmp_path / ".env"
-    sample.write_text("PLOTTING='False'\n")  # only PLOTTING in the file
+    sample.write_text("STDOUT_LOG_LEVEL='30'\n")  # some value in the file
 
     monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
     monkeypatch.setenv("QUBITS", "q00,q01")
 
     session = SessionContext.from_env(sample)
-    assert session.plotting is False  # from file
     assert str(session.redis_url) == "redis://127.0.0.1:6500/0"  # from os.environ
     assert session.qubits == ["q00", "q01"]  # csv-coerced
 
@@ -184,7 +177,6 @@ def test_session_from_env_without_file(monkeypatch, clean_environ):
     monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
     session = SessionContext.from_env()
     assert str(session.redis_url) == "redis://127.0.0.1:6500/0"
-    assert session.plotting is True  # class default
 
 
 def test_session_from_env_raises_for_missing_file(tmp_path):

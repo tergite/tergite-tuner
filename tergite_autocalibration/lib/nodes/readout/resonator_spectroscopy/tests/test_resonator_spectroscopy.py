@@ -10,11 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
 import unittest
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import pytest
 import xarray as xr
 
@@ -61,21 +59,3 @@ class TestResonatorFrequencyAnalysis(unittest.TestCase):
         assert min_freq_data == pytest.approx(
             minimum_freq, rel=1e3
         ), f"The both frequencies should be close to each other {minimum_freq} {min_freq_data}"
-
-    def test_plotting(self):
-        os.environ["DATA_DIR"] = str(Path(__file__).parent / "results")
-        test_dir = Path(__file__).parent
-        file_path = test_dir / "data_0" / "dataset_resonator_spectroscopy_0.hdf5"
-        dataset = xr.open_dataset(file_path)
-        analysis = ResonatorSpectroscopyQubitAnalysis(
-            "name", ["clock_freqs:readout", "Ql", "resonator_minimum"]
-        )
-        dataset = analysis.process_qubit(dataset, "yq06")
-        figure_path = os.environ["DATA_DIR"] + "/Resonator_spectroscopy_q06.png"
-        if os.path.exists(figure_path):
-            os.remove(figure_path)
-
-        fig, ax = plt.subplots()
-        analysis.plotter(ax)
-        fig.savefig(figure_path)
-        plt.close(fig)

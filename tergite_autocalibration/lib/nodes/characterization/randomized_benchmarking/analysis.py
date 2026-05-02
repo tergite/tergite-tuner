@@ -14,7 +14,6 @@
 from typing import Optional
 
 import numpy as np
-from matplotlib.axes import Axes
 from scipy.linalg import norm
 from scipy.optimize import minimize
 
@@ -180,53 +179,6 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
-
-    def plotter(self, ax: Axes):
-        standard_probabilities = self.state_probabilities.sel(
-            {self.interleave_gate_coord: "Standard"}
-        )
-
-        styles = dict(c="b", lw=0.5)
-        standard_probabilities.sel(state=0).plot.line(
-            ax=ax, x=self.number_cliffords_coord, **styles
-        )
-        styles = dict(c="r", lw=0.5)
-        standard_probabilities.sel(state=1).plot.line(
-            ax=ax, x=self.number_cliffords_coord, **styles
-        )
-        styles = dict(c="g", lw=0.5)
-        standard_probabilities.sel(state=2).plot.line(
-            ax=ax, x=self.number_cliffords_coord, **styles
-        )
-        ax.plot(
-            self.fit_n_cliffords,
-            self.standard_fit_y,
-            "b--",
-            lw=2,
-            # label=f"p = {self.fidelity:.4f} ± {self.fidelity_error:.4f}",
-            label=rf"$p_{{SRB}}$ = {self.fidelity:.4f}",
-        )
-        ax.plot(
-            self.fit_n_cliffords,
-            self.fit_y2,
-            "g--",
-            lw=2,
-            label=f"leakage = {self.leakage:.4f}",
-        )
-        if self.interleaved_gate is not None:
-            ax.plot(
-                self.fit_n_cliffords,
-                self.interleaved_fit_y,
-                "c--",
-                lw=2,
-                label=rf"$p_{{IRB}}$ = {self.interleaved_fidelity:.4f}",
-            )
-        ax.set_ylabel("population", fontsize=14)
-        ax.set_xlabel("number of cliffords", fontsize=14)
-        ax.legend()
-        ax.tick_params(axis="both", which="major", labelsize=14)
-        ax.set_title("")
-        ax.grid()
 
 
 class RandomizedBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
