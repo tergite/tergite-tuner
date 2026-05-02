@@ -27,7 +27,7 @@ from tergite_autocalibration.lib.utils.validators import (
     get_number_of_batches,
     reduce_batch,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
@@ -38,41 +38,50 @@ from tergite_autocalibration.utils.dto.extended_transmon_element import Extended
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 
 
-@with_redis(redis_mock)
-def test_create_serial_device():
-    # ensure no other transmon objects are instantiated
-    # this is because some other test doesn't close the device properly
-    ExtendedTransmon.close_all()
-    device_name = "test_device"
-    test_device = configure_device(
-        device_name, qubits=DEFAULT_TEST_QUBITS, couplers=DEFAULT_TEST_COUPLERS
-    )
+def test_create_serial_device(redis_connection, session_context):
+    with loaded_redis(redis_connection, redis_mock):
+        # ensure no other transmon objects are instantiated
+        # this is because some other test doesn't close the device properly
+        ExtendedTransmon.close_all()
+        device_name = "test_device"
+        test_device = configure_device(
+            device_name,
+            qubits=DEFAULT_TEST_QUBITS,
+            couplers=DEFAULT_TEST_COUPLERS,
+            config=session_context.config,
+            redis_connection=redis_connection,
+        )
 
-    q00 = test_device.get_element("q00")
-    pi_amplitude = q00.rxy.amp180()
-    q00_q01 = test_device.get_edge("q00_q01")
-    initial_parking_current = q00_q01.coupler_parameters.parking_current()
-    cz_phase_path = q00_q01.coupler_parameters.phase_path()
+        q00 = test_device.get_element("q00")
+        pi_amplitude = q00.rxy.amp180()
+        q00_q01 = test_device.get_edge("q00_q01")
+        initial_parking_current = q00_q01.coupler_parameters.parking_current()
+        cz_phase_path = q00_q01.coupler_parameters.phase_path()
 
-    assert test_device.elements() == DEFAULT_TEST_QUBITS
-    assert test_device.edges() == DEFAULT_TEST_COUPLERS
+        assert test_device.elements() == DEFAULT_TEST_QUBITS
+        assert test_device.edges() == DEFAULT_TEST_COUPLERS
 
-    assert math.isclose(pi_amplitude, 0.7308488204080522)
-    assert math.isclose(initial_parking_current, 0.00065)
-    assert cz_phase_path == "via_20"
+        assert math.isclose(pi_amplitude, 0.7308488204080522)
+        assert math.isclose(initial_parking_current, 0.00065)
+        assert cz_phase_path == "via_20"
 
-    close_device_resources(test_device)
+        close_device_resources(test_device)
 
 
-def test_save_serial_device(tmp_path):
-    # ensure no other transmon objects are instantiated
-    # this is because some other test doesn't close the device properly
-    ExtendedTransmon.close_all()
-    device_name = "test_device"
-    test_device = configure_device(
-        device_name, qubits=DEFAULT_TEST_QUBITS, couplers=DEFAULT_TEST_COUPLERS
-    )
-    save_serial_device(test_device, data_path=tmp_path)
+def test_save_serial_device(tmp_path, redis_connection, session_context):
+    with loaded_redis(redis_connection, redis_mock):
+        # ensure no other transmon objects are instantiated
+        # this is because some other test doesn't close the device properly
+        ExtendedTransmon.close_all()
+        device_name = "test_device"
+        test_device = configure_device(
+            device_name,
+            qubits=DEFAULT_TEST_QUBITS,
+            couplers=DEFAULT_TEST_COUPLERS,
+            config=session_context.config,
+            redis_connection=redis_connection,
+        )
+        save_serial_device(test_device, data_path=tmp_path)
 
     assert os.path.exists(os.path.join(tmp_path, f"{device_name}.json"))
 

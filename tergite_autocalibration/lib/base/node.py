@@ -22,7 +22,6 @@ import matplotlib
 import numpy as np
 import xarray
 
-from tergite_autocalibration.config.globals import PLOTTING_BACKEND, REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import BaseNodeAnalysis
 from tergite_autocalibration.lib.base.measurement import (
     BaseMeasurement,
@@ -52,7 +51,7 @@ if TYPE_CHECKING:
         InstrumentCoordinator,
     )
 
-matplotlib.use(PLOTTING_BACKEND)
+    from tergite_autocalibration.config.session import SessionContext
 
 
 class BaseNode(ABC):
@@ -61,7 +60,12 @@ class BaseNode(ABC):
     analysis_obj: "BaseNodeAnalysis"
     measurement_type: "MeasurementType"
 
-    def __init__(self, **node_dictionary):
+    def __init__(self, session: "SessionContext", **node_dictionary):
+        self.session = session
+        # The matplotlib backend depends on whether plots should be shown
+        # while the run is in progress. Set this once per node to keep the
+        # behaviour consistent across the run.
+        matplotlib.use("tkagg" if session.plotting else "agg")
         self.node_dictionary = node_dictionary
         self.lab_instr_coordinator: "InstrumentCoordinator"
         self.spi_manager: SpiDAC
@@ -150,15 +154,44 @@ class BaseNode(ABC):
 
     def post_process(self, data_path: Path):
         analysis_kwargs = getattr(self, "analysis_keywords", dict())
-        node_analysis: BaseNodeAnalysis = self.analysis_obj(
-            self.name, self.redis_fields, **analysis_kwargs
-        )
+        node_analysis: BaseNodeAnalysis = self._build_node_analysis(**analysis_kwargs)
         QOI_dict = node_analysis.analyze_node(data_path)
         for element_id_, qois_ in QOI_dict.items():
             update_redis_trusted_values(
-                self.name, element_id_, qoi=qois_, redis_fields=self.redis_fields
+                self.name,
+                element_id_,
+                self.session.redis_connection,
+                qoi=qois_,
+                redis_fields=self.redis_fields,
             )
         return QOI_dict
+
+    def _build_node_analysis(self, **analysis_kwargs) -> BaseNodeAnalysis:
+        """Construct the analysis object for this node.
+
+        Coupler analyses need access to the loaded :class:`Configuration`
+        (e.g. to resolve control / target qubit pairs), so we pass it
+        through their constructor. The redis client is then injected on
+        the resulting object so subclasses do not have to thread it
+        through their own ``__init__`` signatures.
+        """
+        from tergite_autocalibration.lib.base.analysis import BaseAllCouplersAnalysis
+
+        if isinstance(self.analysis_obj, type) and issubclass(
+            self.analysis_obj, BaseAllCouplersAnalysis
+        ):
+            analysis = self.analysis_obj(
+                self.name,
+                self.redis_fields,
+                self.session.config,
+                **analysis_kwargs,
+            )
+        else:
+            analysis = self.analysis_obj(
+                self.name, self.redis_fields, **analysis_kwargs
+            )
+        analysis.redis_connection = self.session.redis_connection
+        return analysis
 
     def configure_dataset(
         self,
@@ -267,8 +300,14 @@ class QubitNode(BaseNode):
     name: str
     qubit_qois: list[str] | None = None
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **node_keywords):
-        super().__init__(**node_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **node_keywords,
+    ):
+        super().__init__(session, **node_keywords)
         self.all_qubits = all_qubits
         self.couplers = couplers
         self.qubit_state = 0  # can be 0 or 1 or 2
@@ -277,7 +316,11 @@ class QubitNode(BaseNode):
             self.redis_fields = self.qubit_qois
 
         self.device = configure_device(
-            self.name, qubits=self.all_qubits, couplers=self.couplers
+            self.name,
+            qubits=self.all_qubits,
+            couplers=self.couplers,
+            config=self.session.config,
+            redis_connection=self.session.redis_connection,
         )
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
@@ -317,8 +360,8 @@ class CouplerNode(BaseNode):
     name: str
     coupler_qois: list[str]
 
-    def __init__(self, couplers: list[str], **node_keywords):
-        super().__init__(**node_keywords)
+    def __init__(self, couplers: list[str], session: "SessionContext", **node_keywords):
+        super().__init__(session, **node_keywords)
         self.couplers = couplers
         self.edges = couplers
         self.all_qubits = sorted(set(self.get_coupled_qubits()))
@@ -327,7 +370,11 @@ class CouplerNode(BaseNode):
             self.redis_fields = self.coupler_qois
 
         self.device = configure_device(
-            self.name, qubits=self.all_qubits, couplers=self.couplers
+            self.name,
+            qubits=self.all_qubits,
+            couplers=self.couplers,
+            config=self.session.config,
+            redis_connection=self.session.redis_connection,
         )
 
     def measure_node(self, cluster_status) -> xarray.Dataset:
@@ -352,10 +399,11 @@ class CouplerNode(BaseNode):
         This method fetches the redis value and sets the update DC current
         to the appropriate SPI dacs.
         """
+        redis_connection = self.session.redis_connection
         currents_dict = {}
         for coupler in self.couplers:
             parking_current = float(
-                REDIS_CONNECTION.hget(f"couplers:{coupler}", "parking_current")
+                redis_connection.hget(f"couplers:{coupler}", "parking_current")
             )
             if np.isnan(parking_current):
                 logger.warning(f"nan current for coupler {coupler}")
@@ -373,12 +421,13 @@ class CouplerNode(BaseNode):
         return coupled_qubits
 
     def gate_qubit_types_dict(self) -> dict[str, dict]:
+        redis_connection = self.session.redis_connection
         qubit_types_dict = {}
         for coupler in self.couplers:
-            control_qubit = REDIS_CONNECTION.hget(
+            control_qubit = redis_connection.hget(
                 f"couplers:{coupler}", "control_qubit"
             )
-            target_qubit = REDIS_CONNECTION.hget(f"couplers:{coupler}", "target_qubit")
+            target_qubit = redis_connection.hget(f"couplers:{coupler}", "target_qubit")
             qubit_types_dict[coupler] = {
                 "control_qubit": control_qubit,
                 "target_qubit": target_qubit,
@@ -396,13 +445,14 @@ class CouplerNode(BaseNode):
     def transition_frequency(
         self, coupler: str, phase_path: Literal["via_20", "via_02"]
     ) -> float:
+        redis_connection = self.session.redis_connection
         qubit_roles = self.gate_qubit_types_dict()[coupler]
         c_qubit = qubit_roles["control_qubit"]
         t_qubit = qubit_roles["target_qubit"]
-        c_f01 = float(REDIS_CONNECTION.hget(f"transmons:{c_qubit}", "clock_freqs:f01"))
-        t_f01 = float(REDIS_CONNECTION.hget(f"transmons:{t_qubit}", "clock_freqs:f01"))
-        c_f12 = float(REDIS_CONNECTION.hget(f"transmons:{c_qubit}", "clock_freqs:f12"))
-        t_f12 = float(REDIS_CONNECTION.hget(f"transmons:{t_qubit}", "clock_freqs:f12"))
+        c_f01 = float(redis_connection.hget(f"transmons:{c_qubit}", "clock_freqs:f01"))
+        t_f01 = float(redis_connection.hget(f"transmons:{t_qubit}", "clock_freqs:f01"))
+        c_f12 = float(redis_connection.hget(f"transmons:{c_qubit}", "clock_freqs:f12"))
+        t_f12 = float(redis_connection.hget(f"transmons:{t_qubit}", "clock_freqs:f12"))
 
         if phase_path == "via_20":
             ac_frequency = np.abs(c_f01 + t_f01 - (c_f01 + c_f12))

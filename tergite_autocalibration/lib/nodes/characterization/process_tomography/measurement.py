@@ -24,7 +24,6 @@ from quantify_scheduler.operations.gate_library import Reset, Rxy, X
 from quantify_scheduler.operations.pulse_library import IdlePulse, ResetClockPhase
 from quantify_scheduler.resources import ClockResource
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
 from tergite_autocalibration.utils.dto.extended_coupler_edge import (
     ExtendedCompositeSquareEdge,
@@ -53,6 +52,7 @@ class ProcessTomographyMeasurement(BaseMeasurement):
         self,
         ramsey_phases: dict[str, np.ndarray],
         control_ons: dict[str, np.ndarray],
+        redis_connection,
         repetitions: int = 4096,
         opt_cz_pulse_frequency: dict[str, float] = None,
         opt_cz_pulse_duration: dict[str, float] = None,
@@ -98,7 +98,7 @@ class ProcessTomographyMeasurement(BaseMeasurement):
         for coupler in all_couplers:
             qubits = coupler.split(sep="_")
             for this_coupler in all_couplers:
-                redis_config = REDIS_CONNECTION.hgetall(f"couplers:{this_coupler}")
+                redis_config = redis_connection.hgetall(f"couplers:{this_coupler}")
                 cz_pulse_frequency[this_coupler] = float(
                     redis_config["cz_pulse_frequency"]
                 )

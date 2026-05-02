@@ -14,17 +14,15 @@
 import numpy as np
 import xarray as xr
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 
-
-def assign_state(iq_values: xr.DataArray) -> xr.DataArray:
+def assign_state(iq_values: xr.DataArray, redis_connection) -> xr.DataArray:
     qubit = iq_values.attrs["qubit"]
     redis_key = f"transmons:{qubit}"
-    centroid_i = float(REDIS_CONNECTION.hget(f"{redis_key}", "centroid_I"))
-    centroid_q = float(REDIS_CONNECTION.hget(f"{redis_key}", "centroid_Q"))
-    omega_01 = float(REDIS_CONNECTION.hget(f"{redis_key}", "omega_01"))
-    omega_12 = float(REDIS_CONNECTION.hget(f"{redis_key}", "omega_12"))
-    omega_20 = float(REDIS_CONNECTION.hget(f"{redis_key}", "omega_20"))
+    centroid_i = float(redis_connection.hget(f"{redis_key}", "centroid_I"))
+    centroid_q = float(redis_connection.hget(f"{redis_key}", "centroid_Q"))
+    omega_01 = float(redis_connection.hget(f"{redis_key}", "omega_01"))
+    omega_12 = float(redis_connection.hget(f"{redis_key}", "omega_12"))
+    omega_20 = float(redis_connection.hget(f"{redis_key}", "omega_20"))
     state_boundaries = {"01": omega_01, "12": omega_12, "20": omega_20}
     sorted_state_boundaries_dict = {
         k: v for k, v in sorted(state_boundaries.items(), key=lambda item: item[1])
@@ -59,10 +57,10 @@ def assign_state(iq_values: xr.DataArray) -> xr.DataArray:
     return assigned_states
 
 
-def calculate_probabilities(iq_data_var: xr.DataArray):
+def calculate_probabilities(iq_data_var: xr.DataArray, redis_connection):
     if "loops" not in iq_data_var.coords:
         raise ValueError("Dataarray does not contain loop coordinate")
-    states_array = assign_state(iq_data_var)
+    states_array = assign_state(iq_data_var, redis_connection)
     qubit = iq_data_var.attrs["qubit"]
     loops_coord = iq_data_var.loops.name
     number_of_loops = iq_data_var.loops.size
@@ -97,7 +95,9 @@ import matplotlib.pyplot as plt
 fig, ax = plt.subplots(1, 1)
 
 
-def generate_iq_shots(probabilities: np.ndarray, qubit: str, loops: int) -> np.ndarray:
+def generate_iq_shots(
+    probabilities: np.ndarray, qubit: str, loops: int, redis_connection
+) -> np.ndarray:
     """
     given the probabilities array, generate an array of IQ points
     of size `loops` that given the loaded discriminator would
@@ -106,11 +106,11 @@ def generate_iq_shots(probabilities: np.ndarray, qubit: str, loops: int) -> np.n
     Example of probabilities array: [0.2, 0.3, 0.5]
     """
     redis_key = f"transmons:{qubit}"
-    centroid_i = float(REDIS_CONNECTION.hget(f"{redis_key}", "centroid_I"))
-    centroid_q = float(REDIS_CONNECTION.hget(f"{redis_key}", "centroid_Q"))
-    omega_01 = float(REDIS_CONNECTION.hget(f"{redis_key}", "omega_01"))
-    omega_12 = float(REDIS_CONNECTION.hget(f"{redis_key}", "omega_12"))
-    omega_20 = float(REDIS_CONNECTION.hget(f"{redis_key}", "omega_20"))
+    centroid_i = float(redis_connection.hget(f"{redis_key}", "centroid_I"))
+    centroid_q = float(redis_connection.hget(f"{redis_key}", "centroid_Q"))
+    omega_01 = float(redis_connection.hget(f"{redis_key}", "omega_01"))
+    omega_12 = float(redis_connection.hget(f"{redis_key}", "omega_12"))
+    omega_20 = float(redis_connection.hget(f"{redis_key}", "omega_20"))
 
     state_boundaries = {"01": omega_01, "12": omega_12, "20": omega_20}
     sorted_state_boundaries_dict = {

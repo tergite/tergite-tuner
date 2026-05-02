@@ -18,7 +18,7 @@
 # that they have been altered from the originals.
 
 from types import MappingProxyType
-from typing import FrozenSet, List, Union
+from typing import FrozenSet, List, Union, Optional
 
 from colorama import Fore, Style
 from qblox_instruments import Cluster
@@ -26,10 +26,7 @@ from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
-from tergite_autocalibration.config.globals import (
-    CONFIG,
-    REDIS_CONNECTION,
-)
+from tergite_autocalibration.config.load import load_configuration
 from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode
 from tergite_autocalibration.lib.utils.graph import filtered_topological_order
@@ -74,7 +71,7 @@ class HardwareManager:
         Creates and initializes a Cluster object to represent the hardware cluster
         based on the given IP address in the configuration.
         """
-        cluster_name = list(CONFIG.cluster.hardware_description.keys())[0]
+        cluster_name = list(self.config.config.cluster.hardware_description.keys())[0]
         cluster: "Cluster"
         if self.config.cluster_mode == MeasurementMode.real:
             # Ensure all previous connections are closed before creating a new cluster instance
@@ -116,11 +113,13 @@ class HardwareManager:
         clusters = [clusters] if isinstance(clusters, Cluster) else clusters
 
         # Load attenuation settings for entire system (possibly across multiple clusters)
-        output_attenuation_settings = CONFIG.device.get_output_attenuations()
+        output_attenuation_settings = (
+            self.config.config.device.get_output_attenuations()
+        )
         connectivity = MappingProxyType(
             {
                 str(n): frozenset(neigh.keys())
-                for n, neigh in CONFIG.cluster.connectivity.graph.adj.items()
+                for n, neigh in self.config.config.cluster.connectivity.graph.adj.items()
             }
         )
 
@@ -139,8 +138,7 @@ class HardwareManager:
         return lab_ic
 
     def create_spi(self, couplers) -> SpiDAC:
-        measurement_mode = self.config.cluster_mode
-        return SpiDAC(couplers, measurement_mode)
+        return SpiDAC(couplers, self.config)
 
     def get_instrument_coordinator(self):
         """Access the instrument coordinator for use by other classes."""
@@ -230,17 +228,22 @@ class NodeManager:
     """
 
     def __init__(
-        self, lab_ic: "InstrumentCoordinator", config: "SessionContext"
+        self,
+        lab_ic: "InstrumentCoordinator",
+        session: "SessionContext",
+        redis_connection,
     ) -> None:
-        self.config = config
+        self.session = session
         self.node_factory = NodeFactory()
         self.lab_ic = lab_ic
-        self.spi_manager: SpiDAC = None
+        self.redis_connection = redis_connection
+        self.spi_manager: Optional[SpiDAC] = None
 
         populate_initial_parameters(
-            self.config.qubits,
-            self.config.couplers,
-            REDIS_CONNECTION,
+            self.session.qubits,
+            self.session.couplers,
+            self.redis_connection,
+            self.session.config,
         )
 
     @staticmethod
@@ -253,9 +256,9 @@ class NodeManager:
         populate_quantities_of_interest(
             node_name,
             self.node_factory,
-            self.config.qubits,
-            self.config.couplers,
-            REDIS_CONNECTION,
+            self.session.qubits,
+            self.session.couplers,
+            self.redis_connection,
         )
 
         # Check Redis if node is calibrated
@@ -268,9 +271,10 @@ class NodeManager:
         populate_node_parameters(
             node_name,
             status == DataStatus.in_spec,
-            self.config.qubits,
-            self.config.couplers,
-            REDIS_CONNECTION,
+            self.session.qubits,
+            self.session.couplers,
+            self.redis_connection,
+            self.session.config,
         )
 
         # Log status
@@ -289,29 +293,35 @@ class NodeManager:
 
             # Determine the data path for calibration
             data_path = (
-                self.config.log_dir
-                if self.config.cluster_mode == MeasurementMode.re_analyse
-                else create_node_data_path(self.config, node_name=node.name)
+                self.session.log_dir
+                if self.session.cluster_mode == MeasurementMode.re_analyse
+                else create_node_data_path(self.session, node_name=node.name)
             )
 
             # Perform calibration
-            node.calibrate(data_path, self.config.cluster_mode)
+            node.calibrate(data_path, self.session.cluster_mode)
 
-        revert_node_parameters(node_name, self.config.qubits, REDIS_CONNECTION)
+        revert_node_parameters(
+            node_name,
+            self.session.qubits,
+            self.redis_connection,
+            self.session.config,
+        )
 
     def _initialize_node(self, node_name: str) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
-        elements = {"qubits": self.config.qubits, "couplers": self.config.couplers}
+        elements = {"qubits": self.session.qubits, "couplers": self.session.couplers}
         node = self.node_factory.create_node(
             node_name,
-            self.config.qubits,
-            couplers=self.config.couplers,
+            self.session.qubits,
+            couplers=self.session.couplers,
+            session=self.session,
         )
 
         # Update node samplespace
-        if node.name in self.config.user_samplespace:
+        if node.name in self.session.user_samplespace:
             logger.info(f"Using user_samplespace for {node.name}")
-            self.update_to_user_samplespace(node, self.config.user_samplespace)
+            self.update_to_user_samplespace(node, self.session.user_samplespace)
 
         # Since the node is respomsible for compiling its schedule
         # it needs access to the instrument_coordinator
@@ -322,8 +332,8 @@ class NodeManager:
 
         # Log initialization details
         logger.info(
-            f"Initializing parameters for qubits: {self.config.qubits} "
-            f"and couplers: {self.config.couplers}"
+            f"Initializing parameters for qubits: {self.session.qubits} "
+            f"and couplers: {self.session.couplers}"
         )
         return node
 
@@ -332,12 +342,12 @@ class NodeManager:
         determining if the node is within or out of specification."""
         node = self.node_factory.get_node_class(node_name)
         elements = (
-            self.config.couplers
+            self.session.couplers
             if issubclass(node, CouplerNode)
-            else self.config.qubits
+            else self.session.qubits
         )
         for element in elements:
-            status = REDIS_CONNECTION.hget(f"cs:{element}", node_name)
+            status = self.redis_connection.hget(f"cs:{element}", node_name)
             if status == "not_calibrated":
                 return DataStatus.out_of_spec
             elif status != "calibrated":
@@ -358,11 +368,16 @@ class NodeManager:
 
 
 class CalibrationSupervisor:
-    def __init__(self, config: SessionContext) -> None:
+    def __init__(
+        self,
+        config: SessionContext,
+        redis_connection,
+    ) -> None:
         self.config = config
+        self.redis_connection = redis_connection
         self.hardware_manager = HardwareManager(config=config)
         self.lab_ic = self.hardware_manager.get_instrument_coordinator()
-        self.node_manager = NodeManager(self.lab_ic, config=config)
+        self.node_manager = NodeManager(self.lab_ic, session=config, redis_connection=redis_connection)
         self.topo_order = self.node_manager.topo_order(self.config.target_node_name)
         logger.info("Node Manager is initialized")
 
@@ -392,12 +407,6 @@ class CalibrationSupervisor:
             self.config.couplers
         )
         self.node_manager.spi_manager.set_initial_parking_currents(self.config.couplers)
-
-        # NOTE: The previous behaviour copied the loaded configuration package
-        # into ``self.config.log_dir`` so that runs were reproducible from
-        # their own log directory. That snapshotting hook moved out of the
-        # config layer; if we still need it, do it here against
-        # ``CONFIG.meta_path``'s parent directory.
 
         for calibration_node in calibration_nodes:
             if calibration_node == "three_state_discrimination":

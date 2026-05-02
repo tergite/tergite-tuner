@@ -26,7 +26,6 @@ from quantify_scheduler.operations.gate_library import CZ, X90, Y90, Reset, Rxy,
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.resources import ClockResource
 
-from tergite_autocalibration.config.globals import DOWNCONVERT_FREQUENCY
 from tergite_autocalibration.lib.base.measurement import BaseMeasurement
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (
     randomized_benchmarking_sequence,
@@ -43,6 +42,10 @@ from tergite_autocalibration.utils.logging import logger
 
 # Constants
 IDLE_TIME = 12e-9
+# Frequency used for the downconversion of the readout signal. This was
+# previously sourced from the global config; if it ever needs to vary
+# per-device, surface it through the device configuration instead.
+DOWNCONVERT_FREQUENCY = 4.4e9
 
 
 class CZRBMeasurement(BaseMeasurement):

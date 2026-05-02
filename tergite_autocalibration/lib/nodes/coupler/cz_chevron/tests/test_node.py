@@ -11,9 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import pytest
-
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.cz_chevron.analysis import (
     CZChevronAnalysis,
@@ -30,54 +27,57 @@ from tergite_autocalibration.tests.utils.fixtures import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_node_creation():
+def test_node_creation(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q13_q14"
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "cz_half_duration", "92e-9")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", "q13")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", "q14")
-    REDIS_CONNECTION.hset(f"transmons:{'q13'}", "clock_freqs:f01", "4.2e6")
-    REDIS_CONNECTION.hset(f"transmons:{'q13'}", "clock_freqs:f12", "4.0e6")
-    REDIS_CONNECTION.hset(f"transmons:{'q14'}", "clock_freqs:f01", "5.2e6")
-    REDIS_CONNECTION.hset(f"transmons:{'q14'}", "clock_freqs:f12", "5.0e6")
-    REDIS_CONNECTION.hset(f"couplers:{'q13_q14'}", "cz_pulse_frequency", "7.16e8")
+    redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
+    redis_connection.hset(f"couplers:{coupler}", "cz_half_duration", "92e-9")
+    redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q13")
+    redis_connection.hset(f"couplers:{coupler}", "target_qubit", "q14")
+    redis_connection.hset(f"transmons:{'q13'}", "clock_freqs:f01", "4.2e6")
+    redis_connection.hset(f"transmons:{'q13'}", "clock_freqs:f12", "4.0e6")
+    redis_connection.hset(f"transmons:{'q14'}", "clock_freqs:f01", "5.2e6")
+    redis_connection.hset(f"transmons:{'q14'}", "clock_freqs:f12", "5.0e6")
+    redis_connection.hset(f"couplers:{'q13_q14'}", "cz_pulse_frequency", "7.16e8")
     node = CZChevronNode(
-        all_qubits=["q13", "q14"],
         couplers=[coupler],
+        session=session_context,
     )
     assert isinstance(node, CouplerNode)
 
 
-def test_class_attribute_objects():
-    REDIS_CONNECTION.hset(f"couplers:{'q13_q14'}", "cz_pulse_frequency", "7.16e8")
-    REDIS_CONNECTION.hset(f"couplers:{'q13_q14'}", "cz_half_duration", "92e-9")
+def test_class_attribute_objects(redis_connection, session_context):
+    redis_connection.hset(f"couplers:{'q13_q14'}", "cz_pulse_frequency", "7.16e8")
+    redis_connection.hset(f"couplers:{'q13_q14'}", "cz_half_duration", "92e-9")
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = CZChevronNode(all_qubits=["q13", "q14"], couplers=["q13_q14"])
+    node = CZChevronNode(
+        couplers=["q13_q14"],
+        session=session_context,
+    )
     assert isinstance(node.measurement_obj, type(CZChevronMeasurement))
     assert isinstance(node.analysis_obj, type(CZChevronAnalysis))
     assert issubclass(node.measurement_type, OuterScheduleNode)
 
 
-def test_dummy_generation():
+def test_dummy_generation(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     for coupler in DEFAULT_TEST_COUPLERS:
         c_qubit, t_qubit = coupler.split("_")
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "cz_half_duration", "92e-9")
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", c_qubit)
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", t_qubit)
-        REDIS_CONNECTION.hset(
+        redis_connection.hset(f"couplers:{coupler}", "cz_half_duration", "92e-9")
+        redis_connection.hset(f"couplers:{coupler}", "control_qubit", c_qubit)
+        redis_connection.hset(f"couplers:{coupler}", "target_qubit", t_qubit)
+        redis_connection.hset(
             f"couplers:{coupler}", "initial_parking_current", "100e-6"
         )
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "cz_pulse_frequency", "7.16e8")
+        redis_connection.hset(f"couplers:{coupler}", "cz_pulse_frequency", "7.16e8")
     for qubit in DEFAULT_TEST_QUBITS[::2]:
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f01", "4.2e6")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f12", "4.0e6")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f01", "4.2e6")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f12", "4.0e6")
     for qubit in DEFAULT_TEST_QUBITS[1::2]:
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f01", "5.2e6")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f12", "5.0e6")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f01", "5.2e6")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f12", "5.0e6")
 
-    node = CZChevronNode(DEFAULT_TEST_COUPLERS)
+    node = CZChevronNode(DEFAULT_TEST_COUPLERS, session=session_context)
     dummy_dataset = node.generate_dummy_dataset()
     first_coupler = DEFAULT_TEST_COUPLERS[0]
 

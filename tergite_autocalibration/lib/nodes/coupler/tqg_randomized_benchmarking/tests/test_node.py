@@ -27,47 +27,53 @@ from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.node 
     CZRBNode,
 )
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values_path = os.path.join(_test_data_dir, "redis-2026-02-10-11-23-12.json")
 
 
-@with_redis(_redis_values_path)
-def test_node_creation():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = CZRBNode(all_qubits=["q13", "q14"], couplers=["q13_q14"])
-    assert isinstance(node, CouplerNode)
+def test_node_creation(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values_path):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        node = CZRBNode(
+            all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
+        )
+        assert isinstance(node, CouplerNode)
 
 
-@with_redis(_redis_values_path)
-def test_class_attribute_objects():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = CZRBNode(all_qubits=["q13", "q14"], couplers=["q13_q14"])
-    assert isinstance(node.measurement_obj, type(CZRBMeasurement))
-    assert isinstance(node.analysis_obj, type(CZRBNodeAnalysis))
-    assert issubclass(node.measurement_type, OuterScheduleNode)
+def test_class_attribute_objects(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values_path):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        node = CZRBNode(
+            all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
+        )
+        assert isinstance(node.measurement_obj, type(CZRBMeasurement))
+        assert isinstance(node.analysis_obj, type(CZRBNodeAnalysis))
+        assert issubclass(node.measurement_type, OuterScheduleNode)
 
 
-@with_redis(_redis_values_path)
-def test_dummy_generation():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+def test_dummy_generation(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values_path):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
 
-    coupler = "q13_q14"
-    couplers = [coupler]
-    node = CZRBNode(all_qubits=["q13", "q14"], couplers=couplers)
-    dummy_dataset = node.generate_dummy_dataset()
+        coupler = "q13_q14"
+        couplers = [coupler]
+        node = CZRBNode(
+            all_qubits=["q13", "q14"], couplers=couplers, session=session_context
+        )
+        dummy_dataset = node.generate_dummy_dataset()
 
-    number_of_number_of_cliffords = len(
-        node.schedule_samplespace["number_of_cliffords"][coupler]
-    )
-    number_of_modes = len(node.schedule_samplespace["interleave_modes"][coupler])
+        number_of_number_of_cliffords = len(
+            node.schedule_samplespace["number_of_cliffords"][coupler]
+        )
+        number_of_modes = len(node.schedule_samplespace["interleave_modes"][coupler])
 
-    data_vars = dummy_dataset.data_vars
+        data_vars = dummy_dataset.data_vars
 
-    assert len(data_vars) == 2 * len(couplers)
-    assert (
-        data_vars[0].size
-        == number_of_number_of_cliffords * number_of_modes * node.loops
-    )
+        assert len(data_vars) == 2 * len(couplers)
+        assert (
+            data_vars[0].size
+            == number_of_number_of_cliffords * number_of_modes * node.loops
+        )

@@ -1,6 +1,6 @@
 # This code is part of Tergite
 #
-# (C) Copyright Chalmers Next Labs 2024
+# (C) Copyright Chalmers Next Labs 2024, 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -10,12 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import copy
-import importlib
 import os
+from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, Union
+
+from redis import Redis
 
 from tergite_autocalibration.utils.backend.redis_backup import (
     dump_redis,
@@ -98,80 +99,22 @@ def preserve_os_env(fn_):
     return wrapper
 
 
-def with_config(path_: Union[Path, str]):
+@contextmanager
+def loaded_redis(redis_connection: Redis, path_: Union[Path, str]):
     """
-    This is a decorator to - during a test - change the global CONFIG variable.
+    Context manager that loads a Redis backup into ``redis_connection`` for
+    the duration of the ``with`` block, then restores the original contents.
 
     Args:
-        path_: Path to the configuration package
-
-    Returns:
-
+        redis_connection: The Redis client to populate (e.g. the
+            ``redis_connection`` pytest fixture).
+        path_: Path to the Redis backup JSON file.
     """
-
-    def inner_decorator_fn_(fn_):
-        @wraps(fn_)
-        def wrapper(*args, **kwargs):
-            import tergite_autocalibration.config.globals as glb
-            from tergite_autocalibration.config.load import load_configuration
-
-            temp_config = copy.deepcopy(glb.CONFIG)
-            importlib.reload(glb)
-
-            glb.CONFIG = load_configuration(
-                os.path.join(path_, "configuration.meta.toml")
-            )
-
-            # This is in a try finally block to ensure that environmental variables are restored even
-            # if the function raises an exception.
-            try:
-                result = fn_(*args, **kwargs)
-
-            finally:
-                # Reset global config
-                glb.CONFIG = temp_config
-                importlib.reload(glb)
-
-            # Return the result of the function
-            return result
-
-        return wrapper
-
-    return inner_decorator_fn_
-
-
-def with_redis(path_: Union[Path, str]):
-    """
-    This temporarily replaces the redis instance with a clean redis loaded with a redis backup from the file path given.
-
-    Args:
-        path_: Path to the redis backup
-
-    Returns:
-
-    """
-
-    def inner_decorator_fn_(fn_):
-        @wraps(fn_)
-        def wrapper(*args, **kwargs):
-            from tergite_autocalibration.config.globals import REDIS_CONNECTION
-
-            redis_backup = dump_redis(REDIS_CONNECTION)
-            load_json_to_redis(path_, REDIS_CONNECTION)
-
-            # This is in a try finally block to ensure that redis is restored even
-            # if the function raises an exception.
-            try:
-                result = fn_(*args, **kwargs)
-
-            finally:
-                # Reset global config
-                REDIS_CONNECTION.flushall()
-                load_redis(redis_backup, REDIS_CONNECTION)
-
-            # Return the result of the function
-            return result
-
-        return wrapper
-
-    return inner_decorator_fn_
+    redis_backup = dump_redis(redis_connection)
+    redis_connection.flushall()
+    load_json_to_redis(path_, redis_connection)
+    try:
+        yield redis_connection
+    finally:
+        redis_connection.flushall()
+        load_redis(redis_backup, redis_connection)

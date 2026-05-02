@@ -12,11 +12,12 @@
 # that they have been altered from the originals.
 
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray
 from lmfit.models import LorentzianModel
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingNodeAnalysis,
@@ -37,6 +38,9 @@ from tergite_autocalibration.lib.utils.samplespace import (
 )
 from tergite_autocalibration.utils.logging import logger
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 peak = LorentzianModel()
 
 
@@ -52,15 +56,21 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
     measurement_type = ExternalParameterNode
     coupler_qois = ["control_qubit_crossing_points", "target_qubit_crossing_points"]
 
-    def __init__(self, couplers: list[str], **schedule_keywords):
-        super().__init__(couplers, **schedule_keywords)
+    def __init__(
+        self,
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(couplers, session, **schedule_keywords)
         self.qubit_state = 0
         self.dacs = []
         self.schedule_keywords["qubit_state"] = self.qubit_state
 
         self.schedule_samplespace = {
             "spec_frequencies": {
-                qubit: qubit_samples(qubit) for qubit in self.all_qubits
+                qubit: qubit_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             }
         }
 
@@ -90,7 +100,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
         for index, qubit in enumerate(self.all_qubits):
-            qubit_freq = CONFIG.device.qubits[qubit]["VNA_f01_frequency"]
+            qubit_freq = self.session.config.device.qubits[qubit]["VNA_f01_frequency"]
             epsilon = 3 / 5 * 1e-7  # to avoid divide by zero
             low_asymptote = -0.001 + epsilon
             high_asymptote = 0.001 + epsilon
@@ -102,7 +112,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
             true_params = peak.make_params(
                 amplitude=0.2, center=shifted_frequency, sigma=0.1e6
             )
-            samples = qubit_samples(qubit)
+            samples = qubit_samples(qubit, self.session.config)
             number_of_samples = len(samples)
             frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
             true_s21 = peak.eval(params=true_params, x=frequncies)
@@ -135,14 +145,20 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
         "target_resonator_crossing_points",
     ]
 
-    def __init__(self, couplers: list[str], **schedule_keywords):
-        super().__init__(couplers, **schedule_keywords)
+    def __init__(
+        self,
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(couplers, session, **schedule_keywords)
         self.qubit_state = 0
         self.dacs = []
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit) for qubit in self.all_qubits
+                qubit: resonator_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             }
         }
 

@@ -28,7 +28,6 @@ Note:
 
 from tergite_autocalibration.config.files.cluster import ClusterConfigFile
 from tergite_autocalibration.config.files.device import DeviceConfig, DeviceConfigFile
-from tergite_autocalibration.config.files.env import EnvConfigFile
 from tergite_autocalibration.config.files.meta import MetaConfigFile
 from tergite_autocalibration.config.files.node import NodeConfigFile
 from tergite_autocalibration.config.files.spi import SpiConfigFile
@@ -37,7 +36,6 @@ __all__ = [
     "ClusterConfigFile",
     "DeviceConfig",
     "DeviceConfigFile",
-    "EnvConfigFile",
     "MetaConfigFile",
     "NodeConfigFile",
     "SpiConfigFile",

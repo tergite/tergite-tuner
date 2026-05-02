@@ -1,6 +1,6 @@
 # This code is part of Tergite
 #
-# (C) Copyright Chalmers Next Labs 2024
+# (C) Copyright Chalmers Next Labs 2024, 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -15,15 +15,11 @@ import os
 import pytest
 
 from tergite_autocalibration.tests.utils.decorators import (
+    loaded_redis,
     preserve_os_env,
-    with_config,
     with_os_env,
-    with_redis,
 )
-from tergite_autocalibration.tests.utils.fixtures import (
-    DEFAULT_TEST_RUN_NAME,
-    get_fixture_path,
-)
+from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
 
 
 def test_with_os_env_sets_variables():
@@ -208,59 +204,20 @@ def test_new_variables_cleaned():
     assert os.environ["TEMP_VAR"] == "initial_value"
 
 
-def test_load_global_config():
+def test_loaded_redis_context_manager(redis_connection):
     """
-    Test whether the decorator overwrites CONFIG.
-
-    The two fixture configuration packages live at different paths, so we
-    can detect the swap by checking ``CONFIG.meta_path`` from inside vs.
-    outside the decorator.
+    Test that ``loaded_redis`` populates the redis client only for the
+    duration of the ``with`` block and restores the original contents on
+    exit.
     """
-    from tergite_autocalibration.config.globals import CONFIG as outer_config
-
-    original_meta_path = outer_config.meta_path
-
-    config_path = get_fixture_path("templates", "default_device_under_test_copy")
-    expected_meta_path = os.path.join(config_path, "configuration.meta.toml")
-
-    @with_config(config_path)
-    def my_function():
-        from tergite_autocalibration.config.globals import CONFIG as inner_config
-
-        # Inside the decorated function, CONFIG should point at the swapped
-        # configuration package.
-        assert os.path.normpath(inner_config.meta_path) == os.path.normpath(
-            expected_meta_path
-        )
-
-    # Call function with decorator
-    my_function()
-
-    # Check whether the decorator restored the original CONFIG after exiting.
-    from tergite_autocalibration.config.globals import CONFIG as restored_config
-
-    assert restored_config.meta_path == original_meta_path
-
-
-def test_with_redis_decorator():
-    """
-    Test whether the decorator works correctly loading and removing values from the redis session
-    """
-    from tergite_autocalibration.config.globals import REDIS_CONNECTION
-
     # Make sure the redis is empty
-    REDIS_CONNECTION.flushall()
-    assert REDIS_CONNECTION.keys("*") == []
+    redis_connection.flushall()
+    assert redis_connection.keys("*") == []
 
     redis_backup_path = get_fixture_path("redis", "export_bcc_script.json")
 
-    @with_redis(redis_backup_path)
-    def my_function():
-        from tergite_autocalibration.config.globals import REDIS_CONNECTION
+    with loaded_redis(redis_connection, redis_backup_path):
+        assert redis_connection.hget("cs:q11", "punchout") == "calibrated"
 
-        assert REDIS_CONNECTION.hget("cs:q11", "punchout") == "calibrated"
-
-    my_function()
-
-    # Make sure that the redis is replaced with the original redis after the function was running
-    assert REDIS_CONNECTION.keys("*") == []
+    # Make sure that the redis is empty again after exiting the block
+    assert redis_connection.keys("*") == []

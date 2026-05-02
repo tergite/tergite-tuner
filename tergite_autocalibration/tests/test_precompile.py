@@ -16,7 +16,7 @@ import pytest
 
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 from tergite_autocalibration.utils.measurement_utils import (
@@ -30,26 +30,30 @@ _node_names = _node_factory.all_node_names()
 
 
 @pytest.mark.parametrize("node_name", _node_names)
-@with_redis(_redis_values)
-def test_precompile_all_nodes_without_error(node_name):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = _node_factory.create_node(node_name, ["q00", "q01"], ["q00_q01"])
-
-    if node_name == "purity_benchmarking":
-        pytest.skip(
-            "We skip purity_benchmarking for now, because it needs some refactoring."
+def test_precompile_all_nodes_without_error(
+    node_name, redis_connection, session_context
+):
+    with loaded_redis(redis_connection, _redis_values):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        node = _node_factory.create_node(
+            node_name, ["q00", "q01"], ["q00_q01"], session=session_context
         )
 
-    if issubclass(node.measurement_type, OuterScheduleNode):
-        # The assembly of samplespaces is taken from the OuterScheduleNode
-        outer_dimensions = samplespace_dimensions(node.outer_schedule_samplespace)
-        iterations = product(*(range(n) for n in outer_dimensions))
-        for this_iteration in iterations:
-            reduced_outer_samplespace = reduce_samplespace(
-                this_iteration, node.outer_schedule_samplespace
+        if node_name == "purity_benchmarking":
+            pytest.skip(
+                "We skip purity_benchmarking for now, because it needs some refactoring."
             )
-            samplespace = node.schedule_samplespace | reduced_outer_samplespace
-            node.precompile(samplespace)
 
-    else:
-        node.precompile(node.schedule_samplespace)
+        if issubclass(node.measurement_type, OuterScheduleNode):
+            # The assembly of samplespaces is taken from the OuterScheduleNode
+            outer_dimensions = samplespace_dimensions(node.outer_schedule_samplespace)
+            iterations = product(*(range(n) for n in outer_dimensions))
+            for this_iteration in iterations:
+                reduced_outer_samplespace = reduce_samplespace(
+                    this_iteration, node.outer_schedule_samplespace
+                )
+                samplespace = node.schedule_samplespace | reduced_outer_samplespace
+                node.precompile(samplespace)
+
+        else:
+            node.precompile(node.schedule_samplespace)

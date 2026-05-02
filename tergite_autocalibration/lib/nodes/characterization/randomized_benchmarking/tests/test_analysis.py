@@ -22,37 +22,38 @@ from tergite_autocalibration.lib.nodes.characterization.randomized_benchmarking.
     RandomizedBenchmarkingNodeAnalysis,
     RandomizedBenchmarkingQubitAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values = os.path.join(_test_data_dir, "redis-2026-03-10-21-33-32.json")
 
 
-@with_redis(_redis_values)
-def test_randomized_benchmarking_analysis():
-    file_path = os.path.join(_test_data_dir, "dataset_randomized_benchmarking.hdf5")
-    dataset = xr.open_dataset(file_path)
+def test_randomized_benchmarking_analysis(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_randomized_benchmarking.hdf5")
+        dataset = xr.open_dataset(file_path)
 
-    qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
-    analysis = RandomizedBenchmarkingQubitAnalysis(
-        "randomized_benchmarking", qubit_qois
-    )
-    ds_11 = filter_ds_by_element(dataset, "q11")
-    ds_15 = filter_ds_by_element(dataset, "q15")
-    qoi_11 = analysis.process_qubit(ds_11, "q11")
-    qoi_15 = analysis.process_qubit(ds_15, "q15")
+        qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
+        analysis = RandomizedBenchmarkingQubitAnalysis(
+            "randomized_benchmarking", qubit_qois
+        )
+        analysis.redis_connection = redis_connection
+        ds_11 = filter_ds_by_element(dataset, "q11")
+        ds_15 = filter_ds_by_element(dataset, "q15")
+        qoi_11 = analysis.process_qubit(ds_11, "q11")
+        qoi_15 = analysis.process_qubit(ds_15, "q15")
 
-    standard_fidelity_11 = qoi_11.analysis_result["fidelity"]["value"]
-    standard_leakage_11 = qoi_11.analysis_result["leakage"]["value"]
-    standard_fidelity_15 = qoi_15.analysis_result["fidelity"]["value"]
-    standard_leakage_15 = qoi_15.analysis_result["leakage"]["value"]
+        standard_fidelity_11 = qoi_11.analysis_result["fidelity"]["value"]
+        standard_leakage_11 = qoi_11.analysis_result["leakage"]["value"]
+        standard_fidelity_15 = qoi_15.analysis_result["fidelity"]["value"]
+        standard_leakage_15 = qoi_15.analysis_result["leakage"]["value"]
 
-    assert qoi_11.analysis_successful
-    assert qoi_15.analysis_successful
-    assert pytest.approx(standard_fidelity_11) == 0.998669
-    assert pytest.approx(standard_leakage_11) == 0.00207032
-    assert pytest.approx(standard_fidelity_15) == 0.9962656
-    assert pytest.approx(standard_leakage_15) == 0.0064318
+        assert qoi_11.analysis_successful
+        assert qoi_15.analysis_successful
+        assert pytest.approx(standard_fidelity_11) == 0.998669
+        assert pytest.approx(standard_leakage_11) == 0.00207032
+        assert pytest.approx(standard_fidelity_15) == 0.9962656
+        assert pytest.approx(standard_leakage_15) == 0.0064318
 
 
 # FIXME: No more charts

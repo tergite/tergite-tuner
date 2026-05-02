@@ -11,10 +11,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.analysis import (
     OptimalROTwoStateAmplitudeNodeAnalysis,
@@ -25,6 +26,9 @@ from tergite_autocalibration.lib.nodes.readout.ro_amplitude_optimization.measure
 )
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.functions import isosceles_triangle
+
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
 
 
 class ROAmplitudeTwoStateOptimizationNode(QubitNode):
@@ -41,8 +45,14 @@ class ROAmplitudeTwoStateOptimizationNode(QubitNode):
         "lda_intercept",
     ]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(all_qubits, couplers, session, **schedule_keywords)
         self.qubit_state = 1
         self.loops = 1000
         self.schedule_keywords["loop_repetitions"] = self.loops
@@ -64,7 +74,11 @@ class ROAmplitudeTwoStateOptimizationNode(QubitNode):
         }
 
     def punchout_amplitude(self, qubit: str):
-        return float(REDIS_CONNECTION.hget(f"transmons:{qubit}", "measure:pulse_amp"))
+        return float(
+            self.session.redis_connection.hget(
+                f"transmons:{qubit}", "measure:pulse_amp"
+            )
+        )
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
@@ -114,8 +128,14 @@ class ROAmplitudeThreeStateOptimizationNode(QubitNode):
         "inv_cm_opt",
     ]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(all_qubits, couplers, session, **schedule_keywords)
         self.qubit_state = 2
         self.loops = 1000
         self.schedule_keywords["loop_repetitions"] = self.loops
@@ -136,7 +156,11 @@ class ROAmplitudeThreeStateOptimizationNode(QubitNode):
         }
 
     def punchout_amplitude(self, qubit: str):
-        return float(REDIS_CONNECTION.hget(f"transmons:{qubit}", "measure:pulse_amp"))
+        return float(
+            self.session.redis_connection.hget(
+                f"transmons:{qubit}", "measure:pulse_amp"
+            )
+        )
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
@@ -174,8 +198,14 @@ class ROAmplitudeThreeStateOptimizationNode(QubitNode):
 class ThreeStateDiscriminationNode(ROAmplitudeThreeStateOptimizationNode):
     name: str = "three_state_discrimination"
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(all_qubits, couplers, session, **schedule_keywords)
 
         self.schedule_samplespace["ro_amplitudes"] = {
             qubit: np.array([self.optimal_3state_amplitude(qubit)])
@@ -184,5 +214,7 @@ class ThreeStateDiscriminationNode(ROAmplitudeThreeStateOptimizationNode):
 
     def optimal_3state_amplitude(self, qubit: str):
         return float(
-            REDIS_CONNECTION.hget(f"transmons:{qubit}", "measure_3state_opt:pulse_amp")
+            self.session.redis_connection.hget(
+                f"transmons:{qubit}", "measure_3state_opt:pulse_amp"
+            )
         )

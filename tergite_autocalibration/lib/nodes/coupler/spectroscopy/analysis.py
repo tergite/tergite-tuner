@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllCouplersAnalysis,
     BaseCouplerAnalysis,
@@ -38,8 +37,8 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
     This class analyzes the qubit spectroscopy data as a function of the current for a coupler.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
 
     def _find_crossing_currents(
         self,
@@ -180,10 +179,10 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
         return qoi
 
     def _get_resonator_crossing_points(self, coupler, qubit) -> List[float]:
-        if REDIS_CONNECTION.hexists(
+        if self.redis_connection.hexists(
             f"couplers:{coupler}:{qubit}", "resonator_crossing_points"
         ):
-            crossing_points_str = REDIS_CONNECTION.hget(
+            crossing_points_str = self.redis_connection.hget(
                 f"couplers:{coupler}:{qubit}", "resonator_crossing_points"
             )
             try:
@@ -251,8 +250,8 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
     This class analyzes the resonator spectroscopy data as a function of the current for a coupler.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
 
     def detect_peaks(self, res_specs_dataarray: xarray.DataArray):
         detected_frequencies = []
@@ -438,8 +437,8 @@ class ResonatorSpectroscopyVsCurrentNodeAnalysis(BaseAllCouplersAnalysis):
 
     single_coupler_analysis_obj = ResonatorSpectroscopyVsCurrentCouplerAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
 
 
 class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
@@ -449,5 +448,5 @@ class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
 
     single_coupler_analysis_obj = CouplerAnticrossingAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)

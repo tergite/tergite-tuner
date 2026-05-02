@@ -19,7 +19,6 @@ from numpy.linalg import inv
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
     BaseQubitAnalysis,
@@ -162,7 +161,7 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
 
     def primary_plotter(self, ax):
         punchout_amplitude = float(
-            REDIS_CONNECTION.hget(f"transmons:{self.qubit}", "measure:pulse_amp")
+            self.redis_connection.hget(f"transmons:{self.qubit}", "measure:pulse_amp")
         )
         ax.axvline(punchout_amplitude, color="black", label="punchout value")
         ax.set_xlabel("RO amplitude")

@@ -15,7 +15,6 @@
 import numpy as np
 from quantify_core.analysis import fitting_models as fm
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
     BaseQubitAnalysis,
@@ -78,10 +77,10 @@ class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
         """
 
         ro_freq = float(
-            REDIS_CONNECTION.hget(f"transmons:{self.qubit}", "clock_freqs:readout")
+            self.redis_connection.hget(f"transmons:{self.qubit}", "clock_freqs:readout")
         )
         ro_freq_1 = float(
-            REDIS_CONNECTION.hget(
+            self.redis_connection.hget(
                 f"transmons:{self.qubit}", "extended_clock_freqs:readout_1"
             )
         )

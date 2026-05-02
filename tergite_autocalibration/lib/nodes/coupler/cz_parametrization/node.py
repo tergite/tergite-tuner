@@ -13,13 +13,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import xarray as xr
 from scipy.stats import multivariate_normal
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationNodeAnalysis,
@@ -32,6 +31,9 @@ from tergite_autocalibration.lib.nodes.external_parameter_node import (
 )
 from tergite_autocalibration.lib.utils.classification_functions import generate_iq_shots
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 
 class CZParametrizationNode(CouplerNode):
     name: str = "cz_parametrization"
@@ -40,8 +42,13 @@ class CZParametrizationNode(CouplerNode):
     measurement_type = ExternalParameterNode
     coupler_qois = ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str]):
-        super().__init__(couplers)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+    ):
+        super().__init__(couplers, session)
         self.couplers = couplers
 
         self.coupled_qubits = self.get_coupled_qubits()
@@ -84,13 +91,17 @@ class CZParametrizationNode(CouplerNode):
 
     def parking_current(self, coupler: str):
         return float(
-            REDIS_CONNECTION.hget(f"couplers:{coupler}", "initial_parking_current")
+            self.session.redis_connection.hget(
+                f"couplers:{coupler}", "initial_parking_current"
+            )
         )
 
     def all_phase_paths(self) -> dict[str, Literal["via_02", "via_20"]]:
         phase_paths = {}
         for coupler in self.couplers:
-            path = REDIS_CONNECTION.hget(f"couplers:{coupler}", "cz_phase_path")
+            path = self.session.redis_connection.hget(
+                f"couplers:{coupler}", "cz_phase_path"
+            )
             phase_paths[coupler] = path
         return phase_paths
 
@@ -153,10 +164,16 @@ class CZParametrizationNode(CouplerNode):
             zeros = np.zeros((number_of_amplitudes, number_of_frequencies))
 
             complex_points_q1 = generate_iq_shots(
-                np.array([peaks, dips, zeros]), q1, self.loops
+                np.array([peaks, dips, zeros]),
+                q1,
+                self.loops,
+                self.session.redis_connection,
             )
             complex_points_q2 = generate_iq_shots(
-                np.array([zeros, dips, peaks]), q2, self.loops
+                np.array([zeros, dips, peaks]),
+                q2,
+                self.loops,
+                self.session.redis_connection,
             )
             data_array_q1 = xr.DataArray(complex_points_q1)
             data_array_q2 = xr.DataArray(complex_points_q2)

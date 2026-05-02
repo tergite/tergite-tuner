@@ -18,6 +18,7 @@
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from colorama import Fore, Style
@@ -26,17 +27,22 @@ from qblox_instruments import SpiRack
 from qcodes import validators
 from rich.progress import Progress
 
-from tergite_autocalibration.config.globals import CONFIG, ENV, REDIS_CONNECTION
 from tergite_autocalibration.utils.dto.enums import MeasurementMode
 from tergite_autocalibration.utils.logging import logger
 from tergite_autocalibration.utils.misc.os import OperatingSystem, get_os
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 colorama_init()
 
 
-def _find_and_validate_spi_port():
+def _find_and_validate_spi_port(spi_serial_port: str):
     """
     Check whether the SPI port given in the .env file exists
+
+    Args:
+        spi_serial_port: serial port specified in the session config.
 
     Returns:
         SPI port as string e.g. /dev/ttyACM0
@@ -51,12 +57,12 @@ def _find_and_validate_spi_port():
 
         # Iterate over all devices and return if the address defined in the .env file is found
         for file in path.iterdir():
-            if str(file.absolute()) == ENV.spi_serial_port:
-                return ENV.spi_serial_port
+            if str(file.absolute()) == spi_serial_port:
+                return spi_serial_port
 
     # For Windows and any other system, we assume that the user knows that the port exists
     else:
-        return ENV.spi_serial_port
+        return spi_serial_port
 
     # For the default base case, return None
     logger.warning(
@@ -70,13 +76,14 @@ class SpiDAC:
     def __init__(
         self,
         couplers: list[str],
-        measurement_mode: MeasurementMode,
+        session: "SessionContext",
         name: str = "no_spi_name_defined",
     ):
-        self.port = _find_and_validate_spi_port()
+        self.session = session
+        self.port = _find_and_validate_spi_port(session.spi_serial_port)
         self.is_dummy = (
-            measurement_mode == MeasurementMode.dummy
-            or measurement_mode == MeasurementMode.re_analyse
+            session.cluster_mode == MeasurementMode.dummy
+            or session.cluster_mode == MeasurementMode.re_analyse
         )
         if self.is_dummy:
             self.port = "dummy_port"
@@ -91,7 +98,7 @@ class SpiDAC:
             self.dacs_dictionary[coupler] = self.create_spi_dac(coupler)
 
     def create_spi_dac(self, coupler: str):
-        spi_entry = CONFIG.spi[coupler]
+        spi_entry = self.session.config.spi[coupler]
         spi_mod_number = spi_entry.spi_module_number
         dac_name = spi_entry.dac_name
 
@@ -126,11 +133,11 @@ class SpiDAC:
         return
 
     def set_initial_parking_currents(self, couplers: list[str]) -> None:
-
+        redis_connection = self.session.redis_connection
         parking_currents = {}
         for coupler in couplers:
             key = f"couplers:{coupler}"
-            if not REDIS_CONNECTION.hexists(key, "initial_parking_current"):
+            if not redis_connection.hexists(key, "initial_parking_current"):
                 message = (
                     "initial parking current is not present on redis."
                     "If you intend to operate at zero DC current, set a zero value at your device_config.toml"
@@ -138,7 +145,7 @@ class SpiDAC:
                 logger.warning(f"{Fore.YELLOW}{Style.DIM}{message}{Style.RESET_ALL}")
                 raise ValueError(message)
             parking_current = float(
-                REDIS_CONNECTION.hget(key, "initial_parking_current")
+                redis_connection.hget(key, "initial_parking_current")
             )
 
             parking_currents[coupler] = parking_current

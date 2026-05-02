@@ -20,44 +20,48 @@ import xarray as xr
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBCouplerAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values = os.path.join(_test_data_dir, "redis-2026-03-05-10-55-35.json")
 
 
-@with_redis(_redis_values)
-def test_cz_rb():
-    file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
-    dataset = xr.open_dataset(file_path)
+def test_cz_rb(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
+        dataset = xr.open_dataset(file_path)
 
-    analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"])
-    qoi = analysis.process_coupler(dataset, "q12_q13")
+        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"])
+        analysis.config = session_context.config
+        analysis.redis_connection = redis_connection
+        qoi = analysis.process_coupler(dataset, "q12_q13")
 
-    cz_fidelity = qoi.analysis_result["cz_fidelity"]["value"]
+        cz_fidelity = qoi.analysis_result["cz_fidelity"]["value"]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(cz_fidelity) == 0.95848
+        assert qoi.analysis_successful
+        assert pytest.approx(cz_fidelity) == 0.95848
 
 
-@with_redis(_redis_values)
-def test_plotting():
+def test_plotting(redis_connection, session_context):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
-    dataset = xr.open_dataset(file_path)
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
+        dataset = xr.open_dataset(file_path)
 
-    analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"])
+        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"])
+        analysis.config = session_context.config
+        analysis.redis_connection = redis_connection
 
-    figures_dictionary = {}
+        figures_dictionary = {}
 
-    analysis.process_coupler(dataset, "q12_q13")
-    analysis.plotter(figures_dictionary)
+        analysis.process_coupler(dataset, "q12_q13")
+        analysis.plotter(figures_dictionary)
 
-    assert "q12_q13" in figures_dictionary
+        assert "q12_q13" in figures_dictionary
 
-    figure = figures_dictionary["q12_q13"][0]
+        figure = figures_dictionary["q12_q13"][0]
 
-    # one axis for the standard exponentials and one for the leakage RB exponentials
-    assert len(figure.get_axes()) == 2
+        # one axis for the standard exponentials and one for the leakage RB exponentials
+        assert len(figure.get_axes()) == 2

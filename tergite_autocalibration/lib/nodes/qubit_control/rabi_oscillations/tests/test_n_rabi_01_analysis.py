@@ -23,7 +23,7 @@ from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.analysis 
     NRabiNodeAnalysis,
     NRabiQubitAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(
     Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
@@ -31,38 +31,39 @@ _test_data_dir = os.path.join(
 _redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-@with_redis(_redis_values)
-def test_n_rabi_01():
-    name = "n_rabi_oscillations"
-    file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-    full_dataset = xr.open_dataset(file_path)
-    qubit_qois = ["rxy:amp180"]
+def test_n_rabi_01(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        name = "n_rabi_oscillations"
+        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
+        full_dataset = xr.open_dataset(file_path)
+        qubit_qois = ["rxy:amp180"]
 
-    ds_13 = filter_ds_by_element(full_dataset, "q13")
-    ds_15 = filter_ds_by_element(full_dataset, "q15")
+        ds_13 = filter_ds_by_element(full_dataset, "q13")
+        ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-    analysis = NRabiQubitAnalysis(name, qubit_qois)
-    s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
-    analysis.magnitudes = np.abs(s21)
-    analysis.data_var = "yq13"
-    analysis.qubit = "q13"
-    qoi = analysis.analyse_qubit()
+        analysis = NRabiQubitAnalysis(name, qubit_qois)
+        analysis.redis_connection = redis_connection
+        s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
+        analysis.magnitudes = np.abs(s21)
+        analysis.data_var = "yq13"
+        analysis.qubit = "q13"
+        qoi = analysis.analyse_qubit()
 
-    amp180 = qoi.analysis_result["rxy:amp180"]["value"]
+        amp180 = qoi.analysis_result["rxy:amp180"]["value"]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(amp180) == 0.7426703675
+        assert qoi.analysis_successful
+        assert pytest.approx(amp180) == 0.7426703675
 
-    s21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
-    analysis.magnitudes = np.abs(s21)
-    analysis.data_var = "yq15"
-    analysis.qubit = "q15"
-    qoi = analysis.analyse_qubit()
+        s21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
+        analysis.magnitudes = np.abs(s21)
+        analysis.data_var = "yq15"
+        analysis.qubit = "q15"
+        qoi = analysis.analyse_qubit()
 
-    amp180 = qoi.analysis_result["rxy:amp180"]["value"]
+        amp180 = qoi.analysis_result["rxy:amp180"]["value"]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(amp180) == 0.412374722
+        assert qoi.analysis_successful
+        assert pytest.approx(amp180) == 0.412374722
 
 
 # FIXME: No more charts

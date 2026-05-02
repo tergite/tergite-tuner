@@ -160,7 +160,9 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
 
     def analyse_qubit(self):
         self._analyse_n_rabi()
-        previous_amplitude = fetch_redis_params("rxy:amp180", self.qubit)
+        previous_amplitude = fetch_redis_params(
+            "rxy:amp180", self.qubit, self.redis_connection
+        )
         optimal_amp180 = self.correction + previous_amplitude
         analysis_successful = True
 
@@ -185,7 +187,9 @@ class NRabi_12_QubitAnalysis(NRabiQubitAnalysis):
 
     def analyse_qubit(self):
         self._analyse_n_rabi()
-        previous_amplitude = fetch_redis_params("r12:ef_amp180", self.qubit)
+        previous_amplitude = fetch_redis_params(
+            "r12:ef_amp180", self.qubit, self.redis_connection
+        )
         optimal_ef_amp180 = self.correction + previous_amplitude
 
         analysis_successful = True

@@ -11,11 +11,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray
 from quantify_core.analysis import fitting_models as fm
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.analysis import (
     ResonatorSpectroscopy1NodeAnalysis,
@@ -28,13 +29,24 @@ from tergite_autocalibration.lib.nodes.readout.resonator_spectroscopy.measuremen
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.samplespace import resonator_samples
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 resonator = fm.ResonatorModel()
 
 
 class ResonatorSpectroscopyBase(QubitNode):
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers=couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(
+            all_qubits, couplers=couplers, session=session, **schedule_keywords
+        )
 
     def generate_dummy_dataset(self, noise=False):
         dataset = xarray.Dataset()
@@ -48,7 +60,7 @@ class ResonatorSpectroscopyBase(QubitNode):
             raise ValueError("Invalid name")
 
         for index, qubit in enumerate(self.all_qubits):
-            vna_ro_freq = CONFIG.device.resonators[qubit]["VNA_frequency"]
+            vna_ro_freq = self.session.config.device.resonators[qubit]["VNA_frequency"]
             ro_freq = vna_ro_freq - frequency_shift
             true_params = resonator.make_params(
                 fr=ro_freq,
@@ -61,7 +73,7 @@ class ResonatorSpectroscopyBase(QubitNode):
                 # f_0=ro_freq, Q=10000, Q_e_real=9000, Q_e_imag=-9000
             )
             np.random.seed(123)
-            samples = resonator_samples(qubit)
+            samples = resonator_samples(qubit, self.session.config)
             number_of_samples = len(samples)
             frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
             true_s21 = resonator.eval(params=true_params, f=frequncies)
@@ -85,12 +97,21 @@ class ResonatorSpectroscopyNode(ResonatorSpectroscopyBase):
     measurement_type = ScheduleNode
     qubit_qois = ["clock_freqs:readout", "Ql", "resonator_minimum"]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **node_keywords):
-        super().__init__(all_qubits, couplers=couplers, **node_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **node_keywords,
+    ):
+        super().__init__(
+            all_qubits, couplers=couplers, session=session, **node_keywords
+        )
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit) for qubit in self.all_qubits
+                qubit: resonator_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             }
         }
 
@@ -106,14 +127,23 @@ class ResonatorSpectroscopy1Node(ResonatorSpectroscopyBase):
         "resonator_minimum_1",
     ]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers=couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(
+            all_qubits, couplers=couplers, session=session, **schedule_keywords
+        )
         self.qubit_state = 1
         self.schedule_keywords["qubit_state"] = self.qubit_state
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit) for qubit in self.all_qubits
+                qubit: resonator_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             }
         }
 
@@ -125,13 +155,22 @@ class ResonatorSpectroscopy2Node(ResonatorSpectroscopyBase):
     measurement_type = ScheduleNode
     qubit_qois = ["extended_clock_freqs:readout_2"]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers=couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(
+            all_qubits, couplers=couplers, session=session, **schedule_keywords
+        )
         self.qubit_state = 2
         self.schedule_keywords["qubit_state"] = self.qubit_state
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit) for qubit in self.all_qubits
+                qubit: resonator_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             }
         }

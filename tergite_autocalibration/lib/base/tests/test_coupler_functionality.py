@@ -13,7 +13,7 @@
 
 
 from tergite_autocalibration.lib.nodes.coupler.cz_chevron.node import CZChevronNode
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
@@ -35,13 +35,17 @@ class DummySpiManager:
         return self._currents_dict
 
 
-@with_redis(redis_mock)
-def test_set_parking_current_from_redis():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = CZChevronNode(couplers=DEFAULT_TEST_COUPLERS, qubits=DEFAULT_TEST_QUBITS)
-    node.spi_manager = DummySpiManager()
+def test_set_parking_current_from_redis(redis_connection, session_context):
+    with loaded_redis(redis_connection, redis_mock):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        node = CZChevronNode(
+            couplers=DEFAULT_TEST_COUPLERS,
+            qubits=DEFAULT_TEST_QUBITS,
+            session=session_context,
+        )
+        node.spi_manager = DummySpiManager()
 
-    node.set_parking_current_from_redis()
-    currents_dict = node.spi_manager.get_dac_current()
-    assert "q00_q01" in currents_dict
-    assert currents_dict["q00_q01"] == 0.00095
+        node.set_parking_current_from_redis()
+        currents_dict = node.spi_manager.get_dac_current()
+        assert "q00_q01" in currents_dict
+        assert currents_dict["q00_q01"] == 0.00095

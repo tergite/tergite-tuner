@@ -23,7 +23,6 @@ from uuid import uuid4
 import cf_xarray as cf
 import xarray
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.utils.logging import logger
 

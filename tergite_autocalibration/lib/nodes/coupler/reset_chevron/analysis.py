@@ -310,8 +310,8 @@ class ResetChevronQubitAnalysis(BaseQubitAnalysis):
 
 
 class ResetChevronCouplerAnalysis(BaseCouplerAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
         self.data_path = ""
         self.q1 = ""
         self.q2 = ""
@@ -358,8 +358,8 @@ class ResetChevronCouplerAnalysis(BaseCouplerAnalysis):
 class ResetChevronNodeAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = ResetChevronCouplerAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
 
     def _save_plots(self):
         super()._save_plots()

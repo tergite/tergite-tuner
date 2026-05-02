@@ -22,7 +22,7 @@ from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.analysi
     ROFrequencyThreeStateNodeAnalysis,
     ROFrequencyThreeStateQubitAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(
     Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
@@ -30,38 +30,38 @@ _test_data_dir = os.path.join(
 _redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-@with_redis(_redis_values)
-def test_ro_freq_3states():
-    name = "ro_frequency_three_state_optimization"
-    file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-    full_dataset = xr.open_dataset(file_path)
-    qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
+def test_ro_freq_3states(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        name = "ro_frequency_three_state_optimization"
+        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
+        full_dataset = xr.open_dataset(file_path)
+        qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
 
-    ds_13 = filter_ds_by_element(full_dataset, "q13")
-    ds_15 = filter_ds_by_element(full_dataset, "q15")
+        ds_13 = filter_ds_by_element(full_dataset, "q13")
+        ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-    analysis = ROFrequencyThreeStateQubitAnalysis(name, qubit_qois)
-    analysis.S21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
-    analysis.data_var = "yq13"
-    qoi = analysis.analyse_qubit()
+        analysis = ROFrequencyThreeStateQubitAnalysis(name, qubit_qois)
+        analysis.S21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
+        analysis.data_var = "yq13"
+        qoi = analysis.analyse_qubit()
 
-    ro_frequency = qoi.analysis_result["extended_clock_freqs:readout_3state_opt"][
-        "value"
-    ]
+        ro_frequency = qoi.analysis_result["extended_clock_freqs:readout_3state_opt"][
+            "value"
+        ]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(ro_frequency) == 7181088888.888889
+        assert qoi.analysis_successful
+        assert pytest.approx(ro_frequency) == 7181088888.888889
 
-    analysis.S21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
-    analysis.data_var = "yq15"
-    qoi = analysis.analyse_qubit()
+        analysis.S21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
+        analysis.data_var = "yq15"
+        qoi = analysis.analyse_qubit()
 
-    ro_frequency = qoi.analysis_result["extended_clock_freqs:readout_3state_opt"][
-        "value"
-    ]
+        ro_frequency = qoi.analysis_result["extended_clock_freqs:readout_3state_opt"][
+            "value"
+        ]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(ro_frequency) == 7128822222.222222
+        assert qoi.analysis_successful
+        assert pytest.approx(ro_frequency) == 7128822222.222222
 
 
 # FIXME: No more charts

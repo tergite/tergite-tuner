@@ -19,7 +19,6 @@ import numpy as np
 import xarray as xr
 from quantify_core.analysis import fitting_models as fm
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
     BaseQubitAnalysis,
@@ -158,7 +157,7 @@ class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("|S21| (V)")
         ro_freq = float(
-            REDIS_CONNECTION.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
+            self.redis_connection.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
         )
         self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
         ax.axvline(self.minimum_freq, c="green", ls="solid", label="frequency |1> ")
@@ -188,10 +187,10 @@ class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("|S21| (V)")
         ro_freq = float(
-            REDIS_CONNECTION.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
+            self.redis_connection.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
         )
         ro_freq_1 = float(
-            REDIS_CONNECTION.hget(
+            self.redis_connection.hget(
                 f"transmons:{this_qubit}", "extended_clock_freqs:readout_1"
             )
         )

@@ -31,8 +31,8 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 
 class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
         self.model = SineOscillatingModel()
 
     def sinusoidal_fit(self, data):
@@ -70,10 +70,10 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
                 raise ValueError
 
         self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var
+            self.control_qubit_data_var, self.redis_connection
         )
         self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var
+            self.target_qubit_data_var, self.redis_connection
         )
 
         self.fit_plot_phases = np.linspace(
@@ -220,5 +220,5 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
 class CZLocalPhasesNodeAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZLocalPhasesCouplerAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)

@@ -153,3 +153,16 @@ def load_configuration(
         misc=misc,
         cluster=cluster,
     )
+
+
+# CLAUDE-FIX: Maybe move Configuration and SessionContext to the same file i.e this file and remove the session.py file. the lines below look patchy
+
+# Resolve the forward reference to ``Configuration`` declared (under
+# ``TYPE_CHECKING``) on :class:`SessionContext`. Importing this module is
+# the canonical way to obtain ``Configuration``, so it is also the right
+# place to rebuild the pydantic model now that the type is concrete.
+from tergite_autocalibration.config.session import (  # noqa: E402  pylint: disable=wrong-import-position
+    SessionContext,
+)
+
+SessionContext.model_rebuild()

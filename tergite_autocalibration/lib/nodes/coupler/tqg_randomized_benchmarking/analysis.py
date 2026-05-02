@@ -30,8 +30,8 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 
 class CZRBCouplerAnalysis(BaseCouplerAnalysis):
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)
         self.single_model = ExpDecayModel(inverted=False)
 
     def state_probabilities(self, c_qubit_state: int, t_qubit_state: int):
@@ -63,10 +63,10 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
                 raise ValueError
 
         self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var
+            self.control_qubit_data_var, self.redis_connection
         )
         self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var
+            self.target_qubit_data_var, self.redis_connection
         )
 
         number_cliffords = self.number_cliffords
@@ -404,5 +404,5 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
 class CZRBNodeAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZRBCouplerAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(self, name, redis_fields, config=None, **kwargs):
+        super().__init__(name, redis_fields, config)

@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2023, 2024
 # (C) Copyright Michele Faucci Giannelli 2024
 # (C) Copyright Stefan Hill 2024
+# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -13,27 +14,32 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from tergite_autocalibration.config.globals import CONFIG
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.load import Configuration
 
 
-def resonator_samples(qubit: str) -> np.ndarray:
+def resonator_samples(qubit: str, config: "Configuration") -> np.ndarray:
     res_spec_samples = 91
     sweep_range = 4.0e6
-    VNA_frequency = CONFIG.device.resonators[qubit]["VNA_frequency"]
+    VNA_frequency = config.device.resonators[qubit]["VNA_frequency"]
     min_freq = VNA_frequency - sweep_range / 2
     max_freq = VNA_frequency + sweep_range / 2
     return np.linspace(min_freq, max_freq, res_spec_samples)
 
 
-def qubit_samples(qubit: str, transition: str = "01") -> np.ndarray:
+def qubit_samples(
+    qubit: str, config: "Configuration", transition: str = "01"
+) -> np.ndarray:
     qub_spec_samples = 71
     sweep_range = 6e6
     if transition == "01":
-        VNA_frequency = CONFIG.device.qubits[qubit]["VNA_f01_frequency"]
+        VNA_frequency = config.device.qubits[qubit]["VNA_f01_frequency"]
     elif transition == "12":
-        VNA_frequency = CONFIG.device.qubits[qubit]["VNA_f12_frequency"]
+        VNA_frequency = config.device.qubits[qubit]["VNA_f12_frequency"]
     # FIXME: This is not safe, because VNA_frequency might be undefined
     min_freq = VNA_frequency - sweep_range / 2
     max_freq = VNA_frequency + sweep_range / 2

@@ -27,29 +27,35 @@ from tergite_autocalibration.tests.utils.fixtures import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_measurement_01_type():
+def test_measurement_01_type(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_01 = Qubit01SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node_01 = Qubit01SpectroscopyNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     assert issubclass(node_01.measurement_type, ScheduleNode)
 
 
-def test_measurement_12_type():
+def test_measurement_12_type(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_12 = Qubit12SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node_12 = Qubit12SpectroscopyNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     assert issubclass(node_12.measurement_type, ScheduleNode)
 
 
-def test_measurement_bring_up_type():
+def test_measurement_bring_up_type(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_bring_up = Qubit01SpectroscopyAmplitudeNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
     assert issubclass(node_bring_up.measurement_type, OuterScheduleNode)
 
 
-def test_dummy_01_generation():
+def test_dummy_01_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = Qubit01SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node = Qubit01SpectroscopyNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
 
@@ -66,9 +72,11 @@ def test_dummy_01_generation():
     assert data_vars[0].size == number_of_frequencies * number_of_amplitudes
 
 
-def test_dummy_12_generation():
+def test_dummy_12_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = Qubit12SpectroscopyNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node = Qubit12SpectroscopyNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
 

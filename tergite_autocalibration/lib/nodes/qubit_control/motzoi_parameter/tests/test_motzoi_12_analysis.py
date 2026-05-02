@@ -23,7 +23,7 @@ from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.analysis i
     Motzoi12NodeAnalysis,
     Motzoi12QubitAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(
     Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
@@ -31,36 +31,36 @@ _test_data_dir = os.path.join(
 _redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-@with_redis(_redis_values)
-def test_motzoi_parameter():
-    name = "motzoi_12_parameter"
-    file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-    full_dataset = xr.open_dataset(file_path)
-    qubit_qois = ["r12:ef_motzoi"]
+def test_motzoi_parameter(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        name = "motzoi_12_parameter"
+        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
+        full_dataset = xr.open_dataset(file_path)
+        qubit_qois = ["r12:ef_motzoi"]
 
-    ds_13 = filter_ds_by_element(full_dataset, "q13")
-    ds_15 = filter_ds_by_element(full_dataset, "q15")
+        ds_13 = filter_ds_by_element(full_dataset, "q13")
+        ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-    analysis = Motzoi12QubitAnalysis(name, qubit_qois)
-    s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
-    analysis.magnitudes = np.abs(s21)
-    analysis.data_var = "yq13"
-    qoi = analysis.analyse_qubit()
+        analysis = Motzoi12QubitAnalysis(name, qubit_qois)
+        s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
+        analysis.magnitudes = np.abs(s21)
+        analysis.data_var = "yq13"
+        qoi = analysis.analyse_qubit()
 
-    motzoi_12 = qoi.analysis_result["r12:ef_motzoi"]["value"]
+        motzoi_12 = qoi.analysis_result["r12:ef_motzoi"]["value"]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(motzoi_12) == 0.12
+        assert qoi.analysis_successful
+        assert pytest.approx(motzoi_12) == 0.12
 
-    s21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
-    analysis.magnitudes = np.abs(s21)
-    analysis.data_var = "yq15"
-    qoi = analysis.analyse_qubit()
+        s21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
+        analysis.magnitudes = np.abs(s21)
+        analysis.data_var = "yq15"
+        qoi = analysis.analyse_qubit()
 
-    motzoi_12 = qoi.analysis_result["r12:ef_motzoi"]["value"]
+        motzoi_12 = qoi.analysis_result["r12:ef_motzoi"]["value"]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(motzoi_12) == -0.036
+        assert qoi.analysis_successful
+        assert pytest.approx(motzoi_12) == -0.036
 
 
 # FIXME: No more charts

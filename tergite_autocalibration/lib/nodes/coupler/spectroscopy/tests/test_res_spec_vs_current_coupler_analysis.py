@@ -70,9 +70,13 @@ res_coupler_qois = [
 
 def test_get_crossings_for_q06_q07(
     setup_q06_q07_data: tuple[xr.Dataset, str, ndarray, ndarray],
+    session_context,
+    redis_connection,
 ):
     ds, coupler = setup_q06_q07_data
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
+    a.config = session_context.config
+    a.redis_connection = redis_connection
     qoi = a.process_coupler(ds, coupler)
 
     q6_crossings = getCrossingForQubit(qoi, "q06")
@@ -95,9 +99,13 @@ def setup_q08_q09_data():
 
 def test_get_crossings_for_q08_q09(
     setup_q08_q09_data: tuple[xr.Dataset, str, ndarray, ndarray],
+    session_context,
+    redis_connection,
 ):
     ds, coupler = setup_q08_q09_data
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
+    a.config = session_context.config
+    a.redis_connection = redis_connection
     qoi = a.process_coupler(ds, coupler)
 
     q8_crossings = getCrossingForQubit(qoi, "q08")
@@ -120,9 +128,13 @@ def setup_q12_q13_data():
 
 def test_get_crossings_for_q12_q13(
     setup_q12_q13_data: tuple[xr.Dataset, str, ndarray, ndarray],
+    session_context,
+    redis_connection,
 ):
     ds, coupler = setup_q12_q13_data
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
+    a.config = session_context.config
+    a.redis_connection = redis_connection
     qoi = a.process_coupler(ds, coupler)
 
     q12_crossings = getCrossingForQubit(qoi, "q12")
@@ -145,9 +157,13 @@ def setup_q14_q15_data():
 
 def test_get_crossings_for_q14_q15(
     setup_q14_q15_data: tuple[xr.Dataset, str, ndarray, ndarray],
+    session_context,
+    redis_connection,
 ):
     ds, coupler = setup_q14_q15_data
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
+    a.config = session_context.config
+    a.redis_connection = redis_connection
     qoi = a.process_coupler(ds, coupler)
 
     q14_crossings = getCrossingForQubit(qoi, "q14")
@@ -157,10 +173,12 @@ def test_get_crossings_for_q14_q15(
 
 
 @with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_coupler_plot_is_created(setup_q06_q07_data):
+def test_coupler_plot_is_created(setup_q06_q07_data, session_context, redis_connection):
     matplotlib.use("Agg")
     ds, coupler = setup_q06_q07_data
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
+    a.config = session_context.config
+    a.redis_connection = redis_connection
     a.process_coupler(ds, coupler)
 
     figure_path = os.environ["DATA_DIR"] + "/name.png"

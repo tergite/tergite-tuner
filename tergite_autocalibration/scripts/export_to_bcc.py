@@ -17,11 +17,11 @@ from typing import Any, Dict, List, Tuple, Type, Union
 
 import tomlkit
 
-from tergite_autocalibration.config.globals import (
-    DOWNCONVERT_FREQUENCY,
-    REDIS_CONNECTION,
-)
 from tergite_autocalibration.utils.logging import logger
+
+# Frequency offset (Hz) used to convert the coupler ``cz_pulse_frequency``
+# Redis value to its physical value during the BCC export.
+_DOWNCONVERT_FREQUENCY = 4.4e9
 
 
 class _DataSource(Enum):
@@ -93,6 +93,7 @@ _coupler_parameters = [
 def _assemble_parameters(
     parameter_map: List[Tuple[str, str, "_DataSource", Type]],
     object_id: str,
+    redis_connection,
     set_id: bool = True,
     redis_prefix: str = "transmons",
 ) -> Dict[str, Any]:
@@ -105,7 +106,7 @@ def _assemble_parameters(
 
     for parameter_ in parameter_map:
         if parameter_[2] == _DataSource.REDIS:
-            redis_value_ = REDIS_CONNECTION.hget(
+            redis_value_ = redis_connection.hget(
                 f"{redis_prefix}:{object_id}", parameter_[1]
             )
             # parameter[3] is the type
@@ -119,10 +120,10 @@ def _assemble_parameters(
         # Special case: Downconverter correction for coupler frequency
         if parameter_[1] == "cz_pulse_frequency":
             logger.info(
-                f"Adjusting coupler frequency about {DOWNCONVERT_FREQUENCY}GHz for {object_id}."
+                f"Adjusting coupler frequency about {_DOWNCONVERT_FREQUENCY}GHz for {object_id}."
             )
             parameterized_return_object[parameter_[0]] = (
-                DOWNCONVERT_FREQUENCY - parameterized_return_object[parameter_[0]]
+                _DOWNCONVERT_FREQUENCY - parameterized_return_object[parameter_[0]]
             )
     return parameterized_return_object
 
@@ -130,6 +131,7 @@ def _assemble_parameters(
 def export(
     qubits: List[str],
     couplers: List[str],
+    redis_connection,
     output_path: Union[Path, str] = None,
 ) -> Dict[str, Any]:
     """
@@ -139,6 +141,7 @@ def export(
         output_path: Path to write the output to
         qubits: List of qubit ids to export
         couplers: List of couplers to export
+        redis_connection: Redis client used to read calibrated parameters.
     """
     return_object = {
         "calibration_config": {
@@ -152,22 +155,27 @@ def export(
     for qubit in qubits:
         # Iterate over qubit parameters
         return_object["calibration_config"]["qubit"].append(
-            _assemble_parameters(_qubit_parameters, qubit)
+            _assemble_parameters(_qubit_parameters, qubit, redis_connection)
         )
 
         # Iterate over readout resonator parameters
         return_object["calibration_config"]["readout_resonator"].append(
-            _assemble_parameters(_readout_resonator_parameters, qubit)
+            _assemble_parameters(_readout_resonator_parameters, qubit, redis_connection)
         )
 
         # Iterate over discriminator parameters
         return_object["calibration_config"]["discriminators"]["lda"][qubit] = (
-            _assemble_parameters(_lda_parameters, qubit, set_id=False)
+            _assemble_parameters(_lda_parameters, qubit, redis_connection, set_id=False)
         )
 
     for coupler in couplers:
         return_object["calibration_config"]["coupler"].append(
-            _assemble_parameters(_coupler_parameters, coupler, redis_prefix="couplers")
+            _assemble_parameters(
+                _coupler_parameters,
+                coupler,
+                redis_connection,
+                redis_prefix="couplers",
+            )
         )
 
     # Save to output in case

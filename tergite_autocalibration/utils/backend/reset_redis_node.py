@@ -17,7 +17,6 @@
 from pathlib import Path
 from typing import List
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.logging import logger
 from tergite_autocalibration.utils.misc.reflections import (
@@ -26,7 +25,9 @@ from tergite_autocalibration.utils.misc.reflections import (
 )
 
 
-def reset_all_redis_nodes(qubits: List[str], couplers: List[str]) -> None:
+def reset_all_redis_nodes(
+    qubits: List[str], couplers: List[str], redis_connection
+) -> None:
     """
     Wraps :func:`reset_redis_nodes` and resets all nodes that have an entry
     in the factory.
@@ -34,14 +35,18 @@ def reset_all_redis_nodes(qubits: List[str], couplers: List[str]) -> None:
     Args:
         qubits: list of qubit identifiers (e.g. ``["q00", "q01"]``) to reset.
         couplers: list of coupler identifiers (e.g. ``["q00_q01"]``) to reset.
+        redis_connection: redis client to write to.
     """
     node_factory = NodeFactory()
     node_names = node_factory.all_node_names()
-    reset_redis_nodes(qubits, couplers, node_names)
+    reset_redis_nodes(qubits, couplers, node_names, redis_connection)
 
 
 def reset_redis_nodes(
-    qubits: List[str], couplers: List[str], node_names: List[str]
+    qubits: List[str],
+    couplers: List[str],
+    node_names: List[str],
+    redis_connection,
 ) -> None:
     """
     Reset the qubit and coupler values for given nodes in redis.
@@ -71,17 +76,17 @@ def reset_redis_nodes(
             for qubit in qubits:
                 redis_prefix_ = f"transmons:{qubit}"
                 for qoi in node_cls_attributes["qubit_qois"]:
-                    REDIS_CONNECTION.hset(redis_prefix_, qoi, "nan")
+                    redis_connection.hset(redis_prefix_, qoi, "nan")
                     if "motzoi" in qoi:
-                        REDIS_CONNECTION.hset(redis_prefix_, qoi, "0")
+                        redis_connection.hset(redis_prefix_, qoi, "0")
                     if "measure_3state_opt:pulse_amp" in qoi:
-                        REDIS_CONNECTION.hset(redis_prefix_, qoi, "0")
+                        redis_connection.hset(redis_prefix_, qoi, "0")
                     if "measure_2state_opt:pulse_amp" in qoi:
-                        REDIS_CONNECTION.hset(redis_prefix_, qoi, "0")
-                REDIS_CONNECTION.hset(f"cs:{qubit}", node_name, "not_calibrated")
+                        redis_connection.hset(redis_prefix_, qoi, "0")
+                redis_connection.hset(f"cs:{qubit}", node_name, "not_calibrated")
         if "coupler_qois" in node_cls_attributes.keys():
             for coupler in couplers:
                 redis_prefix_ = f"couplers:{coupler}"
                 for coupler_qoi in node_cls_attributes["coupler_qois"]:
-                    REDIS_CONNECTION.hset(redis_prefix_, coupler_qoi, "nan")
-                REDIS_CONNECTION.hset(f"cs:{coupler}", node_name, "not_calibrated")
+                    redis_connection.hset(redis_prefix_, coupler_qoi, "nan")
+                redis_connection.hset(f"cs:{coupler}", node_name, "not_calibrated")

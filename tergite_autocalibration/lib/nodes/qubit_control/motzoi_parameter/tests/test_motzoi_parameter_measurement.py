@@ -21,7 +21,7 @@ from tergite_autocalibration.lib.nodes.qubit_control.motzoi_parameter.node impor
     MotzoiParameter12Node,
     MotzoiParameterNode,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
@@ -29,9 +29,11 @@ from tergite_autocalibration.tests.utils.fixtures import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_dummy_generation():
+def test_dummy_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = MotzoiParameterNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node = MotzoiParameterNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_reps = len(node.schedule_samplespace["X_repetitions"][first_qubit])
@@ -41,9 +43,11 @@ def test_dummy_generation():
     assert dummy_dataset.data_vars[0].size == number_of_reps * number_of_motzois
 
 
-def test_dummy_12_generation():
+def test_dummy_12_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = MotzoiParameter12Node(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node = MotzoiParameter12Node(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_reps = len(node.schedule_samplespace["X_repetitions"][first_qubit])
@@ -59,22 +63,22 @@ _test_data_dir = os.path.join(
 _redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-@with_redis(_redis_values)
-def test_12_pulse_duration():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    qubits = ["q13", "q14", "q15"]
-    node_12 = MotzoiParameter12Node(qubits, ["q13_q14"])
-    samplespace = {  # small samplespace
-        "mw_motzois": {qubit: np.linspace(-0.3, 0.3, 3) for qubit in qubits},
-        "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
-    }
-    transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-    measurement_class = node_12.measurement_obj(transmons_dict)
-    schedule = measurement_class.schedule_function(
-        **samplespace, **node_12.schedule_keywords
-    )
-    for pulses in schedule.operations.values():
-        if pulses["name"] == "DRAGPulse":
-            pulse_duration = pulses["pulse_info"][0]["duration"]
+def test_12_pulse_duration(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        qubits = ["q13", "q14", "q15"]
+        node_12 = MotzoiParameter12Node(qubits, ["q13_q14"], session=session_context)
+        samplespace = {  # small samplespace
+            "mw_motzois": {qubit: np.linspace(-0.3, 0.3, 3) for qubit in qubits},
+            "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
+        }
+        transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
+        measurement_class = node_12.measurement_obj(transmons_dict)
+        schedule = measurement_class.schedule_function(
+            **samplespace, **node_12.schedule_keywords
+        )
+        for pulses in schedule.operations.values():
+            if pulses["name"] == "DRAGPulse":
+                pulse_duration = pulses["pulse_info"][0]["duration"]
 
-    assert pytest.approx(pulse_duration) == 7.6e-8
+        assert pytest.approx(pulse_duration) == 7.6e-8

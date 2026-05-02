@@ -13,12 +13,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import xarray as xr
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.cz_chevron.analysis import (
     CZChevronAnalysis,
@@ -28,6 +27,9 @@ from tergite_autocalibration.lib.nodes.coupler.cz_chevron.measurement import (
 )
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 
 class CZChevronNode(CouplerNode):
     name: str = "cz_chevron"
@@ -36,8 +38,13 @@ class CZChevronNode(CouplerNode):
     measurement_type = OuterScheduleNode
     coupler_qois = ["cz_working_frequencies", "cz_working_durations_in_ns"]
 
-    def __init__(self, couplers: list[str], **schedule_keywords):
-        super().__init__(couplers, **schedule_keywords)
+    def __init__(
+        self,
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(couplers, session, **schedule_keywords)
 
         self.couplers = couplers
 
@@ -73,13 +80,17 @@ class CZChevronNode(CouplerNode):
 
     def known_cz_frequency(self, coupler: str):
         known_cz_frequency = float(
-            REDIS_CONNECTION.hget(f"couplers:{coupler}", "cz_pulse_frequency")
+            self.session.redis_connection.hget(
+                f"couplers:{coupler}", "cz_pulse_frequency"
+            )
         )
         return known_cz_frequency
 
     def max_duration(self, coupler: str):
         half_duration = float(
-            REDIS_CONNECTION.hget(f"couplers:{coupler}", "cz_half_duration")
+            self.session.redis_connection.hget(
+                f"couplers:{coupler}", "cz_half_duration"
+            )
         )
         max_duration = 2 * half_duration
         max_duration_in_ns = round(max_duration / 1e-9)
@@ -90,7 +101,9 @@ class CZChevronNode(CouplerNode):
     def all_phase_paths(self) -> dict[str, Literal["via_02", "via_20"]]:
         phase_paths = {}
         for coupler in self.couplers:
-            path = REDIS_CONNECTION.hget(f"couplers:{coupler}", "cz_phase_path")
+            path = self.session.redis_connection.hget(
+                f"couplers:{coupler}", "cz_phase_path"
+            )
             phase_paths[coupler] = path
         return phase_paths
 

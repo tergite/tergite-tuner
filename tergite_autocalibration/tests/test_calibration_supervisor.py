@@ -44,8 +44,10 @@ def test_instantiate_calibration_config(session_context):
     assert session_context.target_node_name == "ro_amplitude_two_state_optimization"
 
 
-def test_instantiate_calibration_supervisor(session_context):
-    calib_sup = CalibrationSupervisor(config=session_context)
+def test_instantiate_calibration_supervisor(session_context, redis_connection):
+    calib_sup = CalibrationSupervisor(
+        config=session_context, redis_connection=redis_connection
+    )
 
     assert isinstance(calib_sup.hardware_manager, HardwareManager)
     assert isinstance(calib_sup.node_manager, NodeManager)
@@ -65,8 +67,10 @@ def test_instantiate_calibration_supervisor(session_context):
     )
 
 
-def test_hardware_manager_creates_dummy_cluster(session_context):
-    calib_sup = CalibrationSupervisor(config=session_context)
+def test_hardware_manager_creates_dummy_cluster(session_context, redis_connection):
+    calib_sup = CalibrationSupervisor(
+        config=session_context, redis_connection=redis_connection
+    )
     hw_manager = calib_sup.hardware_manager
     cl = hw_manager.cluster
     assert isinstance(cl, Cluster)
@@ -82,19 +86,25 @@ def test_hardware_manager_creates_dummy_cluster(session_context):
     assert cl.module17.is_rf_type and cl.module17.is_qrm_type
 
 
-def test_hardware_manager_creates_ic(session_context):
-    calib_sup = CalibrationSupervisor(config=session_context)
+def test_hardware_manager_creates_ic(session_context, redis_connection):
+    calib_sup = CalibrationSupervisor(
+        config=session_context, redis_connection=redis_connection
+    )
     hw_manager = calib_sup.hardware_manager
     assert isinstance(hw_manager.lab_ic, InstrumentCoordinator)
     assert hw_manager.get_instrument_coordinator().name == hw_manager.lab_ic.name
 
 
-def test_output_attenuation_is_set_to_value_in_device_config(caplog, session_context):
+def test_output_attenuation_is_set_to_value_in_device_config(
+    caplog, session_context, redis_connection
+):
     """Output attenuation is set during the instantiation of the HardwareManager
     which in turn is created during the instantiation of the CalibrationSupervisor
     """
     with caplog.at_level("WARNING"):
-        calib_sup = CalibrationSupervisor(config=session_context)
+        calib_sup = CalibrationSupervisor(
+            config=session_context, redis_connection=redis_connection
+        )
 
     # The qubit missing on purpose + all legacy couplers
     assert len(caplog.records) == 9

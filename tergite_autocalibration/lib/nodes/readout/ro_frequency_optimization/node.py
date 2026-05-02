@@ -12,11 +12,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray
 from quantify_core.analysis import fitting_models as fm
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.node import QubitNode
 from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.analysis import (
     OptimalRO01FrequencyNodeAnalysis,
@@ -28,19 +29,28 @@ from tergite_autocalibration.lib.nodes.readout.ro_frequency_optimization.measure
 from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 from tergite_autocalibration.lib.utils.samplespace import resonator_samples
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 resonator = fm.ResonatorModel()
 
 
 class ROFrequencyOptimizationBase(QubitNode):
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(all_qubits, couplers, session, **schedule_keywords)
 
     def generate_dummy_dataset(self, noise=False):
         dataset = xarray.Dataset()
         frequency_shift = 0.5e6
 
         for index, qubit in enumerate(self.all_qubits):
-            vna_ro_freq = CONFIG.device.resonators[qubit]["VNA_frequency"]
+            vna_ro_freq = self.session.config.device.resonators[qubit]["VNA_frequency"]
             qubit_states = self.schedule_samplespace["qubit_states"][qubit]
             data_array = np.array([])
             for qubit_state in qubit_states:
@@ -54,7 +64,7 @@ class ROFrequencyOptimizationBase(QubitNode):
                     phi_v=0,
                     phi_0=0,
                 )
-                samples = resonator_samples(qubit)
+                samples = resonator_samples(qubit, self.session.config)
                 number_of_samples = len(samples)
                 frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
                 true_s21 = resonator.eval(params=true_params, f=frequncies)
@@ -81,12 +91,19 @@ class ROFrequencyTwoStateOptimizationNode(ROFrequencyOptimizationBase):
 
     qubit_qois = ["extended_clock_freqs:readout_2state_opt"]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(all_qubits, couplers, session, **schedule_keywords)
 
         self.schedule_samplespace = {
             "ro_opt_frequencies": {
-                qubit: resonator_samples(qubit) for qubit in self.all_qubits
+                qubit: resonator_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             },
             "qubit_states": {
                 qubit: np.array([0, 1], dtype=np.int8) for qubit in self.all_qubits
@@ -101,13 +118,20 @@ class ROFrequencyThreeStateOptimizationNode(ROFrequencyOptimizationBase):
     measurement_type = ScheduleNode
     qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(all_qubits, couplers, session, **schedule_keywords)
         self.all_qubits = all_qubits
 
         self.schedule_samplespace = {
             "ro_opt_frequencies": {
-                qubit: resonator_samples(qubit) for qubit in self.all_qubits
+                qubit: resonator_samples(qubit, self.session.config)
+                for qubit in self.all_qubits
             },
             "qubit_states": {
                 qubit: np.array([0, 1, 2], dtype=np.int8) for qubit in self.all_qubits

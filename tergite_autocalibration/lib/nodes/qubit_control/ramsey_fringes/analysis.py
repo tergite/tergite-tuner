@@ -15,7 +15,6 @@
 
 import numpy as np
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
     BaseQubitAnalysis,
@@ -38,7 +37,7 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
                 self.detuning_coord = coord
                 self.artificial_detunings = self.dataset.coords[coord].values
         redis_key = f"transmons:{self.qubit}"
-        redis_value = REDIS_CONNECTION.hget(f"{redis_key}", self.redis_field)
+        redis_value = self.redis_connection.hget(f"{redis_key}", self.redis_field)
         self.qubit_frequency = float(redis_value)
 
         model = RamseyModel()

@@ -25,48 +25,52 @@ from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.node 
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values_path = os.path.join(_test_data_dir, "redis-2026-02-10-11-23-12.json")
 
 
-@with_redis(_redis_values_path)
-def test_align_cliffords():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    qubits = ["q13", "q14"]
-    couplers = ["q13_q14"]
-    clifford_gate_index = 9799
+def test_align_cliffords(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values_path):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        qubits = ["q13", "q14"]
+        couplers = ["q13_q14"]
+        clifford_gate_index = 9799
 
-    node = CZRBNode(all_qubits=qubits, couplers=couplers)
-    transmons_dict = {qubit: node.device.get_element(qubit) for qubit in qubits}
-    edges_dict = {coupler: node.device.get_edge(coupler) for coupler in couplers}
-    cz_rb_measurement = CZRBMeasurement(transmons=transmons_dict, couplers=edges_dict)
+        node = CZRBNode(all_qubits=qubits, couplers=couplers, session=session_context)
+        transmons_dict = {qubit: node.device.get_element(qubit) for qubit in qubits}
+        edges_dict = {coupler: node.device.get_edge(coupler) for coupler in couplers}
+        cz_rb_measurement = CZRBMeasurement(
+            transmons=transmons_dict, couplers=edges_dict
+        )
 
-    cliff_gate_decomposition = TwoQubitClifford(clifford_gate_index).gate_decomposition
+        cliff_gate_decomposition = TwoQubitClifford(
+            clifford_gate_index
+        ).gate_decomposition
 
-    assert cliff_gate_decomposition == [
-        ("mY90", "q0"),
-        ("X90", "q0"),
-        ("I", "q1"),
-        ("CZ", ["q0", "q1"]),
-        ("Y90", "q0"),
-        ("mY90", "q1"),
-        ("CZ", ["q0", "q1"]),
-        ("mX90", "q0"),
-        ("Y180", "q0"),
-        ("mY90", "q1"),
-    ]
+        assert cliff_gate_decomposition == [
+            ("mY90", "q0"),
+            ("X90", "q0"),
+            ("I", "q1"),
+            ("CZ", ["q0", "q1"]),
+            ("Y90", "q0"),
+            ("mY90", "q1"),
+            ("CZ", ["q0", "q1"]),
+            ("mX90", "q0"),
+            ("Y180", "q0"),
+            ("mY90", "q1"),
+        ]
 
-    grouped_gate_decomposition = cz_rb_measurement.align_cliffords(
-        couplers[0], cliff_gate_decomposition
-    )
+        grouped_gate_decomposition = cz_rb_measurement.align_cliffords(
+            couplers[0], cliff_gate_decomposition
+        )
 
-    assert grouped_gate_decomposition == [
-        {"q0": ["mY90", "X90"], "q1": ["I", "I"]},
-        {"q13_q14": ["CZ"]},
-        {"q0": ["Y90"], "q1": ["mY90"]},
-        {"q13_q14": ["CZ"]},
-        {"q0": ["mX90", "Y180"], "q1": ["I", "mY90"]},
-    ]
+        assert grouped_gate_decomposition == [
+            {"q0": ["mY90", "X90"], "q1": ["I", "I"]},
+            {"q13_q14": ["CZ"]},
+            {"q0": ["Y90"], "q1": ["mY90"]},
+            {"q13_q14": ["CZ"]},
+            {"q0": ["mX90", "Y180"], "q1": ["I", "mY90"]},
+        ]

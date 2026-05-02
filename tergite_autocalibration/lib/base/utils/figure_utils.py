@@ -20,7 +20,6 @@ import numpy as np
 from matplotlib import gridspec
 from matplotlib.lines import Line2D
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.utils.logging import logger
 
 

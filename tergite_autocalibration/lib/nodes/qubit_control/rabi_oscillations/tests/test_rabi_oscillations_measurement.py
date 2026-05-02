@@ -24,7 +24,7 @@ from tergite_autocalibration.lib.nodes.qubit_control.rabi_oscillations.node impo
     RabiOscillations12Node,
     RabiOscillationsNode,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 from tergite_autocalibration.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
@@ -32,9 +32,11 @@ from tergite_autocalibration.tests.utils.fixtures import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_dummy_01_generation():
+def test_dummy_01_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_01 = RabiOscillationsNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node_01 = RabiOscillationsNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset_01 = node_01.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_amplitudes_01 = len(
@@ -45,9 +47,11 @@ def test_dummy_01_generation():
     assert dummy_dataset_01.data_vars[0].size == number_of_amplitudes_01
 
 
-def test_dummy_12_generation():
+def test_dummy_12_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_12 = RabiOscillations12Node(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node_12 = RabiOscillations12Node(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset_12 = node_12.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_amplitudes_12 = len(
@@ -64,29 +68,31 @@ _test_data_dir = os.path.join(
 _redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-@with_redis(_redis_values)
-def test_12_pulse_duration():
+def test_12_pulse_duration(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        qubits = ["q13", "q14", "q15"]
+        node_12 = RabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
+        samplespace = {  # small samplespace
+            "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
+        }
+        transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
+        measurement_class = node_12.measurement_obj(transmons_dict)
+        schedule = measurement_class.schedule_function(
+            **samplespace, **node_12.schedule_keywords
+        )
+        for pulses in schedule.operations.values():
+            if pulses["name"] == "DRAGPulse":
+                pulse_duration = pulses["pulse_info"][0]["duration"]
+
+        assert pytest.approx(pulse_duration) == 7.6e-8
+
+
+def test_dummy_n_rabi_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    qubits = ["q13", "q14", "q15"]
-    node_12 = RabiOscillations12Node(qubits, ["q13_q14"])
-    samplespace = {  # small samplespace
-        "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
-    }
-    transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-    measurement_class = node_12.measurement_obj(transmons_dict)
-    schedule = measurement_class.schedule_function(
-        **samplespace, **node_12.schedule_keywords
+    node_n_rabi = NRabiOscillationsNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    for pulses in schedule.operations.values():
-        if pulses["name"] == "DRAGPulse":
-            pulse_duration = pulses["pulse_info"][0]["duration"]
-
-    assert pytest.approx(pulse_duration) == 7.6e-8
-
-
-def test_dummy_n_rabi_generation():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_n_rabi = NRabiOscillationsNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
     dummy_dataset_n_rabi = node_n_rabi.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_reps = len(node_n_rabi.schedule_samplespace["X_repetitions"][first_qubit])
@@ -101,22 +107,24 @@ def test_dummy_n_rabi_generation():
     )
 
 
-@with_redis(_redis_values)
-def test_12_pulse_duration():
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    qubits = ["q13", "q14", "q15"]
-    node_12 = NRabiOscillations12Node(qubits, ["q13_q14"])
-    samplespace = {
-        "mw_amplitudes_sweep": {qubit: np.linspace(-0.05, 0.05, 3) for qubit in qubits},
-        "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
-    }
-    transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-    measurement_class = node_12.measurement_obj(transmons_dict)
-    schedule = measurement_class.schedule_function(
-        **samplespace, **node_12.schedule_keywords
-    )
-    for pulses in schedule.operations.values():
-        if pulses["name"] == "DRAGPulse":
-            pulse_duration = pulses["pulse_info"][0]["duration"]
+def test_12_pulse_duration(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        qubits = ["q13", "q14", "q15"]
+        node_12 = NRabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
+        samplespace = {
+            "mw_amplitudes_sweep": {
+                qubit: np.linspace(-0.05, 0.05, 3) for qubit in qubits
+            },
+            "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
+        }
+        transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
+        measurement_class = node_12.measurement_obj(transmons_dict)
+        schedule = measurement_class.schedule_function(
+            **samplespace, **node_12.schedule_keywords
+        )
+        for pulses in schedule.operations.values():
+            if pulses["name"] == "DRAGPulse":
+                pulse_duration = pulses["pulse_info"][0]["duration"]
 
-    assert pytest.approx(pulse_duration) == 7.6e-8
+        assert pytest.approx(pulse_duration) == 7.6e-8

@@ -126,7 +126,12 @@ class NodeFactory:
         return self._node_classes[node_name]
 
     def create_node(
-        self, node_name: str, all_qubits: list[str], couplers: list[str], **kwargs
+        self,
+        node_name: str,
+        all_qubits: list[str],
+        couplers: list[str],
+        session,
+        **kwargs,
     ) -> "BaseNode":
 
         # Check whether node class is already inside the dict
@@ -135,6 +140,8 @@ class NodeFactory:
         else:
             node_cls = self._node_classes[node_name]
 
-        node_obj = node_cls(all_qubits=all_qubits, couplers=couplers, **kwargs)
+        node_obj = node_cls(
+            all_qubits=all_qubits, couplers=couplers, session=session, **kwargs
+        )
 
         return node_obj

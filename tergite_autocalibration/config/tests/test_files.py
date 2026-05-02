@@ -28,7 +28,6 @@ from pydantic import ValidationError
 from tergite_autocalibration.config.files import (
     ClusterConfigFile,
     DeviceConfigFile,
-    EnvConfigFile,
     MetaConfigFile,
     NodeConfigFile,
     SpiConfigFile,
@@ -37,13 +36,6 @@ from tergite_autocalibration.config.files import (
 _CONFIG_PACKAGE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 _TEMPLATE_DIR = path.join(_CONFIG_PACKAGE_DIR, "templates", "fc8a")
 _CONFIGS_DIR = path.join(_TEMPLATE_DIR, "configs")
-_REPO_ROOT = path.dirname(path.dirname(_CONFIG_PACKAGE_DIR))
-_EXAMPLE_ENV_PATH = path.join(_REPO_ROOT, ".example.env")
-
-
-# ---------------------------------------------------------------------------
-# Path fixtures pointing at the bundled fc8a templates
-# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -69,16 +61,6 @@ def spi_config_path() -> str:
 @pytest.fixture
 def cluster_config_path() -> str:
     return path.join(_CONFIGS_DIR, "cluster_config.json")
-
-
-@pytest.fixture
-def example_env_path() -> str:
-    return _EXAMPLE_ENV_PATH
-
-
-# ---------------------------------------------------------------------------
-# MetaConfigFile
-# ---------------------------------------------------------------------------
 
 
 def test_meta_config_loads_fc8a_template(meta_config_path):
@@ -122,11 +104,6 @@ def test_meta_config_tolerates_unknown_files(tmp_path):
     assert meta.files.device_config == "device_config.toml"
     # Unknown keys are kept thanks to ``extra="allow"``
     assert meta.files.model_dump().get("future_config") == "future_config.toml"
-
-
-# ---------------------------------------------------------------------------
-# DeviceConfigFile
-# ---------------------------------------------------------------------------
 
 
 def test_device_config_loads_fc8a_template(device_config_path):
@@ -179,11 +156,6 @@ def test_device_config_uses_defaults_when_section_missing(tmp_path):
     assert dev.device.couplers == {}
 
 
-# ---------------------------------------------------------------------------
-# NodeConfigFile
-# ---------------------------------------------------------------------------
-
-
 def test_node_config_loads_fc8a_template(node_config_path):
     """The node configuration of the fc8a template loads cleanly."""
     node = NodeConfigFile.from_toml(node_config_path)
@@ -222,11 +194,6 @@ def test_node_config_membership_iteration(node_config_path):
     assert "punchout" in node
     assert "non_existent_node" not in node
     assert set(iter(node)) == set(node.root.keys())
-
-
-# ---------------------------------------------------------------------------
-# SpiConfigFile
-# ---------------------------------------------------------------------------
 
 
 def test_spi_config_loads_fc8a_template(spi_config_path):
@@ -269,11 +236,6 @@ def test_spi_config_membership_iteration(spi_config_path):
     assert "q08_q09" in list(iter(spi))
 
 
-# ---------------------------------------------------------------------------
-# ClusterConfigFile
-# ---------------------------------------------------------------------------
-
-
 def test_cluster_config_loads_fc8a_template(cluster_config_path):
     """The cluster configuration of the fc8a template loads via quantify-scheduler."""
     pytest.importorskip("quantify_scheduler")
@@ -307,117 +269,6 @@ def test_cluster_config_rejects_invalid_payload(tmp_path):
         ClusterConfigFile.from_json(sample)
 
 
-# ---------------------------------------------------------------------------
-# EnvConfigFile
-# ---------------------------------------------------------------------------
-
-
-def test_env_config_loads_example_env(example_env_path):
-    """The ``.example.env`` shipped with the repo loads cleanly."""
-    env = EnvConfigFile.from_dotenv(example_env_path)
-
-    # Values explicitly set in the example file
-    assert env.stdout_log_level == 25
-    assert env.file_log_level == 10
-    assert env.cluster_ip == "192.14.2.1"
-    assert env.spi_serial_port == "/dev/ttyACM0"
-    assert env.redis_port == 6379
-    assert env.plotting is True
-    assert env.data_browser_host == "127.0.0.1"
-    assert env.data_browser_port == 8179
-    assert env.hw_config_generator_host == "127.0.0.1"
-    assert env.hw_config_generator_port == 8079
-
-
-def test_env_config_uses_documented_defaults_for_commented_vars(example_env_path):
-    """Commented-out variables fall back to the ``# Default: ...`` values."""
-    import getpass
-
-    env = EnvConfigFile.from_dotenv(example_env_path)
-
-    # ``DEFAULT_PREFIX`` defaults to the current user as found by getpass
-    assert env.default_prefix == getpass.getuser().replace(" ", "")
-
-    # ``DATA_DIR`` defaults to ``<root_dir>/out`` and ``CONFIG_DIR`` to ``<root_dir>``
-    assert env.data_dir == env.root_dir / "out"
-    assert env.config_dir == env.root_dir
-
-
-def test_env_config_constructs_with_no_args():
-    """``EnvConfigFile()`` returns a fully-defaulted instance."""
-    env = EnvConfigFile()
-
-    # Defaults from the example file
-    assert env.stdout_log_level == 25
-    assert env.plotting is True
-    assert env.redis_port == 6379
-
-    # Dependent defaults are resolved by the post-init validator
-    assert env.data_dir == env.root_dir / "out"
-    assert env.config_dir == env.root_dir
-
-
-def test_env_config_overrides_commented_vars(tmp_path):
-    """Explicit values for the optional commented-out vars take precedence."""
-    custom_root = tmp_path / "custom-root"
-    custom_data = tmp_path / "custom-data"
-    custom_config = tmp_path / "custom-config"
-
-    sample = tmp_path / ".env"
-    sample.write_text(
-        f"DEFAULT_PREFIX='alice'\n"
-        f"ROOT_DIR='{custom_root}'\n"
-        f"DATA_DIR='{custom_data}'\n"
-        f"CONFIG_DIR='{custom_config}'\n"
-    )
-
-    env = EnvConfigFile.from_dotenv(sample)
-    assert env.default_prefix == "alice"
-    assert env.root_dir == custom_root
-    assert env.data_dir == custom_data
-    assert env.config_dir == custom_config
-
-
-def test_env_config_coerces_string_values(tmp_path):
-    """Values from the ``.env`` file (always strings) are coerced to the field type."""
-    sample = tmp_path / ".env"
-    sample.write_text(
-        "REDIS_PORT='6380'\n" "PLOTTING='False'\n" "STDOUT_LOG_LEVEL='30'\n"
-    )
-
-    env = EnvConfigFile.from_dotenv(sample)
-    assert env.redis_port == 6380
-    assert env.plotting is False
-    assert env.stdout_log_level == 30
-
-
-def test_env_config_rejects_non_integer_port(tmp_path):
-    """Non-integer port values fail validation."""
-    sample = tmp_path / ".env"
-    sample.write_text("REDIS_PORT='not-a-port'\n")
-
-    with pytest.raises(ValidationError) as excinfo:
-        EnvConfigFile.from_dotenv(sample)
-
-    locs = [err["loc"] for err in excinfo.value.errors()]
-    assert ("redis_port",) in locs
-
-
-def test_env_config_tolerates_unknown_keys(tmp_path):
-    """Unknown env vars are kept on the model rather than rejected."""
-    sample = tmp_path / ".env"
-    sample.write_text("FUTURE_VARIABLE='hello'\n")
-
-    env = EnvConfigFile.from_dotenv(sample)
-    # ``extra="allow"`` keeps unknown keys around under their lower-case name
-    assert env.model_dump().get("future_variable") == "hello"
-
-
-# ---------------------------------------------------------------------------
-# File-not-found smoke checks
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "loader",
     [
@@ -425,7 +276,6 @@ def test_env_config_tolerates_unknown_keys(tmp_path):
         DeviceConfigFile.from_toml,
         NodeConfigFile.from_toml,
         SpiConfigFile.from_toml,
-        EnvConfigFile.from_dotenv,
     ],
 )
 def test_toml_loaders_raise_for_missing_file(tmp_path, loader):

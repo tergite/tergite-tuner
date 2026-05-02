@@ -1,6 +1,7 @@
 # This code is part of Tergite
 #
 # (C) Copyright Eleftherios Moschandreou 2024
+# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -11,11 +12,11 @@
 # that they have been altered from the originals.
 
 import json
+from typing import TYPE_CHECKING
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.json_utils import SchedulerJSONEncoder
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.utils.redis import (
     load_redis_config,
     load_redis_config_coupler,
@@ -25,24 +26,32 @@ from tergite_autocalibration.utils.dto.extended_coupler_edge import (
 )
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.load import Configuration
+
 
 def configure_device(
-    name: str, qubits: list[str], couplers: list[str]
+    name: str,
+    qubits: list[str],
+    couplers: list[str],
+    *,
+    config: "Configuration",
+    redis_connection,
 ) -> QuantumDevice:
     device = QuantumDevice(name)
     for channel, qubit in enumerate(qubits):
         transmon = ExtendedTransmon(qubit)
-        transmon = load_redis_config(transmon, channel)
+        transmon = load_redis_config(transmon, channel, redis_connection)
         device.add_element(transmon)
 
     if couplers is not None:
         for coupler in couplers:
             control, target = coupler.split(sep="_")
             edge = ExtendedCompositeSquareEdge(control, target)
-            edge = load_redis_config_coupler(edge)
+            edge = load_redis_config_coupler(edge, redis_connection)
             device.add_edge(edge)
 
-    device.hardware_config(CONFIG.cluster)
+    device.hardware_config(config.cluster)
     return device
 
 

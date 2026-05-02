@@ -1,6 +1,7 @@
 # This code is part of Tergite
 #
 # (C) Copyright Michele Faucci Giannelli 2025
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -20,7 +21,6 @@ import xarray as xr
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
-from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
 from tergite_autocalibration.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
 from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingAnalysis,
@@ -29,6 +29,22 @@ from tergite_autocalibration.lib.nodes.coupler.spectroscopy.analysis import (
 from tergite_autocalibration.lib.utils.redis import update_redis_trusted_values
 from tergite_autocalibration.tests.utils.decorators import with_os_env
 from tergite_autocalibration.utils.dto.qoi import QOI
+
+
+def _build_anticrossing_analysis(name, redis_fields, redis_connection, configuration):
+    analysis = CouplerAnticrossingAnalysis(name, redis_fields)
+    analysis.redis_connection = redis_connection
+    analysis.config = configuration
+    return analysis
+
+
+def _build_resonator_vs_current_analysis(
+    name, redis_fields, redis_connection, configuration
+):
+    analysis = ResonatorSpectroscopyVsCurrentCouplerAnalysis(name, redis_fields)
+    analysis.redis_connection = redis_connection
+    analysis.config = configuration
+    return analysis
 
 
 def test_CanCreate():
@@ -85,20 +101,31 @@ qubit_coupler_qois = ["control_qubit_crossing_points", "target_qubit_crossing_po
 
 def test_get_crossings_for_q06_q07(
     setup_q06_q07_data: tuple[xr.Dataset, str, ndarray, str],
+    redis_connection,
+    configuration,
 ):
     ds_res, ds_qu, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current", res_coupler_qois
+    a = _build_resonator_vs_current_analysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        redis_connection,
+        configuration,
     )
     q1, q2 = coupler.split("_")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", q1)
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", q2)
+    redis_connection.hset(f"couplers:{coupler}", "control_qubit", q1)
+    redis_connection.hset(f"couplers:{coupler}", "target_qubit", q2)
     qoi = a.process_coupler(ds_res, coupler)
     update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current", coupler, qoi, res_coupler_qois
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        redis_connection,
+        qoi,
+        res_coupler_qois,
     )
 
-    b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois)
+    b = _build_anticrossing_analysis(
+        "name", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = b.process_coupler(ds_qu, coupler)
 
     q06_crossings = getCrossingForQubit(qoi, "q06")
@@ -122,20 +149,31 @@ def setup_q08_q09_data():
 
 def test_get_crossings_for_q08_q09(
     setup_q08_q09_data: tuple[xr.Dataset, str, ndarray, str],
+    redis_connection,
+    configuration,
 ):
     ds_res, ds_qu, coupler = setup_q08_q09_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current", res_coupler_qois
+    a = _build_resonator_vs_current_analysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        redis_connection,
+        configuration,
     )
     q1, q2 = coupler.split("_")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", q1)
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", q2)
+    redis_connection.hset(f"couplers:{coupler}", "control_qubit", q1)
+    redis_connection.hset(f"couplers:{coupler}", "target_qubit", q2)
     qoi = a.process_coupler(ds_res, coupler)
     update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current", coupler, qoi, res_coupler_qois
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        redis_connection,
+        qoi,
+        res_coupler_qois,
     )
 
-    b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois)
+    b = _build_anticrossing_analysis(
+        "name", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = b.process_coupler(ds_qu, coupler)
 
     q08_crossings = getCrossingForQubit(qoi, "q08")
@@ -159,20 +197,31 @@ def setup_q12_q13_data():
 
 def test_get_crossings_for_q12_q13(
     setup_q12_q13_data: tuple[xr.Dataset, xr.Dataset, str],
+    redis_connection,
+    configuration,
 ):
     ds_res, ds_qu, coupler = setup_q12_q13_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current", res_coupler_qois
+    a = _build_resonator_vs_current_analysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        redis_connection,
+        configuration,
     )
     q1, q2 = coupler.split("_")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", q1)
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", q2)
+    redis_connection.hset(f"couplers:{coupler}", "control_qubit", q1)
+    redis_connection.hset(f"couplers:{coupler}", "target_qubit", q2)
     qoi = a.process_coupler(ds_res, coupler)
     update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current", coupler, qoi, res_coupler_qois
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        redis_connection,
+        qoi,
+        res_coupler_qois,
     )
 
-    b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois)
+    b = _build_anticrossing_analysis(
+        "name", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = b.process_coupler(ds_qu, coupler)
 
     q12_crossings = getCrossingForQubit(qoi, "q12")
@@ -195,17 +244,28 @@ def setup_q14_q15_data():
 
 def test_get_crossings_for_q14_q15(
     setup_q14_q15_data: tuple[xr.Dataset, xr.Dataset, str],
+    redis_connection,
+    configuration,
 ):
     ds_res, ds_qu, coupler = setup_q14_q15_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current", res_coupler_qois
+    a = _build_resonator_vs_current_analysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        redis_connection,
+        configuration,
     )
     qoi = a.process_coupler(ds_res, coupler)
     update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current", coupler, qoi, res_coupler_qois
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        redis_connection,
+        qoi,
+        res_coupler_qois,
     )
 
-    b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois)
+    b = _build_anticrossing_analysis(
+        "name", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = b.process_coupler(ds_qu, coupler)
 
     q14_crossings = getCrossingForQubit(qoi, "q14")
@@ -215,18 +275,30 @@ def test_get_crossings_for_q14_q15(
 
 
 @with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_coupler_plot_is_created(setup_q06_q07_data):
+def test_coupler_plot_is_created(setup_q06_q07_data, redis_connection, configuration):
     matplotlib.use("Agg")
     ds_res, ds_qu, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current", res_coupler_qois
+    a = _build_resonator_vs_current_analysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        redis_connection,
+        configuration,
     )
     qoi = a.process_coupler(ds_res, coupler)
     update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current", coupler, qoi, res_coupler_qois
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        redis_connection,
+        qoi,
+        res_coupler_qois,
     )
 
-    b = CouplerAnticrossingAnalysis("qubit_spectroscopy_vs_current", qubit_coupler_qois)
+    b = _build_anticrossing_analysis(
+        "qubit_spectroscopy_vs_current",
+        qubit_coupler_qois,
+        redis_connection,
+        configuration,
+    )
     qoi = b.process_coupler(ds_qu, coupler)
 
     figure_path = os.environ["DATA_DIR"] + "/qubit_spectroscopy_vs_current.png"
@@ -265,9 +337,13 @@ def setup_q16_q17_data():
 @pytest.mark.skip()
 def test_no_crossings_for_q16_q17(
     setup_q16_q17_data: tuple[xr.Dataset, str, ndarray, ndarray],
+    redis_connection,
+    configuration,
 ):
     ds, coupler = setup_q16_q17_data
-    a = CouplerAnticrossingAnalysis("name", qubit_coupler_qois)
+    a = _build_anticrossing_analysis(
+        "name", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = a.process_coupler(ds, coupler)
 
     q16_crossings = getCrossingForQubit(qoi, "q16")
@@ -278,18 +354,29 @@ def test_no_crossings_for_q16_q17(
 
 @pytest.mark.skip()
 @with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
-def test_qubit_spectroscopies_for_coupler_are_created(setup_q06_q07_data):
+def test_qubit_spectroscopies_for_coupler_are_created(
+    setup_q06_q07_data, redis_connection, configuration
+):
     matplotlib.use("Agg")
     ds_res, ds_qu, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current", res_coupler_qois
+    a = _build_resonator_vs_current_analysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        redis_connection,
+        configuration,
     )
     qoi = a.process_coupler(ds_res, coupler)
     update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current", coupler, qoi, res_coupler_qois
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        redis_connection,
+        qoi,
+        res_coupler_qois,
     )
 
-    b = CouplerAnticrossingAnalysis("qs_vs_current", qubit_coupler_qois)
+    b = _build_anticrossing_analysis(
+        "qs_vs_current", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = b.process_coupler(ds_qu, coupler)
 
     path = Path(os.environ["DATA_DIR"])
@@ -317,10 +404,14 @@ def test_qubit_spectroscopies_for_coupler_are_created(setup_q06_q07_data):
 @with_os_env({"DATA_DIR": str(Path(__file__).parent / "results")})
 def test_qubit_spectroscopies_for_coupler_are_created_when_no_crossings(
     setup_q16_q17_data,
+    redis_connection,
+    configuration,
 ):
     matplotlib.use("Agg")
     ds, coupler = setup_q16_q17_data
-    a = CouplerAnticrossingAnalysis("qs_vs_current", qubit_coupler_qois)
+    a = _build_anticrossing_analysis(
+        "qs_vs_current", qubit_coupler_qois, redis_connection, configuration
+    )
     qoi = a.process_coupler(ds, coupler)
 
     path = Path(os.environ["DATA_DIR"])

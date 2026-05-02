@@ -13,15 +13,21 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
+from typing import TYPE_CHECKING
+
 from tergite_autocalibration.lib.base.node import CouplerNode, QubitNode
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.logging import logger
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.load import Configuration
 
-def populate_initial_parameters(qubits: list, couplers: list, redis_connection):
-    initial_qubit_parameters = CONFIG.device.qubits
-    initial_coupler_parameters = CONFIG.device.couplers
+
+def populate_initial_parameters(
+    qubits: list, couplers: list, redis_connection, config: "Configuration"
+):
+    initial_qubit_parameters = config.device.qubits
+    initial_coupler_parameters = config.device.couplers
 
     # Populate the Redis database with the initial 'reasonable'
     # parameter values from the toml file
@@ -47,8 +53,10 @@ def populate_initial_parameters(qubits: list, couplers: list, redis_connection):
             redis_connection.hset(f"couplers:{coupler}", module_key, module_value)
 
 
-def populate_parking_currents(couplers: list, redis_connection):
-    initial_coupler_parameters = CONFIG.device.couplers
+def populate_parking_currents(
+    couplers: list, redis_connection, config: "Configuration"
+):
+    initial_coupler_parameters = config.device.couplers
     for coupler in couplers:
         if coupler in initial_coupler_parameters:
             for module_key, module_value in initial_coupler_parameters[coupler].items():
@@ -73,9 +81,10 @@ def populate_node_parameters(
     qubits: list,
     couplers: list,
     redis_connection,
+    config: "Configuration",
 ):
     # Populate the Redis database with node specific parameter values from the toml file
-    transmon_configuration = CONFIG.node
+    transmon_configuration = config.node
     if not node_name in transmon_configuration:
         logger.status(f"{node_name} does not have specific node config")
         return
@@ -106,13 +115,15 @@ def populate_node_parameters(
                 redis_connection.hset(f"couplers:{coupler}", field_key, field_value)
 
 
-def revert_node_parameters(node_name: str, qubits: list, redis_connection):
+def revert_node_parameters(
+    node_name: str, qubits: list, redis_connection, config: "Configuration"
+):
 
-    node_configuration = CONFIG.node
+    node_configuration = config.node
     if not node_name in node_configuration:
         return  # no node specific config found
 
-    initial_qubit_parameters = CONFIG.device.qubits
+    initial_qubit_parameters = config.device.qubits
 
     node_specific_dict = node_configuration[node_name].get("all", {})
 
@@ -182,10 +193,10 @@ def populate_quantities_of_interest(
         )
 
 
-def fetch_redis_params(param: str, this_element: str):
+def fetch_redis_params(param: str, this_element: str, redis_connection):
     if "_" in this_element:
         name = "couplers"
     else:
         name = "transmons"
-    redis_config = REDIS_CONNECTION.hgetall(f"{name}:{this_element}")
+    redis_config = redis_connection.hgetall(f"{name}:{this_element}")
     return float(redis_config[param])

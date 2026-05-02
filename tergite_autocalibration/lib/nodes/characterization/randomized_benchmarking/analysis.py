@@ -83,7 +83,9 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         qubit = self.qubit
         iq_array = self.S21[self.data_var].assign_attrs(qubit=qubit)
 
-        self.state_probabilities = calculate_probabilities(iq_array)
+        self.state_probabilities = calculate_probabilities(
+            iq_array, self.redis_connection
+        )
 
         standard_probabilities = self.state_probabilities.sel(
             {self.interleave_gate_coord: "Standard"}

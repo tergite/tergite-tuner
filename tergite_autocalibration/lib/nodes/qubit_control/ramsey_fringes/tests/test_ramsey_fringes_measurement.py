@@ -23,9 +23,11 @@ from tergite_autocalibration.tests.utils.fixtures import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_dummy_01_generation():
+def test_dummy_01_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = RamseyFringesNode(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node = RamseyFringesNode(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset_01 = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_delays = len(node.schedule_samplespace["ramsey_delays"][first_qubit])
@@ -38,9 +40,11 @@ def test_dummy_01_generation():
     assert data_vars[0].size == number_of_delays * number_of_detunings
 
 
-def test_dummy_12_generation():
+def test_dummy_12_generation(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = RamseyFringes12Node(DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS)
+    node = RamseyFringes12Node(
+        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+    )
     dummy_dataset = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_delays = len(node.schedule_samplespace["ramsey_delays"][first_qubit])

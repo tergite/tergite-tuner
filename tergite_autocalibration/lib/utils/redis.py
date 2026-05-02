@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2023, 2024
 # (C) Copyright Chalmers Next Labs AB 2024
 # (C) Copyright Michele Faucci Giannelli 2025
+# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -20,7 +21,6 @@ from typing import List, Union
 import numpy as np
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.utils.dto import extended_transmon_element
 from tergite_autocalibration.utils.dto.extended_coupler_edge import (
     ExtendedCompositeSquareEdge,
@@ -32,9 +32,9 @@ from tergite_autocalibration.utils.logging import logger
 np.set_printoptions(legacy="1.25")
 
 
-def load_redis_config(transmon: ExtendedTransmon, channel: int):
+def load_redis_config(transmon: ExtendedTransmon, channel: int, redis_connection):
     qubit = transmon.name
-    redis_config = REDIS_CONNECTION.hgetall(f"transmons:{qubit}")
+    redis_config = redis_connection.hgetall(f"transmons:{qubit}")
 
     # get the transmon template in dictionary form
     serialized_transmon = json.dumps(transmon, cls=SchedulerJSONEncoder)
@@ -74,10 +74,10 @@ def load_redis_config(transmon: ExtendedTransmon, channel: int):
     return transmon
 
 
-def load_redis_config_coupler(coupler: ExtendedCompositeSquareEdge):
+def load_redis_config_coupler(coupler: ExtendedCompositeSquareEdge, redis_connection):
     bus = coupler.name
     bus_qubits = bus.split("_")
-    redis_config = REDIS_CONNECTION.hgetall(f"couplers:{bus}")
+    redis_config = redis_connection.hgetall(f"couplers:{bus}")
 
     def redis_value(key: str):
         return float(redis_config[key])
@@ -158,6 +158,7 @@ def load_redis_config_coupler(coupler: ExtendedCompositeSquareEdge):
 def update_redis_trusted_values(
     node: str,
     this_element: str,
+    redis_connection,
     qoi: QOI = None,
     redis_fields: Union[List[str], None] = None,
 ):
@@ -166,6 +167,7 @@ def update_redis_trusted_values(
     Args:
         node: The node name
         this_element: The element name (qubit or coupler)
+        redis_connection: The redis client to write to.
         qoi: The quantity of interest as QOI wrapped object
         redis_fields: List of redis fields for additional verification
     """
@@ -175,14 +177,18 @@ def update_redis_trusted_values(
         _qoi_items = dict(qoi.analysis_result.items())
         if _are_two_qubit_in_qoi(_qoi_items):
             _save_parameters_in_qubits_in_coupler(
-                node, this_element, name, _qoi_items, redis_fields
+                node, this_element, name, _qoi_items, redis_fields, redis_connection
             )
         else:
-            _save_parameters_in_coupler(node, this_element, name, qoi, redis_fields)
+            _save_parameters_in_coupler(
+                node, this_element, name, qoi, redis_fields, redis_connection
+            )
 
     else:
         name = "transmons"
-        _save_parameters_in_transmon(node, this_element, name, qoi, redis_fields)
+        _save_parameters_in_transmon(
+            node, this_element, name, qoi, redis_fields, redis_connection
+        )
 
 
 def _are_two_qubit_in_qoi(qoi: dict):
@@ -190,7 +196,12 @@ def _are_two_qubit_in_qoi(qoi: dict):
 
 
 def _save_parameters_in_transmon(
-    node: str, this_element: str, name, qoi: QOI, redis_fields: List[str]
+    node: str,
+    this_element: str,
+    name,
+    qoi: QOI,
+    redis_fields: List[str],
+    redis_connection,
 ):
     """
     Saves the parameters for a single qubit in redis
@@ -201,6 +212,7 @@ def _save_parameters_in_transmon(
         name: Name of the property to update e.g. the qubit frequency
         qoi: The QOI object with the value to update
         redis_fields: redis fields from the node to be updated, this is for verification
+        redis_connection: redis client to write to.
 
     Raises:
         ValueError: if there are parameters in the qubit object that are not part of the node
@@ -214,19 +226,24 @@ def _save_parameters_in_transmon(
                     f"The qoi {qoi_name} is not in redis fields: {redis_fields} for {this_element}"
                 )
             value = qoi_result["value"]
-            REDIS_CONNECTION.hset(f"{name}:{this_element}", qoi_name, value)
+            redis_connection.hset(f"{name}:{this_element}", qoi_name, value)
             # Saving the error to the measured value
             error = qoi_result["error"]
-            REDIS_CONNECTION.hset(f"{name}:{this_element}", qoi_name + "_error", error)
+            redis_connection.hset(f"{name}:{this_element}", qoi_name + "_error", error)
 
-        REDIS_CONNECTION.hset(f"cs:{this_element}", node, "calibrated")
+        redis_connection.hset(f"cs:{this_element}", node, "calibrated")
 
     else:
         logger.warning(f"Analysis failed for {this_element}")
 
 
 def _save_parameters_in_coupler(
-    node: str, this_element: str, name: str, qoi: QOI, redis_fields: List[str]
+    node: str,
+    this_element: str,
+    name: str,
+    qoi: QOI,
+    redis_fields: List[str],
+    redis_connection,
 ):
     """
     Saves the parameters for a coupler in redis
@@ -237,6 +254,7 @@ def _save_parameters_in_coupler(
         name: Name of the property to update e.g. the dc current
         qoi: The QOI object with the value to update
         redis_fields: redis fields from the node to be updated, this is for verification
+        redis_connection: redis client to write to.
 
     Raises:
         ValueError: if there are parameters in the qubit object that are not part of the node
@@ -254,18 +272,23 @@ def _save_parameters_in_coupler(
             if isinstance(value, list):
                 value = str(value)
             logger.info(f"Updating redis for {this_element} with {qoi_name}: {value}")
-            REDIS_CONNECTION.hset(f"{name}:{this_element}", qoi_name, value)
+            redis_connection.hset(f"{name}:{this_element}", qoi_name, value)
             error = qoi_result["error"]
             logger.info(
                 f"Updating redis for {this_element} with {qoi_name}_error: {error}"
             )
-            REDIS_CONNECTION.hset(f"{name}:{this_element}", qoi_name + "_error", error)
+            redis_connection.hset(f"{name}:{this_element}", qoi_name + "_error", error)
 
-    REDIS_CONNECTION.hset(f"cs:{this_element}", node, "calibrated")
+    redis_connection.hset(f"cs:{this_element}", node, "calibrated")
 
 
 def _save_parameters_in_qubits_in_coupler(
-    node: str, this_element: str, name: str, qoi: dict, redis_fields: List[str]
+    node: str,
+    this_element: str,
+    name: str,
+    qoi: dict,
+    redis_fields: List[str],
+    redis_connection,
 ):
     """
     Saves the parameters for the qubits connected to a coupler, in redis
@@ -277,16 +300,17 @@ def _save_parameters_in_qubits_in_coupler(
         name: Name of the property to update e.g. the qubit frequency
         qoi: A dictionary that maps from qubit to the respective QOI
         redis_fields: redis fields from the node to be updated, this is for verification
+        redis_connection: redis client to write to.
 
     """
 
     qubits_in_coupler = [this_element[0:3], this_element[4:7]]
     for qubit in qubits_in_coupler:
         for transmon_parameter in redis_fields:
-            REDIS_CONNECTION.hset(
+            redis_connection.hset(
                 f"{name}:{this_element}:{qubit}",
                 transmon_parameter,
                 qoi[qubit][transmon_parameter],
             )
 
-    REDIS_CONNECTION.hset(f"cs:{this_element}", node, "calibrated")
+    redis_connection.hset(f"cs:{this_element}", node, "calibrated")

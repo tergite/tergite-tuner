@@ -2,7 +2,7 @@
 #
 # (C) Copyright Michele Faucci Giannelli 2024
 # (C) Copyright Eleftherios Moschandreou 2025
-# (C) Chalmers Next Labs 2025
+# (C) Chalmers Next Labs 2025, 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -14,7 +14,6 @@
 
 import pytest
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
@@ -35,92 +34,111 @@ from tergite_autocalibration.tests.utils.fixtures import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_cannotCreateCorrectType():
+def test_cannotCreateCorrectType(redis_connection, session_context):
     """
     raise error if parking current does not exist on redis
     """
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
-    if REDIS_CONNECTION.hexists(f"couplers:{coupler}", "initial_parking_current"):
-        REDIS_CONNECTION.hdel(f"couplers:{coupler}", "initial_parking_current")
+    if redis_connection.hexists(f"couplers:{coupler}", "initial_parking_current"):
+        redis_connection.hdel(f"couplers:{coupler}", "initial_parking_current")
 
     with pytest.raises(TypeError):
-        CZParametrizationNode(all_qubits=["q14", "q15"], couplers=["q14_q15"])
+        CZParametrizationNode(
+            all_qubits=["q14", "q15"],
+            couplers=["q14_q15"],
+            session=session_context,
+        )
 
 
-def test_canCreateCorrectType():
+def test_canCreateCorrectType(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", "q15")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", "q14")
-    REDIS_CONNECTION.hset(f"transmons:{'q14'}", "clock_freqs:f01", "4.2e6")
-    REDIS_CONNECTION.hset(f"transmons:{'q14'}", "clock_freqs:f12", "4.0e6")
-    REDIS_CONNECTION.hset(f"transmons:{'q15'}", "clock_freqs:f01", "5.2e6")
-    REDIS_CONNECTION.hset(f"transmons:{'q15'}", "clock_freqs:f12", "5.0e6")
+    redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
+    redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
+    redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q15")
+    redis_connection.hset(f"couplers:{coupler}", "target_qubit", "q14")
+    redis_connection.hset(f"transmons:{'q14'}", "clock_freqs:f01", "4.2e6")
+    redis_connection.hset(f"transmons:{'q14'}", "clock_freqs:f12", "4.0e6")
+    redis_connection.hset(f"transmons:{'q15'}", "clock_freqs:f01", "5.2e6")
+    redis_connection.hset(f"transmons:{'q15'}", "clock_freqs:f12", "5.0e6")
     node = CZParametrizationNode(
         all_qubits=["q14", "q15"],
         couplers=[coupler],
+        session=session_context,
     )
     assert isinstance(node, CouplerNode)
 
 
-def test_ValidationReturnErrorWithSameQubitCoupler():
+def test_ValidationReturnErrorWithSameQubitCoupler(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     with pytest.raises(ValueError):
-        CZParametrizationNode(all_qubits=["q14", "q15"], couplers=["q14_q14"])
+        CZParametrizationNode(
+            all_qubits=["q14", "q15"],
+            couplers=["q14_q14"],
+            session=session_context,
+        )
 
 
 @pytest.mark.skip
-def test_ValidationReturnErrorWithQubitsNotMatchingCouplers():
+def test_ValidationReturnErrorWithQubitsNotMatchingCouplers(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     with pytest.raises(ValueError):
-        CZParametrizationNode(all_qubits=["q14", "q16"], couplers=["q14_q15"])
+        CZParametrizationNode(
+            all_qubits=["q14", "q16"],
+            couplers=["q14_q15"],
+            session=session_context,
+        )
 
 
-def test_MeasurementClassType():
+def test_MeasurementClassType(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", "q15")
-    REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", "q14")
-    c = CZParametrizationNode(all_qubits=["q14", "q15"], couplers=[coupler])
+    redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
+    redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q15")
+    redis_connection.hset(f"couplers:{coupler}", "target_qubit", "q14")
+    c = CZParametrizationNode(
+        all_qubits=["q14", "q15"],
+        couplers=[coupler],
+        session=session_context,
+    )
     assert isinstance(c.measurement_obj, type(CZParametrizationMeasurement))
     assert isinstance(c.analysis_obj, type(CZParametrizationAnalysis))
     assert issubclass(c.measurement_type, ExternalParameterNode)
 
 
-def test_dummy_generation():
+def test_dummy_generation(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     for coupler in DEFAULT_TEST_COUPLERS:
         c_qubit, t_qubit = coupler.split("_")
-        REDIS_CONNECTION.hset(
+        redis_connection.hset(
             f"couplers:{coupler}", "initial_parking_current", "100e-6"
         )
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "control_qubit", c_qubit)
-        REDIS_CONNECTION.hset(f"couplers:{coupler}", "target_qubit", t_qubit)
+        redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
+        redis_connection.hset(f"couplers:{coupler}", "control_qubit", c_qubit)
+        redis_connection.hset(f"couplers:{coupler}", "target_qubit", t_qubit)
 
     for qubit in DEFAULT_TEST_QUBITS[::2]:
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f01", "4.2e6")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f12", "4.0e6")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "centroid_I", "0")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "centroid_Q", "0")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "omega_01", "60")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "omega_12", "180")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "omega_20", "270")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f01", "4.2e6")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f12", "4.0e6")
+        redis_connection.hset(f"transmons:{qubit}", "centroid_I", "0")
+        redis_connection.hset(f"transmons:{qubit}", "centroid_Q", "0")
+        redis_connection.hset(f"transmons:{qubit}", "omega_01", "60")
+        redis_connection.hset(f"transmons:{qubit}", "omega_12", "180")
+        redis_connection.hset(f"transmons:{qubit}", "omega_20", "270")
     for qubit in DEFAULT_TEST_QUBITS[1::2]:
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f01", "5.2e6")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "clock_freqs:f12", "5.0e6")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "centroid_I", "0")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "centroid_Q", "0")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "omega_01", "60")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "omega_12", "180")
-        REDIS_CONNECTION.hset(f"transmons:{qubit}", "omega_20", "270")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f01", "5.2e6")
+        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f12", "5.0e6")
+        redis_connection.hset(f"transmons:{qubit}", "centroid_I", "0")
+        redis_connection.hset(f"transmons:{qubit}", "centroid_Q", "0")
+        redis_connection.hset(f"transmons:{qubit}", "omega_01", "60")
+        redis_connection.hset(f"transmons:{qubit}", "omega_12", "180")
+        redis_connection.hset(f"transmons:{qubit}", "omega_20", "270")
 
     node = CZParametrizationNode(
-        all_qubits=DEFAULT_TEST_QUBITS, couplers=DEFAULT_TEST_COUPLERS
+        all_qubits=DEFAULT_TEST_QUBITS,
+        couplers=DEFAULT_TEST_COUPLERS,
+        session=session_context,
     )
     dummy_dataset = node.generate_dummy_dataset()
     first_coupler = DEFAULT_TEST_COUPLERS[0]

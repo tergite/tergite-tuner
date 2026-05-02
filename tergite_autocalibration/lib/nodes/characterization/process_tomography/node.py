@@ -12,6 +12,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from tergite_autocalibration.lib.base.node import QubitNode
@@ -21,6 +23,9 @@ from tergite_autocalibration.lib.nodes.characterization.process_tomography.analy
 from tergite_autocalibration.lib.nodes.characterization.process_tomography.measurement import (
     ProcessTomographyMeasurement,
 )
+
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
 
 
 class ProcessTomographySSRONode(QubitNode):
@@ -33,8 +38,14 @@ class ProcessTomographySSRONode(QubitNode):
         "pop_f",
     ]
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **node_dictionary):
-        super().__init__(all_qubits, **node_dictionary)
+    def __init__(
+        self,
+        all_qubits: list[str],
+        couplers: list[str],
+        session: "SessionContext",
+        **node_dictionary,
+    ):
+        super().__init__(all_qubits, couplers, session, **node_dictionary)
         self.all_qubits = all_qubits
         self.couplers = couplers
         self.edges = couplers
@@ -42,6 +53,7 @@ class ProcessTomographySSRONode(QubitNode):
         self.coupled_qubits = couplers[0].split(sep="_")
         self.qubit_state = 2
         self.testing_group = 0  # The edge group to be tested. 0 means all edges.
+        self.schedule_keywords["redis_connection"] = self.session.redis_connection
         self.schedule_samplespace = {
             "control_ons": {coupler: range(9) for coupler in self.couplers},
             "ramsey_phases": {

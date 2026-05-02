@@ -89,7 +89,8 @@ class ExtendedLogger(logging.Logger):
 
 # Create a logger
 # This is right now an empty logger without handlers
-# To use the logger, you have to add the handlers e.g. in tergite_autocalibration.config.globals
+# To use the logger, attach handlers from the call site (e.g. inside the
+# ``CalibrationSupervisor`` startup or a CLI entry point).
 logging.setLoggerClass(ExtendedLogger)
 logger = logging.getLogger(__name__)
 # The minimum log level is set here, handlers won't be able to log anything below

@@ -14,11 +14,11 @@
 # that they have been altered from the originals.
 
 import ast
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray as xr
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.cz_calibration.analysis import (
     CZCalibrationNodeAnalysis,
@@ -28,6 +28,9 @@ from tergite_autocalibration.lib.nodes.coupler.cz_calibration.measurement import
 )
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
+
 
 class CZCalibrationNode(CouplerNode):
     name: str = "cz_calibration"
@@ -36,8 +39,13 @@ class CZCalibrationNode(CouplerNode):
     measurement_type = OuterScheduleNode
     coupler_qois = ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"]
 
-    def __init__(self, couplers: list[str], **schedule_keywords):
-        super().__init__(couplers, **schedule_keywords)
+    def __init__(
+        self,
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(couplers, session, **schedule_keywords)
         self.couplers = couplers
 
         self.coupled_qubits = self.get_coupled_qubits()
@@ -64,14 +72,14 @@ class CZCalibrationNode(CouplerNode):
         }
 
     def working_frequencies(self, coupler: str):
-        frequency_list_string_representation = REDIS_CONNECTION.hget(
+        frequency_list_string_representation = self.session.redis_connection.hget(
             f"couplers:{coupler}", "cz_working_frequencies"
         )
         frequency_list = ast.literal_eval(frequency_list_string_representation)
         return np.array(frequency_list)
 
     def working_durations_in_ns(self, coupler: str):
-        duration_in_ns_string_representation = REDIS_CONNECTION.hget(
+        duration_in_ns_string_representation = self.session.redis_connection.hget(
             f"couplers:{coupler}", "cz_working_durations_in_ns"
         )
         duration_in_ns_list = ast.literal_eval(duration_in_ns_string_representation)

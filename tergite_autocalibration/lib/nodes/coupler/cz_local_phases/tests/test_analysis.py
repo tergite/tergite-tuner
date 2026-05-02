@@ -20,51 +20,55 @@ import xarray as xr
 from tergite_autocalibration.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesCouplerAnalysis,
 )
-from tergite_autocalibration.tests.utils.decorators import with_redis
+from tergite_autocalibration.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _redis_values = os.path.join(_test_data_dir, "redis-coupler-run-2026-02.json")
 
 
-@with_redis(_redis_values)
-def test_cz_local_phases():
-    file_path = os.path.join(_test_data_dir, "dataset_cz_local_phases.hdf5")
-    dataset = xr.open_dataset(file_path)
+def test_cz_local_phases(redis_connection, session_context):
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_local_phases.hdf5")
+        dataset = xr.open_dataset(file_path)
 
-    analysis = CZLocalPhasesCouplerAnalysis(
-        "cz_calibration",
-        ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
-    )
-    qoi = analysis.process_coupler(dataset, "q13_q14")
+        analysis = CZLocalPhasesCouplerAnalysis(
+            "cz_calibration",
+            ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+        )
+        analysis.config = session_context.config
+        analysis.redis_connection = redis_connection
+        qoi = analysis.process_coupler(dataset, "q13_q14")
 
-    control_local_phase = qoi.analysis_result["control_local_phase"]["value"]
-    target_local_phase = qoi.analysis_result["target_local_phase"]["value"]
+        control_local_phase = qoi.analysis_result["control_local_phase"]["value"]
+        target_local_phase = qoi.analysis_result["target_local_phase"]["value"]
 
-    assert qoi.analysis_successful
-    assert pytest.approx(control_local_phase) == -135.2184
-    assert pytest.approx(target_local_phase) == 73.0427
+        assert qoi.analysis_successful
+        assert pytest.approx(control_local_phase) == -135.2184
+        assert pytest.approx(target_local_phase) == 73.0427
 
 
-@with_redis(_redis_values)
-def test_plotting():
+def test_plotting(redis_connection, session_context):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    file_path = os.path.join(_test_data_dir, "dataset_cz_local_phases.hdf5")
-    dataset = xr.open_dataset(file_path)
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_local_phases.hdf5")
+        dataset = xr.open_dataset(file_path)
 
-    analysis = CZLocalPhasesCouplerAnalysis(
-        "cz_calibration",
-        ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
-    )
+        analysis = CZLocalPhasesCouplerAnalysis(
+            "cz_calibration",
+            ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+        )
+        analysis.config = session_context.config
+        analysis.redis_connection = redis_connection
 
-    figures_dictionary = {}
+        figures_dictionary = {}
 
-    analysis.process_coupler(dataset, "q13_q14")
-    analysis.plotter(figures_dictionary)
+        analysis.process_coupler(dataset, "q13_q14")
+        analysis.plotter(figures_dictionary)
 
-    assert "q13_q14" in figures_dictionary
+        assert "q13_q14" in figures_dictionary
 
-    figure = figures_dictionary["q13_q14"][0]
+        figure = figures_dictionary["q13_q14"][0]
 
-    assert len(figure.get_axes()) == 4
+        assert len(figure.get_axes()) == 4

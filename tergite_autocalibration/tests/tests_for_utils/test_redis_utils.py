@@ -13,9 +13,7 @@
 # that they have been altered from the originals.
 from typing import Union
 
-import tergite_autocalibration
-from tergite_autocalibration.config.globals import CONFIG, REDIS_CONNECTION
-from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode, QubitNode
+from tergite_autocalibration.lib.base.node import CouplerNode, QubitNode
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.backend.redis_utils import (
     populate_initial_parameters,
@@ -25,16 +23,16 @@ from tergite_autocalibration.utils.backend.redis_utils import (
 )
 
 
-def test_populate_inital_parameters():
+def test_populate_inital_parameters(redis_connection, configuration):
 
-    REDIS_CONNECTION.flushall()
-    assert not REDIS_CONNECTION.keys()
+    redis_connection.flushall()
+    assert not redis_connection.keys()
 
-    device = CONFIG.device
+    device = configuration.device
     qubits = device.qubits.keys()
     couplers = device.couplers.keys()
-    populate_initial_parameters(qubits, couplers, REDIS_CONNECTION)
-    redis_keys = REDIS_CONNECTION.keys()
+    populate_initial_parameters(qubits, couplers, redis_connection, configuration)
+    redis_keys = redis_connection.keys()
 
     # test that all device elements are on redis
     for qubit in qubits:
@@ -45,74 +43,79 @@ def test_populate_inital_parameters():
     # test values are correctly uploaded onto redis
     ro_config_ruration = device.qubits["q00"]["measure"]["pulse_duration"]
     ro_redis_duration = float(
-        REDIS_CONNECTION.hget("transmons:q00", "measure:pulse_duration")
+        redis_connection.hget("transmons:q00", "measure:pulse_duration")
     )
     assert ro_config_ruration == ro_redis_duration
     cz_amplitude_redis = float(
-        REDIS_CONNECTION.hget("couplers:q00_q01", "cz_pulse_amplitude")
+        redis_connection.hget("couplers:q00_q01", "cz_pulse_amplitude")
     )
     cz_amplitude_config = device.couplers["q00_q01"]["cz_pulse_amplitude"]
     assert cz_amplitude_redis == cz_amplitude_config
 
 
-def test_populate_node_parameters():
+def test_populate_node_parameters(redis_connection, configuration):
 
-    REDIS_CONNECTION.flushall()
-    assert not REDIS_CONNECTION.keys()
+    redis_connection.flushall()
+    assert not redis_connection.keys()
 
-    device = CONFIG.device
+    device = configuration.device
     qubits = device.qubits.keys()
     couplers = device.couplers.keys()
     populate_node_parameters(
-        "resonator_spectroscopy", False, qubits, couplers, REDIS_CONNECTION
+        "resonator_spectroscopy",
+        False,
+        qubits,
+        couplers,
+        redis_connection,
+        configuration,
     )
 
     # test node config values are correctly uploaded onto redis
-    node_config = CONFIG.node["resonator_spectroscopy"]["all"]
+    node_config = configuration.node["resonator_spectroscopy"]["all"]
     reset_duration_config = node_config["reset"]["duration"]
     reset_duration_redis = float(
-        REDIS_CONNECTION.hget("transmons:q00", "reset:duration")
+        redis_connection.hget("transmons:q00", "reset:duration")
     )
     assert reset_duration_config == reset_duration_redis
 
 
-def test_revert_node_parameters():
+def test_revert_node_parameters(redis_connection, configuration):
 
-    REDIS_CONNECTION.flushall()
-    assert not REDIS_CONNECTION.keys()
+    redis_connection.flushall()
+    assert not redis_connection.keys()
 
-    device = CONFIG.device
+    device = configuration.device
     qubits = device.qubits.keys()
     initial_qubit_parameters = device.qubits
     node = "resonator_spectroscopy"
 
     # flush the duration value
-    REDIS_CONNECTION.hset("transmons:q00", "reset:duration", "nan")
+    redis_connection.hset("transmons:q00", "reset:duration", "nan")
 
-    revert_node_parameters(node, qubits, REDIS_CONNECTION)
+    revert_node_parameters(node, qubits, redis_connection, configuration)
     reset_duration_redis = float(
-        REDIS_CONNECTION.hget("transmons:q00", "reset:duration")
+        redis_connection.hget("transmons:q00", "reset:duration")
     )
     initial_reset_value = initial_qubit_parameters["q00"]["reset"]["duration"]
 
     assert reset_duration_redis == initial_reset_value
 
 
-def test_populate_quantities_of_interest():
+def test_populate_quantities_of_interest(redis_connection):
     """
     Iterate over all nodes in the factory and check whether they correctly push qois to redis
     """
 
-    REDIS_CONNECTION.flushall()
-    assert not REDIS_CONNECTION.keys()
+    redis_connection.flushall()
+    assert not redis_connection.keys()
 
     node_factory = NodeFactory()
     for node_name in node_factory.all_node_names():
-        REDIS_CONNECTION.flushall()
-        assert not REDIS_CONNECTION.keys()
+        redis_connection.flushall()
+        assert not redis_connection.keys()
 
         populate_quantities_of_interest(
-            node_name, node_factory, ["q00", "q01"], ["q00_q01"], REDIS_CONNECTION
+            node_name, node_factory, ["q00", "q01"], ["q00_q01"], redis_connection
         )
 
         node_cls: Union["QubitNode", "CouplerNode"] = node_factory.get_node_class(
@@ -121,8 +124,8 @@ def test_populate_quantities_of_interest():
 
         if hasattr(node_cls, "qubit_qois"):
             for qubit_qoi in node_cls.qubit_qois:
-                assert REDIS_CONNECTION.hexists("transmons:q00", qubit_qoi)
+                assert redis_connection.hexists("transmons:q00", qubit_qoi)
 
         if hasattr(node_cls, "coupler_qois"):
             for coupler_qoi in node_cls.coupler_qois:
-                assert REDIS_CONNECTION.hexists("couplers:q00_q01", coupler_qoi)
+                assert redis_connection.hexists("couplers:q00_q01", coupler_qoi)

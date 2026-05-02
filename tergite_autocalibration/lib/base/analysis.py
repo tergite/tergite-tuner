@@ -17,7 +17,7 @@ import collections
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
+from typing import TYPE_CHECKING, List, Optional
 
 import cf_xarray as cf
 import matplotlib.pyplot as plt
@@ -26,13 +26,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from tergite_autocalibration.config.globals import CONFIG
 from tergite_autocalibration.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_autocalibration.lib.base.utils.figure_utils import (
     create_figure_with_top_band,
 )
 from tergite_autocalibration.utils.dto.qoi import QOI
 from tergite_autocalibration.utils.logging import logger
+
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.load import Configuration
 
 
 class BaseAnalysis(ABC):
@@ -163,6 +165,10 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         super().__init__()
         self.name = name
         self.redis_fields = redis_fields
+        # Injected by :class:`BaseNode._build_node_analysis` after
+        # construction so that subclasses do not have to thread the
+        # redis client through their own ``__init__`` signatures.
+        self.redis_connection = None
         self.dataset = xr.Dataset()
         self.data_vars = None
         self.coords = None
@@ -208,6 +214,7 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
             qubit_analysis: BaseQubitAnalysis = self.single_qubit_analysis_obj(
                 self.name, self.redis_fields
             )
+            qubit_analysis.redis_connection = self.redis_connection
 
             partial_ds = filter_ds_by_element(self.dataset, this_qubit)
             analysis_results[this_qubit] = qubit_analysis.process_qubit(
@@ -235,6 +242,9 @@ class BaseQubitAnalysis(BaseAnalysis, ABC):
         super().__init__()
         self.name = name
         self.redis_fields = redis_fields
+        # Injected by :class:`BaseAllQubitsAnalysis._analyze_all_qubits`
+        # after construction (see comment on the parent class).
+        self.redis_connection = None
 
     def process_qubit(self, dataset, qubit_element) -> "QOI":
         """
@@ -290,10 +300,17 @@ class BaseCouplerAnalysis(BaseAnalysis, ABC):
     Base class for the analysis of a single coupler
     """
 
-    def __init__(self, name, redis_fields, **kwargs):
+    def __init__(
+        self, name, redis_fields, config: Optional["Configuration"] = None, **kwargs
+    ):
         super().__init__()
         self.name = name
         self.redis_fields = redis_fields
+        self.config = config
+        # Injected by :class:`BaseAllCouplersAnalysis._analyze_all_couplers`
+        # after construction so that subclasses do not have to thread
+        # the redis client through their own ``__init__`` signatures.
+        self.redis_connection = None
         self.dataset = None
         self.data_vars = None
         self.coords = None
@@ -301,7 +318,7 @@ class BaseCouplerAnalysis(BaseAnalysis, ABC):
 
     def process_coupler(self, dataset: xr.Dataset, coupler_element) -> "QOI":
         self.control_qubit, self.target_qubit = (
-            CONFIG.device.get_control_target_qubit_pair_by_coupler(coupler_element)
+            self.config.device.get_control_target_qubit_pair_by_coupler(coupler_element)
         )
         self.dataset = dataset
         self.coupler = coupler_element
@@ -338,10 +355,16 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
 
     single_coupler_analysis_obj: "BaseCouplerAnalysis"
 
-    def __init__(self, name, redis_fields, **kwargs):
+    def __init__(
+        self, name, redis_fields, config: Optional["Configuration"] = None, **kwargs
+    ):
         super().__init__()
         self.name = name
         self.redis_fields = redis_fields
+        self.config = config
+        # Injected by :class:`BaseNode._build_node_analysis` after
+        # construction (see comment on :class:`BaseCouplerAnalysis`).
+        self.redis_connection = None
         self.dataset: xr.Dataset
         self.data_vars = None
         self.coords = None
@@ -407,8 +430,12 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
             coupler_analysis_keywords = self.analysis_keywords.get(this_coupler, {})
 
             coupler_analysis = self.single_coupler_analysis_obj(
-                self.name, self.redis_fields, **coupler_analysis_keywords
+                self.name,
+                self.redis_fields,
+                self.config,
+                **coupler_analysis_keywords,
             )
+            coupler_analysis.redis_connection = self.redis_connection
             coupler_analysis.data_path = self.data_path
             qoi = coupler_analysis.process_coupler(ds, this_coupler)
             if hasattr(coupler_analysis, "processed_dataset"):

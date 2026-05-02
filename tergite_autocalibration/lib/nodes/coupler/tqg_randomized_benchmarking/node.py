@@ -13,10 +13,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray as xr
 
-from tergite_autocalibration.config.globals import REDIS_CONNECTION
 from tergite_autocalibration.lib.base.node import CouplerNode
 from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBNodeAnalysis,
@@ -25,6 +26,9 @@ from tergite_autocalibration.lib.nodes.coupler.tqg_randomized_benchmarking.measu
     CZRBMeasurement,
 )
 from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
+
+if TYPE_CHECKING:
+    from tergite_autocalibration.config.session import SessionContext
 
 RB_REPEATS = 7
 
@@ -36,8 +40,13 @@ class CZRBNode(CouplerNode):
     measurement_type = OuterScheduleNode
     coupler_qois = ["cz_fidelity"]
 
-    def __init__(self, couplers: list[str], **schedule_keywords):
-        super().__init__(couplers, **schedule_keywords)
+    def __init__(
+        self,
+        couplers: list[str],
+        session: "SessionContext",
+        **schedule_keywords,
+    ):
+        super().__init__(couplers, session, **schedule_keywords)
         self.couplers = couplers
         self.loops = 500
         self.schedule_keywords["loop_repetitions"] = self.loops
@@ -65,7 +74,9 @@ class CZRBNode(CouplerNode):
 
     def cz_frequency(self, coupler):
         cz_freq = float(
-            REDIS_CONNECTION.hget(f"coupler:{coupler}", "cz_pulse_frequency")
+            self.session.redis_connection.hget(
+                f"coupler:{coupler}", "cz_pulse_frequency"
+            )
         )
         return cz_freq
 
