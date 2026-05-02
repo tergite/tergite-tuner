@@ -1,3 +1,0 @@
-|Redis QOI name|
-|---------| 
-|t2_time      |

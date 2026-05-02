@@ -1,4 +1,4 @@
-# Contributing to tergite-autocalibration
+# Contributing to tergite-tuner
 
 **This project is currently not accepting pull requests from the general public yet.**
 
@@ -23,8 +23,8 @@ requests.
 1. Clone the repo and create your branch from `main`.
 2. If you've added code that should be tested, add tests.
 3. If you've changed APIs, update the documentation. Read the section below on documentation.
-4. Ensure the test suite passes. Run: `pytest tergite_autocalibration`
-5. Make sure your code lints. This can be done by running: `black tergite_autocalibration --check`
+4. Ensure the test suite passes. Run: `pytest tergite_tuner`
+5. Make sure your code lints. This can be done by running: `black tergite_tuner --check`
 6. Create the merge request!
 
 ### Issues and bug reports
@@ -61,8 +61,8 @@ Alternatively, you could also simply have [Python 3.12](https://www.python.org/d
 Clone the repo and enter its root folder:
 
 ```bash
-git clone git@github.com:tergite/tergite-autocalibration.git
-cd tergite-autocalibration
+git clone git@github.com:tergite/tergite-tuner.git
+cd tergite-tuner
 ```
 
 Create the conda environment
@@ -78,13 +78,19 @@ conda activate tac
 pip install -e ".[test,dev]"
 ```
 
-Run the CLI help command to see whether the application is running.
+A couple of configuration files are required in one folder whose path you can set via the `CONFIG_DIR` env var. (See [`.example.env` file](./.example.env) for more details)
 
-```bash
-acli --help
-```
+- [`configuration.meta.toml`](./tergite_tuner/config/templates/fc8a/configuration.meta.toml): 
+  It holds metadata about the other files
+- [`configs/cluster_config.json`](./tergite_tuner/config/templates/fc8a/configs/cluster_config.json): 
+  It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
+- [`configs/device_config.toml`](./tergite_tuner/config/templates/fc8a/configs/device_config.toml): 
+  It contains details about the quantum chip
+- [`configs/node_config.toml`](./tergite_tuner/config/templates/fc8a/configs/node_config.toml): 
+  It contains details about the calibration nodes to run
+- [`configs/spi_config.toml`](./tergite_tuner/config/templates/fc8a/configs/spi_config.toml): 
+  It contains details about the SPI instrument for driving the couplers
 
-You can find more information about the configuration files in the documentation.
 
 ### Testing
 
@@ -100,7 +106,7 @@ If it does not run on your user, try running it again with `sudo` rights.
 Run the pytests for the whole application.
 
 ```bash
-pytest tergite_autocalibration
+pytest tergite_tuner
 ```
 
 You can find more information about unit tests in the documentation.
@@ -113,38 +119,6 @@ Each calibration node goes through the following phases in order:
 - execution
 - post-processing
 - redis updating
-
-### Datasets
-
-Datasets are stored in [`out`](./out).
-They can be browsed with the dataset browser:
-
-```
-acli browser --datadir PATH_TO_DATA_DIRECTORY
-```
-
-### Documentation
-
-We are using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) to build and render documentation. MkDocs
-is a static site generator that's easy to use and supports a wide range of features via plugins.
-
-To install it, use the following command in your terminal:
-
-```bash
-pip install -e '.[docs]'
-```
-
-To render a live preview of the documentation, run:
-
-```bash
-mkdocs serve
-```
-
-This will open a browser window with the rendered documentation (
-typically [http://localhost:8000/](http://localhost:8000/)) in your browser..
-
-Now you can edit the files in `docs` and the contents in the browser window would update automatically. One of the
-documentation pages is also about how to write better documentation.
 
 ## License
 

@@ -1,4 +1,0 @@
-|Redis QOI name|
-|---------| 
-|resonator_crossing_points     |
-|qubit_crossing_points      |

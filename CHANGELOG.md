@@ -7,6 +7,81 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Added
+
+- Public API exported from `tergite_tuner.__init__`:
+  `tune_device`, `re_analyse`, and
+  `extract_bcc_params`. The first two replace the old
+  `CalibrationSupervisor` class and accept an env-file path plus
+  arbitrary `SessionContext` field overrides as kwargs.
+- `SessionContext` (`config/session.py`): a single per-process pydantic
+  model that carries every value driving a calibration run — env
+  config, target node, qubits/couplers, redis connection, loaded
+  configuration package — and is threaded through every Node and
+  analysis Go-context style. `SessionContext.from_env(file, **kwargs)`
+  merges values from a `.env` file with `os.environ` and explicit
+  overrides.
+- `Configuration`, `MetaConfigFile`, `DeviceConfigFile`,
+  `NodeConfigFile`, `SpiConfigFile`, `ClusterConfigFile` pydantic models
+  for typed loading and validation of every config file in a
+  configuration package.
+- `__NODE_ENUM_CLS_MAP__` and `__NODE_STR_CLS_MAP__` static lookup
+  tables (`lib/nodes/__init__.py`) plus `__NODE_DEPENDENCIES__` —
+  replace the dynamic-reflection `NodeFactory` and the module-level
+  `GRAPH_DEPENDENCIES` / `CALIBRATION_GRAPH` globals.
+- `loaded_redis(redis_connection, path)` context manager — replaces
+  the `@with_redis` decorator.
+- `extract_bcc_params(...)` accepts `format="dict" | "json"
+  | "toml"` and an optional `output` path. The seed shape is now a
+  pydantic model (`CalibrationSeed`) with the static unit labels as
+  field defaults.
+
+### Changed
+
+- Renamed to project fork to tergite-tuner
+- Stripped away all code that is not relevant for running this app as
+  a library; the calibration entry points are now plain functions
+  rather than a `CalibrationSupervisor` class.
+- Removed the dynamic-reflection `NodeFactory` in favour of the
+  static `__NODE_ENUM_CLS_MAP__`. `NodeManager` now accepts
+  `node_enum_cls_map`, `ignore_nodes`, and `node_dependencies`
+  constructor kwargs (defaulting to the canonical maps) and builds
+  its `nx.DiGraph` itself.
+- `NodeEnum` is now a `str, Enum` keyed by the lowercase canonical
+  node name; redis hash fields, log lines, and exported payloads use
+  that string consistently.
+- Removed all chart/plot code from the calibration pipeline. The
+  library is now headless-safe: no `colorama` ANSI escapes, no
+  matplotlib backend setup, no `plotter()` methods on analyses, no
+  `figures_dictionary` plumbing, and no `plotting` field on
+  `SessionContext`.
+- Replaced the dynamic global state (`SESSION`, `REDIS_CONNECTION`,
+  `CONFIG`) with explicit dependency injection via `SessionContext`.
+- `REDIS_PORT` env var replaced with `REDIS_URL`.
+- `lib/utils/graph.py`'s topological-order helpers are now generic
+  over a `_T` TypeVar and require `exclude_nodes` to be an explicit
+  iterable; module-level `GRAPH_DEPENDENCIES` / `CALIBRATION_GRAPH` /
+  `EXCLUDED_NODES` / `filtered_topological_order` deleted.
+- `conftest.py` moved to the repository root so it is no longer
+  shipped with the built wheel.
+
+### Removed
+
+- `scripts/` folder (`calibration_supervisor.py`, `export_to_bcc.py`,
+  `migrate_qblox_hardware_configuration.py`,
+  `calibration_seed_template.toml`).
+- `lib/utils/node_factory.py`, `utils/misc/reflections.py`,
+  `lib/base/utils/figure_utils.py`.
+- The `calibration_seed_template.toml` that used to ship with the
+  package — the seed shape is now expressed as a pydantic model.
+- Stale fixture data: `default_device_under_test_copy/`,
+  `21-39-55_cz_rb-SUCCESS/`, per-node `tests/data*` and
+  `tests/results` directories that were no longer referenced, and
+  ~30 stray fixture files (~22 MB).
+- `process_tomography` from the canonical class map until the missing
+  `Rxy_12` extended-gate import is restored; its `NodeEnum` member
+  remains but no class is registered.
+
 ## [2026.03.0] - 2026-03-06
 
 - No Change
@@ -136,7 +211,7 @@ calibration
 ### Changed
 
 - Improved command line interface
-- Renamed from tergite-acl to tergite-autocalibration
+- Renamed from tergite-acl to tergite-tuner
 - Updated the contribution guidelines and government model statements
 
 ### Fixed

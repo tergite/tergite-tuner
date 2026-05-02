@@ -11,6 +11,7 @@ The first version of the tergite-autocalibration
 ## Eleftherios Moschandreou
 
 The revised second version of the tergite-autocalibration
+First full proof of concept of full calibration of chip
 
 ## Liangyu Chen
 
@@ -27,6 +28,7 @@ Automated the scan for starting parameters, bias current, amplitude, frequency (
 ## Stefan Hill
 
 Added the CLI interface for the tool and infrastructural components.
+Work on transformation of the application-focused project to library-ready
 
 ## Amr Osman
 
@@ -39,3 +41,7 @@ Created the dataset browser, which was integrated into this library.
 ## Joel Sandås
 
 Node documentation for first single qubit calibration nodes.
+
+## Martin Ahindura
+
+Stripped down and simpler API of tergite-tuner geared towards being used as a library
