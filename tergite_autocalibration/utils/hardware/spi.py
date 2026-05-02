@@ -133,7 +133,7 @@ class SpiDAC:
         return
 
     def set_initial_parking_currents(self, couplers: list[str]) -> None:
-        redis_connection = self.session.redis_connection
+        redis_connection = self.session.redis
         parking_currents = {}
         for coupler in couplers:
             key = f"couplers:{coupler}"

@@ -77,7 +77,7 @@ def test_12_pulse_duration(redis_connection, session_context):
             "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
         }
         transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-        measurement_class = node_12.measurement_obj(transmons_dict)
+        measurement_class = node_12.measurement_cls(transmons_dict)
         schedule = measurement_class.schedule_function(
             **samplespace, **node_12.schedule_keywords
         )
@@ -119,7 +119,7 @@ def test_12_pulse_duration(redis_connection, session_context):
             "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
         }
         transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-        measurement_class = node_12.measurement_obj(transmons_dict)
+        measurement_class = node_12.measurement_cls(transmons_dict)
         schedule = measurement_class.schedule_function(
             **samplespace, **node_12.schedule_keywords
         )

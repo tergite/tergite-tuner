@@ -72,7 +72,9 @@ def test_meta_config_loads_fc8a_template(meta_config_path):
     assert meta.files.device_config == "device_config.toml"
     assert meta.files.spi_config == "spi_config.toml"
     assert meta.files.node_config == "node_config.toml"
-    assert meta.misc == {"miscellaneous_files": "misc"}
+    assert {key: str(value) for key, value in meta.misc.items()} == {
+        "miscellaneous_files": "misc"
+    }
 
 
 def test_meta_config_defaults_when_files_missing(tmp_path):
@@ -82,10 +84,11 @@ def test_meta_config_defaults_when_files_missing(tmp_path):
 
     meta = MetaConfigFile.from_toml(sample)
     assert meta.path_prefix == "configs"
-    assert meta.files.cluster_config is None
-    assert meta.files.device_config is None
-    assert meta.files.spi_config is None
-    assert meta.files.node_config is None
+    # missing keys fall back to the documented filenames
+    assert meta.files.cluster_config == "cluster_config.json"
+    assert meta.files.device_config == "device_config.toml"
+    assert meta.files.spi_config == "spi_config.toml"
+    assert meta.files.node_config == "node_config.toml"
     assert meta.misc == {}
 
 

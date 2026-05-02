@@ -29,7 +29,7 @@ def test_measurement_01_type(session_context):
     node = QubitSpectroscopyVsCurrentNode(
         DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node.measurement_type, ExternalParameterNode)
+    assert issubclass(node.measurement_type_cls, ExternalParameterNode)
 
 
 def test_dummy_generation(session_context):

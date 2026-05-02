@@ -196,7 +196,7 @@ class PunchoutNodeAnalysis(BaseAllQubitsAnalysis):
     measure the readout amplitude.
     """
 
-    single_qubit_analysis_obj = PunchoutQubitAnalysis
+    single_qubit_analysis_cls = PunchoutQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

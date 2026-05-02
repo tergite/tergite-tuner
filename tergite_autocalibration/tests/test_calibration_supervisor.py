@@ -45,9 +45,7 @@ def test_instantiate_calibration_config(session_context):
 
 
 def test_instantiate_calibration_supervisor(session_context, redis_connection):
-    calib_sup = CalibrationSupervisor(
-        config=session_context, redis_connection=redis_connection
-    )
+    calib_sup = CalibrationSupervisor(config=session_context)
 
     assert isinstance(calib_sup.hardware_manager, HardwareManager)
     assert isinstance(calib_sup.node_manager, NodeManager)
@@ -68,9 +66,7 @@ def test_instantiate_calibration_supervisor(session_context, redis_connection):
 
 
 def test_hardware_manager_creates_dummy_cluster(session_context, redis_connection):
-    calib_sup = CalibrationSupervisor(
-        config=session_context, redis_connection=redis_connection
-    )
+    calib_sup = CalibrationSupervisor(config=session_context)
     hw_manager = calib_sup.hardware_manager
     cl = hw_manager.cluster
     assert isinstance(cl, Cluster)
@@ -87,9 +83,7 @@ def test_hardware_manager_creates_dummy_cluster(session_context, redis_connectio
 
 
 def test_hardware_manager_creates_ic(session_context, redis_connection):
-    calib_sup = CalibrationSupervisor(
-        config=session_context, redis_connection=redis_connection
-    )
+    calib_sup = CalibrationSupervisor(config=session_context)
     hw_manager = calib_sup.hardware_manager
     assert isinstance(hw_manager.lab_ic, InstrumentCoordinator)
     assert hw_manager.get_instrument_coordinator().name == hw_manager.lab_ic.name
@@ -102,9 +96,7 @@ def test_output_attenuation_is_set_to_value_in_device_config(
     which in turn is created during the instantiation of the CalibrationSupervisor
     """
     with caplog.at_level("WARNING"):
-        calib_sup = CalibrationSupervisor(
-            config=session_context, redis_connection=redis_connection
-        )
+        calib_sup = CalibrationSupervisor(config=session_context)
 
     # The qubit missing on purpose + all legacy couplers
     assert len(caplog.records) == 9

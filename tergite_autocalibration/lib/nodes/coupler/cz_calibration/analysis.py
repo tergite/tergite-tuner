@@ -28,8 +28,8 @@ from tergite_autocalibration.utils.dto.qoi import QOI
 
 
 class CZCalibrationCouplerAnalysis(BaseCouplerAnalysis):
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("phase", min=-360, max=360, vary=True)
 
@@ -73,10 +73,10 @@ class CZCalibrationCouplerAnalysis(BaseCouplerAnalysis):
                 self.number_of_loops = self.S21[self.loops_coord].size
 
         self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.redis_connection
+            self.control_qubit_data_var, self.session.redis
         )
         self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.redis_connection
+            self.target_qubit_data_var, self.session.redis
         )
 
         data_target_0 = self.target_qubit_probabilities.sel({"state": 0})

@@ -15,10 +15,13 @@
 Module containing a class that fits data from a resonator spectroscopy experiment.
 """
 
+from typing import Optional
+
 import numpy as np
 import xarray as xr
 from quantify_core.analysis import fitting_models as fm
 
+from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
     BaseQubitAnalysis,
@@ -34,8 +37,10 @@ class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
     Analysis that fits the data of a resonator spectroscopy experiment for one qubit.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(
+        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
+    ):
+        super().__init__(name, redis_fields, session, **kwargs)
 
     def analyse_qubit(self):
         coord_name = list(self.coord.keys())[0]
@@ -129,8 +134,10 @@ class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
 
 
 class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(
+        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
+    ):
+        super().__init__(name, redis_fields, session, **kwargs)
 
     def analyse_qubit(self):
         super().analyse_qubit()
@@ -157,7 +164,7 @@ class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("|S21| (V)")
         ro_freq = float(
-            self.redis_connection.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
+            self.session.redis.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
         )
         self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
         ax.axvline(self.minimum_freq, c="green", ls="solid", label="frequency |1> ")
@@ -166,8 +173,10 @@ class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
 
 
 class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(
+        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
+    ):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 
     def analyse_qubit(self):
@@ -187,10 +196,10 @@ class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("|S21| (V)")
         ro_freq = float(
-            self.redis_connection.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
+            self.session.redis.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
         )
         ro_freq_1 = float(
-            self.redis_connection.hget(
+            self.session.redis.hget(
                 f"transmons:{this_qubit}", "extended_clock_freqs:readout_1"
             )
         )
@@ -202,21 +211,21 @@ class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
 
 
 class ResonatorSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = ResonatorSpectroscopyQubitAnalysis
+    single_qubit_analysis_cls = ResonatorSpectroscopyQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
 
 
 class ResonatorSpectroscopy1NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = ResonatorSpectroscopy1QubitAnalysis
+    single_qubit_analysis_cls = ResonatorSpectroscopy1QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
 
 
 class ResonatorSpectroscopy2NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = ResonatorSpectroscopy2QubitAnalysis
+    single_qubit_analysis_cls = ResonatorSpectroscopy2QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

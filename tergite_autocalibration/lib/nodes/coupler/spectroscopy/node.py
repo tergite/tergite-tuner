@@ -51,9 +51,9 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
     """
 
     name: str = "coupler_anticrossing"
-    measurement_obj = TwoTonesMultidimMeasurement
-    analysis_obj = CouplerAnticrossingNodeAnalysis
-    measurement_type = ExternalParameterNode
+    measurement_cls = TwoTonesMultidimMeasurement
+    analysis_cls = CouplerAnticrossingNodeAnalysis
+    measurement_type_cls = ExternalParameterNode
     coupler_qois = ["control_qubit_crossing_points", "target_qubit_crossing_points"]
 
     def __init__(
@@ -137,9 +137,9 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
     """
 
     name: str = "resonator_spectroscopy_vs_current"
-    measurement_obj = ResonatorSpectroscopyMeasurement
-    analysis_obj = ResonatorSpectroscopyVsCurrentNodeAnalysis
-    measurement_type = ExternalParameterNode
+    measurement_cls = ResonatorSpectroscopyMeasurement
+    analysis_cls = ResonatorSpectroscopyVsCurrentNodeAnalysis
+    measurement_type_cls = ExternalParameterNode
     coupler_qois = [
         "control_resonator_crossing_points",
         "target_resonator_crossing_points",

@@ -86,9 +86,9 @@ class QubitSpectroscopyBase(QubitNode):
 
 class Qubit01SpectroscopyNode(QubitSpectroscopyBase):
     name: str = "qubit_01_spectroscopy"
-    measurement_obj = TwoTonesMultidimMeasurement
-    analysis_obj = QubitSpectroscopyNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = TwoTonesMultidimMeasurement
+    analysis_cls = QubitSpectroscopyNodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["clock_freqs:f01", "spec:spec_ampl_optimal"]
 
     def __init__(
@@ -113,9 +113,9 @@ class Qubit01SpectroscopyNode(QubitSpectroscopyBase):
 
 class Qubit12SpectroscopyNode(QubitSpectroscopyBase):
     name: str = "qubit_12_spectroscopy"
-    measurement_obj = TwoTonesMultidimMeasurement
-    analysis_obj = QubitSpectroscopy12NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = TwoTonesMultidimMeasurement
+    analysis_cls = QubitSpectroscopy12NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["clock_freqs:f12", "spec:spec_ampl_12_optimal"]
 
     def __init__(
@@ -142,9 +142,9 @@ class Qubit12SpectroscopyNode(QubitSpectroscopyBase):
 
 class Qubit01SpectroscopyAmplitudeNode(QubitNode):
     name: str = "qubit_bring_up_spectroscopy"
-    measurement_obj = TwoTonesAmplitudeMeasurement
-    analysis_obj = QubitSpectroscopyNodeAnalysis
-    measurement_type = OuterScheduleNode
+    measurement_cls = TwoTonesAmplitudeMeasurement
+    analysis_cls = QubitSpectroscopyNodeAnalysis
+    measurement_type_cls = OuterScheduleNode
     qubit_qois = ["clock_freqs:f01", "spec:spec_ampl_optimal"]
 
     def __init__(

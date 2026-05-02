@@ -60,9 +60,9 @@ class RabiOscillationsBase(QubitNode):
 
 class RabiOscillationsNode(RabiOscillationsBase):
     name: str = "rabi_oscillations"
-    measurement_obj = RabiOscillationsMeasurement
-    analysis_obj = RabiNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = RabiOscillationsMeasurement
+    analysis_cls = RabiNodeAnalysis
+    measurement_type_cls = ScheduleNode
 
     qubit_qois = ["rxy:amp180"]
 
@@ -77,9 +77,9 @@ class RabiOscillationsNode(RabiOscillationsBase):
 
 class RabiOscillations12Node(RabiOscillationsBase):
     name: str = "rabi_oscillations_12"
-    measurement_obj = RabiOscillationsMeasurement
-    analysis_obj = RabiNode12Analysis
-    measurement_type = ScheduleNode
+    measurement_cls = RabiOscillationsMeasurement
+    analysis_cls = RabiNode12Analysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["r12:ef_amp180"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
@@ -96,9 +96,9 @@ class RabiOscillations12Node(RabiOscillationsBase):
 
 class NRabiOscillationsNode(QubitNode):
     name: str = "n_rabi_oscillations"
-    measurement_obj = NRabiOscillationsMeasurement
-    analysis_obj = NRabiNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = NRabiOscillationsMeasurement
+    analysis_cls = NRabiNodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["rxy:amp180"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
@@ -151,9 +151,9 @@ class NRabiOscillationsNode(QubitNode):
 
 class NRabiOscillations12Node(QubitNode):
     name: str = "n_rabi_12_oscillations"
-    measurement_obj = NRabiOscillationsMeasurement
-    analysis_obj = NRabi_12_NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = NRabiOscillationsMeasurement
+    analysis_cls = NRabi_12_NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["r12:ef_amp180"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):

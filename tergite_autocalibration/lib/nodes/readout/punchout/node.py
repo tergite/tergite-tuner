@@ -30,9 +30,9 @@ class PunchoutNode(QubitNode):
     """
 
     name: str = "punchout"
-    measurement_obj = PunchoutMeasurement
-    analysis_obj = PunchoutNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = PunchoutMeasurement
+    analysis_cls = PunchoutNodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["measure:pulse_amp"]
 
     def __init__(self, all_qubits: list[str], **schedule_keywords):

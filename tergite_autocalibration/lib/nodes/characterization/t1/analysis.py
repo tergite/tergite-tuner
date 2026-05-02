@@ -170,7 +170,7 @@ class T1NodeAnalysis(BaseAllQubitsAnalysis):
     Class for T1 analysis node, which uses T1QubitAnalysis for each qubit
     """
 
-    single_qubit_analysis_obj = T1QubitAnalysis
+    single_qubit_analysis_cls = T1QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

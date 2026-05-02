@@ -45,10 +45,9 @@ def test_cz_parametrization_analysis_good_data(redis_connection, session_context
         analysis = CZParametrizationCouplerAnalysis(
             "cz_parametrization",
             ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
+            session_context,
             phase_path="via_20",
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
         qoi = analysis.process_coupler(dataset, coupler)
 
         # Compare the output values
@@ -79,10 +78,9 @@ def test_cz_parametrization_analysis_bad_data(redis_connection, session_context)
         analysis = CZParametrizationCouplerAnalysis(
             "cz_parametrization",
             ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
+            session_context,
             phase_path="via_20",
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
         qoi = analysis.process_coupler(dataset, coupler)
 
         # Make sure that the analysis returns as unsuccessful
@@ -105,10 +103,9 @@ def test_plotting(redis_connection, session_context, tmp_path):
         analysis = CZParametrizationNodeAnalysis(
             "cz_parametrization",
             ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
-            config=session_context.config,
+            session=session_context,
             **{coupler: {"phase_path": "via_20"}},
         )
-        analysis.redis_connection = redis_connection
         analysis.analyze_node(tmp_path)
 
         # Check whether output images exist

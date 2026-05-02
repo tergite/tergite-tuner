@@ -223,7 +223,7 @@ class PurityBenchmarkingQubitAnalysis(BaseQubitAnalysis):
 
 
 class PurityBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = PurityBenchmarkingQubitAnalysis
+    single_qubit_analysis_cls = PurityBenchmarkingQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

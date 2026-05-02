@@ -23,8 +23,8 @@ from tergite_autocalibration.lib.nodes.characterization.all_xy.measurement impor
 
 class AllXYNode(QubitNode):
     name: str = "all_xy"
-    measurement_obj = AllXYMeasurement
-    analysis_obj = AllXYAnalysis
+    measurement_cls = AllXYMeasurement
+    analysis_cls = AllXYAnalysis
 
     def __init__(self, all_qubits: list[str], **schedule_keywords):
         super().__init__(all_qubits, **schedule_keywords)

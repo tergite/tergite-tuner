@@ -48,7 +48,7 @@ def clean_environ(monkeypatch):
         "FILE_LOG_LEVEL",
         "CLUSTER_IP",
         "SPI_SERIAL_PORT",
-        "REDIS_PORT",
+        "REDIS_URL",
         "PLOTTING",
         "DATA_BROWSER_HOST",
         "DATA_BROWSER_PORT",
@@ -77,11 +77,11 @@ def test_session_loads_example_env(example_env_path, clean_environ):
     assert session.file_log_level == 10
     assert str(session.cluster_ip) == "192.14.2.1"
     assert session.spi_serial_port == "/dev/ttyACM0"
-    assert session.redis_port == 6379
+    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.plotting is True
-    assert session.data_browser_host == "127.0.0.1"
+    assert str(session.data_browser_host) == "127.0.0.1"
     assert session.data_browser_port == 8179
-    assert session.hw_config_generator_host == "127.0.0.1"
+    assert str(session.hw_config_generator_host) == "127.0.0.1"
     assert session.hw_config_generator_port == 8079
 
 
@@ -102,7 +102,7 @@ def test_session_constructs_with_no_args(clean_environ):
 
     assert session.stdout_log_level == 25
     assert session.plotting is True
-    assert session.redis_port == 6379
+    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.data_dir == session.root_dir / "out"
     assert session.config_dir == session.root_dir
 
@@ -132,25 +132,27 @@ def test_session_coerces_string_values(tmp_path, clean_environ):
     """Values from the ``.env`` file (always strings) are coerced to the field type."""
     sample = tmp_path / ".env"
     sample.write_text(
-        "REDIS_PORT='6380'\n" "PLOTTING='False'\n" "STDOUT_LOG_LEVEL='30'\n"
+        "REDIS_URL='redis://127.0.0.1:6380/0'\n"
+        "PLOTTING='False'\n"
+        "STDOUT_LOG_LEVEL='30'\n"
     )
 
     session = SessionContext.from_env(sample)
-    assert session.redis_port == 6380
+    assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
     assert session.plotting is False
     assert session.stdout_log_level == 30
 
 
 def test_session_rejects_non_integer_port(tmp_path, clean_environ):
-    """Non-integer port values fail validation."""
+    """Malformed Redis URLs fail validation."""
     sample = tmp_path / ".env"
-    sample.write_text("REDIS_PORT='not-a-port'\n")
+    sample.write_text("REDIS_URL='not-a-url'\n")
 
     with pytest.raises(ValidationError) as excinfo:
         SessionContext.from_env(sample)
 
     locs = [err["loc"] for err in excinfo.value.errors()]
-    assert ("redis_port",) in locs
+    assert ("redis_url",) in locs
 
 
 def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
@@ -158,30 +160,30 @@ def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
     sample = tmp_path / ".env"
     sample.write_text("PLOTTING='False'\n")  # only PLOTTING in the file
 
-    monkeypatch.setenv("REDIS_PORT", "6500")
+    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
     monkeypatch.setenv("QUBITS", "q00,q01")
 
     session = SessionContext.from_env(sample)
     assert session.plotting is False  # from file
-    assert session.redis_port == 6500  # from os.environ
+    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"  # from os.environ
     assert session.qubits == ["q00", "q01"]  # csv-coerced
 
 
 def test_session_env_file_wins_over_os_environ(tmp_path, monkeypatch, clean_environ):
     """If the ``.env`` file has a value, ``os.environ`` is ignored for that field."""
     sample = tmp_path / ".env"
-    sample.write_text("REDIS_PORT='6380'\n")
-    monkeypatch.setenv("REDIS_PORT", "6500")
+    sample.write_text("REDIS_URL='redis://127.0.0.1:6380/0'\n")
+    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
 
     session = SessionContext.from_env(sample)
-    assert session.redis_port == 6380
+    assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
 
 
 def test_session_from_env_without_file(monkeypatch, clean_environ):
     """``from_env(None)`` reads ``os.environ`` and uses class defaults."""
-    monkeypatch.setenv("REDIS_PORT", "6500")
+    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
     session = SessionContext.from_env()
-    assert session.redis_port == 6500
+    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"
     assert session.plotting is True  # class default
 
 

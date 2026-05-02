@@ -18,7 +18,7 @@
 # that they have been altered from the originals.
 
 from types import MappingProxyType
-from typing import FrozenSet, List, Union, Optional
+from typing import FrozenSet, List, Optional, Union
 
 from colorama import Fore, Style
 from qblox_instruments import Cluster
@@ -26,7 +26,6 @@ from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
-from tergite_autocalibration.config.load import load_configuration
 from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode
 from tergite_autocalibration.lib.utils.graph import filtered_topological_order
@@ -52,7 +51,7 @@ class HardwareManager:
     def __init__(self, config: "SessionContext") -> None:
         # Store the configuration settings and initialize the instrument coordinator
         self.config = config
-        self.lab_ic: InstrumentCoordinator = None
+        self.lab_ic: Optional[InstrumentCoordinator] = None
         logger.info("Initializing Hardware")
 
         # Check if hardware setup is necessary based on measurement mode
@@ -231,18 +230,16 @@ class NodeManager:
         self,
         lab_ic: "InstrumentCoordinator",
         session: "SessionContext",
-        redis_connection,
     ) -> None:
         self.session = session
         self.node_factory = NodeFactory()
         self.lab_ic = lab_ic
-        self.redis_connection = redis_connection
         self.spi_manager: Optional[SpiDAC] = None
 
         populate_initial_parameters(
             self.session.qubits,
             self.session.couplers,
-            self.redis_connection,
+            self.session.redis,
             self.session.config,
         )
 
@@ -258,7 +255,7 @@ class NodeManager:
             self.node_factory,
             self.session.qubits,
             self.session.couplers,
-            self.redis_connection,
+            self.session.redis,
         )
 
         # Check Redis if node is calibrated
@@ -273,7 +270,7 @@ class NodeManager:
             status == DataStatus.in_spec,
             self.session.qubits,
             self.session.couplers,
-            self.redis_connection,
+            self.session.redis,
             self.session.config,
         )
 
@@ -304,7 +301,7 @@ class NodeManager:
         revert_node_parameters(
             node_name,
             self.session.qubits,
-            self.redis_connection,
+            self.session.redis,
             self.session.config,
         )
 
@@ -347,7 +344,7 @@ class NodeManager:
             else self.session.qubits
         )
         for element in elements:
-            status = self.redis_connection.hget(f"cs:{element}", node_name)
+            status = self.session.redis.hget(f"cs:{element}", node_name)
             if status == "not_calibrated":
                 return DataStatus.out_of_spec
             elif status != "calibrated":
@@ -371,13 +368,11 @@ class CalibrationSupervisor:
     def __init__(
         self,
         config: SessionContext,
-        redis_connection,
     ) -> None:
         self.config = config
-        self.redis_connection = redis_connection
         self.hardware_manager = HardwareManager(config=config)
         self.lab_ic = self.hardware_manager.get_instrument_coordinator()
-        self.node_manager = NodeManager(self.lab_ic, session=config, redis_connection=redis_connection)
+        self.node_manager = NodeManager(self.lab_ic, session=config)
         self.topo_order = self.node_manager.topo_order(self.config.target_node_name)
         logger.info("Node Manager is initialized")
 
@@ -428,7 +423,7 @@ class CalibrationSupervisor:
         target_node = self.config.target_node_name
         node = self.node_manager._initialize_node(target_node)
         logger.status(
-            f"Analysing '{self.config.target_node_name}' with {node.analysis_obj.__name__}"
+            f"Analysing '{self.config.target_node_name}' with {node.analysis_cls.__name__}"
         )
         node.post_process(self.config.log_dir)
         logger.status("Analysis completed.")

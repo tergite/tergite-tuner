@@ -92,9 +92,9 @@ class ResonatorSpectroscopyBase(QubitNode):
 
 class ResonatorSpectroscopyNode(ResonatorSpectroscopyBase):
     name: str = "resonator_spectroscopy"
-    measurement_obj = ResonatorSpectroscopyMeasurement
-    analysis_obj = ResonatorSpectroscopyNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = ResonatorSpectroscopyMeasurement
+    analysis_cls = ResonatorSpectroscopyNodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["clock_freqs:readout", "Ql", "resonator_minimum"]
 
     def __init__(
@@ -118,9 +118,9 @@ class ResonatorSpectroscopyNode(ResonatorSpectroscopyBase):
 
 class ResonatorSpectroscopy1Node(ResonatorSpectroscopyBase):
     name: str = "resonator_spectroscopy_1"
-    measurement_obj = ResonatorSpectroscopyMeasurement
-    analysis_obj = ResonatorSpectroscopy1NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = ResonatorSpectroscopyMeasurement
+    analysis_cls = ResonatorSpectroscopy1NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = [
         "extended_clock_freqs:readout_1",
         "Ql_1",
@@ -150,9 +150,9 @@ class ResonatorSpectroscopy1Node(ResonatorSpectroscopyBase):
 
 class ResonatorSpectroscopy2Node(ResonatorSpectroscopyBase):
     name: str = "resonator_spectroscopy_2"
-    measurement_obj = ResonatorSpectroscopyMeasurement
-    analysis_obj = ResonatorSpectroscopy2NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = ResonatorSpectroscopyMeasurement
+    analysis_cls = ResonatorSpectroscopy2NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["extended_clock_freqs:readout_2"]
 
     def __init__(

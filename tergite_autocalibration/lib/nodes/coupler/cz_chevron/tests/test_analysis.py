@@ -40,11 +40,10 @@ def test_cz_chevron_analysis_good_data(redis_connection, session_context):
         analysis = CZChevronCouplerAnalysis(
             "cz_chevron",
             ["cz_working_frequencies", "cz_working_durations_in_ns"],
+            session_context,
             phase_path="via_20",
             number_of_working_points=number_of_working_points,
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
         qoi = analysis.process_coupler(dataset, "q13_q14")
         cz_working_frequencies = eval(
             qoi.analysis_result["cz_working_frequencies"]["value"]
@@ -97,11 +96,10 @@ def test_plotting(redis_connection, session_context):
         analysis = CZChevronCouplerAnalysis(
             "cz_chevron",
             ["cz_working_frequencies", "cz_working_durations_in_ns"],
+            session_context,
             phase_path="via_20",
             number_of_working_points=number_of_working_points,
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
         analysis.process_coupler(dataset, "q13_q14")
         analysis.plotter(figures_dictionary)
 

@@ -49,9 +49,9 @@ def test_class_attribute_objects(redis_connection, session_context):
         node = CZRBNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
         )
-        assert isinstance(node.measurement_obj, type(CZRBMeasurement))
-        assert isinstance(node.analysis_obj, type(CZRBNodeAnalysis))
-        assert issubclass(node.measurement_type, OuterScheduleNode)
+        assert isinstance(node.measurement_cls, type(CZRBMeasurement))
+        assert isinstance(node.analysis_cls, type(CZRBNodeAnalysis))
+        assert issubclass(node.measurement_type_cls, OuterScheduleNode)
 
 
 def test_dummy_generation(redis_connection, session_context):

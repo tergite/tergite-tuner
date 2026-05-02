@@ -33,9 +33,6 @@ class RabiQubitAnalysis(BaseQubitAnalysis):
     Analysis that fits a cosine function to Rabi oscillation data.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def _analyse_rabi(self):
         model = RabiModel()
 
@@ -107,9 +104,6 @@ class RabiQubitAnalysis(BaseQubitAnalysis):
 
 
 class Rabi12QubitAnalysis(RabiQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         self._analyse_rabi()
         if self.scaled_uncertainty < 2e-2 and self.pi_amplitude < 0.95:
@@ -130,23 +124,14 @@ class Rabi12QubitAnalysis(RabiQubitAnalysis):
 
 
 class RabiNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = RabiQubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    single_qubit_analysis_cls = RabiQubitAnalysis
 
 
 class RabiNode12Analysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = Rabi12QubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    single_qubit_analysis_cls = Rabi12QubitAnalysis
 
 
 class NRabiQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def _analyse_n_rabi(self):
         for coord in self.magnitudes.coords:
             if "amplitudes" in str(coord):
@@ -161,7 +146,7 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
     def analyse_qubit(self):
         self._analyse_n_rabi()
         previous_amplitude = fetch_redis_params(
-            "rxy:amp180", self.qubit, self.redis_connection
+            "rxy:amp180", self.qubit, self.session.redis
         )
         optimal_amp180 = self.correction + previous_amplitude
         analysis_successful = True
@@ -182,13 +167,10 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
 
 
 class NRabi_12_QubitAnalysis(NRabiQubitAnalysis):
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
-
     def analyse_qubit(self):
         self._analyse_n_rabi()
         previous_amplitude = fetch_redis_params(
-            "r12:ef_amp180", self.qubit, self.redis_connection
+            "r12:ef_amp180", self.qubit, self.session.redis
         )
         optimal_ef_amp180 = self.correction + previous_amplitude
 
@@ -201,14 +183,8 @@ class NRabi_12_QubitAnalysis(NRabiQubitAnalysis):
 
 
 class NRabiNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = NRabiQubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    single_qubit_analysis_cls = NRabiQubitAnalysis
 
 
 class NRabi_12_NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = NRabi_12_QubitAnalysis
-
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    single_qubit_analysis_cls = NRabi_12_QubitAnalysis

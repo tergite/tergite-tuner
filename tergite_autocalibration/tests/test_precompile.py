@@ -44,7 +44,7 @@ def test_precompile_all_nodes_without_error(
                 "We skip purity_benchmarking for now, because it needs some refactoring."
             )
 
-        if issubclass(node.measurement_type, OuterScheduleNode):
+        if issubclass(node.measurement_type_cls, OuterScheduleNode):
             # The assembly of samplespaces is taken from the OuterScheduleNode
             outer_dimensions = samplespace_dimensions(node.outer_schedule_samplespace)
             iterations = product(*(range(n) for n in outer_dimensions))

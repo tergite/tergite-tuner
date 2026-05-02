@@ -40,9 +40,9 @@ class T1Node(QubitNode):
     """
 
     name: str = "T1"
-    measurement_obj = T1Measurement
-    analysis_obj = T1NodeAnalysis
-    measurement_type = ExternalParameterNode
+    measurement_cls = T1Measurement
+    analysis_cls = T1NodeAnalysis
+    measurement_type_cls = ExternalParameterNode
     qubit_qois = ["t1_time"]
 
     def __init__(self, all_qubits: list[str], **schedule_keywords):

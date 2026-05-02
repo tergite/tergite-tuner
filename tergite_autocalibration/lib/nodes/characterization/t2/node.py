@@ -43,9 +43,9 @@ class T2Node(QubitNode):
     """
 
     name: str = "T2"
-    measurement_obj = T2Measurement
-    analysis_obj = T2NodeAnalysis
-    measurement_type = ExternalParameterNode
+    measurement_cls = T2Measurement
+    analysis_cls = T2NodeAnalysis
+    measurement_type_cls = ExternalParameterNode
     qubit_qois = ["t2_time"]
 
     def __init__(self, all_qubits: list[str], **schedule_keywords):
@@ -95,9 +95,9 @@ class T2EchoNode(QubitNode):
     """
 
     name: str = "T2_echo"
-    measurement_obj = T2EchoMeasurement
-    analysis_obj = T2EchoNodeAnalysis
-    measurement_type = ExternalParameterNode
+    measurement_cls = T2EchoMeasurement
+    analysis_cls = T2EchoNodeAnalysis
+    measurement_type_cls = ExternalParameterNode
     qubit_qois = ["t2_echo_time"]
 
     def __init__(self, all_qubits: list[str], **schedule_keywords):

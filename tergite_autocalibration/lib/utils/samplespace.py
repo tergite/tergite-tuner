@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from tergite_autocalibration.config.load import Configuration
+    from tergite_autocalibration.config.session import Configuration
 
 
 def resonator_samples(qubit: str, config: "Configuration") -> np.ndarray:

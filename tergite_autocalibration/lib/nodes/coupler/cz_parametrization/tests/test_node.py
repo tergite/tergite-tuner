@@ -97,14 +97,19 @@ def test_MeasurementClassType(redis_connection, session_context):
     redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
     redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q15")
     redis_connection.hset(f"couplers:{coupler}", "target_qubit", "q14")
+    redis_connection.hset(f"transmons:q14", "clock_freqs:f01", "5.2e6")
+    redis_connection.hset(f"transmons:q14", "clock_freqs:f12", "5.0e6")
+    redis_connection.hset(f"transmons:q15", "clock_freqs:f01", "4.2e6")
+    redis_connection.hset(f"transmons:q15", "clock_freqs:f12", "4.0e6")
+    redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
     c = CZParametrizationNode(
         all_qubits=["q14", "q15"],
         couplers=[coupler],
         session=session_context,
     )
-    assert isinstance(c.measurement_obj, type(CZParametrizationMeasurement))
-    assert isinstance(c.analysis_obj, type(CZParametrizationAnalysis))
-    assert issubclass(c.measurement_type, ExternalParameterNode)
+    assert isinstance(c.measurement_cls, type(CZParametrizationMeasurement))
+    assert isinstance(c.analysis_cls, type(CZParametrizationAnalysis))
+    assert issubclass(c.measurement_type_cls, ExternalParameterNode)
 
 
 def test_dummy_generation(redis_connection, session_context):

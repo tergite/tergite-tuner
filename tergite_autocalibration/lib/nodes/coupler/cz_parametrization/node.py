@@ -37,9 +37,9 @@ if TYPE_CHECKING:
 
 class CZParametrizationNode(CouplerNode):
     name: str = "cz_parametrization"
-    measurement_obj = CZParametrizationMeasurement
-    analysis_obj = CZParametrizationNodeAnalysis
-    measurement_type = ExternalParameterNode
+    measurement_cls = CZParametrizationMeasurement
+    analysis_cls = CZParametrizationNodeAnalysis
+    measurement_type_cls = ExternalParameterNode
     coupler_qois = ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"]
 
     def __init__(
@@ -91,17 +91,13 @@ class CZParametrizationNode(CouplerNode):
 
     def parking_current(self, coupler: str):
         return float(
-            self.session.redis_connection.hget(
-                f"couplers:{coupler}", "initial_parking_current"
-            )
+            self.session.redis.hget(f"couplers:{coupler}", "initial_parking_current")
         )
 
     def all_phase_paths(self) -> dict[str, Literal["via_02", "via_20"]]:
         phase_paths = {}
         for coupler in self.couplers:
-            path = self.session.redis_connection.hget(
-                f"couplers:{coupler}", "cz_phase_path"
-            )
+            path = self.session.redis.hget(f"couplers:{coupler}", "cz_phase_path")
             phase_paths[coupler] = path
         return phase_paths
 
@@ -167,13 +163,13 @@ class CZParametrizationNode(CouplerNode):
                 np.array([peaks, dips, zeros]),
                 q1,
                 self.loops,
-                self.session.redis_connection,
+                self.session.redis,
             )
             complex_points_q2 = generate_iq_shots(
                 np.array([zeros, dips, peaks]),
                 q2,
                 self.loops,
-                self.session.redis_connection,
+                self.session.redis,
             )
             data_array_q1 = xr.DataArray(complex_points_q1)
             data_array_q2 = xr.DataArray(complex_points_q2)

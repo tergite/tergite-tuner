@@ -34,9 +34,8 @@ def test_cz_local_phases(redis_connection, session_context):
         analysis = CZLocalPhasesCouplerAnalysis(
             "cz_calibration",
             ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
         qoi = analysis.process_coupler(dataset, "q13_q14")
 
         control_local_phase = qoi.analysis_result["control_local_phase"]["value"]
@@ -58,9 +57,8 @@ def test_plotting(redis_connection, session_context):
         analysis = CZLocalPhasesCouplerAnalysis(
             "cz_calibration",
             ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
 
         figures_dictionary = {}
 

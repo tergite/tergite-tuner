@@ -47,9 +47,9 @@ def test_class_attribute_objects(redis_connection, session_context):
         node = CZCalibrationNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
         )
-        assert isinstance(node.measurement_obj, type(CZCalibrationMeasurement))
-        assert isinstance(node.analysis_obj, type(CZCalibrationNodeAnalysis))
-        assert issubclass(node.measurement_type, OuterScheduleNode)
+        assert isinstance(node.measurement_cls, type(CZCalibrationMeasurement))
+        assert isinstance(node.analysis_cls, type(CZCalibrationNodeAnalysis))
+        assert issubclass(node.measurement_type_cls, OuterScheduleNode)
 
 
 def test_dummy_generation(redis_connection, session_context):

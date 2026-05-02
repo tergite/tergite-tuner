@@ -27,7 +27,7 @@ from tergite_autocalibration.utils.dto.extended_coupler_edge import (
 from tergite_autocalibration.utils.dto.extended_transmon_element import ExtendedTransmon
 
 if TYPE_CHECKING:
-    from tergite_autocalibration.config.load import Configuration
+    from tergite_autocalibration.config.session import Configuration
 
 
 def configure_device(

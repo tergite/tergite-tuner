@@ -11,9 +11,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from typing import Union
-
-from tergite_autocalibration.lib.base.node import CouplerNode, QubitNode
 from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.backend.redis_utils import (
     populate_initial_parameters,
@@ -23,14 +20,15 @@ from tergite_autocalibration.utils.backend.redis_utils import (
 )
 
 
-def test_populate_inital_parameters(redis_connection, configuration):
+def test_populate_initial_parameters(redis_connection, session_context):
 
     redis_connection.flushall()
     assert not redis_connection.keys()
 
+    configuration = session_context.config
     device = configuration.device
-    qubits = device.qubits.keys()
-    couplers = device.couplers.keys()
+    qubits = list(device.qubits.keys())
+    couplers = list(device.couplers.keys())
     populate_initial_parameters(qubits, couplers, redis_connection, configuration)
     redis_keys = redis_connection.keys()
 
@@ -53,19 +51,20 @@ def test_populate_inital_parameters(redis_connection, configuration):
     assert cz_amplitude_redis == cz_amplitude_config
 
 
-def test_populate_node_parameters(redis_connection, configuration):
+def test_populate_node_parameters(redis_connection, session_context):
 
     redis_connection.flushall()
     assert not redis_connection.keys()
 
+    configuration = session_context.config
     device = configuration.device
     qubits = device.qubits.keys()
     couplers = device.couplers.keys()
     populate_node_parameters(
         "resonator_spectroscopy",
         False,
-        qubits,
-        couplers,
+        list(qubits),
+        list(couplers),
         redis_connection,
         configuration,
     )
@@ -79,11 +78,12 @@ def test_populate_node_parameters(redis_connection, configuration):
     assert reset_duration_config == reset_duration_redis
 
 
-def test_revert_node_parameters(redis_connection, configuration):
+def test_revert_node_parameters(redis_connection, session_context):
 
     redis_connection.flushall()
     assert not redis_connection.keys()
 
+    configuration = session_context.config
     device = configuration.device
     qubits = device.qubits.keys()
     initial_qubit_parameters = device.qubits
@@ -92,7 +92,7 @@ def test_revert_node_parameters(redis_connection, configuration):
     # flush the duration value
     redis_connection.hset("transmons:q00", "reset:duration", "nan")
 
-    revert_node_parameters(node, qubits, redis_connection, configuration)
+    revert_node_parameters(node, list(qubits), redis_connection, configuration)
     reset_duration_redis = float(
         redis_connection.hget("transmons:q00", "reset:duration")
     )
@@ -118,9 +118,7 @@ def test_populate_quantities_of_interest(redis_connection):
             node_name, node_factory, ["q00", "q01"], ["q00_q01"], redis_connection
         )
 
-        node_cls: Union["QubitNode", "CouplerNode"] = node_factory.get_node_class(
-            node_name
-        )
+        node_cls = node_factory.get_node_class(node_name)
 
         if hasattr(node_cls, "qubit_qois"):
             for qubit_qoi in node_cls.qubit_qois:

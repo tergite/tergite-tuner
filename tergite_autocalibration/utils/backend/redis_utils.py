@@ -20,7 +20,7 @@ from tergite_autocalibration.lib.utils.node_factory import NodeFactory
 from tergite_autocalibration.utils.logging import logger
 
 if TYPE_CHECKING:
-    from tergite_autocalibration.config.load import Configuration
+    from tergite_autocalibration.config.session import Configuration
 
 
 def populate_initial_parameters(

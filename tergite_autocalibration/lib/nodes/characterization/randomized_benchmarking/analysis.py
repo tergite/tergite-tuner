@@ -11,12 +11,14 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
 from scipy.linalg import norm
 from scipy.optimize import minimize
 
+from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.analysis import (
     BaseAllQubitsAnalysis,
     BaseQubitAnalysis,
@@ -53,8 +55,10 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
     Analysis that fits an exponential decay function to randomized benchmarking data.
     """
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(
+        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
+    ):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 
     def analyse_qubit(self):
@@ -83,9 +87,7 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         qubit = self.qubit
         iq_array = self.S21[self.data_var].assign_attrs(qubit=qubit)
 
-        self.state_probabilities = calculate_probabilities(
-            iq_array, self.redis_connection
-        )
+        self.state_probabilities = calculate_probabilities(iq_array, self.session.redis)
 
         standard_probabilities = self.state_probabilities.sel(
             {self.interleave_gate_coord: "Standard"}
@@ -228,7 +230,13 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
 
 
 class RandomizedBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = RandomizedBenchmarkingQubitAnalysis
+    single_qubit_analysis_cls = RandomizedBenchmarkingQubitAnalysis
 
-    def __init__(self, name, redis_fields):
-        super().__init__(name, redis_fields)
+    def __init__(
+        self,
+        name,
+        redis_fields,
+        session_context: Optional["SessionContext"] = None,
+        **kwargs,
+    ):
+        super().__init__(name, redis_fields, session_context, **kwargs)

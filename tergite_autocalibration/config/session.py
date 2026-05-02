@@ -32,24 +32,33 @@ from functools import cached_property
 from ipaddress import IPv4Address
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Union
+from typing import Dict, List, Optional, Self, Union
 
 from dotenv import dotenv_values
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    IPvAnyAddress,
     PrivateAttr,
+    RedisDsn,
     computed_field,
     field_validator,
     model_validator,
 )
+from redis import Redis
 
+from tergite_autocalibration.config.files import (
+    ClusterConfigFile,
+    DeviceConfig,
+    DeviceConfigFile,
+    MetaConfigFile,
+    NodeConfigFile,
+    SpiConfigFile,
+)
 from tergite_autocalibration.lib.nodes import NodeEnum
 from tergite_autocalibration.utils.dto.enums import ApplicationStatus, MeasurementMode
-
-if TYPE_CHECKING:
-    from tergite_autocalibration.config.load import Configuration
+from tergite_autocalibration.utils.logging import logger
 
 
 def _default_root_dir() -> Path:
@@ -60,6 +69,92 @@ def _default_root_dir() -> Path:
 def _default_prefix() -> str:
     """The default ``default_prefix``: the current OS user, whitespace stripped."""
     return getpass.getuser().replace(" ", "")
+
+
+class Configuration(BaseModel):
+    """A loaded configuration package.
+
+    Attributes:
+        meta_path: absolute path to the ``configuration.meta.toml`` file.
+        device: the runtime view of the device configuration. The
+            ``[layout]`` section of ``device_config.toml`` is parsed by
+            :class:`DeviceConfigFile` but not exposed here, since
+            calibration code only needs the device parameters.
+        node: the parsed ``node_config.toml``.
+        spi: the parsed ``spi_config.toml``, or ``None`` if the package
+            does not include one (single-qubit calibrations don't need
+            SPI wiring).
+        misc: extra folders shipped alongside the package, mapping the
+            user-chosen key to the absolute path of the folder.
+        cluster: the parsed ``cluster_config.json`` (delegated to
+            quantify-scheduler), or ``None`` if not declared in the
+            meta file.
+    """
+
+    meta_path: PathLike[str]
+    device: DeviceConfig
+    node: NodeConfigFile
+    spi: Optional[SpiConfigFile]
+    misc: Dict[str, PathLike[str]]
+    cluster: Optional[ClusterConfigFile]
+
+    @classmethod
+    def from_dir(
+        cls, folder: PathLike[str], meta_filename: str = "configuration.meta.toml"
+    ) -> Self:
+        """Load a configuration package from its ``configuration.meta.toml``.
+
+        Resolves the relative paths declared in the meta file against the
+        directory containing the meta file, eagerly parses the device, node
+        and (if present) SPI configs, and defers the cluster config until
+        :attr:`Configuration.cluster` is accessed.
+
+        Args:
+            folder: path to the folder containing the meta file.
+            meta_filename: name of the meta file; default = ``configuration.meta.toml``.
+
+        Returns:
+            the loaded :class:`Configuration`.
+
+        Raises:
+            TypeError: When file is invalid type
+            TomlDecodeError: Error while decoding toml
+            IOError / FileNotFoundError: When file does not exist
+        """
+        base_dir = Path(folder)
+        meta_path = base_dir / meta_filename
+        meta = MetaConfigFile.from_toml(meta_path)
+        config_dir = base_dir / meta.path_prefix
+
+        device_path = config_dir / meta.files.device_config
+        node_path = config_dir / meta.files.node_config
+        spi_path = config_dir / meta.files.spi_config
+        cluster_path = config_dir / meta.files.cluster_config
+
+        logger.info(f"Loading device_config: {meta.files.device_config}")
+        device_file = DeviceConfigFile.from_toml(device_path)
+        device = device_file.device
+
+        logger.info(f"Loading node_config: {meta.files.node_config}")
+        node = NodeConfigFile.from_toml(node_path)
+
+        logger.info(f"Loading spi_config: {meta.files.spi_config}")
+        spi = SpiConfigFile.from_toml(spi_path)
+
+        logger.info(f"Loading cluster_config: {meta.files.cluster_config}")
+        cluster = ClusterConfigFile.from_json(cluster_path)
+
+        misc = {key: (base_dir / rel_path) for key, rel_path in meta.misc.items()}
+
+        logger.info(f"Loaded configuration described by {meta_path}")
+        return Configuration(
+            meta_path=meta_path,
+            device=device,
+            node=node,
+            spi=spi,
+            misc=misc,
+            cluster=cluster,
+        )
 
 
 class SessionContext(BaseModel):
@@ -73,11 +168,11 @@ class SessionContext(BaseModel):
     ``.env`` file (with ``os.environ`` as a fallback).
 
     Attributes:
-        redis_connection: an active Redis client (or fakeredis) used by
+        _redis: an active Redis client (or fakeredis) used by
             the calibration. ``None`` until injected at the start of a
             run. Carried on the session so it can flow alongside the
             rest of the run state.
-        config: the loaded :class:`Configuration` package. ``None``
+        _config: the loaded :class:`Configuration` package. ``None``
             until injected at the start of a run.
         cluster_ip: IP address of the Qblox cluster being used.
         target_node: the calibration node on which to stop. Stored as a
@@ -102,8 +197,8 @@ class SessionContext(BaseModel):
         file_log_level: file logger level. Defaults to ``10`` so that
             all debug information is captured in log files.
         spi_serial_port: serial port on which the SPI rack is connected.
-        redis_port: port to use when connecting to Redis. A custom port
-            can be started with ``redis-server --port <REDIS_PORT>``.
+        redis_url: the URL to the redis server that is to be used effectively
+            as RAM for this calibration.
         plotting: whether plots should be shown during the run. Accepts
             string values like ``"True"`` / ``"False"`` from env vars.
         data_browser_host: host URL under which the data browser should
@@ -134,11 +229,6 @@ class SessionContext(BaseModel):
         extra="allow", populate_by_name=True, arbitrary_types_allowed=True
     )
 
-    # --- runtime resources injected at the start of a run ---
-    redis_connection: Optional[Any] = Field(default=None, exclude=True, repr=False)
-    config: Optional["Configuration"] = Field(default=None, exclude=True, repr=False)
-
-    # --- per-run / runtime state ---
     cluster_ip: Optional[IPv4Address] = None
     target_node: Optional[NodeEnum] = None
     qubits: List[str] = []
@@ -148,27 +238,28 @@ class SessionContext(BaseModel):
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
     user_samplespace: dict = {}
-
-    # --- env-file-driven state ---
     stdout_log_level: int = 25
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
-    redis_port: int = 6379
+    redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
     plotting: bool = True
-    data_browser_host: str = "127.0.0.1"
+    data_browser_host: IPvAnyAddress = "127.0.0.1"
     data_browser_port: int = 8179
-    hw_config_generator_host: str = "127.0.0.1"
+    hw_config_generator_host: IPvAnyAddress = "127.0.0.1"
     hw_config_generator_port: int = 8079
     default_prefix: str = Field(default_factory=_default_prefix)
     root_dir: Path = Field(default_factory=_default_root_dir)
     data_dir: Optional[Path] = None
     config_dir: Optional[Path] = None
+    config_meta_filename: str = "configuration.meta.toml"
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
+    _config: Optional[Configuration] = PrivateAttr(default=None)
+    _redis: Optional[Redis] = PrivateAttr(default=None)
 
     @field_validator("qubits", "couplers", mode="before")
     @classmethod
-    def _split_csv(cls, value):
+    def cast_comma_separated_to_list(cls, value):
         """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""
         if value is None or isinstance(value, list):
             return value
@@ -181,10 +272,32 @@ class SessionContext(BaseModel):
 
     @field_validator("plotting", mode="before")
     @classmethod
-    def _coerce_bool(cls, value):
+    def cast_plotting_to_bool(cls, value):
         """Accept ``"True"`` / ``"False"`` strings from env files / ``os.environ``."""
         if isinstance(value, str):
             return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+        return value
+
+    @field_validator("target_node", mode="before")
+    @classmethod
+    def cast_target_node(cls, value):
+        """Accept the lower-case node name (e.g. ``'resonator_spectroscopy'``)
+        as well as raw int / :class:`NodeEnum` values."""
+        if value is None or isinstance(value, NodeEnum):
+            return value
+        if isinstance(value, str):
+            return NodeEnum.from_string(value)
+        return value
+
+    @field_validator("cluster_mode", mode="before")
+    @classmethod
+    def cast_cluster_mode(cls, value):
+        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``,
+        ``'re_analyse'``) as well as raw int / :class:`MeasurementMode` values."""
+        if value is None or isinstance(value, MeasurementMode):
+            return value
+        if isinstance(value, str):
+            return MeasurementMode[value.strip()]
         return value
 
     @model_validator(mode="after")
@@ -217,9 +330,27 @@ class SessionContext(BaseModel):
             return None
         return self.target_node.to_string()
 
+    @property
+    def redis(self) -> Redis:
+        """The redis connection where data is being saved"""
+        if self._redis is None:
+            self._redis = Redis.from_url(self.redis_url, decode_responses=True)
+        return self._redis
+
+    @property
+    def config(self) -> Configuration:
+        """The configuration derived from the config files"""
+        if self._config is None:
+            self._config = Configuration.from_dir(
+                self.config_dir, meta_filename=self.config_meta_filename
+            )
+        return self._config
+
     @classmethod
     def from_env(
-        cls, file: Optional[Union[str, "PathLike[str]"]] = None
+        cls,
+        file: Optional[Union[str, "PathLike[str]"]] = None,
+        **kwargs,
     ) -> "SessionContext":
         """Build a :class:`SessionContext` from a ``.env`` file and ``os.environ``.
 
@@ -233,6 +364,8 @@ class SessionContext(BaseModel):
             file: path to a ``.env`` file. When ``None`` (or the path
                 does not exist), only ``os.environ`` and the class
                 defaults are used.
+            kwargs: extra attributes to set on this instance.
+                These override any that are set in the environment already or on the env file
 
         Returns:
             A validated :class:`SessionContext`.
@@ -240,36 +373,20 @@ class SessionContext(BaseModel):
         Raises:
             FileNotFoundError: if ``file`` is provided but doesn't exist.
         """
-        # ``redis_connection`` and ``config`` are runtime resources and
-        # cannot be expressed as strings in a ``.env`` file or environment
-        # variable. Skip them when resolving from text-based sources.
-        text_fields = {
-            name
-            for name in cls.model_fields
-            if name not in {"redis_connection", "config"}
-        }
+        data = {k.lower(): v for k, v in os.environ.items() if v not in (None, "")}
 
-        data: Dict[str, Any] = {}
+        try:
+            with open(file, "r", encoding="utf-8") as fh:
+                data.update(
+                    {
+                        k.lower(): v
+                        for k, v in dotenv_values(stream=fh).items()
+                        if v not in (None, "")
+                    }
+                )
+        except TypeError:
+            pass
 
-        if file is not None:
-            path = Path(file)
-            if not path.exists():
-                raise FileNotFoundError(path)
-            with open(path, "r", encoding="utf-8") as fh:
-                raw = dotenv_values(stream=fh)
-            for key, value in raw.items():
-                if value is None:
-                    continue
-                lowered = key.lower()
-                if lowered in text_fields:
-                    data[lowered] = value
-
-        for field_name in text_fields:
-            if field_name in data:
-                continue
-            os_val = os.environ.get(field_name.upper())
-            if os_val is None or os_val == "":
-                continue
-            data[field_name] = os_val
-
+        # update with kwargs
+        data.update(kwargs)
         return cls.model_validate(data)

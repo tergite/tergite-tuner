@@ -37,9 +37,8 @@ def test_cz_calibration_success(redis_connection, session_context):
         analysis = CZCalibrationCouplerAnalysis(
             "cz_calibration",
             ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
         qoi = analysis.process_coupler(dataset, "q13_q14")
 
         cz_pulse_frequency = qoi.analysis_result["cz_pulse_frequency"]["value"]
@@ -57,6 +56,7 @@ def test_decode_multi_index(redis_connection, session_context):
         base_analysis = BaseAllCouplersAnalysis(
             "cz_calibration",
             ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
         )
         base_analysis.name = "cz_calibration"
         base_analysis.data_path = _test_data_dir
@@ -80,9 +80,8 @@ def test_plotting(redis_connection, session_context):
         analysis = CZCalibrationCouplerAnalysis(
             "cz_calibration",
             ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
         )
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
 
         figures_dictionary = {}
 

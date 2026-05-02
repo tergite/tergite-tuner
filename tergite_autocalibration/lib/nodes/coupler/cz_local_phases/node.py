@@ -28,9 +28,9 @@ from tergite_autocalibration.lib.nodes.schedule_node import ScheduleNode
 
 class CZLocalPhasesNode(CouplerNode):
     name: str = "cz_local_phases"
-    measurement_obj = CZLocalPhasesMeasurement
-    analysis_obj = CZLocalPhasesNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = CZLocalPhasesMeasurement
+    analysis_cls = CZLocalPhasesNodeAnalysis
+    measurement_type_cls = ScheduleNode
     coupler_qois = ["control_local_phase", "target_local_phase"]
 
     def __init__(self, couplers: list[str], **schedule_keywords):

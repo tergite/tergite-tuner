@@ -39,8 +39,8 @@ class ParabolicFit:
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config, **kwargs)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
         self.chevron_model = QuadraticModel()

@@ -34,12 +34,12 @@ user_samplespace = {
 }
 """
 
-from tergite_autocalibration.config.load import Configuration
+from tergite_autocalibration.config.session import Configuration
 from tergite_autocalibration.lib.utils.samplespace import resonator_samples
 
 
 def make_user_samplespace(config: Configuration) -> dict:
-    """Return an example user samplespace derived from ``config``."""
+    """Return an example user samplespace derived from ``session``."""
     qubits = config.device.qubits
     return {
         "resonator_spectroscopy": {

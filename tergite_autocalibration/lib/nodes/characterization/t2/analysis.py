@@ -303,7 +303,7 @@ class T2NodeAnalysis(BaseAllQubitsAnalysis):
     and uses the T2QubitAnalysis class for individual qubit analysis.
     """
 
-    single_qubit_analysis_obj = T2QubitAnalysis
+    single_qubit_analysis_cls = T2QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
@@ -316,7 +316,7 @@ class T2EchoNodeAnalysis(BaseAllQubitsAnalysis):
     and uses the T2EchoQubitAnalysis class for individual qubit analysis.
     """
 
-    single_qubit_analysis_obj = T2EchoQubitAnalysis
+    single_qubit_analysis_cls = T2EchoQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

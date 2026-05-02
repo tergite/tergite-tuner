@@ -35,9 +35,8 @@ def test_randomized_benchmarking_analysis(redis_connection, session_context):
 
         qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
         analysis = RandomizedBenchmarkingQubitAnalysis(
-            "randomized_benchmarking", qubit_qois
+            "randomized_benchmarking", qubit_qois, session_context
         )
-        analysis.redis_connection = redis_connection
         ds_11 = filter_ds_by_element(dataset, "q11")
         ds_15 = filter_ds_by_element(dataset, "q15")
         qoi_11 = analysis.process_qubit(ds_11, "q11")

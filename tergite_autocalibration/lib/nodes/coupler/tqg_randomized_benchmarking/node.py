@@ -35,9 +35,9 @@ RB_REPEATS = 7
 
 class CZRBNode(CouplerNode):
     name = "cz_rb"
-    measurement_obj = CZRBMeasurement
-    analysis_obj = CZRBNodeAnalysis
-    measurement_type = OuterScheduleNode
+    measurement_cls = CZRBMeasurement
+    analysis_cls = CZRBNodeAnalysis
+    measurement_type_cls = OuterScheduleNode
     coupler_qois = ["cz_fidelity"]
 
     def __init__(
@@ -74,9 +74,7 @@ class CZRBNode(CouplerNode):
 
     def cz_frequency(self, coupler):
         cz_freq = float(
-            self.session.redis_connection.hget(
-                f"coupler:{coupler}", "cz_pulse_frequency"
-            )
+            self.session.redis.hget(f"coupler:{coupler}", "cz_pulse_frequency")
         )
         return cz_freq
 

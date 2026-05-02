@@ -34,9 +34,9 @@ if TYPE_CHECKING:
 
 class CZCalibrationNode(CouplerNode):
     name: str = "cz_calibration"
-    measurement_obj = CZCalibrationMeasurement
-    analysis_obj = CZCalibrationNodeAnalysis
-    measurement_type = OuterScheduleNode
+    measurement_cls = CZCalibrationMeasurement
+    analysis_cls = CZCalibrationNodeAnalysis
+    measurement_type_cls = OuterScheduleNode
     coupler_qois = ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"]
 
     def __init__(
@@ -72,14 +72,14 @@ class CZCalibrationNode(CouplerNode):
         }
 
     def working_frequencies(self, coupler: str):
-        frequency_list_string_representation = self.session.redis_connection.hget(
+        frequency_list_string_representation = self.session.redis.hget(
             f"couplers:{coupler}", "cz_working_frequencies"
         )
         frequency_list = ast.literal_eval(frequency_list_string_representation)
         return np.array(frequency_list)
 
     def working_durations_in_ns(self, coupler: str):
-        duration_in_ns_string_representation = self.session.redis_connection.hget(
+        duration_in_ns_string_representation = self.session.redis.hget(
             f"couplers:{coupler}", "cz_working_durations_in_ns"
         )
         duration_in_ns_list = ast.literal_eval(duration_in_ns_string_representation)

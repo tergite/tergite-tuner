@@ -33,9 +33,9 @@ if TYPE_CHECKING:
 
 class CZChevronNode(CouplerNode):
     name: str = "cz_chevron"
-    measurement_obj = CZChevronMeasurement
-    analysis_obj = CZChevronAnalysis
-    measurement_type = OuterScheduleNode
+    measurement_cls = CZChevronMeasurement
+    analysis_cls = CZChevronAnalysis
+    measurement_type_cls = OuterScheduleNode
     coupler_qois = ["cz_working_frequencies", "cz_working_durations_in_ns"]
 
     def __init__(
@@ -80,17 +80,13 @@ class CZChevronNode(CouplerNode):
 
     def known_cz_frequency(self, coupler: str):
         known_cz_frequency = float(
-            self.session.redis_connection.hget(
-                f"couplers:{coupler}", "cz_pulse_frequency"
-            )
+            self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency")
         )
         return known_cz_frequency
 
     def max_duration(self, coupler: str):
         half_duration = float(
-            self.session.redis_connection.hget(
-                f"couplers:{coupler}", "cz_half_duration"
-            )
+            self.session.redis.hget(f"couplers:{coupler}", "cz_half_duration")
         )
         max_duration = 2 * half_duration
         max_duration_in_ns = round(max_duration / 1e-9)
@@ -101,9 +97,7 @@ class CZChevronNode(CouplerNode):
     def all_phase_paths(self) -> dict[str, Literal["via_02", "via_20"]]:
         phase_paths = {}
         for coupler in self.couplers:
-            path = self.session.redis_connection.hget(
-                f"couplers:{coupler}", "cz_phase_path"
-            )
+            path = self.session.redis.hget(f"couplers:{coupler}", "cz_phase_path")
             phase_paths[coupler] = path
         return phase_paths
 

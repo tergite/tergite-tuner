@@ -37,8 +37,8 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
     This class analyzes the qubit spectroscopy data as a function of the current for a coupler.
     """
 
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
 
     def _find_crossing_currents(
         self,
@@ -179,10 +179,10 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
         return qoi
 
     def _get_resonator_crossing_points(self, coupler, qubit) -> List[float]:
-        if self.redis_connection.hexists(
+        if self.session.redis.hexists(
             f"couplers:{coupler}:{qubit}", "resonator_crossing_points"
         ):
-            crossing_points_str = self.redis_connection.hget(
+            crossing_points_str = self.session.redis.hget(
                 f"couplers:{coupler}:{qubit}", "resonator_crossing_points"
             )
             try:
@@ -250,8 +250,8 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
     This class analyzes the resonator spectroscopy data as a function of the current for a coupler.
     """
 
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
 
     def detect_peaks(self, res_specs_dataarray: xarray.DataArray):
         detected_frequencies = []
@@ -437,8 +437,8 @@ class ResonatorSpectroscopyVsCurrentNodeAnalysis(BaseAllCouplersAnalysis):
 
     single_coupler_analysis_obj = ResonatorSpectroscopyVsCurrentCouplerAnalysis
 
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
 
 
 class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
@@ -448,5 +448,5 @@ class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
 
     single_coupler_analysis_obj = CouplerAnticrossingAnalysis
 
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config)
+    def __init__(self, name, redis_fields, session=None, **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)

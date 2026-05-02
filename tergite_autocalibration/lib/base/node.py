@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Tuple
+from typing import TYPE_CHECKING, Literal, Optional, Tuple, Type
 
 import matplotlib
 import numpy as np
@@ -56,9 +56,9 @@ if TYPE_CHECKING:
 
 class BaseNode(ABC):
     name: str
-    measurement_obj: "BaseMeasurement"
-    analysis_obj: "BaseNodeAnalysis"
-    measurement_type: "MeasurementType"
+    measurement_cls: Type["BaseMeasurement"]
+    analysis_cls: Type["BaseNodeAnalysis"]
+    measurement_type_cls: Type["MeasurementType"]
 
     def __init__(self, session: "SessionContext", **node_dictionary):
         self.session = session
@@ -67,8 +67,8 @@ class BaseNode(ABC):
         # behaviour consistent across the run.
         matplotlib.use("tkagg" if session.plotting else "agg")
         self.node_dictionary = node_dictionary
-        self.lab_instr_coordinator: "InstrumentCoordinator"
-        self.spi_manager: SpiDAC
+        self.lab_instr_coordinator: Optional["InstrumentCoordinator"] = None
+        self.spi_manager: Optional[SpiDAC] = None
         self.schedule_samplespace = {}
         self.external_samplespace = {}
         self.redis_fields = []
@@ -83,7 +83,7 @@ class BaseNode(ABC):
 
         self.samplespace = self.schedule_samplespace | self.external_samplespace
 
-        self.device: "QuantumDevice"
+        self.device: Optional["QuantumDevice"] = None
 
     @abstractmethod
     def precompile(self, samplespace):
@@ -92,9 +92,9 @@ class BaseNode(ABC):
     def measure_node(self, cluster_status) -> xarray.Dataset:
         """
         Here we attach the measure_node method according to the
-        measurement_type: ScheduleNode or ExternalParameterNode or something else
+        measurement_type_cls: ScheduleNode or ExternalParameterNode or something else
         """
-        measurement_type = self.measurement_type(self)
+        measurement_type = self.measurement_type_cls(self)
         dataset = measurement_type.measure_node(cluster_status)
         return dataset
 
@@ -154,44 +154,22 @@ class BaseNode(ABC):
 
     def post_process(self, data_path: Path):
         analysis_kwargs = getattr(self, "analysis_keywords", dict())
-        node_analysis: BaseNodeAnalysis = self._build_node_analysis(**analysis_kwargs)
+        node_analysis: BaseNodeAnalysis = self.analysis_cls(
+            self.name,
+            self.redis_fields,
+            self.session,
+            **analysis_kwargs,
+        )
         QOI_dict = node_analysis.analyze_node(data_path)
         for element_id_, qois_ in QOI_dict.items():
             update_redis_trusted_values(
                 self.name,
                 element_id_,
-                self.session.redis_connection,
+                self.session.redis,
                 qoi=qois_,
                 redis_fields=self.redis_fields,
             )
         return QOI_dict
-
-    def _build_node_analysis(self, **analysis_kwargs) -> BaseNodeAnalysis:
-        """Construct the analysis object for this node.
-
-        Coupler analyses need access to the loaded :class:`Configuration`
-        (e.g. to resolve control / target qubit pairs), so we pass it
-        through their constructor. The redis client is then injected on
-        the resulting object so subclasses do not have to thread it
-        through their own ``__init__`` signatures.
-        """
-        from tergite_autocalibration.lib.base.analysis import BaseAllCouplersAnalysis
-
-        if isinstance(self.analysis_obj, type) and issubclass(
-            self.analysis_obj, BaseAllCouplersAnalysis
-        ):
-            analysis = self.analysis_obj(
-                self.name,
-                self.redis_fields,
-                self.session.config,
-                **analysis_kwargs,
-            )
-        else:
-            analysis = self.analysis_obj(
-                self.name, self.redis_fields, **analysis_kwargs
-            )
-        analysis.redis_connection = self.session.redis_connection
-        return analysis
 
     def configure_dataset(
         self,
@@ -233,7 +211,7 @@ class BaseNode(ABC):
                         element = matching[0]
                         element_type = "coupler"
                     else:
-                        raise (ValueError)
+                        raise ValueError()
 
                 coord_key = quantity + element
 
@@ -320,7 +298,7 @@ class QubitNode(BaseNode):
             qubits=self.all_qubits,
             couplers=self.couplers,
             config=self.session.config,
-            redis_connection=self.session.redis_connection,
+            redis_connection=self.session.redis,
         )
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
@@ -331,7 +309,7 @@ class QubitNode(BaseNode):
         transmons_dict = {
             qubit: self.device.get_element(qubit) for qubit in self.all_qubits
         }
-        measurement_class = self.measurement_obj(transmons_dict)
+        measurement_class = self.measurement_cls(transmons_dict)
         schedule = measurement_class.schedule_function(
             **schedule_samplespace, **self.schedule_keywords
         )
@@ -374,18 +352,18 @@ class CouplerNode(BaseNode):
             qubits=self.all_qubits,
             couplers=self.couplers,
             config=self.session.config,
-            redis_connection=self.session.redis_connection,
+            redis_connection=self.session.redis,
         )
 
     def measure_node(self, cluster_status) -> xarray.Dataset:
         """
         Here we attach the measure_node method according to the
-        measurement_type: ScheduleNode or ExternalParameterNode or something else
+        measurement_type_cls: ScheduleNode or ExternalParameterNode or something else
 
         Overwrite the base method, to set the updated SPI currents before the measurement.
         """
         self.set_parking_current_from_redis()
-        measurement_type = self.measurement_type(self)
+        measurement_type = self.measurement_type_cls(self)
         dataset = measurement_type.measure_node(cluster_status)
         return dataset
 
@@ -399,7 +377,7 @@ class CouplerNode(BaseNode):
         This method fetches the redis value and sets the update DC current
         to the appropriate SPI dacs.
         """
-        redis_connection = self.session.redis_connection
+        redis_connection = self.session.redis
         currents_dict = {}
         for coupler in self.couplers:
             parking_current = float(
@@ -421,7 +399,7 @@ class CouplerNode(BaseNode):
         return coupled_qubits
 
     def gate_qubit_types_dict(self) -> dict[str, dict]:
-        redis_connection = self.session.redis_connection
+        redis_connection = self.session.redis
         qubit_types_dict = {}
         for coupler in self.couplers:
             control_qubit = redis_connection.hget(
@@ -445,7 +423,7 @@ class CouplerNode(BaseNode):
     def transition_frequency(
         self, coupler: str, phase_path: Literal["via_20", "via_02"]
     ) -> float:
-        redis_connection = self.session.redis_connection
+        redis_connection = self.session.redis
         qubit_roles = self.gate_qubit_types_dict()[coupler]
         c_qubit = qubit_roles["control_qubit"]
         t_qubit = qubit_roles["target_qubit"]
@@ -477,7 +455,7 @@ class CouplerNode(BaseNode):
         edges_dict = {
             coupler: self.device.get_edge(coupler) for coupler in self.couplers
         }
-        measurement_class = self.measurement_obj(transmons_dict, edges_dict)
+        measurement_class = self.measurement_cls(transmons_dict, edges_dict)
         schedule = measurement_class.schedule_function(
             **schedule_samplespace, **self.schedule_keywords
         )

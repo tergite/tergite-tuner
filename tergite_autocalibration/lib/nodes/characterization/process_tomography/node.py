@@ -30,8 +30,8 @@ if TYPE_CHECKING:
 
 class ProcessTomographySSRONode(QubitNode):
     name: str = "process_tomography"
-    measurement_obj = ProcessTomographyMeasurement
-    analysis_obj = ProcessTomographyNodeAnalysis
+    measurement_cls = ProcessTomographyMeasurement
+    analysis_cls = ProcessTomographyNodeAnalysis
     coupler_qois = [
         "pop_g",
         "pop_e",
@@ -53,7 +53,7 @@ class ProcessTomographySSRONode(QubitNode):
         self.coupled_qubits = couplers[0].split(sep="_")
         self.qubit_state = 2
         self.testing_group = 0  # The edge group to be tested. 0 means all edges.
-        self.schedule_keywords["redis_connection"] = self.session.redis_connection
+        self.schedule_keywords["redis_connection"] = self.session.redis
         self.schedule_samplespace = {
             "control_ons": {coupler: range(9) for coupler in self.couplers},
             "ramsey_phases": {

@@ -84,14 +84,14 @@ class Motzoi12QubitAnalysis(MotzoiBaseQubitAnalysis):
 
 
 class Motzoi01NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = Motzoi01QubitAnalysis
+    single_qubit_analysis_cls = Motzoi01QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
 
 
 class Motzoi12NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = Motzoi12QubitAnalysis
+    single_qubit_analysis_cls = Motzoi12QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

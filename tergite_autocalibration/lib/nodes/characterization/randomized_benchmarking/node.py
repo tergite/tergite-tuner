@@ -28,9 +28,9 @@ from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
 class RandomizedBenchmarkingNode(QubitNode):
     name: str = "randomized_benchmarking"
-    measurement_obj = RandomizedBenchmarkingMeasurement
-    analysis_obj = RandomizedBenchmarkingNodeAnalysis
-    measurement_type = OuterScheduleNode
+    measurement_cls = RandomizedBenchmarkingMeasurement
+    analysis_cls = RandomizedBenchmarkingNodeAnalysis
+    measurement_type_cls = OuterScheduleNode
     qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):

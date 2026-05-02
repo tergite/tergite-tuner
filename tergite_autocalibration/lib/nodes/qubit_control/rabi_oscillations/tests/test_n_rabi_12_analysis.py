@@ -41,8 +41,7 @@ def test_n_rabi_12(redis_connection, session_context):
         ds_13 = filter_ds_by_element(full_dataset, "q13")
         ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-        analysis = NRabi_12_QubitAnalysis(name, qubit_qois)
-        analysis.redis_connection = redis_connection
+        analysis = NRabi_12_QubitAnalysis(name, qubit_qois, session_context)
         s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
         analysis.magnitudes = np.abs(s21)
         analysis.data_var = "yq13"

@@ -74,9 +74,9 @@ class RamseyFringesBase(QubitNode):
 
 class RamseyFringesNode(RamseyFringesBase):
     name: str = "ramsey_correction"
-    measurement_obj = RamseyDetuningsMeasurement
-    analysis_obj = RamseyDetunings01NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = RamseyDetuningsMeasurement
+    analysis_cls = RamseyDetunings01NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["clock_freqs:f01"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
@@ -93,9 +93,9 @@ class RamseyFringesNode(RamseyFringesBase):
 
 class RamseyFringes12Node(RamseyFringesBase):
     name: str = "ramsey_correction_12"
-    measurement_obj = RamseyDetuningsMeasurement
-    analysis_obj = RamseyDetunings12NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = RamseyDetuningsMeasurement
+    analysis_cls = RamseyDetunings12NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["clock_freqs:f12"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):

@@ -47,9 +47,9 @@ def test_class_attribute_objects(redis_connection, session_context):
         node = CZLocalPhasesNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
         )
-        assert isinstance(node.measurement_obj, type(CZLocalPhasesMeasurement))
-        assert isinstance(node.analysis_obj, type(CZLocalPhasesNodeAnalysis))
-        assert issubclass(node.measurement_type, ScheduleNode)
+        assert isinstance(node.measurement_cls, type(CZLocalPhasesMeasurement))
+        assert isinstance(node.analysis_cls, type(CZLocalPhasesNodeAnalysis))
+        assert issubclass(node.measurement_type_cls, ScheduleNode)
 
 
 def test_dummy_generation(redis_connection, session_context):

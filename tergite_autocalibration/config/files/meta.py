@@ -39,10 +39,10 @@ class _MetaFiles(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    cluster_config: Optional[str] = None
-    device_config: Optional[str] = None
-    spi_config: Optional[str] = None
-    node_config: Optional[str] = None
+    cluster_config: str = "cluster_config.json"
+    device_config: str = "device_config.toml"
+    spi_config: str = "spi_config.toml"
+    node_config: str = "node_config.toml"
 
 
 class MetaConfigFile(BaseModel):
@@ -56,7 +56,7 @@ class MetaConfigFile(BaseModel):
 
     Attributes:
         path_prefix: relative path from this meta file to the directory
-            where the configuration files are stored.
+            where the configuration files are stored. Default: 'configs'
         files: relative paths (under ``path_prefix``) of the named
             configuration files that make up the package.
         misc: extra folders shipped alongside the package, mapping a
@@ -68,9 +68,9 @@ class MetaConfigFile(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    path_prefix: str = ""
+    path_prefix: str = "configs"
     files: _MetaFiles = Field(default_factory=_MetaFiles)
-    misc: Dict[str, str] = Field(default_factory=dict)
+    misc: Dict[str, PathLike[str]] = Field(default_factory=dict)
 
     @classmethod
     def from_toml(cls, file: "PathLike[str]") -> "MetaConfigFile":
@@ -81,6 +81,11 @@ class MetaConfigFile(BaseModel):
 
         Returns:
             the parsed and validated ``MetaConfigFile`` instance
+
+        Raises:
+            TypeError: When file is invalid type
+            TomlDecodeError: Error while decoding toml
+            IOError / FileNotFoundError: When file does not exist
         """
         with open(file, "r", encoding="utf-8") as f:
             data = toml.load(f)

@@ -37,7 +37,7 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
                 self.detuning_coord = coord
                 self.artificial_detunings = self.dataset.coords[coord].values
         redis_key = f"transmons:{self.qubit}"
-        redis_value = self.redis_connection.hget(f"{redis_key}", self.redis_field)
+        redis_value = self.session.redis.hget(f"{redis_key}", self.redis_field)
         self.qubit_frequency = float(redis_value)
 
         model = RamseyModel()
@@ -141,14 +141,14 @@ class RamseyDetunings12QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
 
 
 class RamseyDetunings01NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = RamseyDetunings01QubitAnalysis
+    single_qubit_analysis_cls = RamseyDetunings01QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
 
 
 class RamseyDetunings12NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = RamseyDetunings12QubitAnalysis
+    single_qubit_analysis_cls = RamseyDetunings12QubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

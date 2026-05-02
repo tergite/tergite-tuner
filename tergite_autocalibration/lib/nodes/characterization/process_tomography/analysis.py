@@ -191,7 +191,7 @@ class ProcessTomographyQubitAnalysis(BaseQubitAnalysis):
 
 
 class SingleProcessTomographyNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = ProcessTomographyQubitAnalysis
+    single_qubit_analysis_cls = ProcessTomographyQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

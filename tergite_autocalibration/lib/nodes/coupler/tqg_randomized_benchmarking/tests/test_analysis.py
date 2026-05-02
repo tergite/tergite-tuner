@@ -31,9 +31,7 @@ def test_cz_rb(redis_connection, session_context):
         file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
         dataset = xr.open_dataset(file_path)
 
-        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"])
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
+        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
         qoi = analysis.process_coupler(dataset, "q12_q13")
 
         cz_fidelity = qoi.analysis_result["cz_fidelity"]["value"]
@@ -50,9 +48,7 @@ def test_plotting(redis_connection, session_context):
         file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
         dataset = xr.open_dataset(file_path)
 
-        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"])
-        analysis.config = session_context.config
-        analysis.redis_connection = redis_connection
+        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
 
         figures_dictionary = {}
 

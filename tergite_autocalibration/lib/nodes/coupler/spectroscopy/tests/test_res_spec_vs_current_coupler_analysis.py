@@ -74,9 +74,11 @@ def test_get_crossings_for_q06_q07(
     redis_connection,
 ):
     ds, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
-    a.config = session_context.config
-    a.redis_connection = redis_connection
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        "name",
+        res_coupler_qois,
+        session_context,
+    )
     qoi = a.process_coupler(ds, coupler)
 
     q6_crossings = getCrossingForQubit(qoi, "q06")
@@ -103,9 +105,11 @@ def test_get_crossings_for_q08_q09(
     redis_connection,
 ):
     ds, coupler = setup_q08_q09_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
-    a.config = session_context.config
-    a.redis_connection = redis_connection
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        "name",
+        res_coupler_qois,
+        session_context,
+    )
     qoi = a.process_coupler(ds, coupler)
 
     q8_crossings = getCrossingForQubit(qoi, "q08")
@@ -132,9 +136,11 @@ def test_get_crossings_for_q12_q13(
     redis_connection,
 ):
     ds, coupler = setup_q12_q13_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
-    a.config = session_context.config
-    a.redis_connection = redis_connection
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        "name",
+        res_coupler_qois,
+        session_context,
+    )
     qoi = a.process_coupler(ds, coupler)
 
     q12_crossings = getCrossingForQubit(qoi, "q12")
@@ -161,9 +167,11 @@ def test_get_crossings_for_q14_q15(
     redis_connection,
 ):
     ds, coupler = setup_q14_q15_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
-    a.config = session_context.config
-    a.redis_connection = redis_connection
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        "name",
+        res_coupler_qois,
+        session_context,
+    )
     qoi = a.process_coupler(ds, coupler)
 
     q14_crossings = getCrossingForQubit(qoi, "q14")
@@ -176,9 +184,11 @@ def test_get_crossings_for_q14_q15(
 def test_coupler_plot_is_created(setup_q06_q07_data, session_context, redis_connection):
     matplotlib.use("Agg")
     ds, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis("name", res_coupler_qois)
-    a.config = session_context.config
-    a.redis_connection = redis_connection
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        "name",
+        res_coupler_qois,
+        session_context,
+    )
     a.process_coupler(ds, coupler)
 
     figure_path = os.environ["DATA_DIR"] + "/name.png"

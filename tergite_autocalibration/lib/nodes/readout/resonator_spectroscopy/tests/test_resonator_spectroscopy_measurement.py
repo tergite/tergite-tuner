@@ -29,7 +29,7 @@ def test_measurement_0_type(session_context):
     node_0 = ResonatorSpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node_0.measurement_type, ScheduleNode)
+    assert issubclass(node_0.measurement_type_cls, ScheduleNode)
 
 
 def test_measurement_1_type(session_context):
@@ -37,7 +37,7 @@ def test_measurement_1_type(session_context):
     node_1 = ResonatorSpectroscopy1Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node_1.measurement_type, ScheduleNode)
+    assert issubclass(node_1.measurement_type_cls, ScheduleNode)
 
 
 def test_measurement_2_type(session_context):
@@ -45,7 +45,7 @@ def test_measurement_2_type(session_context):
     node_2 = ResonatorSpectroscopy2Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node_2.measurement_type, ScheduleNode)
+    assert issubclass(node_2.measurement_type_cls, ScheduleNode)
 
 
 def test_dummy_0_generation(session_context):

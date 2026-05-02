@@ -33,9 +33,9 @@ if TYPE_CHECKING:
 
 class ROAmplitudeTwoStateOptimizationNode(QubitNode):
     name: str = "ro_amplitude_two_state_optimization"
-    measurement_obj = ROAmplitudeOptimizationMeasurement
-    analysis_obj = OptimalROTwoStateAmplitudeNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = ROAmplitudeOptimizationMeasurement
+    analysis_cls = OptimalROTwoStateAmplitudeNodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = [
         "measure_2state_opt:pulse_amp",
         "measure_2state_opt:acq_rotation",
@@ -74,11 +74,7 @@ class ROAmplitudeTwoStateOptimizationNode(QubitNode):
         }
 
     def punchout_amplitude(self, qubit: str):
-        return float(
-            self.session.redis_connection.hget(
-                f"transmons:{qubit}", "measure:pulse_amp"
-            )
-        )
+        return float(self.session.redis.hget(f"transmons:{qubit}", "measure:pulse_amp"))
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
@@ -115,9 +111,9 @@ class ROAmplitudeTwoStateOptimizationNode(QubitNode):
 
 class ROAmplitudeThreeStateOptimizationNode(QubitNode):
     name: str = "ro_amplitude_three_state_optimization"
-    measurement_obj = ROAmplitudeOptimizationMeasurement
-    analysis_obj = ROThreeStateAmplitudeNodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = ROAmplitudeOptimizationMeasurement
+    analysis_cls = ROThreeStateAmplitudeNodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = [
         "measure_3state_opt:pulse_amp",
         "centroid_I",
@@ -156,11 +152,7 @@ class ROAmplitudeThreeStateOptimizationNode(QubitNode):
         }
 
     def punchout_amplitude(self, qubit: str):
-        return float(
-            self.session.redis_connection.hget(
-                f"transmons:{qubit}", "measure:pulse_amp"
-            )
-        )
+        return float(self.session.redis.hget(f"transmons:{qubit}", "measure:pulse_amp"))
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
@@ -214,7 +206,7 @@ class ThreeStateDiscriminationNode(ROAmplitudeThreeStateOptimizationNode):
 
     def optimal_3state_amplitude(self, qubit: str):
         return float(
-            self.session.redis_connection.hget(
+            self.session.redis.hget(
                 f"transmons:{qubit}", "measure_3state_opt:pulse_amp"
             )
         )

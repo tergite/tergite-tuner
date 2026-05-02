@@ -32,7 +32,7 @@ def test_measurement_01_type(session_context):
     node_01 = Qubit01SpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node_01.measurement_type, ScheduleNode)
+    assert issubclass(node_01.measurement_type_cls, ScheduleNode)
 
 
 def test_measurement_12_type(session_context):
@@ -40,7 +40,7 @@ def test_measurement_12_type(session_context):
     node_12 = Qubit12SpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node_12.measurement_type, ScheduleNode)
+    assert issubclass(node_12.measurement_type_cls, ScheduleNode)
 
 
 def test_measurement_bring_up_type(session_context):
@@ -48,7 +48,7 @@ def test_measurement_bring_up_type(session_context):
     node_bring_up = Qubit01SpectroscopyAmplitudeNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
-    assert issubclass(node_bring_up.measurement_type, OuterScheduleNode)
+    assert issubclass(node_bring_up.measurement_type_cls, OuterScheduleNode)
 
 
 def test_dummy_01_generation(session_context):

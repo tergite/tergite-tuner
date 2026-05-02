@@ -161,7 +161,7 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
 
     def primary_plotter(self, ax):
         punchout_amplitude = float(
-            self.redis_connection.hget(f"transmons:{self.qubit}", "measure:pulse_amp")
+            self.session.redis.hget(f"transmons:{self.qubit}", "measure:pulse_amp")
         )
         ax.axvline(punchout_amplitude, color="black", label="punchout value")
         ax.set_xlabel("RO amplitude")
@@ -483,7 +483,7 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 
 
 class OptimalROTwoStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = OptimalROTwoStateAmplitudeQubitAnalysis
+    single_qubit_analysis_cls = OptimalROTwoStateAmplitudeQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
@@ -507,7 +507,7 @@ class OptimalROTwoStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
 
 
 class ROThreeStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = ROThreeStateAmplitudeQubitAnalysis
+    single_qubit_analysis_cls = ROThreeStateAmplitudeQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
@@ -724,7 +724,7 @@ class OptimalRO2not2AmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 
 
 class OptimalRO2Not2AmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = OptimalRO2not2AmplitudeQubitAnalysis
+    single_qubit_analysis_cls = OptimalRO2not2AmplitudeQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

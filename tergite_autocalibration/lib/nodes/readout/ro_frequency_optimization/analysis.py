@@ -77,10 +77,10 @@ class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
         """
 
         ro_freq = float(
-            self.redis_connection.hget(f"transmons:{self.qubit}", "clock_freqs:readout")
+            self.session.redis.hget(f"transmons:{self.qubit}", "clock_freqs:readout")
         )
         ro_freq_1 = float(
-            self.redis_connection.hget(
+            self.session.redis.hget(
                 f"transmons:{self.qubit}", "extended_clock_freqs:readout_1"
             )
         )
@@ -158,7 +158,7 @@ class ROFrequencyThreeStateQubitAnalysis(OptimalRO01FrequencyQubitAnalysis):
 
 
 class OptimalRO01FrequencyNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = OptimalRO01FrequencyQubitAnalysis
+    single_qubit_analysis_cls = OptimalRO01FrequencyQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)
@@ -182,7 +182,7 @@ class OptimalRO01FrequencyNodeAnalysis(BaseAllQubitsAnalysis):
 
 
 class ROFrequencyThreeStateNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_obj = ROFrequencyThreeStateQubitAnalysis
+    single_qubit_analysis_cls = ROFrequencyThreeStateQubitAnalysis
 
     def __init__(self, name, redis_fields):
         super().__init__(name, redis_fields)

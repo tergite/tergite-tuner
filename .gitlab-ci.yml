@@ -18,7 +18,7 @@ stages:
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PYTHON_VERSION: "3.12"
-  REDIS_PORT: 6378
+  REDIS_URL: "redis://127.0.0.1:6378/1"
   FF_NETWORK_PER_BUILD: 1
 
 test_lint_build:
@@ -29,7 +29,7 @@ test_lint_build:
     - apt-get update
     - apt-get install redis ffmpeg libsm6 libxext6 -y
     # Run Redis server
-    - redis-server --daemonize yes --port "$REDIS_PORT"
+    - redis-server --daemonize yes --port 6378
     - pip install --upgrade pip
     # Install test dependencies
     - pip install ".[test,dev]"

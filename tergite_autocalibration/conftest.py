@@ -25,49 +25,55 @@ The session is a ``yield`` so the fakeredis client can be flushed
 between sessions if needed in the future.
 """
 
-from pathlib import Path
-
 import fakeredis
 import numpy as np
 import pytest
 
-from tergite_autocalibration.config.load import Configuration, load_configuration
 from tergite_autocalibration.config.session import SessionContext
-from tergite_autocalibration.lib.nodes import NodeEnum
+from tergite_autocalibration.tests.utils.fixtures import get_fixture_path
 from tergite_autocalibration.utils.dto.enums import MeasurementMode
 
-_FIXTURES = Path(__file__).resolve().parent / "tests" / "fixtures"
-_FIXTURE_ENV_PATH = _FIXTURES / "configs" / "env" / "default.env"
-_FIXTURE_META_PATH = (
-    _FIXTURES / "templates" / "default_device_under_test" / "configuration.meta.toml"
+_FIXTURE_ENV_FILE = get_fixture_path("configs", "env", "default.env")
+_FIXTURE_CONFIG_DIR = get_fixture_path(
+    "templates",
+    "default_device_under_test",
 )
 
 
-@pytest.fixture(scope="session")
-def redis_connection():
+@pytest.fixture(autouse=True)
+def redis_connection(monkeypatch):
     """A fakeredis-backed connection used by every test."""
-    conn = fakeredis.FakeRedis(decode_responses=True)
-    yield conn
-    conn.flushall()
+    fake_redis = fakeredis.FakeRedis(decode_responses=True)
+
+    # mock Redis calls to return this connection. ``from_url`` must be
+    # patched first because once ``redis.Redis`` is replaced with a
+    # lambda, attribute lookup for ``from_url`` would fail.
+    monkeypatch.setattr("redis.Redis.from_url", lambda *args, **kwargs: fake_redis)
+    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: fake_redis)
+
+    yield fake_redis
+    fake_redis.flushall()
 
 
-@pytest.fixture(scope="session")
-def configuration() -> Configuration:
-    """The :class:`Configuration` loaded from the bundled fixture meta."""
-    return load_configuration(_FIXTURE_META_PATH)
+@pytest.fixture
+def session_context(redis_connection) -> SessionContext:
+    """A :class:`SessionContext` for the bundled fixture device.
 
+    Function-scoped because it depends on the (function-scoped)
+    ``redis_connection`` fixture; this also keeps the lazy
+    ``session.redis`` cache from leaking a stale fakeredis client
+    across tests.
 
-@pytest.fixture(scope="session")
-def session_context(redis_connection, configuration) -> SessionContext:
-    """A :class:`SessionContext` for the bundled fixture device."""
-    return SessionContext(
-        cluster_mode=MeasurementMode.dummy,
-        cluster_ip=None,
-        target_node=NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
-        qubits=["q00", "q01"],
-        couplers=["q00_q01"],
-        name="no_name_for_this_run_set",
+    Plotting is forced off so that we don't try to spin up a TkAgg
+    matplotlib backend in a headless test environment, and the
+    ``config_dir`` is pointed at the bundled fixture device so
+    ``session.config`` loads the test configuration package.
+    """
+    return SessionContext.from_env(
+        _FIXTURE_ENV_FILE,
         plotting=False,
+        config_dir=_FIXTURE_CONFIG_DIR,
+        cluster_mode=MeasurementMode.dummy,
         user_samplespace={
             "resonator_spectroscopy": {
                 "ro_frequencies": {
@@ -76,6 +82,4 @@ def session_context(redis_connection, configuration) -> SessionContext:
                 }
             },
         },
-        redis_connection=redis_connection,
-        config=configuration,
     )

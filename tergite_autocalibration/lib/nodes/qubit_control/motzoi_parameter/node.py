@@ -32,9 +32,9 @@ rabi = RabiModel()
 
 class MotzoiParameterNode(QubitNode):
     name: str = "motzoi_parameter"
-    measurement_obj = MotzoiParameterMeasurement
-    analysis_obj = Motzoi01NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = MotzoiParameterMeasurement
+    analysis_cls = Motzoi01NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["rxy:motzoi"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
@@ -86,9 +86,9 @@ class MotzoiParameterNode(QubitNode):
 
 class MotzoiParameter12Node(QubitNode):
     name: str = "motzoi_12_parameter"
-    measurement_obj = MotzoiParameterMeasurement
-    analysis_obj = Motzoi12NodeAnalysis
-    measurement_type = ScheduleNode
+    measurement_cls = MotzoiParameterMeasurement
+    analysis_cls = Motzoi12NodeAnalysis
+    measurement_type_cls = ScheduleNode
     qubit_qois = ["r12:ef_motzoi"]
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
