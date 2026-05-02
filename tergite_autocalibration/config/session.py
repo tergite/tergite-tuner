@@ -56,8 +56,8 @@ from tergite_autocalibration.config.files import (
     NodeConfigFile,
     SpiConfigFile,
 )
-from tergite_autocalibration.lib.nodes import NodeEnum
 from tergite_autocalibration.utils.dto.enums import ApplicationStatus, MeasurementMode
+from tergite_autocalibration.utils.dto.node_enum import NodeEnum
 from tergite_autocalibration.utils.logging import logger
 
 
@@ -270,12 +270,14 @@ class SessionContext(BaseModel):
     @field_validator("target_node", mode="before")
     @classmethod
     def cast_target_node(cls, value):
-        """Accept the lower-case node name (e.g. ``'resonator_spectroscopy'``)
-        as well as raw int / :class:`NodeEnum` values."""
+        """Accept the canonical lower-case node name
+        (e.g. ``'resonator_spectroscopy'``) as well as raw
+        :class:`NodeEnum` members. The string form is normalised to
+        lower case so users can write either ``T1`` or ``t1``."""
         if value is None or isinstance(value, NodeEnum):
             return value
         if isinstance(value, str):
-            return NodeEnum.from_string(value)
+            return NodeEnum(value.lower())
         return value
 
     @field_validator("cluster_mode", mode="before")
@@ -297,7 +299,7 @@ class SessionContext(BaseModel):
         if self.config_dir is None:
             self.config_dir = self.root_dir
         if self.name is None and isinstance(self.target_node, NodeEnum):
-            self.name = self.target_node.to_string()
+            self.name = self.target_node.value
         if self.log_dir is None and self.name is not None:
             self.log_dir = os.path.join(
                 self._timestamp.strftime("%Y-%m-%d"),
@@ -317,7 +319,7 @@ class SessionContext(BaseModel):
         """Name of the target node (or ``None`` if unset)."""
         if self.target_node is None:
             return None
-        return self.target_node.to_string()
+        return self.target_node.value
 
     @property
     def redis(self) -> Redis:

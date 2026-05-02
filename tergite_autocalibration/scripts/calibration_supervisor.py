@@ -18,8 +18,9 @@
 # that they have been altered from the originals.
 
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Union
+from typing import FrozenSet, List, Optional, Tuple, Type, Union
 
+import networkx as nx
 from colorama import Fore, Style
 from qblox_instruments import Cluster
 from qblox_instruments.types import ClusterType
@@ -28,8 +29,13 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 
 from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode
-from tergite_autocalibration.lib.utils.graph import filtered_topological_order
-from tergite_autocalibration.lib.utils.node_factory import NodeFactory
+from tergite_autocalibration.lib.nodes import (
+    __NODE_DEPENDENCIES__,
+    __NODE_ENUM_CLS_MAP__,
+)
+from tergite_autocalibration.lib.utils.graph import (
+    get_dependencies_in_topological_order,
+)
 from tergite_autocalibration.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -37,6 +43,7 @@ from tergite_autocalibration.utils.backend.redis_utils import (
     revert_node_parameters,
 )
 from tergite_autocalibration.utils.dto.enums import DataStatus, MeasurementMode
+from tergite_autocalibration.utils.dto.node_enum import NodeEnum
 from tergite_autocalibration.utils.hardware.spi import SpiDAC
 from tergite_autocalibration.utils.io.dataset import create_node_data_path
 from tergite_autocalibration.utils.logging import logger
@@ -223,18 +230,36 @@ def _set_output_attenuations(cluster, connectivity, settings):
 
 class NodeManager:
     """
-    Manages the initialization and inspection of node.
+    Manages the initialization and inspection of nodes.
     """
 
     def __init__(
         self,
         lab_ic: "InstrumentCoordinator",
         session: "SessionContext",
+        node_enum_cls_map: MappingProxyType[
+            NodeEnum, Type[BaseNode]
+        ] = __NODE_ENUM_CLS_MAP__,
+        ignore_nodes: Tuple[NodeEnum, ...] = (NodeEnum.TOF, NodeEnum.PUNCHOUT),
+        node_dependencies: Tuple[
+            Tuple[NodeEnum, NodeEnum], ...
+        ] = __NODE_DEPENDENCIES__,
     ) -> None:
         self.session = session
-        self.node_factory = NodeFactory()
         self.lab_ic = lab_ic
         self.spi_manager: Optional[SpiDAC] = None
+
+        self.node_enum_cls_map = node_enum_cls_map
+        self.ignore_nodes = ignore_nodes
+        self.node_dependencies = node_dependencies
+
+        # Build the calibration DAG from the dependency edges
+        # excluding any given nodes of choice
+        self.node_graph: "nx.DiGraph" = nx.DiGraph()
+        self.node_graph.add_edges_from(self.node_dependencies)
+        for member in self.node_enum_cls_map:
+            if member not in self.node_graph:
+                self.node_graph.add_node(member)
 
         populate_initial_parameters(
             self.session.qubits,
@@ -243,16 +268,23 @@ class NodeManager:
             self.session.config,
         )
 
-    @staticmethod
-    def topo_order(target_node: str):
-        return filtered_topological_order(target_node)
+    def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
+        """Return ``target_node``'s ancestors in topological order plus itself."""
+        order = get_dependencies_in_topological_order(
+            self.node_graph,
+            target_node,
+            exclude_nodes=self.ignore_nodes,
+        )
+        return order + [target_node]
 
-    def inspect_node(self, node_name: str, *, ignore_spec: bool = False):
+    def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False):
+        node_cls = self.node_enum_cls_map[node]
+        node_name = node.value
         logger.info(f"Inspecting node {node_name}")
 
         populate_quantities_of_interest(
+            node_cls,
             node_name,
-            self.node_factory,
             self.session.qubits,
             self.session.couplers,
             self.session.redis,
@@ -263,7 +295,7 @@ class NodeManager:
             status = DataStatus.out_of_spec
             logger.info(f"Ignoring calibration status for {node_name}")
         else:
-            status: "DataStatus" = self._check_calibration_status_redis(node_name)
+            status = self._check_calibration_status_redis(node)
 
         populate_node_parameters(
             node_name,
@@ -285,18 +317,20 @@ class NodeManager:
             )
 
             # Initialize node and update samplespace
-            node = self._initialize_node(node_name)
-            logger.info(f"Calibrating node {node.name}")
+            calibration_node = self._initialize_node(node)
+            logger.info(f"Calibrating node {calibration_node.name}")
 
             # Determine the data path for calibration
             data_path = (
                 self.session.log_dir
                 if self.session.cluster_mode == MeasurementMode.re_analyse
-                else create_node_data_path(self.session, node_name=node.name)
+                else create_node_data_path(
+                    self.session, node_name=calibration_node.name
+                )
             )
 
             # Perform calibration
-            node.calibrate(data_path, self.session.cluster_mode)
+            calibration_node.calibrate(data_path, self.session.cluster_mode)
 
         revert_node_parameters(
             node_name,
@@ -305,42 +339,42 @@ class NodeManager:
             self.session.config,
         )
 
-    def _initialize_node(self, node_name: str) -> BaseNode:
+    def _initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
-        elements = {"qubits": self.session.qubits, "couplers": self.session.couplers}
-        node = self.node_factory.create_node(
-            node_name,
-            self.session.qubits,
+        node_cls = self.node_enum_cls_map[node]
+        node_obj = node_cls(
+            all_qubits=self.session.qubits,
             couplers=self.session.couplers,
             session=self.session,
         )
 
         # Update node samplespace
-        if node.name in self.session.user_samplespace:
-            logger.info(f"Using user_samplespace for {node.name}")
-            self.update_to_user_samplespace(node, self.session.user_samplespace)
+        if node_obj.name in self.session.user_samplespace:
+            logger.info(f"Using user_samplespace for {node_obj.name}")
+            self.update_to_user_samplespace(node_obj, self.session.user_samplespace)
 
-        # Since the node is respomsible for compiling its schedule
+        # Since the node is responsible for compiling its schedule
         # it needs access to the instrument_coordinator
-        node.lab_instr_coordinator = self.lab_ic
+        node_obj.lab_instr_coordinator = self.lab_ic
 
         # nodes operating on couplers require access the SPI DACs
-        node.spi_manager = self.spi_manager
+        node_obj.spi_manager = self.spi_manager
 
         # Log initialization details
         logger.info(
             f"Initializing parameters for qubits: {self.session.qubits} "
             f"and couplers: {self.session.couplers}"
         )
-        return node
+        return node_obj
 
-    def _check_calibration_status_redis(self, node_name: str) -> DataStatus:
-        """Queries Redis for the calibration status of each qubit or coupler associated with the node,
-        determining if the node is within or out of specification."""
-        node = self.node_factory.get_node_class(node_name)
+    def _check_calibration_status_redis(self, node: NodeEnum) -> DataStatus:
+        """Queries Redis for the calibration status of each qubit or coupler
+        associated with ``node``, determining if it is in or out of specification."""
+        node_cls = self.node_enum_cls_map[node]
+        node_name = node.value
         elements = (
             self.session.couplers
-            if issubclass(node, CouplerNode)
+            if issubclass(node_cls, CouplerNode)
             else self.session.qubits
         )
         for element in elements:
@@ -373,29 +407,36 @@ class CalibrationSupervisor:
         self.hardware_manager = HardwareManager(config=config)
         self.lab_ic = self.hardware_manager.get_instrument_coordinator()
         self.node_manager = NodeManager(self.lab_ic, session=config)
-        self.topo_order = self.node_manager.topo_order(self.config.target_node_name)
+        self.topo_order: List[NodeEnum] = self.node_manager.topo_order(
+            self.config.target_node
+        )
         logger.info("Node Manager is initialized")
 
-    def calibrate_system(self, node_name: str | None = None, ignore_spec: bool = False):
+    def calibrate_system(
+        self, node: Optional[NodeEnum] = None, ignore_spec: bool = False
+    ):
         cz_chain = [
-            "cz_parametrization",
-            "cz_chevron",
-            "cz_calibration",
-            "cz_local_phases",
-            "cz_rb",
+            NodeEnum.CZ_PARAMETRIZATION,
+            NodeEnum.CZ_CHEVRON,
+            NodeEnum.CZ_CALIBRATION,
+            NodeEnum.CZ_LOCAL_PHASES,
+            NodeEnum.CZ_RB,
         ]
-        is_cz_calibration = self.config.target_node_name in cz_chain
+        is_cz_calibration = self.config.target_node in cz_chain
         if is_cz_calibration:
-            for index, node in enumerate(self.topo_order):
-                if node in cz_chain:
-                    self.topo_order.insert(index, "three_state_discrimination")
+            for index, ordered_node in enumerate(self.topo_order):
+                if ordered_node in cz_chain:
+                    self.topo_order.insert(index, NodeEnum.THREE_STATE_DISCRIMINATION)
                     break
 
         logger.info("Starting System Calibration")
         number_of_qubits = len(self.config.qubits)
 
-        calibration_nodes = self.topo_order if node_name is None else [node_name]
-        draw_arrow_chart(f"Qubits: {number_of_qubits}", calibration_nodes)
+        calibration_nodes = self.topo_order if node is None else [node]
+        draw_arrow_chart(
+            f"Qubits: {number_of_qubits}",
+            [n.value for n in calibration_nodes],
+        )
 
         # The node manager provides every node with access to the DACS
         self.node_manager.spi_manager = self.hardware_manager.create_spi(
@@ -404,12 +445,12 @@ class CalibrationSupervisor:
         self.node_manager.spi_manager.set_initial_parking_currents(self.config.couplers)
 
         for calibration_node in calibration_nodes:
-            if calibration_node == "three_state_discrimination":
+            if calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION:
                 ignore_spec = True
             else:
                 ignore_spec = False
             self.node_manager.inspect_node(calibration_node, ignore_spec=ignore_spec)
-            logger.info(f"{calibration_node} node is completed")
+            logger.info(f"{calibration_node.value} node is completed")
 
     def rerun_analysis(self):
         """
@@ -420,7 +461,7 @@ class CalibrationSupervisor:
                 f"Wrong mode for re-analysis: '{self.config.cluster_mode}', should be: {MeasurementMode.re_analyse}"
             )
 
-        target_node = self.config.target_node_name
+        target_node = self.config.target_node
         node = self.node_manager._initialize_node(target_node)
         logger.status(
             f"Analysing '{self.config.target_node_name}' with {node.analysis_cls.__name__}"

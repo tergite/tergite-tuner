@@ -13,10 +13,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
-from tergite_autocalibration.lib.base.node import CouplerNode, QubitNode
-from tergite_autocalibration.lib.utils.node_factory import NodeFactory
+from tergite_autocalibration.lib.base.node import BaseNode, CouplerNode, QubitNode
 from tergite_autocalibration.utils.logging import logger
 
 if TYPE_CHECKING:
@@ -140,8 +139,8 @@ def revert_node_parameters(
 
 
 def populate_quantities_of_interest(
+    node_cls: Type[BaseNode],
     node_name: str,
-    node_factory: "NodeFactory",
     qubits: list[str],
     couplers: list[str],
     redis_connection,
@@ -149,9 +148,8 @@ def populate_quantities_of_interest(
     # Populate the Redis database with the quantities of interest, at Nan value
     # Only if the key does NOT already exist
     # Thuis code should be moved to the specific classes
-    node = node_factory.get_node_class(node_name)
-    if issubclass(node, QubitNode):
-        qubit_qois = node.qubit_qois
+    if issubclass(node_cls, QubitNode):
+        qubit_qois = node_cls.qubit_qois
         if qubit_qois is None:
             logger.warning(f"No qois for node {node_name}")
             return
@@ -173,8 +171,8 @@ def populate_quantities_of_interest(
             if not redis_connection.hexists(calibration_supervisor_key, node_name):
                 redis_connection.hset(f"cs:{qubit}", node_name, "not_calibrated")
 
-    elif issubclass(node, CouplerNode):
-        coupler_qois = node.coupler_qois
+    elif issubclass(node_cls, CouplerNode):
+        coupler_qois = node_cls.coupler_qois
         if coupler_qois is not None:
             for coupler in couplers:
                 redis_key = f"couplers:{coupler}"
@@ -189,7 +187,7 @@ def populate_quantities_of_interest(
 
     else:
         raise ValueError(
-            f"Node {node_name} with base type {node} is not a valid Qubit or Coupler node. Cannot populate quantities of interest."
+            f"Node {node_name} with base type {node_cls} is not a valid Qubit or Coupler node. Cannot populate quantities of interest."
         )
 
 

@@ -65,7 +65,9 @@ def test_dependencies_simple_graph(simple_graph):
     """
     Simple linear normal case
     """
-    topological_order = get_dependencies_in_topological_order(simple_graph, "D")
+    topological_order = get_dependencies_in_topological_order(
+        simple_graph, "D", exclude_nodes=()
+    )
 
     assert topological_order == ["A", "B", "C"]
 
@@ -74,7 +76,9 @@ def test_dependencies_complex_graph(complex_graph):
     """
     Normal case with normal dependencies within the graph
     """
-    topological_order = get_dependencies_in_topological_order(complex_graph, "I")
+    topological_order = get_dependencies_in_topological_order(
+        complex_graph, "I", exclude_nodes=()
+    )
 
     # Check whether all dependencies are in
     for node in nx.ancestors(complex_graph, "I"):
@@ -93,7 +97,9 @@ def test_dependencies_single_node():
     graph = nx.DiGraph()
     graph.add_node("X")
 
-    topological_order = get_dependencies_in_topological_order(graph, "X")
+    topological_order = get_dependencies_in_topological_order(
+        graph, "X", exclude_nodes=()
+    )
 
     assert topological_order == []
 
@@ -103,7 +109,7 @@ def test_range_dependencies_simple_graph(simple_graph):
     Normal case with simple graph
     """
     topological_order = range_dependencies_in_topological_order(
-        simple_graph, ["B"], "D"
+        simple_graph, ["B"], "D", exclude_nodes=()
     )
 
     assert topological_order == ["B", "C"]
@@ -114,7 +120,7 @@ def test_range_dependencies_complex_graph(complex_graph):
     Normal case with complex graph
     """
     topological_order = range_dependencies_in_topological_order(
-        complex_graph, ["F"], "I"
+        complex_graph, ["F"], "I", exclude_nodes=()
     )
 
     assert len(topological_order) == 3
@@ -128,7 +134,7 @@ def test_range_dependencies_complex_graph_multi_node(complex_graph):
     Normal case with complex graph with multiple nodes
     """
     topological_order = range_dependencies_in_topological_order(
-        complex_graph, ["F", "C"], "I"
+        complex_graph, ["F", "C"], "I", exclude_nodes=()
     )
 
     assert len(topological_order) == 5
@@ -137,3 +143,40 @@ def test_range_dependencies_complex_graph_multi_node(complex_graph):
     assert "H" in topological_order
     assert "C" in topological_order
     assert "E" in topological_order
+
+
+def test_dependencies_with_exclude_nodes(complex_graph):
+    """A single excluded node disappears from the topological order; the
+    rest of the ancestors are still returned."""
+    topological_order = get_dependencies_in_topological_order(
+        complex_graph, "I", exclude_nodes=["F"]
+    )
+
+    assert "F" not in topological_order
+    # All other ancestors of I remain
+    assert set(topological_order) == {"A", "B", "C", "E", "G", "H"}
+
+
+def test_dependencies_with_multiple_exclude_nodes(complex_graph):
+    """Multiple excluded nodes simultaneously drop out of the result."""
+    topological_order = get_dependencies_in_topological_order(
+        complex_graph, "I", exclude_nodes=("F", "G", "H")
+    )
+
+    assert set(topological_order).isdisjoint({"F", "G", "H"})
+    # The C → E branch is the only remaining path
+    assert set(topological_order) == {"A", "B", "C", "E"}
+
+
+def test_range_dependencies_with_exclude_nodes(complex_graph):
+    """``range_dependencies_in_topological_order`` honours ``exclude_nodes`` too."""
+    # F's direct ancestors normally include A and B. Excluding B keeps F in
+    # the result (it's a from-node) but drops B from the topological list.
+    topological_order = range_dependencies_in_topological_order(
+        complex_graph, ["F"], "I", exclude_nodes=["B"]
+    )
+
+    assert "B" not in topological_order
+    assert "F" in topological_order
+    assert "G" in topological_order
+    assert "H" in topological_order

@@ -42,7 +42,7 @@ class T2Node(QubitNode):
     and T2NodeAnalysis for analysis.
     """
 
-    name: str = "T2"
+    name: str = "t2"
     measurement_cls = T2Measurement
     analysis_cls = T2NodeAnalysis
     measurement_type_cls = ExternalParameterNode
@@ -94,7 +94,7 @@ class T2EchoNode(QubitNode):
     and T2EchoNodeAnalysis for analysis.
     """
 
-    name: str = "T2_echo"
+    name: str = "t2_echo"
     measurement_cls = T2EchoMeasurement
     analysis_cls = T2EchoNodeAnalysis
     measurement_type_cls = ExternalParameterNode

@@ -9,19 +9,17 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-import os
 
-import numpy as np
 from qblox_instruments import Cluster
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
-from tergite_autocalibration.config.session import SessionContext
 from tergite_autocalibration.scripts.calibration_supervisor import (
     CalibrationSupervisor,
     HardwareManager,
     NodeManager,
 )
 from tergite_autocalibration.utils.dto.enums import MeasurementMode
+from tergite_autocalibration.utils.dto.node_enum import NodeEnum
 
 
 def test_instantiate_calibration_config(session_context):
@@ -53,15 +51,15 @@ def test_instantiate_calibration_supervisor(session_context, redis_connection):
     assert calib_sup.config == session_context
     assert isinstance(calib_sup.topo_order, list)
     assert tuple(calib_sup.topo_order) == (
-        "resonator_spectroscopy",
-        "qubit_01_spectroscopy",
-        "rabi_oscillations",
-        "ramsey_correction",
-        "motzoi_parameter",
-        "n_rabi_oscillations",
-        "resonator_spectroscopy_1",
-        "ro_frequency_two_state_optimization",
-        "ro_amplitude_two_state_optimization",
+        NodeEnum.RESONATOR_SPECTROSCOPY,
+        NodeEnum.QUBIT_01_SPECTROSCOPY,
+        NodeEnum.RABI_OSCILLATIONS,
+        NodeEnum.RAMSEY_CORRECTION,
+        NodeEnum.MOTZOI_PARAMETER,
+        NodeEnum.N_RABI_OSCILLATIONS,
+        NodeEnum.RESONATOR_SPECTROSCOPY_1,
+        NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
+        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
     )
 
 

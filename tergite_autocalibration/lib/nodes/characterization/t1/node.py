@@ -39,7 +39,7 @@ class T1Node(QubitNode):
     and T1NodeAnalysis for analysis.
     """
 
-    name: str = "T1"
+    name: str = "t1"
     measurement_cls = T1Measurement
     analysis_cls = T1NodeAnalysis
     measurement_type_cls = ExternalParameterNode

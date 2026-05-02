@@ -19,12 +19,14 @@ from tergite_autocalibration.lib.nodes.characterization.all_xy.analysis import (
 from tergite_autocalibration.lib.nodes.characterization.all_xy.measurement import (
     AllXYMeasurement,
 )
+from tergite_autocalibration.lib.nodes.schedule_node import OuterScheduleNode
 
 
 class AllXYNode(QubitNode):
     name: str = "all_xy"
     measurement_cls = AllXYMeasurement
     analysis_cls = AllXYAnalysis
+    measurement_type_cls = OuterScheduleNode
 
     def __init__(self, all_qubits: list[str], **schedule_keywords):
         super().__init__(all_qubits, **schedule_keywords)

@@ -6,7 +6,7 @@
       "resonator_spectroscopy": "calibrated",
       "qubit_01_spectroscopy": "calibrated",
       "rabi_oscillations": "calibrated",
-      "T1": "calibrated",
+      "t1": "calibrated",
       "ramsey_correction": "calibrated",
       "motzoi_parameter": "calibrated",
       "n_rabi_oscillations": "calibrated",
@@ -22,8 +22,8 @@
       "randomized_benchmarking_ssro": "calibrated",
       "ro_frequency_two_state_optimization": "calibrated",
       "ro_amplitude_two_state_optimization": "calibrated",
-      "T2_echo": "calibrated",
-      "T2": "calibrated",
+      "t2_echo": "calibrated",
+      "t2": "calibrated",
       "purity_benchmarking": "not_calibrated"
     }
   },
@@ -141,7 +141,7 @@
       "resonator_spectroscopy": "calibrated",
       "qubit_01_spectroscopy": "calibrated",
       "rabi_oscillations": "calibrated",
-      "T1": "calibrated",
+      "t1": "calibrated",
       "ramsey_correction": "calibrated",
       "motzoi_parameter": "calibrated",
       "n_rabi_oscillations": "calibrated",
@@ -157,8 +157,8 @@
       "randomized_benchmarking_ssro": "calibrated",
       "ro_frequency_two_state_optimization": "calibrated",
       "ro_amplitude_two_state_optimization": "calibrated",
-      "T2_echo": "calibrated",
-      "T2": "calibrated",
+      "t2_echo": "calibrated",
+      "t2": "calibrated",
       "purity_benchmarking": "not_calibrated"
     }
   },

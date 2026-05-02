@@ -11,7 +11,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from tergite_autocalibration.lib.utils.node_factory import NodeFactory
+from tergite_autocalibration.lib.nodes import __NODE_STR_CLS_MAP__
 from tergite_autocalibration.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -103,27 +103,25 @@ def test_revert_node_parameters(redis_connection, session_context):
 
 def test_populate_quantities_of_interest(redis_connection):
     """
-    Iterate over all nodes in the factory and check whether they correctly push qois to redis
+    Iterate over every registered node and check whether it correctly
+    pushes its QOI placeholders to redis.
     """
 
     redis_connection.flushall()
     assert not redis_connection.keys()
 
-    node_factory = NodeFactory()
-    for node_name in node_factory.all_node_names():
+    for node_name, node_cls in __NODE_STR_CLS_MAP__.items():
         redis_connection.flushall()
         assert not redis_connection.keys()
 
         populate_quantities_of_interest(
-            node_name, node_factory, ["q00", "q01"], ["q00_q01"], redis_connection
+            node_cls, node_name, ["q00", "q01"], ["q00_q01"], redis_connection
         )
 
-        node_cls = node_factory.get_node_class(node_name)
-
-        if hasattr(node_cls, "qubit_qois"):
+        if hasattr(node_cls, "qubit_qois") and node_cls.qubit_qois is not None:
             for qubit_qoi in node_cls.qubit_qois:
                 assert redis_connection.hexists("transmons:q00", qubit_qoi)
 
-        if hasattr(node_cls, "coupler_qois"):
+        if hasattr(node_cls, "coupler_qois") and node_cls.coupler_qois is not None:
             for coupler_qoi in node_cls.coupler_qois:
                 assert redis_connection.hexists("couplers:q00_q01", coupler_qoi)

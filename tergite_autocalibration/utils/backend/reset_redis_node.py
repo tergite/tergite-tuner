@@ -14,32 +14,27 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from pathlib import Path
 from typing import List
 
-from tergite_autocalibration.lib.utils.node_factory import NodeFactory
+from tergite_autocalibration.lib.nodes import __NODE_STR_CLS_MAP__
 from tergite_autocalibration.utils.logging import logger
-from tergite_autocalibration.utils.misc.reflections import (
-    find_inheriting_classes_ast_recursive,
-    get_class_attributes,
-)
 
 
 def reset_all_redis_nodes(
     qubits: List[str], couplers: List[str], redis_connection
 ) -> None:
     """
-    Wraps :func:`reset_redis_nodes` and resets all nodes that have an entry
-    in the factory.
+    Wraps :func:`reset_redis_nodes` and resets every node in the
+    canonical :data:`__NODE_STR_CLS_MAP__`.
 
     Args:
         qubits: list of qubit identifiers (e.g. ``["q00", "q01"]``) to reset.
         couplers: list of coupler identifiers (e.g. ``["q00_q01"]``) to reset.
         redis_connection: redis client to write to.
     """
-    node_factory = NodeFactory()
-    node_names = node_factory.all_node_names()
-    reset_redis_nodes(qubits, couplers, node_names, redis_connection)
+    reset_redis_nodes(
+        qubits, couplers, list(__NODE_STR_CLS_MAP__.keys()), redis_connection
+    )
 
 
 def reset_redis_nodes(
@@ -55,27 +50,17 @@ def reset_redis_nodes(
         qubits: list of qubit identifiers (e.g. ``["q00", "q01"]``) to reset.
         couplers: list of coupler identifiers (e.g. ``["q00_q01"]``) to reset.
         node_names: names of nodes whose qois should be reset to ``"nan"``.
-
+        redis_connection: redis client to write to.
     """
-    node_factory = NodeFactory()
-
-    node_implementation_paths = find_inheriting_classes_ast_recursive(
-        Path(__file__).parent.parent.parent / "lib" / "nodes"
-    )
-
     for node_name in node_names:
-        node_cls_name = node_factory.node_name_mapping[node_name]
-        node_implementation_path = node_implementation_paths[node_cls_name]
-
-        node_cls_attributes = get_class_attributes(
-            node_implementation_path, node_cls_name
-        )
+        node_cls = __NODE_STR_CLS_MAP__[node_name]
 
         logger.status(f"Resetting node: {node_name}")
-        if "qubit_qois" in node_cls_attributes.keys():
+        qubit_qois = getattr(node_cls, "qubit_qois", None)
+        if qubit_qois:
             for qubit in qubits:
                 redis_prefix_ = f"transmons:{qubit}"
-                for qoi in node_cls_attributes["qubit_qois"]:
+                for qoi in qubit_qois:
                     redis_connection.hset(redis_prefix_, qoi, "nan")
                     if "motzoi" in qoi:
                         redis_connection.hset(redis_prefix_, qoi, "0")
@@ -84,9 +69,11 @@ def reset_redis_nodes(
                     if "measure_2state_opt:pulse_amp" in qoi:
                         redis_connection.hset(redis_prefix_, qoi, "0")
                 redis_connection.hset(f"cs:{qubit}", node_name, "not_calibrated")
-        if "coupler_qois" in node_cls_attributes.keys():
+
+        coupler_qois = getattr(node_cls, "coupler_qois", None)
+        if coupler_qois:
             for coupler in couplers:
                 redis_prefix_ = f"couplers:{coupler}"
-                for coupler_qoi in node_cls_attributes["coupler_qois"]:
+                for coupler_qoi in coupler_qois:
                     redis_connection.hset(redis_prefix_, coupler_qoi, "nan")
                 redis_connection.hset(f"cs:{coupler}", node_name, "not_calibrated")

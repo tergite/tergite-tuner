@@ -5,7 +5,7 @@
 # (C) Copyright Amr Osman 2024
 # (C) Copyright Joel Sandås 2024
 # (C) Copyright Michele Faucci Giannelli 2024
-# (C) Copyright Chalmers Next Labs 2025
+# (C) Copyright Chalmers Next Labs 2025, 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -15,130 +15,79 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import List, Optional, Union
+"""DAG utilities for the calibration supervisor.
+
+These helpers operate on any node identifier — qubit name, ``NodeEnum``
+member, etc. — via a generic ``_T`` type variable. Concrete graphs,
+``exclude_nodes`` sets, and ``from_nodes`` ranges are constructed by
+the caller (typically the supervisor's :class:`NodeManager`).
+"""
+
+from typing import Iterable, List, TypeVar
 
 import networkx as nx
 
-from tergite_autocalibration.utils.logging import logger
-
-# IMPORTANT: If you update the node graph, please make sure to also update the documentation under
-#            docs_editable/available_nodes.qmd
-
-# These are the dependencies to construct the calibration graph from.
-# The graph is a directed acyclic graph (DAG).
-
-# Dependencies: n1 -> n2. For example:
-# ('tof','resonator_spectroscopy')
-# means 'resonator_spectroscopy' depends on 'tof'.
-GRAPH_DEPENDENCIES = [
-    ("tof", "resonator_spectroscopy"),
-    ("resonator_spectroscopy", "resonator_spectroscopy_vs_current"),
-    ("qubit_01_spectroscopy", "coupler_anticrossing"),
-    ("resonator_spectroscopy", "qubit_bring_up_spectroscopy"),
-    ("resonator_spectroscopy", "qubit_01_spectroscopy"),
-    ("resonator_spectroscopy_vs_current", "qubit_spectroscopy_vs_current"),
-    ("qubit_01_spectroscopy", "rabi_oscillations"),
-    ("rabi_oscillations", "ramsey_correction"),
-    ("ramsey_correction", "T1"),
-    ("ramsey_correction", "motzoi_parameter"),
-    ("motzoi_parameter", "n_rabi_oscillations"),
-    ("n_rabi_oscillations", "resonator_spectroscopy_1"),
-    ("resonator_spectroscopy_1", "ro_frequency_two_state_optimization"),
-    ("ro_frequency_two_state_optimization", "ro_amplitude_two_state_optimization"),
-    ("n_rabi_oscillations", "all_XY"),
-    ("resonator_spectroscopy_1", "qubit_12_spectroscopy"),
-    ("qubit_12_spectroscopy", "rabi_oscillations_12"),
-    ("rabi_oscillations_12", "ramsey_correction_12"),
-    ("ramsey_correction_12", "motzoi_12_parameter"),
-    ("motzoi_12_parameter", "n_rabi_12_oscillations"),
-    ("n_rabi_12_oscillations", "resonator_spectroscopy_2"),
-    ("resonator_spectroscopy_2", "ro_frequency_three_state_optimization"),
-    ("ro_frequency_three_state_optimization", "ro_amplitude_three_state_optimization"),
-    ("ro_frequency_three_state_optimization", "three_state_discrimination"),
-    ("ro_amplitude_three_state_optimization", "cz_parametrization"),
-    ("T1", "T2"),
-    ("T2", "T2_echo"),
-    ("ro_amplitude_three_state_optimization", "randomized_benchmarking"),
-    ("T2_echo", "purity_benchmarking"),
-    ("cz_parametrization", "cz_chevron"),
-    ("cz_chevron", "cz_calibration"),
-    ("cz_calibration", "cz_local_phases"),
-    ("cz_local_phases", "cz_rb"),
-    ("ro_amplitude_three_state_optimization", "process_tomography_ssro"),
-]
-
-# Construct the calibration graph from its dependencies
-CALIBRATION_GRAPH = nx.DiGraph()
-CALIBRATION_GRAPH.add_edges_from(GRAPH_DEPENDENCIES)
-
-# Add nodes that do not have any dependencies
-CALIBRATION_GRAPH.add_node("tof")
-CALIBRATION_GRAPH.add_node("punchout")
-CALIBRATION_GRAPH.add_node("resonator_relaxation")
-
-# These nodes will be excluded by default from the graph as their measurements are standalone
-EXCLUDED_NODES = ["tof", "punchout"]
+_T = TypeVar("_T")
 
 
 def get_dependencies_in_topological_order(
-    graph: "nx.DiGraph", target_node: str, exclude_nodes: Optional[List[str]] = None
-) -> List[str]:
-    """
-    Get dependencies of a graph in topological order.
-    This implementation takes into account that there might be parallel dependencies.
-    The dependency information from excluded nodes will be respected.
+    graph: "nx.DiGraph",
+    target_node: _T,
+    exclude_nodes: Iterable[_T],
+) -> List[_T]:
+    """Return the ancestors of ``target_node`` in topological order.
+
+    The implementation tolerates parallel dependencies: if two ancestors
+    sit at the same level it does not matter which appears first as
+    long as their own ancestors precede them.
 
     Args:
-        graph: Graph to get dependencies from.
-        target_node: Target node to request dependencies from.
-        exclude_nodes: Nodes that should be excluded from the dependency search.
+        graph: The directed acyclic dependency graph.
+        target_node: The node whose ancestors should be returned.
+        exclude_nodes: Nodes to ignore — both as themselves and as the
+            ancestors that connect through them. Must be iterable; pass
+            an empty collection to disable filtering.
 
     Returns:
-        List[str]: A list of nodes in topological order.
+        Ancestors of ``target_node`` in dependency order.
+        ``target_node`` itself is **not** included.
 
+    Raises:
+        RuntimeError: if a topological order cannot be determined (e.g.
+            because the graph contains a cycle reachable from
+            ``target_node``).
     """
 
-    # Helper function to filter ancestors and exclude nodes
-    if exclude_nodes is None:
-        exclude_nodes = EXCLUDED_NODES
+    exclude_set = set(exclude_nodes)
 
     def filter_ancestors(graph_, target_, exclude_):
-        return set(nx.ancestors(graph_, target_)).difference(set(exclude_))
+        return set(nx.ancestors(graph_, target_)).difference(exclude_)
 
-    # These are all nodes in the final result, but not ordered yet
-    nodes_to_visit = filter_ancestors(graph, target_node, exclude_nodes)
+    # All nodes that will appear in the final result, but not yet ordered
+    nodes_to_visit = filter_ancestors(graph, target_node, exclude_set)
 
-    # We collect the dependencies for each node in the list of ancestors for the target
-    ancestors = {}
-    for node_to_visit in nodes_to_visit:
-        ancestors[node_to_visit] = filter_ancestors(graph, node_to_visit, exclude_nodes)
+    # Pre-compute per-node ancestor sets so the inner loop is cheap
+    ancestors = {
+        node: filter_ancestors(graph, node, exclude_set) for node in nodes_to_visit
+    }
 
-    # The final result is a list in topological order that reflects dependencies
-    topological_order = []
+    topological_order: List[_T] = []
     exit_condition = len(nodes_to_visit)
-    while len(nodes_to_visit) > 0:
-        # We take a copy of the nodes to visit, because otherwise the loop below would throw an error
+    while nodes_to_visit:
         to_visit_copy = nodes_to_visit.copy()
 
-        # We iterate over all nodes that are not in the final result yet
-        for node_to_visit in nodes_to_visit:
-            # If all ancestors of the node are included in the result, we add it to the list
-            # The base case and first node to be added is a node without any dependencies
-            if ancestors[node_to_visit].issubset(set(topological_order)):
-                # If we found a node, we add it to the result
-                topological_order.append(node_to_visit)
-                # And we remove it from the temporary set of nodes to visit
-                to_visit_copy.remove(node_to_visit)
+        for node in nodes_to_visit:
+            if ancestors[node].issubset(set(topological_order)):
+                topological_order.append(node)
+                to_visit_copy.remove(node)
 
-        # We update the nodes to visit and iterate again in the while loop until it is empty
         nodes_to_visit = to_visit_copy
 
-        # This is to ensure that the loop is not running forever if it is impossible to find the dependencies
         exit_condition -= 1
         if exit_condition < 0:
             raise RuntimeError(
-                f"Dependencies for node {target_node} in the given graph cannot be found."
-                f"Please check the dependency graph."
+                f"Dependencies for node {target_node} in the given graph cannot be "
+                f"found. Please check the dependency graph."
             )
 
     return topological_order
@@ -146,63 +95,33 @@ def get_dependencies_in_topological_order(
 
 def range_dependencies_in_topological_order(
     graph: "nx.DiGraph",
-    from_nodes: List[str],
-    target_node: str,
-    exclude_nodes: Optional[List[str]] = None,
-) -> List[str]:
-    """
-    Get a subset of the graph in topological order.
+    from_nodes: Iterable[_T],
+    target_node: _T,
+    exclude_nodes: Iterable[_T],
+) -> List[_T]:
+    """Return the topologically-ordered subset spanning ``from_nodes`` to ``target_node``.
 
     Args:
-        graph: Graph to get dependencies from.
-        from_nodes: Nodes to start from.
-        target_node: End range node.
-        exclude_nodes: Nodes that should be excluded from the dependency search.
+        graph: The directed acyclic dependency graph.
+        from_nodes: Starting nodes; only ancestors that are descendants
+            of any of these are kept.
+        target_node: The terminal node.
+        exclude_nodes: Nodes to ignore. Must be iterable; pass an empty
+            collection to disable filtering.
 
     Returns:
-        List[str]: A topologically ordered subset of the all nodes including from_nodes.
-
+        Ancestors of ``target_node`` that are also reachable from
+        ``from_nodes``, in dependency order.
     """
-    if exclude_nodes is None:
-        exclude_nodes = []
 
-    # Topological order to target_node
+    from_set = set(from_nodes)
+
     topological_order = get_dependencies_in_topological_order(
-        graph, target_node, exclude_nodes=exclude_nodes
+        graph, target_node, exclude_nodes
     )
 
-    # All predecessors from from_node
-    back_range = set(from_nodes)
-    for from_node in from_nodes:
+    back_range = set(from_set)
+    for from_node in from_set:
         back_range = back_range.union(set(nx.descendants(graph, from_node)))
 
-    # Filter the topologically sorted list by all predecessors
     return list(filter(lambda node: node in back_range, topological_order))
-
-
-def filtered_topological_order(
-    target_node: str, from_nodes: Optional[Union[str, List[str]]] = None
-) -> List[str]:
-    """
-    Get the graph in topological order.
-
-    Args:
-        target_node: Target node to end at.
-        from_nodes: Option to define a range in between.
-
-    Returns:
-        List[str]: Topological order of nodes including target node
-
-    """
-    logger.info("Targeting node: " + target_node)
-
-    if from_nodes is None:
-        topological_order = get_dependencies_in_topological_order(
-            CALIBRATION_GRAPH, target_node, exclude_nodes=EXCLUDED_NODES
-        )
-    else:
-        topological_order = range_dependencies_in_topological_order(
-            CALIBRATION_GRAPH, from_nodes, target_node, exclude_nodes=EXCLUDED_NODES
-        )
-
-    return topological_order + [target_node]
