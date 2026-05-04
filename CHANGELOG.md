@@ -9,6 +9,9 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Added
 
+- Added the `is_recalibration` (`IS_RECALIBRATION`) SessionContext flag 
+  to disable certain operations that would be destructive in a recalibration
+- Added `run_node` function for running only a single calibration node.
 - Public API exported from `tergite_tuner.__init__`:
   `tune_device`, `re_analyse`, and
   `extract_bcc_params`. The first two replace the old
