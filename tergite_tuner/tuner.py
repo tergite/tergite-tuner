@@ -298,7 +298,7 @@ class NodeManager:
 def run_node(
     node: NodeEnum,
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options,
+    **session_options: Unpack[SessionOptions],
 ):
     """Run only one node in the calibration sequence
 
@@ -306,6 +306,7 @@ def run_node(
         node: The calibration node to run
         env_file: Optional environment file to use
         **session_options: Optional session options
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session = SessionContext.from_env(env_file, **session_options)
     _tune(session, node=node)

@@ -57,9 +57,10 @@ class CZCalibrationNode(CouplerNode):
         self.schedule_keywords["coupler_dict"] = self.gate_qubit_types_dict()
         self.validate()
 
+        fixed_duration_qubits = session.fixed_duration_qubits
         self.outer_schedule_samplespace = {
             "working_points": {
-                coupler: self.working_points_fixed_duration(coupler) if "q12" in coupler else self.working_points(coupler)
+                coupler: self.working_points_fixed_duration(coupler) if _has_fixed_duration_qubit(session, coupler) else self.working_points(coupler)
                 for coupler in self.couplers
             }
         }
@@ -100,6 +101,7 @@ class CZCalibrationNode(CouplerNode):
         cz_pulse_frequency = float(
             self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency")
         )
+        # FIXME: another hard coded value. Is it possible to add these to configurations?
         sweep_range = 0.2e6
         number_of_points = 20
         sweep_frequencies = np.linspace(
@@ -132,3 +134,18 @@ class CZCalibrationNode(CouplerNode):
             dataset[2 * index] = data_array
             dataset[2 * index + 1] = data_array
         return dataset
+
+def _has_fixed_duration_qubit(session: SessionContext, coupler: str) -> bool:
+    """Checks if the coupler has a fixed duration qubit
+
+    Args:
+        session: the SessionContext that is being worked in
+        coupler: the name of the coupler
+
+    Return:
+        True if the coupler is connected to a fixed duration qubit
+    """
+    # FIXME: Add fixed_duration_qubits: tuple[str] on SessionContext
+    #   - q12 is a good example of these
+    fixed_duration_qubits = session.fixed_duration_qubits
+    return any(q in coupler for q in fixed_duration_qubits)
