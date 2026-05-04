@@ -129,7 +129,7 @@ class BaseNodeAnalysis(ABC):
         if "working_points" in dataset.coords:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
         return dataset
-    
+
     def _manage_plots(self, column_grid: int, plots_per_qubit: int):
         n_vars = len(self.data_vars)
         nrows = int(np.ceil(n_vars / column_grid)) * plots_per_qubit
@@ -215,7 +215,7 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
             self.qubit_analyses.append(qubit_analysis)
 
         return analysis_results
-    
+
     def _fill_plots(self):
         for index, analysis in enumerate(self.qubit_analyses):
             primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
@@ -373,10 +373,10 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
         self.coords = self.dataset.coords
         self.data_vars = self.dataset.data_vars
         analysis_results = self._analyze_all_couplers()
-        if save_plot: 
+        if save_plot:
             self.display_and_save_plots()
         return analysis_results
-    
+
     def display_and_save_plots(self):
         # if the dictionary is empty do nothing
         if not self.figures_dictionary:

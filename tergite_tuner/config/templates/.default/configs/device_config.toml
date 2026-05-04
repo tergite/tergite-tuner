@@ -1,0 +1,120 @@
+# Device configuration file
+#
+# This file is meant to serve as examples to illustrate how to write
+# these configuration files, as well as for testing purposes. It can
+# be used as a template for configuring properties of the actual
+# device at hand.
+#
+# Note: This device configuration follows a standard, such that
+# it can be read by other backend components as well
+
+[device]
+# The items of this section describe general device properties known
+# after fabrication and first manual characterization steps. The general
+# section should contain relevant metadata
+name = "device_template"
+owner = "device_owner"
+
+# -------------------- Resonator definitions --------------------
+# This section contains all resonator-specific properties
+
+# Values for specific resonators
+[device.resonator.all]
+attenuation = 18
+
+[device.resonator.q00]
+VNA_frequency = 6.48213e9
+
+[device.resonator.q01]
+VNA_frequency = 6.26093e9
+
+
+# -------------------- Qubit definitions --------------------
+# This section contains all qubit-specific properties
+
+[device.qubit.all]
+measure.acq_delay = 220e-9
+measure_1.acq_delay = 220e-9
+measure_2.acq_delay = 220e-9
+measure.pulse_duration = 3e-6
+measure_1.pulse_duration = 3e-6
+measure_2.pulse_duration = 3e-6
+measure.integration_time = 2.5e-6
+measure_1.integration_time = 2.5e-6
+measure_2.integration_time = 2.5e-6
+rxy.duration = 28e-9
+measure_3state_opt.pulse_duration = 3e-6
+measure_3state_opt.acq_delay = 220e-9
+measure_3state_opt.integration_time = 2.5e-6
+
+
+[device.qubit.q00]
+attenuation = 4
+VNA_f01_frequency = 3.848e9
+VNA_f12_frequency = 3.592e9
+measure.pulse_amp = 0.03
+measure_1.pulse_amp = 0.03
+measure_2.pulse_amp = 0.03
+
+[device.qubit.q01]
+attenuation = 8
+VNA_f01_frequency = 3.384e9
+VNA_f12_frequency = 3.177e9
+measure.pulse_amp = 0.03
+measure_1.pulse_amp = 0.03
+measure_2.pulse_amp = 0.03
+
+# -------------------- Coupler definitions --------------------
+# This section contains all coupler-specific properties
+
+[device.coupler.all]
+cz_pulse_amplitude = 0.3
+cz_pulse_width = 4e-9
+
+
+[device.coupler.q00_q01]
+attenuation = 12
+
+# ....
+[device.coupler.q11_q12]
+cz_pulse_frequency = 631910000.0
+cz_pulse_amplitude = 0.275
+cz_pulse_duration = 4.24e-07
+
+[device.coupler.q12_q13]
+cz_pulse_frequency = 772550000.0
+cz_pulse_amplitude = 0.92
+cz_pulse_duration = 2.84e-07
+
+[device.coupler.q13_q14]
+cz_pulse_frequency = 719727018.0
+cz_pulse_amplitude = 0.554
+cz_pulse_duration = 1.8e-07
+
+[device.coupler.q14_q15]
+cz_pulse_frequency = 427126551.0
+cz_pulse_amplitude = 0.39
+cz_pulse_duration = 2.08e-07
+
+# ...
+
+# --------------------------------------------------------------------------------
+# Device layout configuration section
+
+[layout]
+# The items of this section correspond to component types and their
+# sub-items correspond to their indices/identities. This also works as
+# a way to declare what components are supported/present in the
+# device.
+
+[layout.resonator.q00]
+position = { column = 0, row = 0 }
+
+[layout.resonator.q01]
+position = { column = 2, row = 0 }
+
+[layout.qubit.q00]
+position = { column = 0, row = 1 }
+
+[layout.qubit.q01]
+position = { column = 2, row = 1 }
