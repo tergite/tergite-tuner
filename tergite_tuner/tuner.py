@@ -16,9 +16,10 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+
 from os import PathLike
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Union, Unpack
+from typing import FrozenSet, List, Optional, Tuple, Type, Union
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -26,9 +27,15 @@ from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
-from tergite_tuner.config.session import SessionContext, SessionOptions
+from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
-from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
+from tergite_tuner.lib.nodes import (
+    __NODE_DEPENDENCIES__,
+    __NODE_ENUM_CLS_MAP__,
+)
+from tergite_tuner.lib.utils.graph import (
+    get_dependencies_in_topological_order,
+)
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -48,14 +55,14 @@ class HardwareManager:
     Manages hardware setup, including initializing clusters and instrument coordinators.
     """
 
-    def __init__(self, config: "SessionContext") -> None:
+    def __init__(self, session: "SessionContext") -> None:
         # Store the configuration settings and initialize the instrument coordinator
-        self.config = config
+        self.session = session
         self.lab_ic: Optional[InstrumentCoordinator] = None
         logger.info("Initializing Hardware")
 
         # Check if hardware setup is necessary based on measurement mode
-        if self.config.cluster_mode == MeasurementMode.re_analyse:
+        if self.session.cluster_mode == MeasurementMode.re_analyse:
             # In re-analysis mode, measurements are not needed, so no hardware setup is performed
             logger.info(
                 "Cluster will not be defined as there is no need to take a measurement in re-analysis mode."
@@ -70,15 +77,15 @@ class HardwareManager:
         Creates and initializes a Cluster object to represent the hardware cluster
         based on the given IP address in the configuration.
         """
-        cluster_name = list(self.config.cluster_config.hardware_description.keys())[0]
+        cluster_name = list(self.session.config.cluster.hardware_description.keys())[0]
         cluster: "Cluster"
-        if self.config.cluster_mode == MeasurementMode.real:
+        if self.session.cluster_mode == MeasurementMode.real:
             # Ensure all previous connections are closed before creating a new cluster instance
             Cluster.close_all()
 
             try:
                 # Create a new cluster instance using the specified cluster name and IP address
-                cluster = Cluster(cluster_name, str(self.config.cluster_ip))
+                cluster = Cluster(cluster_name, str(self.session.cluster_ip))
             except ConnectionRefusedError:
                 msg = "Cluster is disconnected. Maybe it has crushed? Try flick it off and on"
                 logger.status("-" * len(msg))
@@ -87,9 +94,11 @@ class HardwareManager:
                 quit()
 
             logger.status(
-                f" \n⚠ Resetting Cluster at IP *{str(self.config.cluster_ip)[-3:]}\n"
+                f" \n⚠ Resetting Cluster at IP *{str(self.session.cluster_ip)[-3:]}\n"
             )
-            cluster.reset()  # Reset the cluster to a default state for consistency
+            # don't reset cluster when doing recalibration
+            if not self.session.is_recalibration:
+                cluster.reset()  # Reset the cluster to a default state for consistency
             return cluster
         else:
             Cluster.close_all()
@@ -113,12 +122,12 @@ class HardwareManager:
 
         # Load attenuation settings for entire system (possibly across multiple clusters)
         output_attenuation_settings = (
-            self.config.device_config.get_output_attenuations()
+            self.session.config.device.get_output_attenuations()
         )
         connectivity = MappingProxyType(
             {
                 str(n): frozenset(neigh.keys())
-                for n, neigh in self.config.cluster_config.connectivity.graph.adj.items()
+                for n, neigh in self.session.config.cluster.connectivity.graph.adj.items()
             }
         )
 
@@ -132,12 +141,12 @@ class HardwareManager:
 
             # Add the configured cluster to the instrument coordinator and set a timeout
             lab_ic.add_component(ClusterComponent(cluster))
-            lab_ic.timeout(self.config.cluster_timeout)
+            lab_ic.timeout(self.session.cluster_timeout)
 
         return lab_ic
 
     def create_spi(self, couplers) -> SpiDAC:
-        return SpiDAC(couplers, self.config)
+        return SpiDAC(couplers, self.session)
 
     def get_instrument_coordinator(self):
         """Access the instrument coordinator for use by other classes."""
@@ -153,36 +162,48 @@ class NodeManager:
         self,
         lab_ic: "InstrumentCoordinator",
         session: "SessionContext",
+        node_enum_cls_map: MappingProxyType[
+            NodeEnum, Type[BaseNode]
+        ] = __NODE_ENUM_CLS_MAP__,
+        ignore_nodes: Tuple[NodeEnum, ...] = (NodeEnum.TOF, NodeEnum.PUNCHOUT),
+        node_dependencies: Tuple[
+            Tuple[NodeEnum, NodeEnum], ...
+        ] = __NODE_DEPENDENCIES__,
     ) -> None:
         self.session = session
         self.lab_ic = lab_ic
         self.spi_manager: Optional[SpiDAC] = None
 
-        self.node_cls_map = session.node_cls_map
-        self.ignored_nodes = session.ignored_nodes
-        self.node_dag_edges = session.node_dag_edges
+        self.node_enum_cls_map = node_enum_cls_map
+        self.ignore_nodes = ignore_nodes
+        self.node_dependencies = node_dependencies
 
         # Build the calibration DAG from the dependency edges
         # excluding any given nodes of choice
         self.node_graph: "nx.DiGraph" = nx.DiGraph()
-        self.node_graph.add_edges_from(self.node_dag_edges)
-        for member in self.node_cls_map:
+        self.node_graph.add_edges_from(self.node_dependencies)
+        for member in self.node_enum_cls_map:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
-        populate_initial_parameters(self.session)
+        populate_initial_parameters(
+            self.session.qubits,
+            self.session.couplers,
+            self.session.redis,
+            self.session.config,
+        )
 
     def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
         """Return ``target_node``'s ancestors in topological order plus itself."""
         order = get_dependencies_in_topological_order(
             self.node_graph,
             target_node,
-            exclude_nodes=self.ignored_nodes,
+            exclude_nodes=self.ignore_nodes,
         )
         return order + [target_node]
 
     def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False):
-        node_cls = self.node_cls_map[node]
+        node_cls = self.node_enum_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
 
@@ -203,8 +224,11 @@ class NodeManager:
 
         populate_node_parameters(
             node_name,
-            is_node_calibrated=status == DataStatus.in_spec,
-            session=self.session,
+            status == DataStatus.in_spec,
+            self.session.qubits,
+            self.session.couplers,
+            self.session.redis,
+            self.session.config,
         )
 
         # Log status
@@ -214,27 +238,33 @@ class NodeManager:
             logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
 
             # Initialize node and update samplespace
-            calibration_node = self._initialize_node(node)
+            calibration_node = self.initialize_node(node)
             logger.info(f"Calibrating node {calibration_node.name}")
 
-            data_path = self.session.log_dir
-            # avoid creating new logs folders if we are re_analysing or recalibrating
-            if (
-                self.session.cluster_mode != MeasurementMode.re_analyse
-                and not self.session.is_recalibration
-            ):
-                data_path = create_node_data_path(
+            # Determine the data path for calibration
+            data_path = (
+                self.session.log_dir
+                if self.session.cluster_mode == MeasurementMode.re_analyse
+                else create_node_data_path(
                     self.session, node_name=calibration_node.name
                 )
+            )
 
             # Perform calibration
             calibration_node.calibrate(data_path, self.session.cluster_mode)
 
-        revert_node_parameters(node_name, self.session)
+        # if we are in recalibration, we should not revert node parameters
+        if not self.session.is_recalibration:
+            revert_node_parameters(
+                node_name,
+                self.session.qubits,
+                self.session.redis,
+                self.session.config,
+            )
 
-    def _initialize_node(self, node: NodeEnum) -> BaseNode:
+    def initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
-        node_cls = self.node_cls_map[node]
+        node_cls = self.node_enum_cls_map[node]
         node_obj = node_cls(
             all_qubits=self.session.qubits,
             couplers=self.session.couplers,
@@ -263,7 +293,7 @@ class NodeManager:
     def _check_calibration_status_redis(self, node: NodeEnum) -> DataStatus:
         """Queries Redis for the calibration status of each qubit or coupler
         associated with ``node``, determining if it is in or out of specification."""
-        node_cls = self.node_cls_map[node]
+        node_cls = self.node_enum_cls_map[node]
         node_name = node.value
         elements = (
             self.session.couplers
@@ -293,7 +323,7 @@ class NodeManager:
 
 def tune_device(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options: Unpack[SessionOptions],
+    **session_options,
 ) -> None:
     """Run the full calibration pipeline up to ``target_node``.
 
@@ -305,15 +335,14 @@ def tune_device(
     Args:
         env_file: optional path to .env file to load session config from.
         **session_options: optional keyword arguments to override config settings.
-            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session = SessionContext.from_env(env_file, **session_options)
     _tune(session)
 
 
-def reanalyse(
+def re_analyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options: Unpack[SessionOptions],
+    **session_options,
 ) -> None:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 
@@ -323,7 +352,6 @@ def reanalyse(
     Args:
         env_file: optional path to .env file to load session config from.
         **session_options: optional keyword arguments to override config settings.
-            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session_options.pop("cluster_mode", None)
     session = SessionContext.from_env(
@@ -334,9 +362,9 @@ def reanalyse(
     _re_analyse(session)
 
 
-def _tune(session: SessionContext) -> None:
+def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
     """Internal function implementing the tuning/calibration logic."""
-    hardware_manager = HardwareManager(config=session)
+    hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
     topo_order = node_manager.topo_order(session.target_node)
@@ -346,14 +374,18 @@ def _tune(session: SessionContext) -> None:
     logger.info("Starting System Calibration")
     number_of_qubits = len(session.qubits)
 
+    calibration_nodes = session.topo_order if node is None else [node]
     draw_arrow_chart(
         f"Qubits: {number_of_qubits}",
-        [n.value for n in topo_order],
+        [str(n.value) for n in calibration_nodes],
     )
 
     # The node manager provides every node with access to the DACS
-    node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
-    node_manager.spi_manager.set_initial_parking_currents(session.couplers)
+    if session.couplers:
+        node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
+        # no setting initial parking currents during recalibration
+        if not session.is_recalibration:
+            node_manager.spi_manager.set_initial_parking_currents(session.couplers)
 
     for calibration_node in topo_order:
         ignore_spec = calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION
@@ -368,12 +400,12 @@ def _re_analyse(session: SessionContext) -> None:
             f"Wrong mode for re-analysis: '{session.cluster_mode}', should be: {MeasurementMode.re_analyse}"
         )
 
-    hardware_manager = HardwareManager(config=session)
+    hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
 
     target_node = session.target_node
-    node = node_manager._initialize_node(target_node)
+    node = node_manager.initialize_node(target_node)
     logger.status(
         f"Analysing '{session.target_node_name}' with {node.analysis_cls.__name__}"
     )

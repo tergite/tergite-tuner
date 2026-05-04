@@ -87,7 +87,7 @@ class BaseNodeAnalysis(ABC):
         self._qoi = value
 
     @abstractmethod
-    def analyze_node(self, data_path: Path) -> dict[str, "QOI"]:
+    def analyze_node(self, data_path: os.PathLike[str]) -> dict[str, "QOI"]:
         """
         Run the fitting of the analysis function
 

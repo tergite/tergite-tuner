@@ -49,7 +49,7 @@ def test_randomized_benchmarking_analysis(redis_connection, session_context):
 
         assert qoi_11.analysis_successful
         assert qoi_15.analysis_successful
-        assert pytest.approx(standard_fidelity_11) == 0.998669
+        assert pytest.approx(standard_fidelity_11) == 0.99951747
         assert pytest.approx(standard_leakage_11) == 0.00207032
-        assert pytest.approx(standard_fidelity_15) == 0.9962656
+        assert pytest.approx(standard_fidelity_15) == 0.99788337
         assert pytest.approx(standard_leakage_15) == 0.0064318

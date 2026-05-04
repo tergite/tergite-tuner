@@ -15,6 +15,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Tuple, Type
 
@@ -141,7 +142,7 @@ class BaseNode(ABC):
             duration *= self.node_dictionary["loop_repetitions"]
         return duration
 
-    def post_process(self, data_path: Path):
+    def post_process(self, data_path: PathLike[str]):
         analysis_kwargs = getattr(self, "analysis_keywords", dict())
         node_analysis: BaseNodeAnalysis = self.analysis_cls(
             self.name,

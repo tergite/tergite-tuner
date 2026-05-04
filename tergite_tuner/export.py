@@ -130,7 +130,7 @@ _qubit_parameters: List[Tuple[str, str, _DataSource, Type]] = [
 _readout_resonator_parameters: List[Tuple[str, str, _DataSource, Type]] = [
     ("acq_delay", "measure:acq_delay", _DataSource.REDIS, float),
     ("acq_integration_time", "measure:integration_time", _DataSource.REDIS, float),
-    ("frequency", "clock_freqs:readout", _DataSource.REDIS, float),
+    ("frequency", "extended_clock_freqs:readout_2state_opt", _DataSource.REDIS, float),
     ("pulse_delay", "measure:ro_pulse_delay", _DataSource.REDIS, float),
     ("pulse_duration", "measure:pulse_duration", _DataSource.REDIS, float),
     ("pulse_type", "Square", _DataSource.LITERAL, str),
