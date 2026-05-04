@@ -274,6 +274,20 @@ class SessionContext(BaseModel):
             return MeasurementMode[value.strip()]
         return value
 
+    @field_validator("is_recalibration", mode="before")
+    @classmethod
+    def cast_is_recalibration(cls, value):
+        """Accept common string representations (e.g. ``'true'``, ``'false'``,
+        ``'1'``, ``'0'``) as well as raw bool values from ``os.environ``."""
+        if isinstance(value, str):
+            normalised = value.strip().lower()
+            if normalised in ("true", "1", "yes", "y", "on"):
+                return True
+            if normalised in ("false", "0", "no", "n", "off", ""):
+                return False
+            raise ValueError(f"Cannot cast {value!r} to bool for 'is_recalibration'.")
+        return bool(value)
+
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
         """Derive cross-field defaults: data_dir, config_dir, name, log_dir."""

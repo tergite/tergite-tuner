@@ -74,7 +74,7 @@ On top of having a `.env` file, more configuration files maybe required.
 
 ### Public API
 
-The library exposes three entry points from
+The library exposes the following entry points from
 `tergite_tuner.__init__`:
 
 ```python
@@ -82,6 +82,7 @@ from tergite_tuner import (
     tune_device,
     reanalyse,
     extract_bcc_params,
+    run_node,
 )
 ```
 
@@ -106,6 +107,46 @@ tune_device(
 `tune_device` constructs a `SessionContext`, walks the dependency
 DAG up to `target_node`, and calibrates any nodes that are not yet
 in spec.
+
+#### Recalibrate the device
+
+First ensure your `device_config.toml` has the latest device values or if you have already run the tuneup using the 
+same redis database, the old values should still be there so have a `device_config.toml` without initial values.  
+Note that this may mean you have two `device_config.toml`'s, one for the first run and the other for subsequent runs.  
+Do the same with `node_config.toml`.  
+
+```python
+from tergite_tuner import tune_device
+
+# Use a .env file as the only source of configuration
+tune_device(env_file=".env")
+
+# Or override individual SessionContext fields inline
+tune_device(
+    env_file=".env",
+    target_node="rabi_oscillations",
+    qubits=["q00", "q01"],
+    couplers=["q00_q01"],
+    is_recalibration=True,
+)
+```
+
+#### Run one node
+
+```python
+from tergite_tuner import run_node, NodeEnum
+
+# Use a .env file as the only source of configuration
+run_node(env_file=".env", node=NodeEnum.QUBIT_01_SPECTROSCOPY)
+
+# Or override individual SessionContext fields inline
+run_node(
+    env_file=".env",
+    qubits=["q00", "q01"],
+    couplers=["q00_q01"],
+    node=NodeEnum.QUBIT_01_SPECTROSCOPY
+)
+```
 
 #### Re-run analysis on already-recorded data
 

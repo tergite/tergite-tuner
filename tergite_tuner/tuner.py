@@ -224,11 +224,11 @@ class NodeManager:
 
         populate_node_parameters(
             node_name,
-            status == DataStatus.in_spec,
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-            self.session.config,
+            is_node_calibrated=status == DataStatus.in_spec,
+            qubits=self.session.qubits,
+            couplers=self.session.couplers,
+            redis_connection=self.session.redis,
+            config=self.session.config,
         )
 
         # Log status
@@ -257,9 +257,9 @@ class NodeManager:
         if not self.session.is_recalibration:
             revert_node_parameters(
                 node_name,
-                self.session.qubits,
-                self.session.redis,
-                self.session.config,
+                qubits=self.session.qubits,
+                redis_connection=self.session.redis,
+                config=self.session.config,
             )
 
     def initialize_node(self, node: NodeEnum) -> BaseNode:
@@ -319,6 +319,22 @@ class NodeManager:
             else:
                 raise KeyError(f"{settable} not in any samplespace")
         return
+
+
+def run_node(
+    node: NodeEnum,
+    env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    **session_options,
+):
+    """Run only one node in the calibration sequence
+
+    Args:
+        node: The calibration node to run
+        env_file: Optional environment file to use
+        **session_options: Optional session options
+    """
+    session = SessionContext.from_env(env_file, **session_options)
+    _tune(session, node=node)
 
 
 def tune_device(

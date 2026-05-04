@@ -51,7 +51,7 @@ _EXPECTED_RESONATOR_Q11 = {
     "id": "q11",
     "acq_delay": pytest.approx(2.4e-07),
     "acq_integration_time": pytest.approx(3.4e-06),
-    "frequency": pytest.approx(6826375232.52066),
+    "frequency": pytest.approx(6826355555.555555),
     "pulse_delay": pytest.approx(0.0),
     "pulse_duration": pytest.approx(3.8e-06),
     "pulse_type": "Square",

@@ -38,8 +38,8 @@ def test_cz_local_phases(redis_connection, session_context):
         )
         qoi = analysis.process_coupler(dataset, "q13_q14")
 
-        control_local_phase = qoi.analysis_result["control_local_phase"]["value"]
-        target_local_phase = qoi.analysis_result["target_local_phase"]["value"]
+        cz_dynamic_control = qoi.analysis_result["cz_dynamic_control"]["value"]
+        cz_dynamic_target = qoi.analysis_result["cz_dynamic_target"]["value"]
 
         assert qoi.analysis_successful
         # assert pytest.approx(control_local_phase) == -135.2184

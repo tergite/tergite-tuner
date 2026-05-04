@@ -20,8 +20,6 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 
-from __future__ import annotations
-
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.qblox.operations import (
     pulse_factories as qblox_pulse_factories,
@@ -29,7 +27,7 @@ from quantify_scheduler.backends.qblox.operations import (
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.operations import pulse_library
 
-from tergite_autocalibration.utils.logging import logger
+from tergite_tuner.utils.logging import logger
 
 
 def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
@@ -81,9 +79,7 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
         SquarePulse operation.
     """
 
-    composite_pulse = pulse_library.IdlePulse(
-        duration=4e-9
-    )
+    composite_pulse = pulse_library.IdlePulse(duration=4e-9)
 
     composite_pulse.add_pulse(
         pulse_library.SoftSquarePulse(
@@ -118,18 +114,14 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
         )
     )
 
-    composite_pulse.add_pulse(
-        pulse_library.IdlePulse(
-            4e-9
-        )
-    )
+    composite_pulse.add_pulse(pulse_library.IdlePulse(4e-9))
 
-    logger.info(f'{square_amp=}')
-    logger.info(f'{square_duration=}')
-    logger.info(f'{square_port=}')
-    logger.info(f'{square_clock=}')
-    logger.info(f'{virt_z_child_qubit_clock=}, {virt_z_child_qubit_phase=}')
-    logger.info(f'{virt_z_parent_qubit_clock=}, {virt_z_parent_qubit_phase=}')
+    logger.info(f"{square_amp=}")
+    logger.info(f"{square_duration=}")
+    logger.info(f"{square_port=}")
+    logger.info(f"{square_clock=}")
+    logger.info(f"{virt_z_child_qubit_clock=}, {virt_z_child_qubit_phase=}")
+    logger.info(f"{virt_z_parent_qubit_clock=}, {virt_z_parent_qubit_phase=}")
 
     return composite_pulse
 

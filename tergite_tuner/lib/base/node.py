@@ -374,9 +374,12 @@ class CouplerNode(BaseNode):
                 logger.warning(f"nan current for coupler {coupler}")
                 return
             currents_dict[coupler] = parking_current
-        logger.status("Setting updated DC currents")
-        # self.spi_manager.set_dac_current(currents_dict)
-        logger.status('Skip current operation...')
+        # do not set dac currents when in calibration
+        if not self.session.is_recalibration:
+            logger.status("Setting updated DC currents")
+            self.spi_manager.set_dac_current(currents_dict)
+        else:
+            logger.debug("Skipping setting DC currents")
 
     def get_coupled_qubits(self) -> list:
         coupled_qubits = []

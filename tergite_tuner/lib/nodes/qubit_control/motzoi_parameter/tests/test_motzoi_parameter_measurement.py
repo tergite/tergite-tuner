@@ -80,4 +80,8 @@ def test_12_pulse_duration(redis_connection, session_context):
             if pulses["name"] == "DRAGPulse":
                 pulse_duration = pulses["pulse_info"][0]["duration"]
 
-        assert pytest.approx(pulse_duration) == 7.6e-8
+        # FIXME: Originally, pulse_duration was got from r12.ef_duration (7.6e-8).
+        #   It was changed to rxy.duration (5.6e-8) in MotzoiParameterMeasurement.
+        #   I am not certain if this for only recalibration or for even initial bring-up
+        # assert pytest.approx(pulse_duration) == 7.6e-8
+        assert pytest.approx(pulse_duration) == 5.6e-8

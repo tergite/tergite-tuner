@@ -60,7 +60,8 @@ class CZCalibrationNode(CouplerNode):
         self.outer_schedule_samplespace = {
             "working_points": {
                 # coupler: self.working_points(coupler) for coupler in self.couplers
-                coupler: self.working_points_fixed_duration(coupler) for coupler in self.couplers
+                coupler: self.working_points_fixed_duration(coupler)
+                for coupler in self.couplers
             }
         }
         self.schedule_samplespace = {
@@ -94,14 +95,22 @@ class CZCalibrationNode(CouplerNode):
         return working_points_array
 
     def working_points_fixed_duration(self, coupler: str):
-        cz_pulse_duration = float(self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_duration"))
-        cz_pulse_frequency = float(self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency"))
+        cz_pulse_duration = float(
+            self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_duration")
+        )
+        cz_pulse_frequency = float(
+            self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency")
+        )
         sweep_range = 0.2e6
         number_of_points = 40
         sweep_frequencies = np.linspace(
-            cz_pulse_frequency - sweep_range, cz_pulse_frequency + sweep_range, number_of_points
+            cz_pulse_frequency - sweep_range,
+            cz_pulse_frequency + sweep_range,
+            number_of_points,
         )
-        working_points_fixed_duration_array = np.array(list(zip(sweep_frequencies, [cz_pulse_duration] * number_of_points)))
+        working_points_fixed_duration_array = np.array(
+            list(zip(sweep_frequencies, [cz_pulse_duration] * number_of_points))
+        )
         return working_points_fixed_duration_array
 
     def initial_operation(self):

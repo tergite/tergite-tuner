@@ -16,8 +16,6 @@
 Module containing a schedule class for DRAG pulse motzoi parameter calibration.
 """
 
-from __future__ import annotations
-
 import numpy as np
 from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode

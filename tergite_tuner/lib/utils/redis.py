@@ -136,14 +136,14 @@ def load_redis_config_coupler(coupler: ExtendedCompositeSquareEdge, redis_connec
             # coupler.cz.child_phase_correction(redis_value("control_local_phase"))
             coupler.cz.parent_phase_correction(redis_value("cz_dynamic_target"))
             coupler.cz.child_phase_correction(redis_value("cz_dynamic_control"))
-            
+
         elif bus_qubits[0] == str(redis_config["control_qubit"]):
             logger.info(f"Reading Control Qubit from Redis: {bus_qubits[0]}")
             # coupler.cz.parent_phase_correction(redis_value("control_local_phase"))
             # coupler.cz.child_phase_correction(redis_value("target_local_phase"))
             coupler.cz.parent_phase_correction(redis_value("cz_dynamic_control"))
             coupler.cz.child_phase_correction(redis_value("cz_dynamic_target"))
-            
+
         else:
             raise ValueError("Control - Target types not defined")
     except:
