@@ -29,13 +29,8 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
-from tergite_tuner.lib.nodes import (
-    __NODE_DEPENDENCIES__,
-    __NODE_ENUM_CLS_MAP__,
-)
-from tergite_tuner.lib.utils.graph import (
-    get_dependencies_in_topological_order,
-)
+from tergite_tuner.lib.nodes import __NODE_DEPENDENCIES__, __NODE_ENUM_CLS_MAP__
+from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -77,7 +72,7 @@ class HardwareManager:
         Creates and initializes a Cluster object to represent the hardware cluster
         based on the given IP address in the configuration.
         """
-        cluster_name = list(self.session.config.cluster.hardware_description.keys())[0]
+        cluster_name = list(self.session.cluster_config.hardware_description.keys())[0]
         cluster: "Cluster"
         if self.session.cluster_mode == MeasurementMode.real:
             # Ensure all previous connections are closed before creating a new cluster instance
@@ -122,12 +117,12 @@ class HardwareManager:
 
         # Load attenuation settings for entire system (possibly across multiple clusters)
         output_attenuation_settings = (
-            self.session.config.device.get_output_attenuations()
+            self.session.device_config.get_output_attenuations()
         )
         connectivity = MappingProxyType(
             {
                 str(n): frozenset(neigh.keys())
-                for n, neigh in self.session.config.cluster.connectivity.graph.adj.items()
+                for n, neigh in self.session.cluster_config.connectivity.graph.adj.items()
             }
         )
 
@@ -186,12 +181,7 @@ class NodeManager:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
-        populate_initial_parameters(
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-            self.session.config,
-        )
+        populate_initial_parameters(self.session)
 
     def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
         """Return ``target_node``'s ancestors in topological order plus itself."""
@@ -225,10 +215,7 @@ class NodeManager:
         populate_node_parameters(
             node_name,
             is_node_calibrated=status == DataStatus.in_spec,
-            qubits=self.session.qubits,
-            couplers=self.session.couplers,
-            redis_connection=self.session.redis,
-            config=self.session.config,
+            session=self.session,
         )
 
         # Log status
@@ -241,26 +228,22 @@ class NodeManager:
             calibration_node = self.initialize_node(node)
             logger.info(f"Calibrating node {calibration_node.name}")
 
-            # Determine the data path for calibration
-            data_path = (
-                self.session.log_dir
-                if self.session.cluster_mode == MeasurementMode.re_analyse
-                else create_node_data_path(
+            data_path = self.session.log_dir
+            # avoid creating new logs folders if we are re_analysing or recalibrating
+            if (
+                self.session.cluster_mode != MeasurementMode.re_analyse
+                and not self.session.is_recalibration
+            ):
+                data_path = create_node_data_path(
                     self.session, node_name=calibration_node.name
                 )
-            )
 
             # Perform calibration
             calibration_node.calibrate(data_path, self.session.cluster_mode, save_plot)
 
         # if we are in recalibration, we should not revert node parameters
         if not self.session.is_recalibration:
-            revert_node_parameters(
-                node_name,
-                qubits=self.session.qubits,
-                redis_connection=self.session.redis,
-                config=self.session.config,
-            )
+            revert_node_parameters(node_name, self.session)
 
     def initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
@@ -408,7 +391,7 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
 
     for calibration_node in topo_order:
         node_manager.inspect_node(
-            calibration_node, 
+            calibration_node,
             ignore_spec=session.ignore_spec,
             save_plot=session.save_plot
             )
