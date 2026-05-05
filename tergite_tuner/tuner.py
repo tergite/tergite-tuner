@@ -380,7 +380,9 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
         node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
         # no setting initial parking currents during recalibration
         if not session.is_recalibration:
-            assert session.spi_mode == SPIMode.real, 'Set spi_mode to "real" in the session.'
+            assert (
+                session.spi_mode == SPIMode.real
+            ), 'Set spi_mode to "real" in the session.'
             node_manager.spi_manager.set_initial_parking_currents(session.couplers)
 
     for calibration_node in topo_order:

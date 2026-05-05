@@ -63,7 +63,6 @@ from tergite_tuner.config.types import (
     NodeConfig,
     SpiConfig,
 )
-from tergite_tuner.utils.dto.enums import ApplicationStatus, MeasurementMode, SPIMode
 from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
