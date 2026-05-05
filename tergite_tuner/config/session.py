@@ -63,6 +63,7 @@ from tergite_tuner.config.types import (
     NodeConfig,
     SpiConfig,
 )
+from tergite_tuner.utils.dto.enums import ApplicationStatus, MeasurementMode, SPIMode
 from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
@@ -199,6 +200,8 @@ class SessionContext(BaseModel):
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
     redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
+    is_recalibration: bool = True
+    ignore_spec: bool = True
     data_dir: Path = Field(default_factory=_default_data_dir)
     device_config: DeviceConfig = Field(default_factory=DeviceConfig)
     node_config: NodeConfig = Field(default_factory=NodeConfig)
