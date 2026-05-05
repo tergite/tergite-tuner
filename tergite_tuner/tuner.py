@@ -16,10 +16,9 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 from os import PathLike
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Union
+from typing import FrozenSet, List, Optional, Union, Unpack
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -27,7 +26,7 @@ from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
-from tergite_tuner.config.session import SessionContext
+from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.utils.backend.redis_utils import (
@@ -314,7 +313,7 @@ def run_node(
 
 def tune_device(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options,
+    **session_options: Unpack[SessionOptions],
 ) -> None:
     """Run the full calibration pipeline up to ``target_node``.
 
@@ -334,7 +333,7 @@ def tune_device(
 
 def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options,
+    **session_options: Unpack[SessionOptions],
 ) -> None:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 

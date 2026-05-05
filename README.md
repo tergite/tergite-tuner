@@ -208,7 +208,7 @@ extract_bcc_params(
 - [x] Enable configs to be passed as python objects in the args of the entry point functions, as opposed to files
 - [ ] Add a return value to all entry point functions, e.g. the output of the export to bcc can be the return of tune_device
 - [x] Fix MotzoiParameter measurement for recalibration vs bringup
-- [ ] Improve typing intellisense for the entry functions
+- [x] Improve typing intellisense for the entry functions
 
 ## Contributing to the project
 
