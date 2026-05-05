@@ -69,7 +69,7 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
 )
-from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.utils.dto.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 
 
@@ -346,7 +346,7 @@ class SessionContext(BaseModel):
     def redis(self) -> Redis:
         """The redis connection where data is being saved"""
         if self._redis is None:
-            self._redis = Redis.from_url(self.redis_url, decode_responses=True)
+            self._redis = Redis.from_url(str(self.redis_url), decode_responses=True)
         return self._redis
 
     @classmethod
