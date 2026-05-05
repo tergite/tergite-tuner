@@ -44,6 +44,13 @@ class MeasurementMode(Enum):
     dummy = 1
     re_analyse = 2
 
+class SPIMode(Enum):
+    """
+    Used to set the cluster mode e.g.  real cluster or re analyse
+    """
+
+    real = 0
+    dummy = 1
 
 class SPIMode(Enum):
     """
