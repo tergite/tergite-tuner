@@ -18,14 +18,9 @@ from scipy.linalg import norm
 from scipy.optimize import minimize
 
 from tergite_tuner.config.session import SessionContext
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
-from tergite_tuner.lib.utils.classification_functions import (
-    calculate_probabilities,
-)
+from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 from tergite_tuner.utils.dto.qoi import QOI
 
 

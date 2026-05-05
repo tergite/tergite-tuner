@@ -13,12 +13,8 @@
 import numpy as np
 
 from tergite_tuner.lib.base.node import QubitNode
-from tergite_tuner.lib.nodes.characterization.all_xy.analysis import (
-    AllXYAnalysis,
-)
-from tergite_tuner.lib.nodes.characterization.all_xy.measurement import (
-    AllXYMeasurement,
-)
+from tergite_tuner.lib.nodes.characterization.all_xy.analysis import AllXYAnalysis
+from tergite_tuner.lib.nodes.characterization.all_xy.measurement import AllXYMeasurement
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 
 

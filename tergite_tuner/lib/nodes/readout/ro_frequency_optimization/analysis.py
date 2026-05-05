@@ -15,10 +15,7 @@
 import numpy as np
 from quantify_core.analysis import fitting_models as fm
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.utils.dto.qoi import QOI
 
 model = fm.ResonatorModel()

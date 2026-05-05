@@ -29,13 +29,8 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
-from tergite_tuner.lib.nodes import (
-    __NODE_DEPENDENCIES__,
-    __NODE_ENUM_CLS_MAP__,
-)
-from tergite_tuner.lib.utils.graph import (
-    get_dependencies_in_topological_order,
-)
+from tergite_tuner.lib.nodes import __NODE_DEPENDENCIES__, __NODE_ENUM_CLS_MAP__
+from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -77,7 +72,7 @@ class HardwareManager:
         Creates and initializes a Cluster object to represent the hardware cluster
         based on the given IP address in the configuration.
         """
-        cluster_name = list(self.config.config.cluster.hardware_description.keys())[0]
+        cluster_name = list(self.config.cluster_config.hardware_description.keys())[0]
         cluster: "Cluster"
         if self.config.cluster_mode == MeasurementMode.real:
             # Ensure all previous connections are closed before creating a new cluster instance
@@ -120,12 +115,12 @@ class HardwareManager:
 
         # Load attenuation settings for entire system (possibly across multiple clusters)
         output_attenuation_settings = (
-            self.config.config.device.get_output_attenuations()
+            self.config.device_config.get_output_attenuations()
         )
         connectivity = MappingProxyType(
             {
                 str(n): frozenset(neigh.keys())
-                for n, neigh in self.config.config.cluster.connectivity.graph.adj.items()
+                for n, neigh in self.config.cluster_config.connectivity.graph.adj.items()
             }
         )
 
@@ -184,12 +179,7 @@ class NodeManager:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
-        populate_initial_parameters(
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-            self.session.config,
-        )
+        populate_initial_parameters(self.session)
 
     def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
         """Return ``target_node``'s ancestors in topological order plus itself."""
@@ -222,11 +212,8 @@ class NodeManager:
 
         populate_node_parameters(
             node_name,
-            status == DataStatus.in_spec,
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-            self.session.config,
+            is_node_calibrated=status == DataStatus.in_spec,
+            session=self.session,
         )
 
         # Log status
@@ -239,24 +226,20 @@ class NodeManager:
             calibration_node = self._initialize_node(node)
             logger.info(f"Calibrating node {calibration_node.name}")
 
-            # Determine the data path for calibration
-            data_path = (
-                self.session.log_dir
-                if self.session.cluster_mode == MeasurementMode.re_analyse
-                else create_node_data_path(
+            data_path = self.session.log_dir
+            # avoid creating new logs folders if we are re_analysing or recalibrating
+            if (
+                self.session.cluster_mode != MeasurementMode.re_analyse
+                and not self.session.is_recalibration
+            ):
+                data_path = create_node_data_path(
                     self.session, node_name=calibration_node.name
                 )
-            )
 
             # Perform calibration
             calibration_node.calibrate(data_path, self.session.cluster_mode)
 
-        revert_node_parameters(
-            node_name,
-            self.session.qubits,
-            self.session.redis,
-            self.session.config,
-        )
+        revert_node_parameters(node_name, self.session)
 
     def _initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""

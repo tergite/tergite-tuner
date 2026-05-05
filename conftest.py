@@ -27,6 +27,8 @@ The fixtures below build everything a calibration run needs:
   the calibration at fixture data.
 """
 
+from pathlib import Path
+
 import fakeredis
 import numpy as np
 import pytest
@@ -40,6 +42,8 @@ _FIXTURE_CONFIG_DIR = get_fixture_path(
     "templates",
     "default_device_under_test",
 )
+_FIXTURE_CONFIG_PATH = Path(_FIXTURE_CONFIG_DIR).resolve()
+_PROJECT_ROOT = Path(__file__).parent
 
 
 @pytest.fixture(autouse=True)
@@ -81,4 +85,9 @@ def session_context(redis_connection) -> SessionContext:
                 }
             },
         },
+        cluster_config=_FIXTURE_CONFIG_PATH / "cluster_config.json",
+        node_config=_FIXTURE_CONFIG_PATH / "node_config.toml",
+        spi_config=_FIXTURE_CONFIG_PATH / "spi_config.toml",
+        device_config=_FIXTURE_CONFIG_PATH / "device_config.toml",
+        output_dir=_PROJECT_ROOT / "out" / "pytest",
     )

@@ -22,7 +22,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   merges values from a `.env` file with `os.environ` and explicit
   overrides.
 - `Configuration`, `MetaConfigFile`, `DeviceConfigFile`,
-  `NodeConfigFile`, `SpiConfigFile`, `ClusterConfigFile` pydantic models
+  `NodeConfig`, `SpiConfig`, `ClusterConfig` pydantic models
   for typed loading and validation of every config file in a
   configuration package.
 - `__NODE_ENUM_CLS_MAP__` and `__NODE_STR_CLS_MAP__` static lookup
@@ -38,6 +38,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Changed
 
+- Move example config files to the root of the project
+- Enable loading of the config as either objects, dicts, or files (file paths)
 - Renamed to project fork to tergite-tuner
 - Stripped away all code that is not relevant for running this app as
   a library; the calibration entry points are now plain functions

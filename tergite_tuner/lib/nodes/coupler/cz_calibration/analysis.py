@@ -15,14 +15,9 @@
 import numpy as np
 import xarray as xr
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllCouplersAnalysis,
-    BaseCouplerAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
-from tergite_tuner.lib.utils.classification_functions import (
-    calculate_probabilities,
-)
+from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 from tergite_tuner.utils.dto.qoi import QOI
 
 

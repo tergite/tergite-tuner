@@ -19,12 +19,8 @@ import numpy as np
 import xarray as xr
 
 from tergite_tuner.lib.base.node import CouplerNode
-from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import (
-    CZChevronAnalysis,
-)
-from tergite_tuner.lib.nodes.coupler.cz_chevron.measurement import (
-    CZChevronMeasurement,
-)
+from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronAnalysis
+from tergite_tuner.lib.nodes.coupler.cz_chevron.measurement import CZChevronMeasurement
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 
 if TYPE_CHECKING:

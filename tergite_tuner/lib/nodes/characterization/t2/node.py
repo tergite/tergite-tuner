@@ -27,9 +27,7 @@ from tergite_tuner.lib.nodes.characterization.t2.measurement import (
     T2EchoMeasurement,
     T2Measurement,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
 from tergite_tuner.utils.logging import logger
 
 

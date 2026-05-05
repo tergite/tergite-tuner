@@ -93,7 +93,7 @@ class SpiDAC:
             self.dacs_dictionary[coupler] = self.create_spi_dac(coupler)
 
     def create_spi_dac(self, coupler: str):
-        spi_entry = self.session.config.spi[coupler]
+        spi_entry = self.session.spi_config[coupler]
         spi_mod_number = spi_entry.spi_module_number
         dac_name = spi_entry.dac_name
 

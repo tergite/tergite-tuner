@@ -15,10 +15,7 @@
 
 import numpy as np
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import RamseyModel
 from tergite_tuner.utils.dto.qoi import QOI
 

@@ -50,7 +50,7 @@ class ROFrequencyOptimizationBase(QubitNode):
         frequency_shift = 0.5e6
 
         for index, qubit in enumerate(self.all_qubits):
-            vna_ro_freq = self.session.config.device.resonators[qubit]["VNA_frequency"]
+            vna_ro_freq = self.session.device_config.resonators[qubit]["VNA_frequency"]
             qubit_states = self.schedule_samplespace["qubit_states"][qubit]
             data_array = np.array([])
             for qubit_state in qubit_states:
@@ -64,7 +64,7 @@ class ROFrequencyOptimizationBase(QubitNode):
                     phi_v=0,
                     phi_0=0,
                 )
-                samples = resonator_samples(qubit, self.session.config)
+                samples = resonator_samples(qubit, self.session)
                 number_of_samples = len(samples)
                 frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
                 true_s21 = resonator.eval(params=true_params, f=frequncies)
@@ -102,7 +102,7 @@ class ROFrequencyTwoStateOptimizationNode(ROFrequencyOptimizationBase):
 
         self.schedule_samplespace = {
             "ro_opt_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             },
             "qubit_states": {
@@ -130,7 +130,7 @@ class ROFrequencyThreeStateOptimizationNode(ROFrequencyOptimizationBase):
 
         self.schedule_samplespace = {
             "ro_opt_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             },
             "qubit_states": {

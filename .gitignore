@@ -102,7 +102,7 @@ misc/**
 tergite_acl/utils/**.csv
 sequence.json
 tergite_autocalibration/utils/**.csv
-out/**
+out/
 
 # internal
 external/

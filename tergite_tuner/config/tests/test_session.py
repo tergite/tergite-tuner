@@ -24,6 +24,7 @@ import pytest
 from pydantic import ValidationError
 
 from tergite_tuner.config.session import SessionContext
+from tergite_tuner.utils.dto.enums import MeasurementMode
 
 _CONFIG_PACKAGE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 _REPO_ROOT = path.dirname(path.dirname(_CONFIG_PACKAGE_DIR))
@@ -89,9 +90,8 @@ def test_session_uses_documented_defaults_for_commented_vars(
     """Commented-out variables fall back to the documented defaults."""
     session = SessionContext.from_env(example_env_path)
 
-    assert session.default_prefix == getpass.getuser().replace(" ", "")
-    assert session.data_dir == session.root_dir / "out"
-    assert session.config_dir == session.root_dir
+    assert session.cluster_mode == MeasurementMode.real
+    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
 
 
 def test_session_constructs_with_no_args(clean_environ):
@@ -100,29 +100,18 @@ def test_session_constructs_with_no_args(clean_environ):
 
     assert session.stdout_log_level == 25
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
-    assert session.data_dir == session.root_dir / "out"
-    assert session.config_dir == session.root_dir
 
 
 def test_session_overrides_optional_vars(tmp_path, clean_environ):
     """Explicit values for the optional commented-out vars take precedence."""
-    custom_root = tmp_path / "custom-root"
-    custom_data = tmp_path / "custom-data"
-    custom_config = tmp_path / "custom-config"
-
     sample = tmp_path / ".env"
     sample.write_text(
-        f"DEFAULT_PREFIX='alice'\n"
-        f"ROOT_DIR='{custom_root}'\n"
-        f"DATA_DIR='{custom_data}'\n"
-        f"CONFIG_DIR='{custom_config}'\n"
+        f"CLUSTER_MODE='dummy'\n" f"REDIS_URL='redis://127.0.0.1:6378/4'\n"
     )
 
     session = SessionContext.from_env(sample)
-    assert session.default_prefix == "alice"
-    assert session.root_dir == custom_root
-    assert session.data_dir == custom_data
-    assert session.config_dir == custom_config
+    assert str(session.redis_url) == "redis://127.0.0.1:6378/4"
+    assert session.cluster_mode == MeasurementMode.dummy
 
 
 def test_session_coerces_string_values(tmp_path, clean_environ):

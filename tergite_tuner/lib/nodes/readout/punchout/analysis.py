@@ -15,10 +15,7 @@ from typing import List
 
 import numpy as np
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
     ResonatorSpectroscopyQubitAnalysis,
 )

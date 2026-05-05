@@ -18,10 +18,7 @@ Module containing classes that model, fit and plot data from the purity benchmar
 import lmfit
 import numpy as np
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.functions import exponential_decay_function
 from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger

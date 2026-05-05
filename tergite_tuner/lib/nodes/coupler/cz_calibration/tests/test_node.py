@@ -21,9 +21,7 @@ from tergite_tuner.lib.nodes.coupler.cz_calibration.analysis import (
 from tergite_tuner.lib.nodes.coupler.cz_calibration.measurement import (
     CZCalibrationMeasurement,
 )
-from tergite_tuner.lib.nodes.coupler.cz_calibration.node import (
-    CZCalibrationNode,
-)
+from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon

@@ -16,10 +16,7 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.node import (
     Qubit01SpectroscopyNode,
     Qubit12SpectroscopyNode,
 )
-from tergite_tuner.lib.nodes.schedule_node import (
-    OuterScheduleNode,
-    ScheduleNode,
-)
+from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode, ScheduleNode
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,

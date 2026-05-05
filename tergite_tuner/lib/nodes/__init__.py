@@ -52,17 +52,10 @@ from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node impor
     RandomizedBenchmarkingNode,
 )
 from tergite_tuner.lib.nodes.characterization.t1.node import T1Node
-from tergite_tuner.lib.nodes.characterization.t2.node import (
-    T2EchoNode,
-    T2Node,
-)
-from tergite_tuner.lib.nodes.coupler.cz_calibration.node import (
-    CZCalibrationNode,
-)
+from tergite_tuner.lib.nodes.characterization.t2.node import T2EchoNode, T2Node
+from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.coupler.cz_chevron.node import CZChevronNode
-from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import (
-    CZLocalPhasesNode,
-)
+from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import CZLocalPhasesNode
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.node import (
     CZParametrizationNode,
 )
@@ -70,9 +63,7 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.node import (
     QubitSpectroscopyVsCurrentNode,
     ResonatorSpectroscopyVsCurrentNode,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import (
-    CZRBNode,
-)
+from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node import (
     MotzoiParameter12Node,
     MotzoiParameterNode,

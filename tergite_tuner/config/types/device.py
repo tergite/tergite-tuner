@@ -39,7 +39,7 @@ class _LayoutEntry(BaseModel):
     position: _Position
 
 
-class _DeviceLayout(BaseModel):
+class DeviceLayout(BaseModel):
     """The ``[layout]`` section of the device configuration.
 
     Each component type (``resonator``, ``qubit``, ``coupler``) maps
@@ -55,10 +55,12 @@ class _DeviceLayout(BaseModel):
 
 
 class DeviceConfig(BaseModel):
-    """Runtime view of the ``[device]`` section of the device configuration.
+    """The configuration for the device including initial parameter values
 
-    This is the object that calibration code consumes via
-    ``CONFIG.device``. It mirrors the ``[device]`` table of
+    It is also the runtime view of the ``[device]`` section of
+    the device configuration got from the device_config.toml file.
+
+    It mirrors the ``[device]`` table of
     ``device_config.toml`` but exposes the per-component blocks under
     plural Python names (``qubits``, ``resonators``, ``couplers``) via
     :class:`pydantic.Field` aliases — the TOML keys themselves
@@ -80,7 +82,6 @@ class DeviceConfig(BaseModel):
     Attributes:
         name: device name. Part of the general device metadata known
             after fabrication and first manual characterization.
-        owner: owner of the device.
         resonators: resonator-specific parameters, keyed by resonator
             identifier (e.g. ``q01``). The ``[device.resonator.all]``
             defaults have already been merged into each entry.
@@ -95,7 +96,6 @@ class DeviceConfig(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     name: str = "no_device_name_configured"
-    owner: str = "no_owner_configured"
     resonators: Dict[str, Dict[str, Any]] = Field(
         default_factory=dict, alias="resonator"
     )
@@ -235,7 +235,7 @@ class DeviceConfigFile(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     device: DeviceConfig = Field(default_factory=DeviceConfig)
-    layout: _DeviceLayout = Field(default_factory=_DeviceLayout)
+    layout: DeviceLayout = Field(default_factory=DeviceLayout)
 
     @classmethod
     def from_toml(cls, file: PathLike[str]) -> "DeviceConfigFile":

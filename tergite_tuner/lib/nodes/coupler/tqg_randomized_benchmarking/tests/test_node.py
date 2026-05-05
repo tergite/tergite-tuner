@@ -23,9 +23,7 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import (
-    CZRBNode,
-)
+from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon

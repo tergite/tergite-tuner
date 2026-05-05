@@ -21,9 +21,7 @@ from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.measurement import (
     CZLocalPhasesMeasurement,
 )
-from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import (
-    CZLocalPhasesNode,
-)
+from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import CZLocalPhasesNode
 from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
 from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon

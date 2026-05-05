@@ -16,7 +16,7 @@ Validation is delegated to
 :class:`quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`,
 the canonical pydantic model for the QBlox hardware compilation
 configuration. The quantify-scheduler import is deferred until
-:meth:`ClusterConfigFile.from_json` is actually called so that simply
+:meth:`ClusterConfig.from_json` is actually called so that simply
 importing this module does not pull in the heavy quantify-scheduler
 dependency tree.
 """
@@ -28,8 +28,8 @@ from typing import Self
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 
 
-class ClusterConfigFile(QbloxHardwareCompilationConfig):
-    """Loader for the ``cluster_config.json`` file.
+class ClusterConfig(QbloxHardwareCompilationConfig):
+    """Configuration of the qblox cluster
 
     This is a thin wrapper that defers validation to
     :class:`quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.

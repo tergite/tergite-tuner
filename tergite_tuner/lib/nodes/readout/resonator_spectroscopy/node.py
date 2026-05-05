@@ -60,7 +60,7 @@ class ResonatorSpectroscopyBase(QubitNode):
             raise ValueError("Invalid name")
 
         for index, qubit in enumerate(self.all_qubits):
-            vna_ro_freq = self.session.config.device.resonators[qubit]["VNA_frequency"]
+            vna_ro_freq = self.session.device_config.resonators[qubit]["VNA_frequency"]
             ro_freq = vna_ro_freq - frequency_shift
             true_params = resonator.make_params(
                 fr=ro_freq,
@@ -73,7 +73,7 @@ class ResonatorSpectroscopyBase(QubitNode):
                 # f_0=ro_freq, Q=10000, Q_e_real=9000, Q_e_imag=-9000
             )
             np.random.seed(123)
-            samples = resonator_samples(qubit, self.session.config)
+            samples = resonator_samples(qubit, self.session)
             number_of_samples = len(samples)
             frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
             true_s21 = resonator.eval(params=true_params, f=frequncies)
@@ -110,7 +110,7 @@ class ResonatorSpectroscopyNode(ResonatorSpectroscopyBase):
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             }
         }
@@ -142,7 +142,7 @@ class ResonatorSpectroscopy1Node(ResonatorSpectroscopyBase):
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             }
         }
@@ -170,7 +170,7 @@ class ResonatorSpectroscopy2Node(ResonatorSpectroscopyBase):
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             }
         }

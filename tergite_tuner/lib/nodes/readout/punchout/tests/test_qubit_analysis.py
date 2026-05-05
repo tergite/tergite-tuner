@@ -16,9 +16,7 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseQubitAnalysis
-from tergite_tuner.lib.nodes.readout.punchout.analysis import (
-    PunchoutQubitAnalysis,
-)
+from tergite_tuner.lib.nodes.readout.punchout.analysis import PunchoutQubitAnalysis
 
 
 def test_CanCreate():

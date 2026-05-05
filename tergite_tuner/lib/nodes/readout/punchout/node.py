@@ -13,12 +13,8 @@
 import numpy as np
 
 from tergite_tuner.lib.base.node import QubitNode
-from tergite_tuner.lib.nodes.readout.punchout.analysis import (
-    PunchoutNodeAnalysis,
-)
-from tergite_tuner.lib.nodes.readout.punchout.measurement import (
-    PunchoutMeasurement,
-)
+from tergite_tuner.lib.nodes.readout.punchout.analysis import PunchoutNodeAnalysis
+from tergite_tuner.lib.nodes.readout.punchout.measurement import PunchoutMeasurement
 from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
 from tergite_tuner.lib.utils.samplespace import resonator_samples
 
@@ -40,7 +36,7 @@ class PunchoutNode(QubitNode):
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             },
             "ro_amplitudes": {

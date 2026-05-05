@@ -26,11 +26,7 @@ from quantify_scheduler.device_under_test.transmon_element import (
     pulse_library,
 )
 
-from tergite_tuner.utils.dto.extended_gates import (
-    R12,
-    ExtendedClocksFrequencies,
-    Spec,
-)
+from tergite_tuner.utils.dto.extended_gates import R12, ExtendedClocksFrequencies, Spec
 
 
 class ExtendedTransmon(BasicTransmonElement):

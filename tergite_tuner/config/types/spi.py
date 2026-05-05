@@ -33,22 +33,24 @@ class _SpiCouplerEntry(BaseModel):
     edge_group: Optional[int] = None
 
 
-class SpiConfigFile(RootModel[Dict[str, _SpiCouplerEntry]]):
-    """Schema for the ``spi_config.toml`` file.
+class SpiConfig(RootModel[Dict[str, _SpiCouplerEntry]]):
+    """The configuration for the SPI.
+
+    It is also the schema for the ``spi_config.toml`` file.
 
     Each top-level section is a coupler identifier of the form
     ``q<a>_q<b>`` and maps to a :class:`_SpiCouplerEntry`.
     """
 
     @classmethod
-    def from_toml(cls, file: "PathLike[str]") -> "SpiConfigFile":
+    def from_toml(cls, file: "PathLike[str]") -> "SpiConfig":
         """Loads the SPI configuration from a TOML file.
 
         Args:
             file: path to the ``spi_config.toml`` file
 
         Returns:
-            the parsed and validated ``SpiConfigFile`` instance
+            the parsed and validated ``SpiConfig`` instance
         """
         with open(file, "r", encoding="utf-8") as f:
             data = toml.load(f)

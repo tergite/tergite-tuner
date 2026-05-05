@@ -20,23 +20,21 @@ file in one shot. The pattern loosely follows
 ``tergite-backend/app/libs/device_parameters/dtos.py``.
 
 Note:
-    Importing :class:`ClusterConfigFile` pulls in ``quantify_scheduler``,
+    Importing :class:`ClusterConfig` pulls in ``quantify_scheduler``,
     which has a non-trivial import chain. The calibration tool needs it
     anyway, so we pay the cost once at startup rather than working
     around it.
 """
 
-from tergite_tuner.config.files.cluster import ClusterConfigFile
-from tergite_tuner.config.files.device import DeviceConfig, DeviceConfigFile
-from tergite_tuner.config.files.meta import MetaConfigFile
-from tergite_tuner.config.files.node import NodeConfigFile
-from tergite_tuner.config.files.spi import SpiConfigFile
+from tergite_tuner.config.types.cluster import ClusterConfig
+from tergite_tuner.config.types.device import DeviceConfig, DeviceConfigFile
+from tergite_tuner.config.types.node import NodeConfig
+from tergite_tuner.config.types.spi import SpiConfig
 
 __all__ = [
-    "ClusterConfigFile",
+    "ClusterConfig",
     "DeviceConfig",
     "DeviceConfigFile",
-    "MetaConfigFile",
-    "NodeConfigFile",
-    "SpiConfigFile",
+    "NodeConfig",
+    "SpiConfig",
 ]

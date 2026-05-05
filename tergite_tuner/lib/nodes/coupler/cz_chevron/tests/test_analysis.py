@@ -17,9 +17,7 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import (
-    CZChevronCouplerAnalysis,
-)
+from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCouplerAnalysis
 from tergite_tuner.tests.utils.decorators import loaded_redis
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")

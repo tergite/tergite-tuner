@@ -22,9 +22,7 @@ import numpy as np
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
 from tergite_tuner.utils.dto import extended_transmon_element
-from tergite_tuner.utils.dto.extended_coupler_edge import (
-    ExtendedCompositeSquareEdge,
-)
+from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger

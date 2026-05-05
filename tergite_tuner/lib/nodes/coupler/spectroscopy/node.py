@@ -23,19 +23,14 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingNodeAnalysis,
     ResonatorSpectroscopyVsCurrentNodeAnalysis,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
     TwoTonesMultidimMeasurement,
 )
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.measurement import (
     ResonatorSpectroscopyMeasurement,
 )
-from tergite_tuner.lib.utils.samplespace import (
-    qubit_samples,
-    resonator_samples,
-)
+from tergite_tuner.lib.utils.samplespace import qubit_samples, resonator_samples
 from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
@@ -69,8 +64,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
 
         self.schedule_samplespace = {
             "spec_frequencies": {
-                qubit: qubit_samples(qubit, self.session.config)
-                for qubit in self.all_qubits
+                qubit: qubit_samples(qubit, self.session) for qubit in self.all_qubits
             }
         }
 
@@ -100,7 +94,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
         for index, qubit in enumerate(self.all_qubits):
-            qubit_freq = self.session.config.device.qubits[qubit]["VNA_f01_frequency"]
+            qubit_freq = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
             epsilon = 3 / 5 * 1e-7  # to avoid divide by zero
             low_asymptote = -0.001 + epsilon
             high_asymptote = 0.001 + epsilon
@@ -112,7 +106,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
             true_params = peak.make_params(
                 amplitude=0.2, center=shifted_frequency, sigma=0.1e6
             )
-            samples = qubit_samples(qubit, self.session.config)
+            samples = qubit_samples(qubit, self.session)
             number_of_samples = len(samples)
             frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
             true_s21 = peak.eval(params=true_params, x=frequncies)
@@ -157,7 +151,7 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
 
         self.schedule_samplespace = {
             "ro_frequencies": {
-                qubit: resonator_samples(qubit, self.session.config)
+                qubit: resonator_samples(qubit, self.session)
                 for qubit in self.all_qubits
             }
         }

@@ -19,9 +19,7 @@ from tergite_tuner.lib.nodes.characterization.purity_benchmarking.analysis impor
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.measurement import (
     PurityBenchmarkingMeasurement,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
 
 
 class PurityBenchmarkingNode(QubitNode):

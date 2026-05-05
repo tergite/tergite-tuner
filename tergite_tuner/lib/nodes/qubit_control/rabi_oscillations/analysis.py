@@ -19,10 +19,7 @@ Module containing classes that model, fit and plot data from a Rabi experiment.
 
 import numpy as np
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import RabiModel
 from tergite_tuner.utils.backend.redis_utils import fetch_redis_params
 from tergite_tuner.utils.dto.qoi import QOI

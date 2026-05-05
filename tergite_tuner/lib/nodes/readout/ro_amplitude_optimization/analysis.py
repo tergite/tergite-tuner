@@ -18,17 +18,11 @@ from numpy.linalg import inv
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import confusion_matrix
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.utils import (
     align_on_y_axis,
 )
-from tergite_tuner.lib.utils.analysis_models import (
-    ThreeClassBoundary,
-    TwoClassBoundary,
-)
+from tergite_tuner.lib.utils.analysis_models import ThreeClassBoundary, TwoClassBoundary
 from tergite_tuner.utils.dto.qoi import QOI
 
 

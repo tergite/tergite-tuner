@@ -19,9 +19,7 @@ import pytest
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import (
-    CZRBNode,
-)
+from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
