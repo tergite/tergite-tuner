@@ -70,7 +70,6 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
 )
-from tergite_tuner.utils.dto.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 
 
