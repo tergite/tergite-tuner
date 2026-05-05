@@ -19,7 +19,7 @@
 
 from os import PathLike
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Tuple, Type, Union
+from typing import FrozenSet, List, Optional, Union
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -29,7 +29,6 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
-from tergite_tuner.lib.nodes import __NODE_DEPENDENCIES__, __NODE_ENUM_CLS_MAP__
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
@@ -157,27 +156,20 @@ class NodeManager:
         self,
         lab_ic: "InstrumentCoordinator",
         session: "SessionContext",
-        node_enum_cls_map: MappingProxyType[
-            NodeEnum, Type[BaseNode]
-        ] = __NODE_ENUM_CLS_MAP__,
-        ignore_nodes: Tuple[NodeEnum, ...] = (NodeEnum.TOF, NodeEnum.PUNCHOUT),
-        node_dependencies: Tuple[
-            Tuple[NodeEnum, NodeEnum], ...
-        ] = __NODE_DEPENDENCIES__,
     ) -> None:
         self.session = session
         self.lab_ic = lab_ic
         self.spi_manager: Optional[SpiDAC] = None
 
-        self.node_enum_cls_map = node_enum_cls_map
-        self.ignore_nodes = ignore_nodes
-        self.node_dependencies = node_dependencies
+        self.node_cls_map = session.node_cls_map
+        self.ignored_nodes = session.ignored_nodes
+        self.node_dag_edges = session.node_dag_edges
 
         # Build the calibration DAG from the dependency edges
         # excluding any given nodes of choice
         self.node_graph: "nx.DiGraph" = nx.DiGraph()
-        self.node_graph.add_edges_from(self.node_dependencies)
-        for member in self.node_enum_cls_map:
+        self.node_graph.add_edges_from(self.node_dag_edges)
+        for member in self.node_cls_map:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
@@ -188,12 +180,12 @@ class NodeManager:
         order = get_dependencies_in_topological_order(
             self.node_graph,
             target_node,
-            exclude_nodes=self.ignore_nodes,
+            exclude_nodes=self.ignored_nodes,
         )
         return order + [target_node]
 
     def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False):
-        node_cls = self.node_enum_cls_map[node]
+        node_cls = self.node_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
 
@@ -247,7 +239,7 @@ class NodeManager:
 
     def initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
-        node_cls = self.node_enum_cls_map[node]
+        node_cls = self.node_cls_map[node]
         node_obj = node_cls(
             all_qubits=self.session.qubits,
             couplers=self.session.couplers,
@@ -276,7 +268,7 @@ class NodeManager:
     def _check_calibration_status_redis(self, node: NodeEnum) -> DataStatus:
         """Queries Redis for the calibration status of each qubit or coupler
         associated with ``node``, determining if it is in or out of specification."""
-        node_cls = self.node_enum_cls_map[node]
+        node_cls = self.node_cls_map[node]
         node_name = node.value
         elements = (
             self.session.couplers
@@ -334,12 +326,13 @@ def tune_device(
     Args:
         env_file: optional path to .env file to load session config from.
         **session_options: optional keyword arguments to override config settings.
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session = SessionContext.from_env(env_file, **session_options)
     _tune(session)
 
 
-def re_analyse(
+def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
     **session_options,
 ) -> None:
@@ -351,6 +344,7 @@ def re_analyse(
     Args:
         env_file: optional path to .env file to load session config from.
         **session_options: optional keyword arguments to override config settings.
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session_options.pop("cluster_mode", None)
     session = SessionContext.from_env(

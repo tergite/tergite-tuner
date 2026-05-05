@@ -140,6 +140,7 @@ class SessionContext(BaseModel):
             ``re_analyse``).
         cluster_timeout: timeout in seconds used when waiting on the
             cluster for acquisitions.
+        spi_mode: spi mode (``real`` or ``dummy``).
         user_samplespace: the user samplespace for this session.
         stdout_log_level: console logger level (Python ``logging``
             convention). Defaults to ``25`` to suppress noisy
@@ -165,6 +166,12 @@ class SessionContext(BaseModel):
             nodes. It can also be a path to the node_config TOML file.
             See node_config.example.toml
         target_node_name: lower-case name of :attr:`target_node`.
+        is_recalibration: recalibrate specific nodes (True) or tune up
+            the device from the scratch (False).
+        ignore_spec: recalibrate the nodes by ignoring the previous
+            calibration status (True) or skip the calibration if it is
+            already calibrated (False).
+        save_plot: save the analysis plot (True) or not (False).
         node_dag_edges: the directed edges of the calibration Directed Acyclic Graph (DAG)
             with edges of format ``(parent, child)`` where ``child`` depends on ``parent``.
             Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`
@@ -188,6 +195,7 @@ class SessionContext(BaseModel):
     log_dir: Optional[Path] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
+    spi_mode: SPIMode = SPIMode.dummy
     user_samplespace: dict = {}
     stdout_log_level: int = 25
     file_log_level: int = 10
@@ -198,6 +206,9 @@ class SessionContext(BaseModel):
     node_config: NodeConfig = Field(default_factory=NodeConfig)
     spi_config: Optional[SpiConfig] = None
     cluster_config: Optional[ClusterConfig] = None
+    is_recalibration: bool = True
+    ignore_spec: bool = True
+    save_plot: bool = False
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
