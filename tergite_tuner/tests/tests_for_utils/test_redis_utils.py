@@ -11,7 +11,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from tergite_tuner.lib.nodes import __NODE_STR_CLS_MAP__
+from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -99,7 +99,7 @@ def test_populate_quantities_of_interest(redis_connection):
     redis_connection.flushall()
     assert not redis_connection.keys()
 
-    for node_name, node_cls in __NODE_STR_CLS_MAP__.items():
+    for node_name, node_cls in DEFAULT_NODE_NAME_CLS_MAP.items():
         redis_connection.flushall()
         assert not redis_connection.keys()
 

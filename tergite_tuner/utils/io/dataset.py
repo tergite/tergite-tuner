@@ -17,14 +17,16 @@ import os.path
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import TYPE_CHECKING, Union
 from uuid import uuid4
 
 import cf_xarray as cf
 import xarray
 
-from tergite_tuner.config.session import SessionContext
 from tergite_tuner.utils.logging import logger
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
 def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
@@ -33,7 +35,7 @@ def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
     return ds
 
 
-def create_node_data_path(session_config: SessionContext, node_name: str) -> Path:
+def create_node_data_path(session_config: "SessionContext", node_name: str) -> Path:
     """
     Create the folder where measurement results, plots and logs specific to the node are stored.
 

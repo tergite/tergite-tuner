@@ -31,7 +31,7 @@ from functools import cached_property
 from ipaddress import IPv4Address
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Self, Union
+from typing import Any, List, Mapping, Optional, Self, Tuple, Type, Union
 
 from dotenv import dotenv_values
 from pydantic import (
@@ -53,7 +53,13 @@ from tergite_tuner.config.types import (
     NodeConfig,
     SpiConfig,
 )
-from tergite_tuner.utils.dto.enums import ApplicationStatus, MeasurementMode
+from tergite_tuner.lib.base.node import BaseNode
+from tergite_tuner.lib.nodes import (
+    DEFAULT_IGNORED_NODES,
+    DEFAULT_NODE_CLS_MAP,
+    DEFAULT_NODE_DAG_EDGES,
+)
+from tergite_tuner.utils.dto.enums import MeasurementMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 
 
@@ -117,6 +123,15 @@ class SessionContext(BaseModel):
             nodes. It can also be a path to the node_config TOML file.
             See node_config.example.toml
         target_node_name: lower-case name of :attr:`target_node`.
+        node_dag_edges: the directed edges of the calibration Directed Acyclic Graph (DAG)
+            with edges of format ``(parent, child)`` where ``child`` depends on ``parent``.
+            Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`
+        ignored_nodes: the nodes that should not be included in the final DAG
+            even if there are nodes that depend on them. Defaults to
+            :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`
+        node_cls_map: the mapping from :class:`NodeEnum` to its
+            concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
+            to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
     """
 
     model_config = ConfigDict(
@@ -141,6 +156,9 @@ class SessionContext(BaseModel):
     node_config: NodeConfig = Field(default_factory=NodeConfig)
     spi_config: Optional[SpiConfig] = None
     cluster_config: Optional[ClusterConfig] = None
+    node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
+    ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)

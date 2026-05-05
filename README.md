@@ -80,7 +80,7 @@ The library exposes three entry points from
 ```python
 from tergite_tuner import (
     tune_device,
-    re_analyse,
+    reanalyse,
     extract_bcc_params,
 )
 ```
@@ -109,9 +109,9 @@ in spec.
 #### Re-run analysis on already-recorded data
 
 ```python
-from tergite_tuner import re_analyse
+from tergite_tuner import reanalyse
 
-re_analyse(
+reanalyse(
     env_file=".env",
     log_dir="path/to/run/folder",
 )
@@ -146,13 +146,14 @@ extract_bcc_params(
 
 - [ ] Remove logging to a directory. Let logs log to the default logger but maybe with a unique format
 - [ ] Reduce the number of logs or change the level of logging
-- [ ] Allow the input of the node_graph via an argument in the entry point functions, with a good default
+- [x] Allow the input of the node_graph via an argument in the entry point functions, with a good default
 - [x] Move the example configs to the root of the project
 - [x] Move the default location of configs to the root of the project, not a folder
 - [x] Remove the config meta
 - [x] Enable configs to be passed as python objects in the args of the entry point functions, as opposed to files
 - [ ] Add a return value to all entry point functions, e.g. the output of the export to bcc can be the return of tune_device
 - [x] Fix MotzoiParameter measurement for recalibration vs bringup
+- [ ] Improve typing intellisense for the entry functions
 
 ## Contributing to the project
 

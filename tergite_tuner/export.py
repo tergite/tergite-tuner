@@ -176,6 +176,7 @@ def extract_bcc_params(
             usefully ``qubits``, ``couplers``, and ``redis_url`` — to
             override values that would otherwise come from
             ``env_file`` / ``os.environ``.
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
 
     Returns:
         The payload in the requested format.

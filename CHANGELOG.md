@@ -38,8 +38,12 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Changed
 
-- Move example config files to the root of the project
-- Enable loading of the config as either objects, dicts, or files (file paths)
+- Enabled passing the node_dag_edges, ignored_nodes and node_cls_map 
+  as arguments in the entry point functions, defaulting to the 
+  constants `DEFAULT_IGNORED_NODES`, `DEFAULT_NODE_CLS_MAP`,
+  and `DEFAULT_NODE_DAG_EDGES,` in the nodes package.
+- Moved example config files to the root of the project
+- Enabled loading of the config as either objects, dicts, or files (file paths)
 - Renamed to project fork to tergite-tuner
 - Stripped away all code that is not relevant for running this app as
   a library; the calibration entry points are now plain functions

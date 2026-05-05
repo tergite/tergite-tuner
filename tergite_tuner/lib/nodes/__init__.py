@@ -17,23 +17,20 @@ This module exposes:
 * :class:`NodeEnum` (re-exported from
   :mod:`tergite_tuner.utils.dto.node_enum`) — every calibration
   node referenced anywhere in the pipeline. Names are kept in sync with
-  :data:`__NODE_DEPENDENCIES__` below; if a node never appears in the
+  :data:`DEFAULT_NODE_DAG_EDGES` below; if a node never appears in the
   dependency edges, it should not be in the enum.
-* :data:`__NODE_ENUM_CLS_MAP__` — the canonical lookup from node enum
+* :data:`DEFAULT_NODE_CLS_MAP` — the canonical lookup from node enum
   member to its concrete :class:`BaseNode` subclass. ``TOF`` does not
   appear because it has no implementation; it exists only as a
   placeholder predecessor in the dependency graph.
-* :data:`__NODE_STR_CLS_MAP__` — derived view keyed by lowercase node
+* :data:`DEFAULT_NODE_NAME_CLS_MAP` — derived view keyed by lowercase node
   name.
-* :data:`__NODE_DEPENDENCIES__` — the directed edges of the calibration
+* :data:`DEFAULT_NODE_DAG_EDGES` — the directed edges of the calibration
   DAG. Reading ``(A, B)`` as "B depends on A".
-
-These collections replace the dynamic-reflection ``NodeFactory`` and the
-module-level ``GRAPH_DEPENDENCIES`` / ``CALIBRATION_GRAPH`` globals.
 """
 
 from types import MappingProxyType
-from typing import Tuple, Type
+from typing import Mapping, Tuple, Type
 
 from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes.characterization.all_xy.node import AllXYNode
@@ -41,7 +38,7 @@ from tergite_tuner.lib.nodes.characterization.all_xy.node import AllXYNode
 # NOTE: ProcessTomographySSRONode currently fails to import because
 # tergite_tuner.utils.dto.extended_gates does not export
 # ``Rxy_12``. The node is therefore intentionally absent from
-# ``__NODE_ENUM_CLS_MAP__`` (its enum member and dependency edge are
+# ``DEFAULT_NODE_CLS_MAP`` (its enum member and dependency edge are
 # kept so that the calibration graph still references it correctly).
 # Restore the import and the class-map entry once the missing gate is
 # added.
@@ -100,57 +97,55 @@ from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node import (
 )
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 
-__NODE_ENUM_CLS_MAP__: MappingProxyType[NodeEnum, Type[BaseNode]] = MappingProxyType(
-    {
-        NodeEnum.PUNCHOUT: PunchoutNode,
-        NodeEnum.RESONATOR_SPECTROSCOPY: ResonatorSpectroscopyNode,
-        NodeEnum.RESONATOR_SPECTROSCOPY_1: ResonatorSpectroscopy1Node,
-        NodeEnum.RESONATOR_SPECTROSCOPY_2: ResonatorSpectroscopy2Node,
-        NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: ResonatorSpectroscopyVsCurrentNode,
-        NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
-        NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
-        NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
-        NodeEnum.QUBIT_01_SPECTROSCOPY: Qubit01SpectroscopyNode,
-        NodeEnum.QUBIT_12_SPECTROSCOPY: Qubit12SpectroscopyNode,
-        NodeEnum.RABI_OSCILLATIONS: RabiOscillationsNode,
-        NodeEnum.RABI_OSCILLATIONS_12: RabiOscillations12Node,
-        NodeEnum.N_RABI_OSCILLATIONS: NRabiOscillationsNode,
-        NodeEnum.N_RABI_12_OSCILLATIONS: NRabiOscillations12Node,
-        NodeEnum.RAMSEY_CORRECTION: RamseyFringesNode,
-        NodeEnum.RAMSEY_CORRECTION_12: RamseyFringes12Node,
-        NodeEnum.MOTZOI_PARAMETER: MotzoiParameterNode,
-        NodeEnum.MOTZOI_12_PARAMETER: MotzoiParameter12Node,
-        NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION: ROFrequencyTwoStateOptimizationNode,
-        NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION: ROFrequencyThreeStateOptimizationNode,
-        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION: ROAmplitudeTwoStateOptimizationNode,
-        NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION: ROAmplitudeThreeStateOptimizationNode,
-        NodeEnum.THREE_STATE_DISCRIMINATION: ThreeStateDiscriminationNode,
-        NodeEnum.T1: T1Node,
-        NodeEnum.T2: T2Node,
-        NodeEnum.T2_ECHO: T2EchoNode,
-        NodeEnum.ALL_XY: AllXYNode,
-        NodeEnum.RANDOMIZED_BENCHMARKING: RandomizedBenchmarkingNode,
-        NodeEnum.PURITY_BENCHMARKING: PurityBenchmarkingNode,
-        # NodeEnum.PROCESS_TOMOGRAPHY_SSRO: ProcessTomographySSRONode,  # see import block above
-        NodeEnum.CZ_PARAMETRIZATION: CZParametrizationNode,
-        NodeEnum.CZ_CHEVRON: CZChevronNode,
-        NodeEnum.CZ_CALIBRATION: CZCalibrationNode,
-        NodeEnum.CZ_LOCAL_PHASES: CZLocalPhasesNode,
-        NodeEnum.CZ_RB: CZRBNode,
-    }
-)
-"""Mapping from :class:`NodeEnum` to its concrete :class:`BaseNode` subclass.
+DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
+    NodeEnum.PUNCHOUT: PunchoutNode,
+    NodeEnum.RESONATOR_SPECTROSCOPY: ResonatorSpectroscopyNode,
+    NodeEnum.RESONATOR_SPECTROSCOPY_1: ResonatorSpectroscopy1Node,
+    NodeEnum.RESONATOR_SPECTROSCOPY_2: ResonatorSpectroscopy2Node,
+    NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: ResonatorSpectroscopyVsCurrentNode,
+    NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
+    NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
+    NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
+    NodeEnum.QUBIT_01_SPECTROSCOPY: Qubit01SpectroscopyNode,
+    NodeEnum.QUBIT_12_SPECTROSCOPY: Qubit12SpectroscopyNode,
+    NodeEnum.RABI_OSCILLATIONS: RabiOscillationsNode,
+    NodeEnum.RABI_OSCILLATIONS_12: RabiOscillations12Node,
+    NodeEnum.N_RABI_OSCILLATIONS: NRabiOscillationsNode,
+    NodeEnum.N_RABI_12_OSCILLATIONS: NRabiOscillations12Node,
+    NodeEnum.RAMSEY_CORRECTION: RamseyFringesNode,
+    NodeEnum.RAMSEY_CORRECTION_12: RamseyFringes12Node,
+    NodeEnum.MOTZOI_PARAMETER: MotzoiParameterNode,
+    NodeEnum.MOTZOI_12_PARAMETER: MotzoiParameter12Node,
+    NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION: ROFrequencyTwoStateOptimizationNode,
+    NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION: ROFrequencyThreeStateOptimizationNode,
+    NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION: ROAmplitudeTwoStateOptimizationNode,
+    NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION: ROAmplitudeThreeStateOptimizationNode,
+    NodeEnum.THREE_STATE_DISCRIMINATION: ThreeStateDiscriminationNode,
+    NodeEnum.T1: T1Node,
+    NodeEnum.T2: T2Node,
+    NodeEnum.T2_ECHO: T2EchoNode,
+    NodeEnum.ALL_XY: AllXYNode,
+    NodeEnum.RANDOMIZED_BENCHMARKING: RandomizedBenchmarkingNode,
+    NodeEnum.PURITY_BENCHMARKING: PurityBenchmarkingNode,
+    # NodeEnum.PROCESS_TOMOGRAPHY_SSRO: ProcessTomographySSRONode,  # see import block above
+    NodeEnum.CZ_PARAMETRIZATION: CZParametrizationNode,
+    NodeEnum.CZ_CHEVRON: CZChevronNode,
+    NodeEnum.CZ_CALIBRATION: CZCalibrationNode,
+    NodeEnum.CZ_LOCAL_PHASES: CZLocalPhasesNode,
+    NodeEnum.CZ_RB: CZRBNode,
+}
+"""The default mapping from :class:`NodeEnum` to its concrete :class:`BaseNode` subclass.
 
 ``TOF`` is intentionally absent; it has no implementation and is only
-used as a virtual predecessor in :data:`__NODE_DEPENDENCIES__`.
+used as a virtual predecessor in :data:`DEFAULT_NODE_DAG_EDGES`.
 ``PROCESS_TOMOGRAPHY_SSRO`` is also absent for now because its node
 module has a broken import (see comment near the imports above).
 """
 
-__NODE_STR_CLS_MAP__: MappingProxyType[str, Type[BaseNode]] = MappingProxyType(
-    {member.value: cls for member, cls in __NODE_ENUM_CLS_MAP__.items()}
-)
-"""Same data as :data:`__NODE_ENUM_CLS_MAP__`, keyed by the lowercase
+DEFAULT_NODE_NAME_CLS_MAP: Mapping[str, Type[BaseNode]] = {
+    member.value: cls for member, cls in DEFAULT_NODE_CLS_MAP.items()
+}
+"""Same data as :data:`DEFAULT_NODE_CLS_MAP`, keyed by the lowercase
 :class:`NodeEnum` value (``member.value``).
 
 This is the form used everywhere the calibration system needs a string
@@ -160,7 +155,7 @@ internal; they may match the lookup key but the maps are the source
 of truth for the canonical string.
 """
 
-__NODE_DEPENDENCIES__: Tuple[Tuple[NodeEnum, NodeEnum], ...] = (
+DEFAULT_NODE_DAG_EDGES: Tuple[Tuple[NodeEnum, NodeEnum], ...] = (
     (NodeEnum.TOF, NodeEnum.RESONATOR_SPECTROSCOPY),
     (NodeEnum.RESONATOR_SPECTROSCOPY, NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT),
     (NodeEnum.QUBIT_01_SPECTROSCOPY, NodeEnum.COUPLER_ANTICROSSING),
@@ -223,7 +218,10 @@ __NODE_DEPENDENCIES__: Tuple[Tuple[NodeEnum, NodeEnum], ...] = (
     #     NodeEnum.PROCESS_TOMOGRAPHY_SSRO,
     # ),  # see import-block note above; restore once Rxy_12 is added.
 )
-"""Directed edges of the calibration DAG.
+"""The default directed edges of the calibration DAG.
 
 Each tuple ``(parent, child)`` reads as "``child`` depends on ``parent``".
 """
+
+DEFAULT_IGNORED_NODES: Tuple[NodeEnum, ...] = (NodeEnum.TOF, NodeEnum.PUNCHOUT)
+"""The nodes that are to be ignored by default"""

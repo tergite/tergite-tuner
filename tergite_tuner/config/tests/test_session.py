@@ -17,8 +17,6 @@ defaults baked into the model, and the type coercion that happens for
 values read out of an env file.
 """
 
-import getpass
-from os import path
 from pathlib import Path
 
 import pytest
@@ -30,6 +28,14 @@ from tergite_tuner.config.types import (
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
+)
+from tergite_tuner.lib.nodes import (
+    DEFAULT_IGNORED_NODES,
+    DEFAULT_NODE_CLS_MAP,
+    DEFAULT_NODE_DAG_EDGES,
+    NodeEnum,
+    Qubit01SpectroscopyAmplitudeNode,
+    ResonatorSpectroscopy1Node,
 )
 from tergite_tuner.utils.dto.enums import MeasurementMode
 
@@ -216,3 +222,33 @@ def test_session_loads_configs_from_file_paths():
     assert session.node_config == _NODE_CONFIG
     assert session.cluster_config.model_dump() == _CLUSTER_CONFIG.model_dump()
     assert session.spi_config == _SPI_CONFIG
+
+
+def test_session_loads_node_vars_from_py_objects():
+    """Can load the node vars like node_dag_edges, ignored_nodes etc. from python objects"""
+    node_cls_map = {
+        NodeEnum.CZ_RB: ResonatorSpectroscopy1Node,
+        NodeEnum.CZ_CHEVRON: Qubit01SpectroscopyAmplitudeNode,
+    }
+    ignored_nodes = (NodeEnum.CZ_RB,)
+    node_dag_edges = (
+        (NodeEnum.CZ_CHEVRON, NodeEnum.CZ_RB),
+        (NodeEnum.TOF, NodeEnum.RESONATOR_SPECTROSCOPY),
+    )
+
+    session = SessionContext(
+        node_cls_map=node_cls_map,
+        ignored_nodes=ignored_nodes,
+        node_dag_edges=node_dag_edges,
+    )
+    assert session.node_cls_map == node_cls_map
+    assert session.node_dag_edges == node_dag_edges
+    assert session.ignored_nodes == ignored_nodes
+
+
+def test_default_session_has_default_node_props():
+    """default session has the default node vars."""
+    session = SessionContext()
+    assert session.node_cls_map == DEFAULT_NODE_CLS_MAP
+    assert session.ignored_nodes == DEFAULT_IGNORED_NODES
+    assert session.node_dag_edges == DEFAULT_NODE_DAG_EDGES
