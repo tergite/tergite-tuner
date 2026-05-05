@@ -24,7 +24,7 @@ from qblox_instruments import SpiRack
 from qcodes import validators
 from rich.progress import Progress
 
-from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.utils.dto.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.misc.os import OperatingSystem, get_os
 
@@ -77,7 +77,8 @@ class SpiDAC:
         self.session = session
         self.port = _find_and_validate_spi_port(session.spi_serial_port)
         self.is_dummy = (
-            session.cluster_mode == MeasurementMode.dummy
+            session.spi_mode == SPIMode.dummy
+            or session.cluster_mode == MeasurementMode.dummy
             or session.cluster_mode == MeasurementMode.re_analyse
         )
         if self.is_dummy:

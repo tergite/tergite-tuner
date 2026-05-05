@@ -8,6 +8,7 @@ schedules/
 
 # notebooks
 notebooks/0
+*.ipynb
 
 #user config files
 # utils/user_input.py

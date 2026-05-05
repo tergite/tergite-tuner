@@ -42,7 +42,7 @@ from tergite_tuner.utils.backend.redis_utils import (
     populate_quantities_of_interest,
     revert_node_parameters,
 )
-from tergite_tuner.utils.dto.enums import DataStatus, MeasurementMode
+from tergite_tuner.utils.dto.enums import DataStatus, MeasurementMode, SPIMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 from tergite_tuner.utils.hardware.spi import SpiDAC
 from tergite_tuner.utils.io.dataset import create_node_data_path
@@ -401,10 +401,12 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
         node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
         # no setting initial parking currents during recalibration
         if not session.is_recalibration:
+            assert session.spi_mode == SPIMode.real, 'Set spi_mode to "real" in the session.'
             node_manager.spi_manager.set_initial_parking_currents(session.couplers)
 
     for calibration_node in topo_order:
-        ignore_spec = calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION
+        # ignore_spec = calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION
+        ignore_spec = session.ignore_spec
         node_manager.inspect_node(calibration_node, ignore_spec=ignore_spec)
         logger.info(f"{calibration_node.value} node is completed")
 
