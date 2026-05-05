@@ -108,6 +108,7 @@ tergite_acl/utils/**.csv
 sequence.json
 tergite_tuner/utils/**.csv
 out/**
+tmp/
 
 # internal
 external/
