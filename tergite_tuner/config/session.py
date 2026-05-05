@@ -31,7 +31,19 @@ from functools import cached_property
 from ipaddress import IPv4Address
 from os import PathLike
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, Self, Tuple, Type, Union
+from typing import (
+    Any,
+    List,
+    Literal,
+    Mapping,
+    NotRequired,
+    Optional,
+    Self,
+    Tuple,
+    Type,
+    TypedDict,
+    Union,
+)
 
 from dotenv import dotenv_values
 from pydantic import (
@@ -66,6 +78,36 @@ from tergite_tuner.utils.dto.node_enum import NodeEnum
 def _default_data_dir() -> Path:
     """The default ``data_dir``: 'out' in the current working directory."""
     return Path.cwd() / "./out"
+
+
+class SessionOptions(TypedDict, total=False):
+    """Options for initializing the SessionContext as copied from SessionContext.
+
+    This is useful in functions that create a session context object.
+    You just need to use ``**kwargs: Unpack[SessionOptions]``
+    """
+
+    cluster_ip: Optional[IPv4Address]
+    target_node: Optional[NodeEnum]
+    qubits: List[str]
+    couplers: Optional[List[str]]
+    name: Optional[str]
+    log_dir: Optional[Path]
+    cluster_mode: MeasurementMode
+    cluster_timeout: int
+    user_samplespace: dict
+    stdout_log_level: int
+    file_log_level: int
+    spi_serial_port: str
+    redis_url: RedisDsn
+    data_dir: Path
+    device_config: DeviceConfig | Path | str
+    node_config: NodeConfig | Path | str
+    spi_config: Optional[SpiConfig] | Path | str
+    cluster_config: Optional[ClusterConfig] | Path | str
+    node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
+    ignored_nodes: Tuple[NodeEnum, ...]
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
 
 
 class SessionContext(BaseModel):

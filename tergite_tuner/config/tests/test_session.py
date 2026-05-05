@@ -18,13 +18,15 @@ values read out of an env file.
 """
 
 from pathlib import Path
+from typing import Annotated, Optional, get_origin
 
 import pytest
 from pydantic import ValidationError
 
-from tergite_tuner.config.session import SessionContext
+from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.config.types import (
     ClusterConfig,
+    DeviceConfig,
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
@@ -252,3 +254,27 @@ def test_default_session_has_default_node_props():
     assert session.node_cls_map == DEFAULT_NODE_CLS_MAP
     assert session.ignored_nodes == DEFAULT_IGNORED_NODES
     assert session.node_dag_edges == DEFAULT_NODE_DAG_EDGES
+
+
+def test_session_options_match_session_context():
+    """The SessionOptions typed dict matches the SessionContext field set"""
+    excluded_fields = ()
+    session_options_fields = SessionOptions.__annotations__
+    assert SessionOptions.__total__ is False
+    for name, field in SessionContext.model_fields.items():
+        assert not field.is_required()
+
+        if name not in excluded_fields:
+            options_type = session_options_fields[name]
+            context_type = field.annotation
+            if get_origin(options_type) is Annotated:
+                assert options_type.__origin__ == context_type
+            elif context_type in (
+                DeviceConfig,
+                NodeConfig,
+                Optional[SpiConfig],
+                Optional[ClusterConfig],
+            ):
+                assert options_type == context_type | Path | str
+            else:
+                assert options_type == context_type
