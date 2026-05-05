@@ -123,6 +123,15 @@ def test_node_config_membership_iteration():
     assert set(iter(node)) == set(node.root.keys())
 
 
+def test_node_config_default_is_empty():
+    """``NodeConfig()`` constructs with no nodes — it is the default for
+    :class:`SessionContext.node_config`, so this contract matters."""
+    node = NodeConfig()
+    assert node.root == {}
+    assert "anything" not in node
+    assert list(iter(node)) == []
+
+
 def test_spi_config_load_example():
     """The SPI configuration from the example spi config file loads cleanly."""
     spi = SpiConfig.from_toml(_SPI_CONFIG_PATH)
@@ -161,6 +170,15 @@ def test_spi_config_membership_iteration():
     assert "q11_q12" in spi
     assert "q99_q99" not in spi
     assert "q08_q09" in list(iter(spi))
+
+
+def test_spi_config_default_is_empty():
+    """``SpiConfig()`` constructs with no couplers wired — useful as a
+    default when the calibration doesn't drive the SPI rack."""
+    spi = SpiConfig()
+    assert spi.root == {}
+    assert "anything" not in spi
+    assert list(iter(spi)) == []
 
 
 def test_cluster_config_load_example():

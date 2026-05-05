@@ -140,7 +140,7 @@ class SessionContext(BaseModel):
     device_config: DeviceConfig = Field(default_factory=DeviceConfig)
     node_config: NodeConfig = Field(default_factory=NodeConfig)
     spi_config: Optional[SpiConfig] = None
-    cluster_config: ClusterConfig = Field(default_factory=ClusterConfig)
+    cluster_config: Optional[ClusterConfig] = None
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)

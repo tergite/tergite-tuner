@@ -26,15 +26,16 @@ def test_populate_initial_parameters(redis_connection, session_context):
     assert not redis_connection.keys()
 
     device = session_context.device_config
-    qubits = list(device.qubits.keys())
-    couplers = list(device.couplers.keys())
     populate_initial_parameters(session_context)
     redis_keys = redis_connection.keys()
 
-    # test that all device elements are on redis
-    for qubit in qubits:
+    # ``populate_initial_parameters`` pushes only the qubits and couplers
+    # selected for *this* calibration run (``session.qubits`` /
+    # ``session.couplers``); the device config can describe more
+    # components than are actually being calibrated.
+    for qubit in session_context.qubits:
         assert f"transmons:{qubit}" in redis_keys
-    for coupler in couplers:
+    for coupler in session_context.couplers:
         assert f"couplers:{coupler}" in redis_keys
 
     # test values are correctly uploaded onto redis

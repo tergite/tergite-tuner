@@ -105,7 +105,7 @@ def revert_node_parameters(node_name: str, session: "SessionContext"):
     if not node_name in node_configuration:
         return  # no node specific config found
 
-    initial_qubit_parameters = session.device.qubits
+    initial_qubit_parameters = session.device_config.qubits
 
     node_specific_dict = node_configuration[node_name].get("all", {})
 

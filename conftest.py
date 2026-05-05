@@ -38,11 +38,11 @@ from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.utils.dto.enums import MeasurementMode
 
 _FIXTURE_ENV_FILE = get_fixture_path("configs", "env", "default.env")
-_FIXTURE_CONFIG_DIR = get_fixture_path(
+_FIXTURE_DEVICE_UNDER_TEST_DIR = get_fixture_path(
     "templates",
     "default_device_under_test",
 )
-_FIXTURE_CONFIG_PATH = Path(_FIXTURE_CONFIG_DIR).resolve()
+_FIXTURE_CONFIG_PATH = Path(_FIXTURE_DEVICE_UNDER_TEST_DIR).resolve() / "configs"
 _PROJECT_ROOT = Path(__file__).parent
 
 
@@ -75,7 +75,6 @@ def session_context(redis_connection) -> SessionContext:
     """
     return SessionContext.from_env(
         _FIXTURE_ENV_FILE,
-        config_dir=_FIXTURE_CONFIG_DIR,
         cluster_mode=MeasurementMode.dummy,
         user_samplespace={
             "resonator_spectroscopy": {

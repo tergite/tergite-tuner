@@ -16,7 +16,7 @@ from os import PathLike
 from typing import Dict, Optional
 
 import toml
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class _SpiCouplerEntry(BaseModel):
@@ -40,7 +40,13 @@ class SpiConfig(RootModel[Dict[str, _SpiCouplerEntry]]):
 
     Each top-level section is a coupler identifier of the form
     ``q<a>_q<b>`` and maps to a :class:`_SpiCouplerEntry`.
+
+    The empty mapping is a valid configuration: ``SpiConfig()`` returns
+    a config with no couplers wired, which is useful as a default in
+    :class:`SessionContext`.
     """
+
+    root: Dict[str, _SpiCouplerEntry] = Field(default_factory=dict)
 
     @classmethod
     def from_toml(cls, file: "PathLike[str]") -> "SpiConfig":

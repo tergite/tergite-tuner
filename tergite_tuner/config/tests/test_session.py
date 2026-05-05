@@ -19,21 +19,33 @@ values read out of an env file.
 
 import getpass
 from os import path
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
 from tergite_tuner.config.session import SessionContext
+from tergite_tuner.config.types import (
+    ClusterConfig,
+    DeviceConfigFile,
+    NodeConfig,
+    SpiConfig,
+)
 from tergite_tuner.utils.dto.enums import MeasurementMode
 
-_CONFIG_PACKAGE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
-_REPO_ROOT = path.dirname(path.dirname(_CONFIG_PACKAGE_DIR))
-_EXAMPLE_ENV_PATH = path.join(_REPO_ROOT, ".example.env")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
+_EXAMPLE_ENV_PATH = _PROJECT_ROOT / ".example.env"
 
-@pytest.fixture
-def example_env_path() -> str:
-    return _EXAMPLE_ENV_PATH
+_DEVICE_CONFIG_PATH = _PROJECT_ROOT / "device_config.example.toml"
+_NODE_CONFIG_PATH = _PROJECT_ROOT / "node_config.example.toml"
+_SPI_CONFIG_PATH = _PROJECT_ROOT / "spi_config.example.toml"
+_CLUSTER_CONFIG_PATH = _PROJECT_ROOT / "cluster_config.example.json"
+
+_DEVICE_CONFIG = DeviceConfigFile.from_toml(_DEVICE_CONFIG_PATH).device
+_NODE_CONFIG = NodeConfig.from_toml(_NODE_CONFIG_PATH)
+_CLUSTER_CONFIG = ClusterConfig.from_json(_CLUSTER_CONFIG_PATH)
+_SPI_CONFIG = SpiConfig.from_toml(_SPI_CONFIG_PATH)
 
 
 @pytest.fixture
@@ -50,12 +62,6 @@ def clean_environ(monkeypatch):
         "CLUSTER_IP",
         "SPI_SERIAL_PORT",
         "REDIS_URL",
-        "DATA_BROWSER_HOST",
-        "DATA_BROWSER_PORT",
-        "HW_CONFIG_GENERATOR_HOST",
-        "HW_CONFIG_GENERATOR_PORT",
-        "DEFAULT_PREFIX",
-        "ROOT_DIR",
         "DATA_DIR",
         "CONFIG_DIR",
         "TARGET_NODE",
@@ -68,9 +74,9 @@ def clean_environ(monkeypatch):
         monkeypatch.delenv(key, raising=False)
 
 
-def test_session_loads_example_env(example_env_path, clean_environ):
+def test_session_loads_example_env(clean_environ):
     """``.example.env`` parses cleanly into a :class:`SessionContext`."""
-    session = SessionContext.from_env(example_env_path)
+    session = SessionContext.from_env(_EXAMPLE_ENV_PATH)
 
     # Values explicitly set in the example file
     assert session.stdout_log_level == 25
@@ -78,17 +84,12 @@ def test_session_loads_example_env(example_env_path, clean_environ):
     assert str(session.cluster_ip) == "192.14.2.1"
     assert session.spi_serial_port == "/dev/ttyACM0"
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
-    assert str(session.data_browser_host) == "127.0.0.1"
-    assert session.data_browser_port == 8179
-    assert str(session.hw_config_generator_host) == "127.0.0.1"
-    assert session.hw_config_generator_port == 8079
+    assert session.cluster_timeout == 222
 
 
-def test_session_uses_documented_defaults_for_commented_vars(
-    example_env_path, clean_environ
-):
+def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
     """Commented-out variables fall back to the documented defaults."""
-    session = SessionContext.from_env(example_env_path)
+    session = SessionContext.from_env(_EXAMPLE_ENV_PATH)
 
     assert session.cluster_mode == MeasurementMode.real
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
@@ -173,3 +174,45 @@ def test_session_from_env_raises_for_missing_file(tmp_path):
     missing = tmp_path / "does_not_exist"
     with pytest.raises(FileNotFoundError):
         SessionContext.from_env(missing)
+
+
+def test_session_loads_configs_from_dicts():
+    """One can pass dicts instead of file paths for some of the configs"""
+    session = SessionContext(
+        device_config=_DEVICE_CONFIG.model_dump(),
+        node_config=_NODE_CONFIG.model_dump(),
+        cluster_config=_CLUSTER_CONFIG.model_dump(),
+        spi_config=_SPI_CONFIG.model_dump(),
+    )
+    assert session.device_config == _DEVICE_CONFIG
+    assert session.node_config == _NODE_CONFIG
+    assert session.cluster_config.model_dump() == _CLUSTER_CONFIG.model_dump()
+    assert session.spi_config == _SPI_CONFIG
+
+
+def test_session_loads_configs_from_models():
+    """One can pass base model instances instead of file paths for some of the configs"""
+    session = SessionContext(
+        device_config=_DEVICE_CONFIG,
+        node_config=_NODE_CONFIG,
+        cluster_config=_CLUSTER_CONFIG,
+        spi_config=_SPI_CONFIG,
+    )
+    assert session.device_config == _DEVICE_CONFIG
+    assert session.node_config == _NODE_CONFIG
+    assert session.cluster_config.model_dump() == _CLUSTER_CONFIG.model_dump()
+    assert session.spi_config == _SPI_CONFIG
+
+
+def test_session_loads_configs_from_file_paths():
+    """One can pass file paths instead of dicts for some of the configs"""
+    session = SessionContext(
+        device_config=_DEVICE_CONFIG_PATH,
+        node_config=_NODE_CONFIG_PATH,
+        cluster_config=_CLUSTER_CONFIG_PATH,
+        spi_config=_SPI_CONFIG_PATH,
+    )
+    assert session.device_config == _DEVICE_CONFIG
+    assert session.node_config == _NODE_CONFIG
+    assert session.cluster_config.model_dump() == _CLUSTER_CONFIG.model_dump()
+    assert session.spi_config == _SPI_CONFIG

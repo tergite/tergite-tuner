@@ -16,7 +16,7 @@ from os import PathLike
 from typing import Any, Dict
 
 import toml
-from pydantic import RootModel, model_validator
+from pydantic import Field, RootModel, model_validator
 
 
 class NodeConfig(RootModel[Dict[str, Dict[str, Any]]]):
@@ -28,7 +28,13 @@ class NodeConfig(RootModel[Dict[str, Dict[str, Any]]]):
     and its body is a mapping of qubit identifiers (or the special
     ``all`` key) to arbitrary, possibly nested parameter dicts such as
     ``reset.duration = 60e-6`` or ``spec.spec_amp = 6e-4``.
+
+    The empty mapping is a valid configuration: ``NodeConfig()`` returns
+    a config with no nodes, which is useful as a default in
+    :class:`SessionContext`.
     """
+
+    root: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _check_section_shape(self) -> "NodeConfig":

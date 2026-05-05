@@ -25,7 +25,7 @@ REGEX_DAY_FOLDER = re.compile(r"^(\d{4}-\d{2}-\d{2})$")
 
 
 def is_day_folder(path_to_something: Path | str):
-    """
+    r"""
     Determine whether the path argument is a day folder.
 
     The folder has to exist and has to match the regex:
@@ -36,7 +36,7 @@ def is_day_folder(path_to_something: Path | str):
 
 
 def is_run_folder(path_to_something: Path | str):
-    """
+    r"""
     Determine whether the path argument is a run folder.
 
     The folder has to exist and has to match the regex:
@@ -47,7 +47,7 @@ def is_run_folder(path_to_something: Path | str):
 
 
 def is_measurement_folder(path_to_something: Path | str):
-    """
+    r"""
     Determine whether the path argument is a measurement folder.
 
     The folder has to exist and has to match the regex:
