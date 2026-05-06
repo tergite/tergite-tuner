@@ -58,8 +58,8 @@ class _QubitUnits(BaseModel):
     pi_pulse_duration: str = "s"
     pi_pulse_motzoi: str = ""
     pulse_sigma: str = ""
-    t1_decoherence: str = "s"
-    t2_decoherence: str = "s"
+    t1_decoherence: str = "us"
+    t2_decoherence: str = "us"
     anharmonicity: str = "Hz"
 
 
