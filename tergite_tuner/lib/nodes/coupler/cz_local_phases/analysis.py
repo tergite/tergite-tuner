@@ -15,6 +15,8 @@
 
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
+from cycler import cycler
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
@@ -148,6 +150,72 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
             dim="qubit",
         )
         return self.probabilities
+    
+    def plotter(self, figures_dictionary):
+        fig, axs = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
+        target_probabilities = self.target_qubit_probabilities.sel({"state": 1})
+        control_probabilities = self.control_qubit_probabilities.sel({"state": 1})
+
+        styles = {"marker": "o", "ls": ""}
+        text_styles = {
+            "size": 16,
+            "color": "red",
+            "backgroundcolor": "white",
+        }
+
+        ###  normal qubits (not swaped) for phi_10
+        swap = False
+        axs[0][0].set_prop_cycle(cycler("color", ["orange", "black"]))
+        control_probabilities.sel({self.swap_coord: swap}).plot(
+            ax=axs[0][0], hue=self.gate_mode_coord, **styles
+        )
+        axs[0][0].set_title(f"swap: {swap}")
+
+        axs[0][1].set_prop_cycle(cycler("color", ["orange", "black"]))
+        target_probabilities.sel({self.swap_coord: swap}).plot(
+            ax=axs[0][1],
+            hue=self.gate_mode_coord,
+            **styles,
+        )
+        # plot sinusoidal fits:
+        self.target_plot_points.plot(ax=axs[0][1], hue=self.gate_mode_coord)
+        axs[0][1].text(
+            0,
+            0,
+            f"$\\varphi_{{01}} = {self.phase_01:.1f} ^o$",
+            bbox=dict(facecolor="white", alpha=0.5, linewidth=0),
+            **text_styles,
+        )
+        axs[0][1].set_title(f"swap: {swap}")
+        axs[0][1].get_legend().remove()
+
+        ### swaped qubits for phi_01
+        swap = True
+        axs[1][0].set_prop_cycle(cycler("color", ["orange", "black"]))
+        control_probabilities.sel({self.swap_coord: swap}).plot(
+            ax=axs[1][0],
+            hue=self.gate_mode_coord,
+            **styles,
+        )
+        # plot sinusoidal fits:
+        self.control_swaped_plot_points.plot(ax=axs[1][0], hue=self.gate_mode_coord)
+        axs[1][0].text(
+            0,
+            0,
+            f"$\\varphi_{{10}} = {self.phase_10:.1f} ^o$",
+            bbox=dict(facecolor="white", alpha=0.5, linewidth=0),
+            **text_styles,
+        )
+        axs[1][0].set_title(f"swap: {swap}")
+        axs[1][0].get_legend().remove()
+
+        axs[1][1].set_prop_cycle(cycler("color", ["orange", "black"]))
+        target_probabilities.sel({self.swap_coord: True}).plot(
+            ax=axs[1][1], hue=self.gate_mode_coord, **styles
+        )
+        axs[1][1].set_title(f"swap: {swap}")
+
+        figures_dictionary[self.coupler] = [fig]
 
 
 class CZLocalPhasesNodeAnalysis(BaseAllCouplersAnalysis):

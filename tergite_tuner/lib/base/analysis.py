@@ -28,6 +28,9 @@ import xarray as xr
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.lib.base.utils.figure_utils import (
+    create_figure_with_top_band,
+)
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -56,6 +59,16 @@ class BaseAnalysis(ABC):
     @qoi.setter
     def qoi(self, value: "QOI"):
         self._qoi = value
+
+    @abstractmethod
+    def plotter(self) -> None:
+        """
+        Plot the fitted values from the analysis
+
+        Returns:
+            None: This will just plot the fitted values
+
+        """
 
 
 class BaseNodeAnalysis(ABC):
@@ -87,7 +100,7 @@ class BaseNodeAnalysis(ABC):
         self._qoi = value
 
     @abstractmethod
-    def analyze_node(self, data_path: os.PathLike[str]) -> dict[str, "QOI"]:
+    def analyze_node(self, data_path: os.PathLike[str], save_plot: bool = False) -> dict[str, "QOI"]:
         """
         Run the fitting of the analysis function
 
@@ -116,6 +129,25 @@ class BaseNodeAnalysis(ABC):
         if "working_points" in dataset.coords:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
         return dataset
+    
+    def _manage_plots(self, column_grid: int, plots_per_qubit: int):
+        n_vars = len(self.data_vars)
+        nrows = int(np.ceil(n_vars / column_grid)) * plots_per_qubit
+        ncols = min(column_grid, n_vars)
+
+        fig, axs = create_figure_with_top_band(nrows, ncols)
+        return fig, axs
+
+    def _save_plots(self):
+        preview_path = self.data_path / f"{self.name}_preview.png"
+        full_path = self.data_path / f"{self.name}.png"
+        logger.info("Saving Plots")
+        self.fig.savefig(preview_path, bbox_inches="tight", dpi=100)
+        self.fig.savefig(full_path, bbox_inches="tight", dpi=400)
+        logger.info(f"Plots saved to {preview_path} and {full_path}")
+
+    def _save_other_plots(self):
+        pass
 
 
 class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
@@ -132,10 +164,10 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         self.dataset = xr.Dataset()
         self.data_vars = None
         self.coords = None
-
+        self.column_grid, self.plots_per_qubit = 5, 1
         self.qubit_analyses: List[BaseQubitAnalysis] = []
 
-    def analyze_node(self, data_path: Path) -> dict[str, "QOI"]:
+    def analyze_node(self, data_path: Path, save_plot: bool = False) -> dict[str, "QOI"]:
         """
         Analyze the node and save the results to redis.
         Args:
@@ -151,6 +183,13 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         self.data_vars = self.dataset.data_vars
 
         analysis_results = self._analyze_all_qubits()
+
+        if save_plot:
+            self.fig, self.axs = self._manage_plots(self.column_grid, self.plots_per_qubit)
+            self._fill_plots()
+            self._save_plots()
+            self._save_other_plots()
+
         return analysis_results
 
     def _analyze_all_qubits(self):
@@ -176,6 +215,12 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
             self.qubit_analyses.append(qubit_analysis)
 
         return analysis_results
+    
+    def _fill_plots(self):
+        for index, analysis in enumerate(self.qubit_analyses):
+            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
+            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
+            analysis.plot(primary_axis)
 
 
 class BaseQubitAnalysis(BaseAnalysis, ABC):
@@ -219,6 +264,18 @@ class BaseQubitAnalysis(BaseAnalysis, ABC):
     def _compute_magnitudes(self):
         self.S21 = self.dataset.isel(ReIm=0) + 1j * self.dataset.isel(ReIm=1)
         self.magnitudes = np.abs(self.S21)
+
+    def plot(self, primary_axis):
+        """
+        Plot the fitted values from the analysis
+        Args:
+            primary_axis: The axis object from matplotlib to be plotted
+        Returns:
+            None, will just plot the fitted values
+        """
+
+        self.plotter(primary_axis)  # Assuming node_analysis object is available
+        primary_axis.set_title(f"Qubit {self.qubit}")
 
     @abstractmethod
     def analyse_qubit(self) -> "QOI":
@@ -297,10 +354,11 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
         self.data_vars = None
         self.coords = None
 
+        self.figures_dictionary = {}
         self.processed_dataset = xr.Dataset()
         self.analysis_keywords = kwargs
 
-    def analyze_node(self, data_path: Path) -> "QOI":
+    def analyze_node(self, data_path: Path, save_plot: bool = False) -> "QOI":
         """
         Analyze the node and save the results to redis.
         Args:
@@ -315,7 +373,36 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
         self.coords = self.dataset.coords
         self.data_vars = self.dataset.data_vars
         analysis_results = self._analyze_all_couplers()
+        if save_plot: 
+            self.display_and_save_plots()
         return analysis_results
+    
+    def display_and_save_plots(self):
+        # if the dictionary is empty do nothing
+        if not self.figures_dictionary:
+            return
+
+        for coupler, figure_list in self.figures_dictionary.items():
+            for fig_index, fig in enumerate(figure_list):
+                preview_path = (
+                    self.data_path / f"{self.name}_{coupler}_{fig_index}_preview.png"
+                )
+                # this corresponds to faceted plots
+                if fig.axes[0].get_gridspec().get_geometry() == (2, 3):
+                    fig.set_size_inches(14, 9)
+                else:
+                    nrows = fig.axes[0].get_gridspec().nrows
+                    ncols = fig.axes[0].get_gridspec().ncols
+                    if nrows == 1 and ncols == 1:
+                        fig.set_size_inches(9, 6)
+                    elif nrows == 1 and ncols == 2:
+                        fig.set_size_inches(12, 8)
+                    else:
+                        fig.set_size_inches(ncols * 6, nrows * 4)
+
+                fig.savefig(preview_path, bbox_inches="tight", dpi=100)
+                # some slack for the figure x and y labels
+                fig.tight_layout(rect=[0.05, 0.05, 1, 0.98])
 
     def _analyze_all_couplers(self):
         analysis_results = {}
@@ -341,6 +428,7 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
                 self.processed_dataset = xr.merge(
                     [self.processed_dataset, processed_coupler_dataset]
                 )
+            coupler_analysis.plotter(figures_dictionary=self.figures_dictionary)
             analysis_results[this_coupler] = qoi
 
         return analysis_results

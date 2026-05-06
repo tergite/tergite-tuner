@@ -88,14 +88,14 @@ class BaseNode(ABC):
         dataset = measurement_type.measure_node(cluster_status)
         return dataset
 
-    def calibrate(self, data_path, measurement_mode):
+    def calibrate(self, data_path, measurement_mode, save_plot):
         if measurement_mode != MeasurementMode.re_analyse:
             result_dataset = self.measure_node(measurement_mode)
             save_serial_device(self.device, data_path)
             save_dataset(result_dataset, self.name, data_path)
         # After the measurement free the device resources
         close_device_resources(self.device)
-        self.post_process(data_path)
+        self.post_process(data_path, save_plot)
         logger.info("analysis completed")
 
     def measure_compiled_schedule(
@@ -142,7 +142,7 @@ class BaseNode(ABC):
             duration *= self.node_dictionary["loop_repetitions"]
         return duration
 
-    def post_process(self, data_path: PathLike[str]):
+    def post_process(self, data_path: PathLike[str], save_plot: bool = False):
         analysis_kwargs = getattr(self, "analysis_keywords", dict())
         node_analysis: BaseNodeAnalysis = self.analysis_cls(
             self.name,
@@ -150,7 +150,7 @@ class BaseNode(ABC):
             self.session,
             **analysis_kwargs,
         )
-        QOI_dict = node_analysis.analyze_node(data_path)
+        QOI_dict = node_analysis.analyze_node(data_path, save_plot)
         for element_id_, qois_ in QOI_dict.items():
             update_redis_trusted_values(
                 self.name,

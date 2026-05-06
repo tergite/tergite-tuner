@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import numpy as np
 import xarray as xr
 from scipy.stats import spearmanr
+import matplotlib.pyplot as plt
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
@@ -200,6 +201,53 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
     @property
     def processed_dataset(self):
         return self.probabilities
+    
+    def plotter(self, figures_dictionary):
+
+        current_probabilities = self.probabilities
+        current_probabilities.plot(
+            x=self.frequencies_coord, cmap="RdBu_r", row="qubit", col="state"
+        )
+
+        fig = plt.gcf()
+        parabolic_fit_frequencies = np.linspace(
+            self.cz_working_frequencies[0], self.cz_working_frequencies[-1], 100
+        )
+        parabolic_fit_durations = self.chevron_fit_result.eval(
+            self.chevron_fit_result.params, x=parabolic_fit_frequencies
+        )
+
+        # if there are no working points return only the faceting plot
+        if self.cz_working_durations_in_ns.size == 0:
+            figures_dictionary[self.coupler] = [fig]
+            return
+
+        # for every one of the six faceting axes, plot the working points and
+        # their parabolic fit
+        for ax in fig.axes:
+            ax.plot(
+                parabolic_fit_frequencies,
+                parabolic_fit_durations,
+                color="grey",
+                lw=5,
+            )
+            ax.plot(
+                self.cz_working_frequencies,
+                self.cz_working_durations_in_ns * 1e-9,
+                marker="8",
+                ls="",
+                color="yellow",
+            )
+            ax.plot(
+                self.selected_frequencies,
+                self.selected_durations_in_ns * 1e-9,
+                marker="*",
+                markersize=12,
+                ls="",
+                color="yellow",
+            )
+
+        figures_dictionary[self.coupler] = [fig]
 
 
 class CZChevronAnalysis(BaseAllCouplersAnalysis):

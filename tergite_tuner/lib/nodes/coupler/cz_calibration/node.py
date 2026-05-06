@@ -59,8 +59,7 @@ class CZCalibrationNode(CouplerNode):
 
         self.outer_schedule_samplespace = {
             "working_points": {
-                # coupler: self.working_points(coupler) for coupler in self.couplers
-                coupler: self.working_points_fixed_duration(coupler)
+                coupler: self.working_points_fixed_duration(coupler) if "q12" in coupler else self.working_points(coupler)
                 for coupler in self.couplers
             }
         }
@@ -102,7 +101,7 @@ class CZCalibrationNode(CouplerNode):
             self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency")
         )
         sweep_range = 0.2e6
-        number_of_points = 40
+        number_of_points = 20
         sweep_frequencies = np.linspace(
             cz_pulse_frequency - sweep_range,
             cz_pulse_frequency + sweep_range,

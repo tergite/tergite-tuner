@@ -124,7 +124,7 @@ _qubit_parameters: List[Tuple[str, str, _DataSource, Type]] = [
     ("pulse_type", "Gaussian", _DataSource.LITERAL, str),
     ("pulse_sigma", "rxy:sigma", _DataSource.REDIS, float),
     ("t1_decoherence", "t1_time", _DataSource.REDIS, float),
-    ("t2_decoherence", "t2_time", _DataSource.REDIS, float),
+    ("t2_decoherence", "t2_echo_time", _DataSource.REDIS, float),
 ]
 
 _readout_resonator_parameters: List[Tuple[str, str, _DataSource, Type]] = [

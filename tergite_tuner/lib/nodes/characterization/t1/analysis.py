@@ -122,6 +122,43 @@ class T1QubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
+    
+    def plotter(self, ax):
+        """
+        Plot the results of the T1 analysis on the provided axes.
+        Args:
+            ax: The axes on which to plot the results.
+        """
+
+        for indx in range(len(self.dataset.coords[self.repetitions_coord])):
+            magnitudes = self.magnitudes[self.data_var].isel(
+                {self.repetitions_coord: indx}
+            )
+            magnitudes_flat = (
+                magnitudes.values.flatten() * 1e6
+            )  # Convert to microseconds
+            ax.plot(self.delays, magnitudes_flat, alpha=0.3)
+
+        # Plot ±1σ shaded region
+        ax.plot(
+            self.fit_delays,
+            self.average_t1_y,
+            color="red",
+            label=f"Mean T1 = {self.average_t1:.1f} ± {self.error:.1f} μs",
+        )
+        ax.fill_between(
+            self.fit_delays,
+            self.average_t1_lower,
+            self.average_t1_upper,
+            color="red",
+            alpha=0.2,
+            label="±1σ",
+        )
+
+        ax.set_xlabel("Delay (μs)")
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()
+        ax.legend()
 
 
 class T1NodeAnalysis(BaseAllQubitsAnalysis):

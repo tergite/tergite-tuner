@@ -15,6 +15,7 @@
 
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
@@ -252,6 +253,147 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
             dim="qubit",
         )
         return self.probabilities
+    
+    def plotter(self, figures_dictionary):
+
+        fig, axs = plt.subplots(ncols=2)
+
+        computational_space_dimension = 4
+
+        standard_probs_00 = self.P00.sel({self.interleave_modes_coord: False})
+
+        comp_space_probs = self.P00 + self.P01 + self.P10 + self.P11
+
+        # Standard exponential plots
+        ############################
+        title = ""
+        axs[0].plot(
+            self.fit_n_cliffords,
+            self.standard_fit_y,
+            color="red",
+            lw=3,
+            label=rf"$p_{{SRB}}$: {self.standard_p:.3f}",
+        )
+        styles = {"hue": self.seed_coord, "alpha": 0.2}
+        standard_probs_00.plot(ax=axs[0], x=self.number_cliffords_coord, **styles)
+
+        standard_probs_chi_1 = comp_space_probs.sel(
+            {self.interleave_modes_coord: False}
+        )
+        standard_probs_reduced_ideal = (
+            standard_probs_00 - standard_probs_chi_1 / computational_space_dimension
+        )
+        interleaved_probs_00 = self.P00.sel({self.interleave_modes_coord: False})
+        interleaved_probs_chi_1 = comp_space_probs.sel(
+            {self.interleave_modes_coord: False}
+        )
+        interleaved_probs_reduced_ideal = (
+            interleaved_probs_00
+            - interleaved_probs_chi_1 / computational_space_dimension
+        )
+        if True in self.interleave_modes:
+            interleaved_probs_00 = self.P00.sel({self.interleave_modes_coord: True})
+            interleaved_probs_00.plot(
+                ax=axs[0],
+                x=self.number_cliffords_coord,
+                hue=self.seed_coord,
+                alpha=0.2,
+                ls=":",
+            )
+            axs[0].plot(
+                self.fit_n_cliffords,
+                self.interleaved_fit_y,
+                color="magenta",
+                lw=3,
+                label=f"$p_{{IRB}}$: {self.interleaved_p:.3f}",
+            )
+            # fidelity based on simple exponential fits
+            title = rf"CZ fidelity = {self.cz_fidelity:.3f}"
+        axs[0].set_ylabel(r"State |00$\rangle$ probability")
+        axs[0].axhline(0.25, color="black")
+        axs[0].legend()
+        axs[0].set_title(title)
+        ############################
+
+        # Leakage RB plots from Nakamura's paper
+        ########################################
+        styles = {"hue": self.seed_coord, "alpha": 0.2}
+        standard_probs_chi_1.plot(ax=axs[1], x=self.number_cliffords_coord, **styles)
+        standard_probs_reduced_ideal.plot(
+            ax=axs[1], x=self.number_cliffords_coord, **styles
+        )
+        interleaved_probs_chi_1.plot(ax=axs[1], x=self.number_cliffords_coord, **styles)
+        interleaved_probs_reduced_ideal.plot(
+            ax=axs[1], x=self.number_cliffords_coord, **styles
+        )
+
+        lambda_standard_str = rf"$\lambda_L^{{SRB}}$: {self.standard_lambda_L:.3f}"
+        A_standard_str = rf"$A_M^{{SRB}}$: {self.standard_AM:.3f}"
+        L1_standard = (1 - self.standard_lambda_L) * (1 - self.standard_AM)
+        L2_standard = (1 - self.standard_lambda_L) * self.standard_AM
+        L1_standard_str = rf"$L1^{{SRB}}$: {L1_standard:.3f}"
+        L2_standard_str = rf"$L2^{{SRB}}$: {L2_standard:.3f}"
+        standard_label = (
+            lambda_standard_str
+            + " "
+            + A_standard_str
+            + "\n"
+            + L1_standard_str
+            + " "
+            + L2_standard_str,
+        )
+        lambda_interleaved_str = (
+            rf"$\lambda_L^{{IRB}}$: {self.interleaved_lambda_L:.3f}"
+        )
+        A_interleaved_str = rf"$A_M^{{IRB}}$: {self.interleaved_AM:.3f}"
+        L1_interleaved = (1 - self.interleaved_lambda_L) * (1 - self.interleaved_AM)
+        L2_interleaved = (1 - self.interleaved_lambda_L) * self.interleaved_AM
+        L1_interleaved_str = rf"$L1^{{IRB}}$: {L1_interleaved:.3f}"
+        L2_interleaved_str = rf"$L2^{{IRB}}$: {L2_interleaved:.3f}"
+        interleaved_label = (
+            lambda_interleaved_str
+            + " "
+            + A_interleaved_str
+            + "\n"
+            + L1_interleaved_str
+            + " "
+            + L2_interleaved_str,
+        )
+
+        axs[1].plot(
+            self.fit_n_cliffords,
+            self.standard_fit_Pchi_1_y,
+            color="teal",
+            lw=3,
+            label=standard_label,
+        )
+        axs[1].plot(
+            self.fit_n_cliffords,
+            self.interleaved_fit_Pchi_1_y,
+            color="orange",
+            lw=3,
+            label=interleaved_label,
+        )
+        axs[1].plot(
+            self.fit_n_cliffords,
+            self.standard_fit_Pideal_y,
+            color="orchid",
+            lw=3,
+            label=rf"$\lambda_r^{{SRB}}$: {self.standard_lambda_r:.4f}",
+        )
+        axs[1].plot(
+            self.fit_n_cliffords,
+            self.interleaved_fit_Pideal_y,
+            color="aqua",
+            lw=3,
+            label=rf"$\lambda_r^{{SRB}}$: {self.interleaved_lambda_r:.3f}",
+        )
+        axs[1].legend()
+        axs[1].set_title(
+            f"CZ fidelity (Nakamura paper): {self.average_fidelity_nakamura:0.3f}"
+        )
+
+        figures_dictionary[self.coupler] = [fig]
 
 
 class CZRBNodeAnalysis(BaseAllCouplersAnalysis):

@@ -187,6 +187,22 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
     def _get_magnitudes(self, indx):
         magnitudes = self.magnitudes[self.data_var].isel({self.repeat_coord: indx})
         return magnitudes.values.flatten() * 1e6  # Convert to microseconds
+    
+    def plotter(self, ax):
+        for indx in range(len(self.dataset.coords[self.repeat_coord])):
+            magnitudes_flat = self._get_magnitudes(indx)
+            ax.plot(self.delays, magnitudes_flat, alpha=0.3)
+
+        ax.plot(
+            self.fit_delays,
+            self.average_t2_y,
+            color="red",
+            label=f"Mean {self.label} = {self.average_t2:.1f} ± {self.error :.1f} μs",
+        )
+        ax.set_xlabel("Delay (μs)")
+        ax.set_ylabel("|S21| (V)")
+        ax.legend()
+        ax.grid()
 
 
 class T2QubitAnalysis(BaseT2QubitAnalysis):

@@ -61,7 +61,7 @@ class CZChevronNode(CouplerNode):
 
         self.outer_schedule_samplespace = {
             "cz_pulse_frequencies": {
-                coupler: np.linspace(-3.0e6, 2.0e6, 25)
+                coupler: np.linspace(-3.0e6, 3.0e6, 30)
                 + self.known_cz_frequency(coupler)
                 for coupler in self.couplers
             }

@@ -110,6 +110,28 @@ class QubitSpectroscopyAnalysis(BaseQubitAnalysis):
         self.hasPeak = peaks.size == 1
         self.hasPeak = True
         return self.hasPeak
+    
+    def plotter(self, ax):
+        # Plots the data and the fitted model of a qubit spectroscopy experiment
+        if self.hasPeak:
+            ax.plot(self.fit_freqs, self.fit_y, "r-", lw=3.0)
+            min = np.min(self.magnitudes)
+
+            ax.plot(
+                self.fit_freqs,
+                self.fit_y,
+                "r-",
+                lw=3.0,
+                label=f"freq = {self.freq:.6E} (Hz)",
+            )
+
+        x_dataarray = self.magnitudes.to_dataarray()
+        x = x_dataarray.values[0].flatten
+        ax.plot(self.frequencies_value, x, "bo-", ms=3.0)
+        ax.set_title(f"Qubit Spectroscopy for {self.qubit}")
+        ax.set_xlabel("frequency (Hz)")
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()
 
 
 class QubitSpectroscopyMaxThresholdQubitAnalysis:

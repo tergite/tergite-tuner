@@ -81,6 +81,24 @@ class RabiQubitAnalysis(BaseQubitAnalysis):
 
         return qoi
 
+    def plotter(self, ax):
+        ax.plot(
+            self.fit_plot_amplitudes,
+            self.fit_y,
+            "r-",
+            lw=3.0,
+            label=f"π_ampl = {self.pi_amplitude:.2E}"
+            r"$\pm$"
+            f"{self.uncertainty:.2E}(V)\n"
+            f"scaled uncertainty: {self.scaled_uncertainty:.2E}",
+        )
+
+        ax.plot(self.amplitudes, self.magnitudes[self.data_var].values, "bo-", ms=3.0)
+        ax.set_title(f"Rabi Oscillations for {self.qubit}")
+        ax.set_xlabel("Amplitude (V)")
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()
+
 
 class Rabi12QubitAnalysis(RabiQubitAnalysis):
     def analyse_qubit(self):
@@ -135,6 +153,14 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
+    
+    def plotter(self, axis):
+        datarray = self.magnitudes[self.data_var]
+
+        datarray.plot(ax=axis, x=self.mw_amplitudes_coord, cmap="RdBu_r")
+        axis.set_xlabel("mw amplitude correction")
+
+        axis.axvline(self.correction, c="k", lw=4, linestyle="--")
 
 
 class NRabi_12_QubitAnalysis(NRabiQubitAnalysis):

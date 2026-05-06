@@ -93,12 +93,12 @@ class HardwareManager:
                 logger.status("-" * len(msg))
                 quit()
 
-            logger.status(
-                f" \n⚠ Resetting Cluster at IP *{str(self.session.cluster_ip)[-3:]}\n"
-            )
             # don't reset cluster when doing recalibration
             if not self.session.is_recalibration:
                 cluster.reset()  # Reset the cluster to a default state for consistency
+                logger.status(
+                    f" \n⚠ Resetting Cluster at IP *{str(self.session.cluster_ip)[-3:]}\n"
+                )
             return cluster
         else:
             Cluster.close_all()
@@ -202,7 +202,7 @@ class NodeManager:
         )
         return order + [target_node]
 
-    def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False):
+    def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False):
         node_cls = self.node_enum_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
@@ -251,7 +251,7 @@ class NodeManager:
             )
 
             # Perform calibration
-            calibration_node.calibrate(data_path, self.session.cluster_mode)
+            calibration_node.calibrate(data_path, self.session.cluster_mode, save_plot)
 
         # if we are in recalibration, we should not revert node parameters
         if not self.session.is_recalibration:
@@ -383,17 +383,19 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
     hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
-    topo_order = node_manager.topo_order(session.target_node)
+    if node is None:
+        topo_order = node_manager.topo_order(session.target_node)
+    else:
+        topo_order = [node]
 
     logger.info("Node Manager is initialized")
 
     logger.info("Starting System Calibration")
     number_of_qubits = len(session.qubits)
 
-    calibration_nodes = session.topo_order if node is None else [node]
     draw_arrow_chart(
         f"Qubits: {number_of_qubits}",
-        [str(n.value) for n in calibration_nodes],
+        [str(n.value) for n in topo_order],
     )
 
     # The node manager provides every node with access to the DACS
@@ -405,9 +407,11 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
             node_manager.spi_manager.set_initial_parking_currents(session.couplers)
 
     for calibration_node in topo_order:
-        # ignore_spec = calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION
-        ignore_spec = session.ignore_spec
-        node_manager.inspect_node(calibration_node, ignore_spec=ignore_spec)
+        node_manager.inspect_node(
+            calibration_node, 
+            ignore_spec=session.ignore_spec,
+            save_plot=session.save_plot
+            )
         logger.info(f"{calibration_node.value} node is completed")
 
 

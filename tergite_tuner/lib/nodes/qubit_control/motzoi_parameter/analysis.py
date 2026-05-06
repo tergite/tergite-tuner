@@ -37,6 +37,16 @@ class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
 
         self.optimal_motzoi = sums.idxmin()[self.data_var].item()
 
+    def plotter(self, axis):
+        datarray = self.magnitudes[self.data_var]
+        datarray.plot(ax=axis, x=f"mw_motzois{self.qubit}", cmap="RdBu_r")
+
+        # Mark the optimal motzoi on the plot
+        label = f"Optimal Motzoi: {self.optimal_motzoi:.3f}"
+        styles = dict(c="k", lw=4, linestyle="--", label=label)
+        axis.axvline(self.optimal_motzoi, **styles)
+        axis.legend()
+
 
 class Motzoi01QubitAnalysis(MotzoiBaseQubitAnalysis):
     def analyse_qubit(self):
