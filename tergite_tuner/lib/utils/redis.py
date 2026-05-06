@@ -16,39 +16,38 @@
 
 import ast
 import json
-import re
-from typing import Any, Callable, Dict, List, Literal, Mapping, TypeVar, Union
+from collections.abc import Mapping as MappingABC
+from contextlib import suppress
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Protocol,
+    Tuple,
+    TypedDict,
+    Union,
+)
 
 import numpy as np
-from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from redis import Redis
 
-from tergite_tuner.utils.dto import extended_transmon_element
-from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 from tergite_tuner.utils.dto.qoi import QOI
-from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.misc.helpers import insert_nested_key
 
 np.set_printoptions(legacy="1.25")
 
-_Value = TypeVar("_Value", bound=Union[str, float, int, bool, list, dict, None])
+
+_Value = Union[str, float, int, bool, list, dict, None]
 _Collection = Literal["transmons", "couplers", "cs"]
-_QueryFunc = Callable[[_Collection, str, str, Any], bool]
-"""(collection, primary_key, field_name, value) -> bool
+_RedisStoreObject = Mapping[_Collection, Mapping[str, Mapping[str, _Value]]]
 
-It returns true if the value should be added to the resulting
-dictionary of Dict[collection, Dict[primary_key, Dict[field_name, _Value]]]
-"""
-
-# All known collections. Used by ``RedisStore.read_object`` to limit the
-# keyspace scan to namespaces this store owns.
-_COLLECTIONS: tuple = ("transmons", "couplers", "cs")
-
-# Suffix appended to a canonical hash key to form a sidecar hash that holds
-# the python type label of each field. Living alongside the canonical hash
-# means legacy callers using e.g. ``hgetall("transmons:q01")`` keep seeing a
-# clean payload.
-_TYPES_SUFFIX = "__types__"
+# The prefix for the hashes that keep types data
+_TYPES_COLLECTION = "__types__"
 
 # Stable labels persisted for python types. ``bool`` precedes ``int`` because
 # ``isinstance(True, int)`` is also true.
@@ -63,8 +62,134 @@ _TYPE_LABELS: Dict[type, str] = {
     type(None): "none",
 }
 
+_SAVE_FIELD_LUA = f"""
+-- v0.0.1
+-- Atomically write a field's value and its type label so the canonical
+-- hash and its sidecar can never get out of sync.
+-- The types are stored in the {_TYPES_COLLECTION} collection under 
+-- the same key but prepended with "{_TYPES_COLLECTION}:"
+--
+-- KEYS[1] = hash_key
+-- ARGV[1] = field
+-- ARGV[2] = value
+-- ARGV[3] = type
 
-class RedisStore[_Value]:
+local redis_call = redis.call
+
+local hash_key = KEYS[1]
+local type_key = "{_TYPES_COLLECTION}:" .. hash_key
+
+redis_call('HSET', hash_key, ARGV[1], ARGV[2])
+redis_call('HSET', type_key, ARGV[1], ARGV[3])
+return 1
+"""
+
+_READ_FIELD_LUA = f"""
+-- v0.0.1
+-- Atomically read a field's value and its type label.
+-- The types are stored in the {_TYPES_COLLECTION} collection under 
+-- the same key but prepended with "{_TYPES_COLLECTION}:"
+--
+-- KEYS[1] = hash_key
+-- ARGV[1] = field
+
+local redis_call = redis.call
+
+local hash_key = KEYS[1]
+local type_key = "{_TYPES_COLLECTION}:" .. hash_key
+
+local value = redis_call('HGET', hash_key, ARGV[1])
+local label = redis_call('HGET', type_key, ARGV[1])
+return {{value, label}}
+"""
+
+_SAVE_HASH_LUA = f"""
+-- v0.0.1
+-- Bulk-write every field of a single primary key. 
+-- ARGV layout:
+-- [reset_flag, field_count, field_1, value_1, type_1, ...]
+--
+-- When ``reset`` is 1 the canonical hash and its sidecar are deleted
+-- before the new fields are written, yielding a fresh record. 
+-- When ``reset`` is 0 the writes are merged on top of any pre-existing
+-- record: fields that share a name are overwritten, the rest are left
+-- untouched.
+--
+-- The types are stored in the {_TYPES_COLLECTION} collection under 
+-- the same key but prepended with "{_TYPES_COLLECTION}:"
+--
+
+local redis_call = redis.call
+local to_num = tonumber
+local insert = table.insert
+local unpack = unpack or table.unpack -- Compatibility check
+
+local hash_key = KEYS[1]
+local type_key = "{_TYPES_COLLECTION}:" .. hash_key
+
+local reset_flag = to_num(ARGV[1])
+if reset_flag == 1 then
+    redis_call('DEL', hash_key, type_key)
+end
+        
+local field_count = to_num(ARGV[2])
+if field_count == 0 then return 0 end
+
+local data_params = {{}}
+local type_params = {{}}
+
+for i = 0, field_count - 1 do
+    local offset = 3 + i * 3
+    insert(data_params, ARGV[offset])     -- field
+    insert(data_params, ARGV[offset + 1]) -- value
+    
+    insert(type_params, ARGV[offset])     -- field
+    insert(type_params, ARGV[offset + 2]) -- type
+end
+
+redis_call('HSET', hash_key, unpack(data_params))
+redis_call('HSET', type_key, unpack(type_params))
+
+return field_count
+"""
+
+_READ_HASH_LUA = f"""
+-- v0.0.1
+-- Fetches data and types atomically
+-- The types are stored in the {_TYPES_COLLECTION} collection under 
+-- the same key but prepended with "{_TYPES_COLLECTION}:"
+--
+-- KEYS[1] = hash_key
+
+local redis_call = redis.call
+local hash_key = KEYS[1]
+local type_key = "{_TYPES_COLLECTION}:" .. hash_key
+
+local data = redis_call('HGETALL', hash_key)
+local types = redis_call('HGETALL', type_key)
+
+return {{data, types}}
+"""
+
+
+class QueryOptions(TypedDict, total=False):
+    collection: _Collection
+    pk: str
+    field: str
+    value: _Value
+
+
+class RedisStoreQueryFunc(Protocol):
+    """Matches the fields that should be returned by a query
+
+    It returns true if the value should be added to the resulting
+    dictionary of Dict[collection, Dict[pk, Dict[field, _Value]]]
+    """
+
+    def __call__(self, opts: QueryOptions) -> bool: ...
+
+
+class RedisStore:
     """Store to handle persisting and querying data from Redis.
 
     Layout
@@ -82,77 +207,38 @@ class RedisStore[_Value]:
       python type without resorting to ``eval`` on list reprs.
     """
 
-    # Atomically write a field's value and its type label so the canonical
-    # hash and its sidecar can never get out of sync.
-    _SAVE_FIELD_LUA = """
-        redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
-        redis.call('HSET', KEYS[2], ARGV[1], ARGV[3])
-        return 1
-    """
-
-    # Atomically read a field's value and its type label.
-    _READ_FIELD_LUA = """
-        local value = redis.call('HGET', KEYS[1], ARGV[1])
-        local label = redis.call('HGET', KEYS[2], ARGV[1])
-        return {value, label}
-    """
-
-    # Bulk-write every field of a single primary key. ARGV layout:
-    #   [reset_flag, field_count, field_1, value_1, label_1, ...]
-    # When ``reset`` is 1 the canonical hash and its sidecar are deleted
-    # before the new fields are written, yielding a fresh record. When
-    # ``reset`` is 0 the writes are merged on top of any pre-existing
-    # record: fields that share a name are overwritten, the rest are left
-    # untouched.
-    _SAVE_HASH_LUA = """
-        local reset = tonumber(ARGV[1])
-        if reset == 1 then
-            redis.call('DEL', KEYS[1])
-            redis.call('DEL', KEYS[2])
-        end
-        local count = tonumber(ARGV[2])
-        for i = 0, count - 1 do
-            local field = ARGV[3 + i * 3]
-            local value = ARGV[4 + i * 3]
-            local label = ARGV[5 + i * 3]
-            redis.call('HSET', KEYS[1], field, value)
-            redis.call('HSET', KEYS[2], field, label)
-        end
-        return count
-    """
-
     def __init__(self, connection: Redis):
         self._connection = connection
-        self._save_field_script = connection.register_script(self._SAVE_FIELD_LUA)
-        self._read_field_script = connection.register_script(self._READ_FIELD_LUA)
-        self._save_hash_script = connection.register_script(self._SAVE_HASH_LUA)
+        self._save_field_script = connection.register_script(_SAVE_FIELD_LUA)
+        self._read_field_script = connection.register_script(_READ_FIELD_LUA)
+        self._save_hash_script = connection.register_script(_SAVE_HASH_LUA)
+        self._read_hash_script = connection.register_script(_READ_HASH_LUA)
 
     def save_field(
-        self, collection: _Collection, pk: str, field: str, value: _Value
+        self, collection: _Collection, pk: str, field_path: str, value: _Value
     ) -> None:
         """Save a field to Redis.
 
         Args:
             collection: the collection to save to, options are transmons, couplers, cs.
             pk: the primary key of the object whose field is to be saved.
-            field: the name of the field to be saved.
+            field_path: the colon-separated path to the value of the field to be saved.
             value: the value to be saved.
         """
         self._save_field_script(
             keys=[
                 self._get_hash_key(collection, pk),
-                self._get_types_key(collection, pk),
             ],
-            args=[field, _serialize(value), _label_for(value)],
+            args=[field_path, _serialize(value), _get_type_str(value)],
         )
 
-    def read_field(self, collection: _Collection, pk: str, field: str) -> _Value:
-        """Load a field from Redis.
+    def read_field(self, collection: _Collection, pk: str, field_path: str) -> _Value:
+        """Extract a field from Redis.
 
         Args:
             collection: the collection to read from, options are transmons, couplers, cs.
             pk: the primary key of the object whose field is to be read.
-            field: the name of the field to be read.
+            field_path: the colon-separated path to the field to be read.
 
         Returns:
             the value read from redis but parsed back to its python type.
@@ -160,18 +246,13 @@ class RedisStore[_Value]:
         raw, label = self._read_field_script(
             keys=[
                 self._get_hash_key(collection, pk),
-                self._get_types_key(collection, pk),
             ],
-            args=[field],
+            args=[field_path],
         )
         return _deserialize(raw, label)
 
-    def save_object(
-        self,
-        obj: Mapping[_Collection, Mapping[str, Mapping[str, _Value]]],
-        reset: bool = False,
-    ) -> None:
-        """Save an object to Redis.
+    def save_many(self, obj: _RedisStoreObject, reset: bool = False) -> None:
+        """Save many records to Redis, with the records nested in their collections
 
         Args:
             obj: the object to save. It is of format
@@ -183,78 +264,184 @@ class RedisStore[_Value]:
                 record: fields that share a name are overwritten and the rest
                 are left untouched.
         """
-        for collection, by_pk in obj.items():
-            for pk, fields in by_pk.items():
-                args: List[Any] = [1 if reset else 0, len(fields)]
-                for field, value in fields.items():
-                    args.extend([field, _serialize(value), _label_for(value)])
+        reset_flag = int(reset)
+
+        for collection, record_list in obj.items():
+            for pk, record in record_list.items():
+                redis_args = list(_to_redis_args(record))
+                field_count = len(redis_args) / 2
+                hash_key = self._get_hash_key(collection, pk)
+
                 self._save_hash_script(
-                    keys=[
-                        self._get_hash_key(collection, pk),
-                        self._get_types_key(collection, pk),
-                    ],
-                    args=args,
+                    keys=[hash_key],
+                    args=[reset_flag, field_count, *redis_args],
                 )
 
-    def read_object(
-        self, query: _QueryFunc
-    ) -> Dict[_Collection, Dict[str, Dict[str, _Value]]]:
+    def find_many(
+        self,
+        collection: Optional[_Collection] = None,
+        pks: Optional[Iterable[str]] = None,
+        query: Optional[RedisStoreQueryFunc] = None,
+    ) -> _RedisStoreObject:
         """Read all objects from Redis matching ``query``.
 
         Args:
-            query: callable ``(collection, primary_key, field_name, value) -> bool``
-                that decides whether a tuple should appear in the result.
+            collection: the collection to read from, options are transmons, couplers, cs.
+            pks: the primary keys to look into.
+            query: callable ``(collection, primary_key, field, value) -> bool``
+                that decides whether a value should appear in the result.
 
         Returns:
             a dictionary of format
             ``Dict[collection, Dict[primary_key, Dict[field_name, _Value]]]``.
         """
-        result: Dict[_Collection, Dict[str, Dict[str, _Value]]] = {}
-        for collection in _COLLECTIONS:
-            pattern = f"{collection}:*"
-            for raw_key in self._connection.scan_iter(match=pattern, count=200):
-                key = raw_key.decode("utf-8") if isinstance(raw_key, bytes) else raw_key
-                # Sidecar ``__types__`` hashes are bookkeeping; skip them.
-                if key.endswith(f":{_TYPES_SUFFIX}"):
-                    continue
-                pk = key[len(collection) + 1 :]
-                raw_fields = self._connection.hgetall(key)
-                if not raw_fields:
-                    continue
-                raw_labels = self._connection.hgetall(
-                    self._get_types_key(collection, pk)
+        pattern = _get_scan_pattern(collection=collection, pks=pks)
+        result = {}
+
+        for key in self._connection.scan_iter(match=pattern, count=200, _type="HASH"):
+            if key.startswith(f"{_TYPES_COLLECTION}:"):
+                # Skip all keys that are for types
+                continue
+
+            try:
+                record = self._find_by_hash_key(key)
+                collection, pk = key.split(":", maxsplit=1)
+            except (KeyError, ValueError) as e:
+                continue
+
+            matched_fields_obj = record
+            if query:
+                matched_fields_obj = {
+                    k: v
+                    for k, v in record.items()
+                    if query(dict(collection=collection, pk=pk, field=k, value=v))
+                }
+
+            if matched_fields_obj:
+                insert_nested_key(
+                    result, path=(collection, pk), value=matched_fields_obj
                 )
-                for raw_field, raw_value in raw_fields.items():
-                    field = (
-                        raw_field.decode("utf-8")
-                        if isinstance(raw_field, bytes)
-                        else raw_field
-                    )
-                    label = raw_labels.get(raw_field) or raw_labels.get(field)
-                    value = _deserialize(raw_value, label)
-                    if query(collection, pk, field, value):
-                        result.setdefault(collection, {}).setdefault(pk, {})[
-                            field
-                        ] = value
+
         return result
+
+    def find_one(self, collection: _Collection, pk: str) -> Mapping[str, _Value]:
+        """Read a single object from Redis collection matching ``pk``.
+
+        Args:
+            collection: the collection to read from, options are transmons, couplers, cs.
+            pk: the primary key of the object to be read.
+
+        Returns:
+            a dictionary of the record of the given ``pk`` or None if it doesn't exist.
+
+        Raises:
+            KeyError: if key ``pk`` is not in the collection and ignore_missing is False.
+        """
+        hash_key = self._get_hash_key(collection, pk)
+        try:
+            return self._find_by_hash_key(hash_key)
+        except KeyError as e:
+            raise KeyError(f"Key {pk} not found in collection {collection}") from e
+
+    def _find_by_hash_key(self, hash_key: str) -> Mapping[str, _Value]:
+        """Reads the single record whose hash key matches ``hash_key``.
+
+        Args:
+            hash_key: the hash key to look into.
+
+        Returns:
+            the record as a dictionary
+
+        Raises:
+            KeyError: if record of the given hash key doesn't exist.
+        """
+        raw_data, raw_types = self._read_hash_script(keys=[hash_key])
+
+        if not raw_data:
+            raise KeyError(f"Key {hash_key} not found")
+
+        return _from_redis_values(raw_data=raw_data, raw_types=raw_types)
 
     @staticmethod
     def _get_hash_key(collection: _Collection, pk: str) -> str:
         """Returns the canonical hash key for ``(collection, pk)``."""
         return f"{collection}:{pk}"
 
-    @staticmethod
-    def _get_types_key(collection: _Collection, pk: str) -> str:
-        """Returns the types sidecar hash key for ``(collection, pk)``."""
-        return f"{collection}:{pk}:{_TYPES_SUFFIX}"
+
+def qoi_to_redis_record(
+    qoi: QOI = None,
+    redis_fields: List[str] = (),
+) -> Dict[str, _Value]:
+    """Converts the quantity of interest (QOI) into a redis record
+
+    Args:
+        qoi: The quantity of interest as QOI wrapped object
+        redis_fields: List of redis fields that are allowed for this QOI
+
+    Returns:
+        the record that would be saved in redis for this QOI
+    """
+    results = qoi.analysis_result
+    rogue_fields = results.keys() - set(redis_fields)
+    if rogue_fields:
+        raise ValueError(
+            f"The QOI's {rogue_fields} are not in redis fields: {redis_fields}"
+        )
+
+    record = {}
+    for k, res in results.items():
+        record[k] = res["value"]
+        record[f"{k}_error"] = res["error"]
+
+    return record
 
 
-def _label_for(value: Any) -> str:
+def _get_key_segments(key: str, expected_count: int = 2) -> Tuple[str, ...]:
+    """Get key's segments, as separated by ``:``
+
+    Args:
+        key: the key to look into.
+        expected_count: the expected number of segments.
+
+    Returns:
+        the key's segments as tuple
+
+    Raises:
+        ValueError: if the segments are not the expected number of segments.
+    """
+
+
+def _get_type_str(value: Any) -> str:
     """Returns a short python type label for ``value``."""
     for tp, label in _TYPE_LABELS.items():
         if isinstance(value, tp):
             return label
     return "str"
+
+
+def _get_scan_pattern(
+    collection: Optional[_Collection] = None, pks: Optional[Iterable[str]] = None
+) -> str:
+    """Returns the scan glob pattern given collection and primary keys.
+
+    Args:
+        collection: the collection to get scan pattern from.
+        pks: the primary keys to look into.
+
+    Returns:
+        the glob pattern to use in redis SCAN
+    """
+    if not collection:
+        collection = "*"
+
+    if pks and len(pks) == 1:
+        return f"{collection}:{pks[0]}"
+
+    # return the records for all
+    if collection == "*":
+        return "*"
+
+    return f"{collection}:*"
 
 
 def _serialize(value: Any) -> str:
@@ -303,294 +490,55 @@ def _deserialize(raw: Any, label: Any) -> Any:
             return json.loads(raw)
         except (TypeError, ValueError):
             return ast.literal_eval(raw)
+
+    # deal with the values saved prior to this store
+    with suppress(json.JSONDecodeError):
+        return json.loads(raw)
+
     return raw
 
 
-def load_redis_config(transmon: ExtendedTransmon, channel: int, redis_connection):
-    qubit = transmon.name
-    redis_config = redis_connection.hgetall(f"transmons:{qubit}")
+def _to_redis_args(value: Mapping[str, Any], key_prefix: str = "") -> Iterator[str]:
+    """Flatten a nested dictionary into a flat iterator of field_path, value, type redis args
 
-    # get the transmon template in dictionary form
-    serialized_transmon = json.dumps(transmon, cls=SchedulerJSONEncoder)
-    decoded_transmon = json.loads(serialized_transmon)
+    The field_paths are demarcated by colons when nested
+    The returned iterator is of form [field_path_1, value_1, type_1, field_path_2, value_2, type_2, ... ]
 
-    # the transmon modules are recognized by the ':' in the redis key
-    transmon_redis_config = {k: v for k, v in redis_config.items() if ":" in k}
-    device_redis_dict = {}
-    for redis_entry_key, redis_value in transmon_redis_config.items():
-        redis_value = float(redis_value)
-        # e.g. 'clock_freqs:f01' is split to clock_freqs, f01
-        submodule, field = redis_entry_key.split(":")
-        device_redis_dict[submodule] = device_redis_dict.get(submodule, {}) | {
-            field: redis_value
-        }
+    Args:
+        key_prefix: the prefix to insert before the keys
+        value: The dictionary to flatten.
 
-    device_redis_dict["name"] = qubit
-
-    for submodule in decoded_transmon["data"]:
-        sub_module_content = decoded_transmon["data"][submodule]
-        if isinstance(sub_module_content, dict) and submodule in device_redis_dict:
-            redis_module_config = device_redis_dict[submodule]
-            decoded_transmon["data"][submodule].update(redis_module_config)
-        if "measure" in submodule:
-            decoded_transmon["data"][submodule].update({"acq_channel": channel})
-
-    encoded_transmon = json.dumps(decoded_transmon)
-
-    # free the transmon
-    transmon.close()
-
-    # create a transmon with the same name but with updated config
-    transmon = json.loads(
-        encoded_transmon, cls=SchedulerJSONDecoder, modules=[extended_transmon_element]
-    )
-
-    return transmon
-
-
-def load_redis_config_coupler(coupler: ExtendedCompositeSquareEdge, redis_connection):
-    bus = coupler.name
-    bus_qubits = bus.split("_")
-    redis_config = redis_connection.hgetall(f"couplers:{bus}")
-
-    def redis_value(key: str):
-        return float(redis_config[key])
-
-    key = "cz_pulse_frequency"
-    try:
-        coupler.clock_freqs.cz_freq(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    key = "cz_pulse_amplitude"
-    try:
-        coupler.cz.square_amp(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    key = "cz_pulse_duration"
-    try:
-        coupler.cz.square_duration(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    key = "cz_half_duration"
-    try:
-        coupler.cz.half_square_duration(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    key = "cz_pulse_width"
-    try:
-        coupler.cz.cz_width(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    key = "parking_current"
-    try:
-        coupler.coupler_parameters.parking_current(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    key = "initial_parking_current"
-    try:
-        coupler.coupler_parameters.parking_current(redis_value(key))
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-    try:
-        if bus_qubits[0] == str(redis_config["target_qubit"]):
-            logger.info(f"Reading Target Qubit from Redis: {bus_qubits[0]}")
-            # coupler.cz.parent_phase_correction(redis_value("target_local_phase"))
-            # coupler.cz.child_phase_correction(redis_value("control_local_phase"))
-            coupler.cz.parent_phase_correction(redis_value("cz_dynamic_target"))
-            coupler.cz.child_phase_correction(redis_value("cz_dynamic_control"))
-
-        elif bus_qubits[0] == str(redis_config["control_qubit"]):
-            logger.info(f"Reading Control Qubit from Redis: {bus_qubits[0]}")
-            # coupler.cz.parent_phase_correction(redis_value("control_local_phase"))
-            # coupler.cz.child_phase_correction(redis_value("target_local_phase"))
-            coupler.cz.parent_phase_correction(redis_value("cz_dynamic_control"))
-            coupler.cz.child_phase_correction(redis_value("cz_dynamic_target"))
-
+    Returns:
+        The iterator.
+    """
+    for k, v in value.items():
+        key = f"{key_prefix}{k}"
+        if isinstance(v, MappingABC):
+            yield from _to_redis_args(v, f"{key}:")
         else:
-            raise ValueError("Control - Target types not defined")
-    except:
-        logger.warning("Invalid Control and Target")
-    key = "cz_phase_path"
-    try:
-        coupler.coupler_parameters.phase_path(redis_config[key])
-    except:
-        logger.warning(
-            f"{key} is not present in redis. Ignore this for single qubit nodes"
-        )
-
-    return coupler
+            yield from (key, _serialize(v), _get_type_str(v))
 
 
-def update_redis_trusted_values(
-    node: str,
-    this_element: str,
-    redis_connection,
-    qoi: QOI = None,
-    redis_fields: Union[List[str], None] = None,
-):
-    """
-    Update the redis trusted values for the qubit or coupler.
-    Args:
-        node: The node name
-        this_element: The element name (qubit or coupler)
-        redis_connection: The redis client to write to.
-        qoi: The quantity of interest as QOI wrapped object
-        redis_fields: List of redis fields for additional verification
-    """
+def _from_redis_values(raw_data: List[str], raw_types: List[str]) -> Dict[str, _Value]:
+    """Creates a dictionary from the raw data and raw types passed from redis
 
-    if "_" in this_element:
-        name = "couplers"
-        _qoi_items = dict(qoi.analysis_result.items())
-        if _are_two_qubit_in_qoi(_qoi_items):
-            _save_parameters_in_qubits_in_coupler(
-                node, this_element, name, _qoi_items, redis_fields, redis_connection
-            )
-        else:
-            _save_parameters_in_coupler(
-                node, this_element, name, qoi, redis_fields, redis_connection
-            )
-
-    else:
-        name = "transmons"
-        _save_parameters_in_transmon(
-            node, this_element, name, qoi, redis_fields, redis_connection
-        )
-
-
-def _are_two_qubit_in_qoi(qoi: dict):
-    return all(re.fullmatch(r"q\d{2}", key) for key in qoi)
-
-
-def _save_parameters_in_transmon(
-    node: str,
-    this_element: str,
-    name,
-    qoi: QOI,
-    redis_fields: List[str],
-    redis_connection,
-):
-    """
-    Saves the parameters for a single qubit in redis
+    The raw data and keys are of the form [k1, v1, k2, v2]
 
     Args:
-        node: Name of the node to update
-        this_element: Name of the element to update, this will be e.g. q01
-        name: Name of the property to update e.g. the qubit frequency
-        qoi: The QOI object with the value to update
-        redis_fields: redis fields from the node to be updated, this is for verification
-        redis_connection: redis client to write to.
+        raw_data: the data that as got from redis in its flat form of [k1, v1, k2, v2]
+        raw_types: the types list as got from redis in its flat form of [k1, v1, k2, v2].
 
-    Raises:
-        ValueError: if there are parameters in the qubit object that are not part of the node
-
+    Returns:
+        The parsed record as a dict.
     """
-    analysis_successful = qoi.analysis_successful
-    if analysis_successful:
-        for qoi_name, qoi_result in qoi.analysis_result.items():
-            if qoi_name not in redis_fields:
-                raise ValueError(
-                    f"The qoi {qoi_name} is not in redis fields: {redis_fields} for {this_element}"
-                )
-            value = qoi_result["value"]
-            redis_connection.hset(f"{name}:{this_element}", qoi_name, value)
-            # Saving the error to the measured value
-            error = qoi_result["error"]
-            redis_connection.hset(f"{name}:{this_element}", qoi_name + "_error", error)
+    # Convert flat [k1, v1, k2, v2] list to {k1: v1, k2: v2}
+    type_dict = dict(zip(raw_types[::2], raw_types[1::2]))
 
-        redis_connection.hset(f"cs:{this_element}", node, "calibrated")
+    result = {}
+    # Convert flat [k1, v1, k2, v2] list to {k1: {k1_1: v1}, k2: v2}
+    for k, v in zip(raw_data[::2], raw_data[1::2]):
+        value = _deserialize(v, type_dict.get(k))
+        path = tuple(k.split(":"))
+        insert_nested_key(result, path=path, value=value)
 
-    else:
-        logger.warning(f"Analysis failed for {this_element}")
-
-
-def _save_parameters_in_coupler(
-    node: str,
-    this_element: str,
-    name: str,
-    qoi: QOI,
-    redis_fields: List[str],
-    redis_connection,
-):
-    """
-    Saves the parameters for a coupler in redis
-
-    Args:
-        node: Name of the node to update
-        this_element: Name of the element to update, this will be e.g. q01_q02 for the coupler
-        name: Name of the property to update e.g. the dc current
-        qoi: The QOI object with the value to update
-        redis_fields: redis fields from the node to be updated, this is for verification
-        redis_connection: redis client to write to.
-
-    Raises:
-        ValueError: if there are parameters in the qubit object that are not part of the node
-
-    """
-
-    analysis_successful = qoi.analysis_successful
-    if analysis_successful:
-        for qoi_name, qoi_result in qoi.analysis_result.items():
-            if qoi_name not in redis_fields:
-                raise ValueError(
-                    f"The qoi {qoi_name} is not in redis fields: {redis_fields} for {this_element}"
-                )
-            value = qoi_result["value"]
-            if isinstance(value, list):
-                value = str(value)
-            logger.info(f"Updating redis for {this_element} with {qoi_name}: {value}")
-            redis_connection.hset(f"{name}:{this_element}", qoi_name, value)
-            error = qoi_result["error"]
-            logger.info(
-                f"Updating redis for {this_element} with {qoi_name}_error: {error}"
-            )
-            redis_connection.hset(f"{name}:{this_element}", qoi_name + "_error", error)
-
-    redis_connection.hset(f"cs:{this_element}", node, "calibrated")
-
-
-def _save_parameters_in_qubits_in_coupler(
-    node: str,
-    this_element: str,
-    name: str,
-    qoi: dict,
-    redis_fields: List[str],
-    redis_connection,
-):
-    """
-    Saves the parameters for the qubits connected to a coupler, in redis
-
-    Args:
-        node: Name of the node to update
-        this_element: Name of the element to update, this will be e.g. q01_q02,
-        the qubits are extracted inside the function
-        name: Name of the property to update e.g. the qubit frequency
-        qoi: A dictionary that maps from qubit to the respective QOI
-        redis_fields: redis fields from the node to be updated, this is for verification
-        redis_connection: redis client to write to.
-
-    """
-
-    qubits_in_coupler = [this_element[0:3], this_element[4:7]]
-    for qubit in qubits_in_coupler:
-        for transmon_parameter in redis_fields:
-            redis_connection.hset(
-                f"{name}:{this_element}:{qubit}",
-                transmon_parameter,
-                qoi[qubit][transmon_parameter],
-            )
-
-    redis_connection.hset(f"cs:{this_element}", node, "calibrated")
+    return result

@@ -209,6 +209,7 @@ extract_bcc_params(
 - [ ] Add a return value to all entry point functions, e.g. the output of the export to bcc can be the return of tune_device
 - [x] Fix MotzoiParameter measurement for recalibration vs bringup
 - [x] Improve typing intellisense for the entry functions
+- [ ] Add a way of deleting older data files (maybe after every run)
 
 ## Contributing to the project
 

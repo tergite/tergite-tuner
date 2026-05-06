@@ -14,10 +14,11 @@
 
 The suite covers per-type round-tripping, the layout contract that lets the
 store drop in for the legacy ``_save_parameters_*`` helpers, and the merge /
-reset semantics of ``save_object``.
+reset semantics of ``save_many``.
 """
 
 import ast
+from typing import Any, Dict, Literal
 
 import pytest
 
@@ -73,7 +74,7 @@ def test_save_parameters_in_transmon_via_redis_store(redis_connection, store):
         assert name in redis_fields
         fields[name] = result["value"]
         fields[f"{name}_error"] = result["error"]
-    store.save_object({"transmons": {qubit: fields}})
+    store.save_many({"transmons": {qubit: fields}})
     store.save_field("cs", qubit, "resonator_spectroscopy", "calibrated")
 
     assert store.read_field("transmons", qubit, "resonator_minimum") == 3.91e9
@@ -113,7 +114,7 @@ def test_save_field_records_correct_type_label(redis_connection, store):
     store.save_field("transmons", "q01", "is_active", True)
     store.save_field("transmons", "q01", "freq_list", [1.0, 2.0])
     store.save_field("transmons", "q01", "name", "q01")
-    labels = redis_connection.hgetall("transmons:q01:__types__")
+    labels = redis_connection.hgetall("__types__:transmons:q01")
     assert labels == {
         "freq": "float",
         "channel": "int",
@@ -148,10 +149,10 @@ def test_canonical_hash_has_no_types_pollution(redis_connection, store):
 
 
 def test_types_sidecar_lives_in_a_separate_hash(redis_connection, store):
-    """Type labels are stored in a parallel ``...:__types__`` hash, never
+    """Type labels are stored in a parallel ``__types__:...`` hash, never
     mixed into the canonical hash itself."""
     store.save_field("couplers", "q01_q02", "freqs", [1.0, 2.0, 3.5])
-    sidecar = redis_connection.hgetall("couplers:q01_q02:__types__")
+    sidecar = redis_connection.hgetall("__types__:couplers:q01_q02")
     assert sidecar == {"freqs": "list"}
     canonical = redis_connection.hgetall("couplers:q01_q02")
     assert "__types__" not in canonical
@@ -174,24 +175,22 @@ def test_legacy_str_list_value_reads_back_via_literal_eval_fallback(
     ``_deserialize`` falls back to ``ast.literal_eval`` when JSON decoding of
     the legacy string fails."""
     redis_connection.hset("couplers:legacy", "freqs", "[1, 2, 3]")
-    redis_connection.hset("couplers:legacy:__types__", "freqs", "list")
+    redis_connection.hset("__types__:couplers:legacy", "freqs", "list")
     assert store.read_field("couplers", "legacy", "freqs") == [1, 2, 3]
 
 
 def test_legacy_value_without_types_sidecar_reads_as_raw_string(
     redis_connection, store
 ):
-    """When no types sidecar exists ``read_field`` returns the raw string so
-    the caller can choose how to parse it. This preserves access to keys
-    that pre-date the store."""
+    """When no types sidecar exists ``read_field`` automatically parses the value."""
     redis_connection.hset("couplers:legacy", "freqs", "[1, 2, 3]")
-    assert store.read_field("couplers", "legacy", "freqs") == "[1, 2, 3]"
+    assert store.read_field("couplers", "legacy", "freqs") == [1, 2, 3]
 
 
-def test_save_object_default_merges_into_existing_pk(store):
+def test_save_many_default_merges_into_existing_pk(store):
     """The default ``reset=False`` overwrites same-named fields, adds new
     fields, and leaves untouched fields in place."""
-    store.save_object(
+    store.save_many(
         {
             "transmons": {
                 "q01": {
@@ -201,7 +200,7 @@ def test_save_object_default_merges_into_existing_pk(store):
             }
         }
     )
-    store.save_object(
+    store.save_many(
         {
             "transmons": {
                 "q01": {
@@ -216,10 +215,10 @@ def test_save_object_default_merges_into_existing_pk(store):
     assert store.read_field("transmons", "q01", "extra_field") == 1.0
 
 
-def test_save_object_reset_wipes_pk_before_writing(redis_connection, store):
+def test_save_many_reset_wipes_pk_before_writing(redis_connection, store):
     """``reset=True`` deletes both the canonical hash and its types sidecar
     before writing, so stale fields and their type labels are gone."""
-    store.save_object(
+    store.save_many(
         {
             "transmons": {
                 "q01": {
@@ -229,36 +228,36 @@ def test_save_object_reset_wipes_pk_before_writing(redis_connection, store):
             }
         }
     )
-    store.save_object({"transmons": {"q01": {"only": 1.0}}}, reset=True)
+    store.save_many({"transmons": {"q01": {"only": 1.0}}}, reset=True)
     assert store.read_field("transmons", "q01", "only") == 1.0
     assert store.read_field("transmons", "q01", "clock_freqs:f01") is None
     assert store.read_field("transmons", "q01", "clock_freqs:f12") is None
-    assert redis_connection.hgetall("transmons:q01:__types__") == {"only": "float"}
+    assert redis_connection.hgetall("__types__:transmons:q01") == {"only": "float"}
 
 
-def test_save_object_reset_only_affects_listed_pks(store):
+def test_save_many_reset_only_affects_listed_pks(store):
     """``reset=True`` only resets the primary keys passed in this call; other
     pks in the same collection are left alone."""
-    store.save_object({"transmons": {"q01": {"x": 1.0}, "q02": {"x": 2.0}}})
-    store.save_object({"transmons": {"q01": {"new": 7.0}}}, reset=True)
+    store.save_many({"transmons": {"q01": {"x": 1.0}, "q02": {"x": 2.0}}})
+    store.save_many({"transmons": {"q01": {"new": 7.0}}}, reset=True)
     assert store.read_field("transmons", "q02", "x") == 2.0
     assert store.read_field("transmons", "q01", "x") is None
     assert store.read_field("transmons", "q01", "new") == 7.0
 
 
-def test_save_object_with_no_fields_does_not_create_a_phantom_hash(
+def test_save_many_with_no_fields_does_not_create_a_phantom_hash(
     redis_connection, store
 ):
     """Passing an empty fields dict is a no-op: no canonical or sidecar hash
     is created."""
-    store.save_object({"transmons": {"q01": {}}})
+    store.save_many({"transmons": {"q01": {}}})
     assert redis_connection.exists("transmons:q01") == 0
     assert redis_connection.exists("transmons:q01:__types__") == 0
 
 
-def test_save_object_handles_multiple_collections(store):
-    """A single ``save_object`` call writes across all three collections."""
-    store.save_object(
+def test_save_many_handles_multiple_collections(store):
+    """A single ``save_many`` call writes across all three collections."""
+    store.save_many(
         {
             "transmons": {"q01": {"freq": 4.2e9}},
             "couplers": {"q01_q02": {"cz_freq": 100e6}},
@@ -270,10 +269,10 @@ def test_save_object_handles_multiple_collections(store):
     assert store.read_field("cs", "q01", "resonator_spectroscopy") == "calibrated"
 
 
-def test_read_object_filters_by_query(store):
-    """``read_object`` returns only the (collection, pk, field, value) tuples
+def test_find_many_filters_by_query(store):
+    """``find_many`` returns only the (collection, pk, field, value) tuples
     for which the query callable returns ``True``."""
-    store.save_object(
+    store.save_many(
         {
             "transmons": {
                 "q01": {"clock_freqs:f01": 4.2e9, "name": "q01"},
@@ -282,21 +281,98 @@ def test_read_object_filters_by_query(store):
             "cs": {"q01": {"resonator_spectroscopy": "calibrated"}},
         }
     )
-    out = store.read_object(
-        lambda coll, pk, field, value: coll == "transmons"
-        and field.startswith("clock_freqs")
+    out = store.find_many(
+        query=lambda opts: opts["collection"] == "transmons"
+        and opts["field"].startswith("clock_freqs")
     )
     assert out == {
         "transmons": {
-            "q01": {"clock_freqs:f01": 4.2e9},
-            "q02": {"clock_freqs:f01": 5.0e9},
+            "q01": {"clock_freqs": {"f01": 4.2e9}},
+            "q02": {"clock_freqs": {"f01": 5.0e9}},
         }
     }
 
 
-def test_read_object_returns_typed_values(store):
+def test_find_many_filters_by_collection(store):
+    """``find_many`` can filter by collection when collection param is passed."""
+    data: Dict[Literal["transmons", "cs"], Dict[str, Any]] = {
+        "transmons": {
+            "q01": {"clock_freqs:f01": 4.2e9, "name": "q01"},
+            "q02": {"clock_freqs:f01": 5.0e9, "name": "q02"},
+        },
+        "cs": {"q01": {"resonator_spectroscopy": "calibrated"}},
+    }
+    store.save_many(data)
+    out = store.find_many(collection="transmons")
+    assert out == {
+        "transmons": {
+            "q01": {"clock_freqs": {"f01": 4.2e9}, "name": "q01"},
+            "q02": {"clock_freqs": {"f01": 5.0e9}, "name": "q02"},
+        }
+    }
+    out = store.find_many(collection="cs")
+    assert out == {"cs": out["cs"]}
+
+
+def test_find_many_filters_by_pks(store):
+    """``find_many`` can filter by pks when pks param is given."""
+    data: Dict[Literal["transmons", "cs", "couplers"], Dict[str, Any]] = {
+        "transmons": {
+            "q01": {"clock_freqs:f01": 4.2e9, "name": "q01"},
+            "q02": {"clock_freqs:f01": 5.0e9, "name": "q02"},
+        },
+        "cs": {"q01": {"resonator_spectroscopy": "calibrated"}},
+        "couplers": {
+            "q01": {"clock_freqs:f01": 4.2e9, "name": "q01"},
+        },
+    }
+    store.save_many(data)
+    out = store.find_many(pks=("q01",))
+    assert out == {
+        "transmons": {
+            "q01": {"clock_freqs": {"f01": 4.2e9}, "name": "q01"},
+        },
+        "cs": data["cs"],
+        "couplers": {
+            "q01": {"clock_freqs": {"f01": 4.2e9}, "name": "q01"},
+        },
+    }
+    out = store.find_many(pks=("q02",))
+    assert out == {
+        "transmons": {
+            "q02": {"clock_freqs": {"f01": 5.0e9}, "name": "q02"},
+        }
+    }
+
+
+def test_find_many_filters_by_pks_collection_and_query(store):
+    """``find_many`` can filter by pks when pks param is given and query and collection param."""
+    data: Dict[Literal["transmons", "cs", "couplers"], Dict[str, Any]] = {
+        "transmons": {
+            "q01": {"clock_freqs:f01": 4.2e9, "name": "q01"},
+            "q02": {"clock_freqs:f01": 5.0e9, "name": "q02"},
+        },
+        "cs": {"q01": {"resonator_spectroscopy": "calibrated"}},
+        "couplers": {
+            "q01": {"clock_freqs:f01": 4.2e9, "name": "q01"},
+        },
+    }
+    store.save_many(data)
+    out = store.find_many(
+        pks=("q01",),
+        collection="transmons",
+        query=lambda opts: (
+            False
+            if not isinstance(opts["value"], dict)
+            else opts["value"]["f01"] == 4.2e9
+        ),
+    )
+    assert out == {"transmons": {"q01": {"clock_freqs": {"f01": 4.2e9}}}}
+
+
+def test_find_many_returns_typed_values(store):
     """Values come back already coerced to their original python types."""
-    store.save_object(
+    store.save_many(
         {
             "transmons": {
                 "q01": {
@@ -309,7 +385,7 @@ def test_read_object_returns_typed_values(store):
             }
         }
     )
-    out = store.read_object(lambda *_: True)
+    out = store.find_many(query=lambda *_: True)
     fields = out["transmons"]["q01"]
     assert fields["freq"] == 4.2e9 and isinstance(fields["freq"], float)
     assert fields["channel"] == 7 and isinstance(fields["channel"], int)
@@ -318,25 +394,25 @@ def test_read_object_returns_typed_values(store):
     assert fields["name"] == "q01"
 
 
-def test_read_object_empty_query_returns_empty_result(store):
+def test_find_many_empty_query_returns_empty_result(store):
     """A query that always returns ``False`` yields an empty result."""
     store.save_field("transmons", "q01", "freq", 4.2e9)
-    out = store.read_object(lambda *_: False)
+    out = store.find_many(query=lambda *_: False)
     assert out == {}
 
 
-def test_read_object_skips_types_sidecar_keys(store):
+def test_find_many_skips_types_sidecar_keys(store):
     """The result must contain the canonical pk only, never a phantom one
     such as ``q01:__types__`` produced by the sidecar bookkeeping."""
     store.save_field("transmons", "q01", "freq", 4.2e9)
-    out = store.read_object(lambda *_: True)
+    out = store.find_many(query=lambda *_: True)
     assert list(out["transmons"].keys()) == ["q01"]
 
 
-def test_read_object_handles_compound_pk(store):
+def test_find_many_handles_compound_pk(store):
     """The qubits-in-coupler layout uses ``couplers:<bus>:<qubit>``; the
     primary key in that case is ``"<bus>:<qubit>"`` (with the colon)."""
-    store.save_object(
+    store.save_many(
         {
             "transmons": {
                 "q01": {
@@ -353,7 +429,7 @@ def test_read_object_handles_compound_pk(store):
             },
         }
     )
-    out = store.read_object(lambda coll, *_: coll == "couplers")
+    out = store.find_many(query=lambda opts: opts["collection"] == "couplers")
     assert out == {
         "couplers": {
             "q01_q02:q01": {"freq": 4.2e9},
@@ -362,6 +438,6 @@ def test_read_object_handles_compound_pk(store):
     }
 
 
-def test_read_object_returns_empty_when_no_data(store):
-    """``read_object`` against a fresh redis returns ``{}``."""
-    assert store.read_object(lambda *_: True) == {}
+def test_find_many_returns_empty_when_no_data(store):
+    """``find_many`` against a fresh redis returns ``{}``."""
+    assert store.find_many(lambda *_: True) == {}

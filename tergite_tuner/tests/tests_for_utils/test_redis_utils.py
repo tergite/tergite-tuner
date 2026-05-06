@@ -15,7 +15,6 @@ from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
-    populate_quantities_of_interest,
     revert_node_parameters,
 )
 
@@ -81,7 +80,7 @@ def test_revert_node_parameters(redis_connection, session_context):
     # flush the duration value
     redis_connection.hset("transmons:q00", "reset:duration", "nan")
 
-    revert_node_parameters(node, session_context)
+    revert_node_parameters(session_context, node_name=node)
     reset_duration_redis = float(
         redis_connection.hget("transmons:q00", "reset:duration")
     )
@@ -90,7 +89,7 @@ def test_revert_node_parameters(redis_connection, session_context):
     assert reset_duration_redis == initial_reset_value
 
 
-def test_populate_quantities_of_interest(redis_connection):
+def test_persist_qois(redis_connection, session_context):
     """
     Iterate over every registered node and check whether it correctly
     pushes its QOI placeholders to redis.
@@ -103,9 +102,9 @@ def test_populate_quantities_of_interest(redis_connection):
         redis_connection.flushall()
         assert not redis_connection.keys()
 
-        populate_quantities_of_interest(
-            node_cls, node_name, ["q00", "q01"], ["q00_q01"], redis_connection
-        )
+        session_context.qubits = ["q00", "q01"]
+        session_context.couplers = ["q00_q01"]
+        node_cls.persist_qois(session_context, node_name=node_name)
 
         if hasattr(node_cls, "qubit_qois") and node_cls.qubit_qois is not None:
             for qubit_qoi in node_cls.qubit_qois:

@@ -32,7 +32,6 @@ from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
-    populate_quantities_of_interest,
     revert_node_parameters,
 )
 from tergite_tuner.utils.dto.enums import DataStatus, MeasurementMode, SPIMode
@@ -189,14 +188,7 @@ class NodeManager:
         node_cls = self.node_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
-
-        populate_quantities_of_interest(
-            node_cls,
-            node_name,
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-        )
+        node_cls.persist_qois(self.session, node_name=node_name)
 
         # Check Redis if node is calibrated
         if ignore_spec:
@@ -236,7 +228,7 @@ class NodeManager:
 
         # if we are in recalibration, we should not revert node parameters
         if not self.session.is_recalibration:
-            revert_node_parameters(node_name, self.session)
+            revert_node_parameters(self.session, node_name=node_name)
 
     def initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""

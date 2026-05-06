@@ -10,7 +10,10 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Dict, List
+from typing import Any, Dict, Iterator, List
+from typing import Mapping
+from typing import Mapping as MappingABC
+from typing import Tuple
 
 
 def generate_n_qubit_list(n_qubits: int, starting_from: int = 1) -> List[str]:
@@ -51,3 +54,55 @@ def update_nested(target: Dict, updates: Dict) -> None:
         else:
             # If the key does not exist in target, add it
             target[key] = value
+
+
+def insert_nested_key(data: Dict[str, Any], path: Tuple[str, ...], value: Any):
+    """Inserts inplace a given value at the given nested path in the data object
+
+    Args:
+        data: the dictionary to insert into
+        path: the path to the field, as a tuple of path segments.
+        value: the value to be inserted.
+    """
+    inner_record = data
+    for segment in path[:-1]:
+        inner_record = inner_record.setdefault(segment, {})
+
+    inner_record[path[-1]] = value
+
+
+def to_flat_map(
+    value: Mapping[str, Any], sep: str = ":", key_prefix: str = ""
+) -> Iterator[Tuple[str, Any]]:
+    """Flatten a nested map into a flat iterator of tuple of ``sep``-separated key and value
+    Args:
+        value: The map to flatten.
+        sep: the separator between keys
+        key_prefix: the prefix to insert before the keys
+
+    Returns:
+        The iterator.
+    """
+    for k, v in value.items():
+        key = f"{key_prefix}{k}"
+        if isinstance(v, MappingABC):
+            yield from to_flat_map(v, sep=sep, key_prefix=f"{key}{sep}")
+        else:
+            yield key, v
+
+
+def to_nested_dict(value: Mapping[str, Any], sep: str = ":") -> Dict[str, Any]:
+    """Makes a map nested by splitting the keys on ``sep``
+    Args:
+        value: The map to flatten.
+        sep: the separator between keys
+
+    Returns:
+        The nested dict.
+    """
+    result = {}
+    for k, v in value.items():
+        path = tuple(k.split(sep))
+        insert_nested_key(result, path=path, value=v)
+
+    return result

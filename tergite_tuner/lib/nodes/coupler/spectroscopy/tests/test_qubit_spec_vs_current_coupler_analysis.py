@@ -25,7 +25,7 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingAnalysis,
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.lib.utils.redis import update_redis_trusted_values
+from tergite_tuner.lib.utils.redis import qoi_to_redis_record
 from tergite_tuner.utils.dto.qoi import QOI
 
 
@@ -61,7 +61,7 @@ def get_dataset_for_coupler(coupler):
     return ds_qu, ds_res
 
 
-def getCrossingForQubit(qoi: QOI, qubit: str = "q06"):
+def get_crossing_for_qubit(qoi: QOI, qubit: str = "q06"):
     results = qoi.analysis_result
     qubit_number = int(re.sub("[^0-9]", "", qubit))
     if qubit_number % 2 == 0:
@@ -95,19 +95,19 @@ def test_get_crossings_for_q06_q07(
     session_context.redis.hset(f"couplers:{coupler}", "control_qubit", q1)
     session_context.redis.hset(f"couplers:{coupler}", "target_qubit", q2)
     qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
+    record = qoi_to_redis_record(qoi, redis_fields=res_coupler_qois)
+    session_context.redis_store.save_many(
+        {
+            "couplers": {coupler: record},
+            "cs": {coupler: {"resonator_spectroscopy_vs_current": "calibrated"}},
+        }
     )
 
     b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois, session_context)
     qoi = b.process_coupler(ds_qu, coupler)
 
-    q06_crossings = getCrossingForQubit(qoi, "q06")
-    q07_crossings = getCrossingForQubit(qoi, "q07")
+    q06_crossings = get_crossing_for_qubit(qoi, "q06")
+    q07_crossings = get_crossing_for_qubit(qoi, "q07")
 
     assert q06_crossings == pytest.approx(
         [-0.001925, -0.0011, 0.001375, 0.0022], abs=1e-6
@@ -139,19 +139,19 @@ def test_get_crossings_for_q08_q09(
     session_context.redis.hset(f"couplers:{coupler}", "control_qubit", q1)
     session_context.redis.hset(f"couplers:{coupler}", "target_qubit", q2)
     qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
+    record = qoi_to_redis_record(qoi, redis_fields=res_coupler_qois)
+    session_context.redis_store.save_many(
+        {
+            "couplers": {coupler: record},
+            "cs": {coupler: {"resonator_spectroscopy_vs_current": "calibrated"}},
+        }
     )
 
     b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois, session_context)
     qoi = b.process_coupler(ds_qu, coupler)
 
-    q08_crossings = getCrossingForQubit(qoi, "q08")
-    q09_crossings = getCrossingForQubit(qoi, "q09")
+    q08_crossings = get_crossing_for_qubit(qoi, "q08")
+    q09_crossings = get_crossing_for_qubit(qoi, "q09")
     assert q08_crossings == pytest.approx(
         [-0.00215, -0.00135, 0.001325, 0.002125],
         abs=1e-6,
@@ -183,19 +183,19 @@ def test_get_crossings_for_q12_q13(
     session_context.redis.hset(f"couplers:{coupler}", "control_qubit", q1)
     session_context.redis.hset(f"couplers:{coupler}", "target_qubit", q2)
     qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
+    record = qoi_to_redis_record(qoi, redis_fields=res_coupler_qois)
+    session_context.redis_store.save_many(
+        {
+            "couplers": {coupler: record},
+            "cs": {coupler: {"resonator_spectroscopy_vs_current": "calibrated"}},
+        }
     )
 
     b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois, session_context)
     qoi = b.process_coupler(ds_qu, coupler)
 
-    q12_crossings = getCrossingForQubit(qoi, "q12")
-    q13_crossings = getCrossingForQubit(qoi, "q13")
+    q12_crossings = get_crossing_for_qubit(qoi, "q12")
+    q13_crossings = get_crossing_for_qubit(qoi, "q13")
     assert q12_crossings == pytest.approx(
         [-0.00190, -0.00105, 0.001475, 0.002375], abs=1e-6
     )
@@ -223,19 +223,19 @@ def test_get_crossings_for_q14_q15(
         session_context,
     )
     qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
+    record = qoi_to_redis_record(qoi, redis_fields=res_coupler_qois)
+    session_context.redis_store.save_many(
+        {
+            "couplers": {coupler: record},
+            "cs": {coupler: {"resonator_spectroscopy_vs_current": "calibrated"}},
+        }
     )
 
     b = CouplerAnticrossingAnalysis("name", qubit_coupler_qois, session_context)
     qoi = b.process_coupler(ds_qu, coupler)
 
-    q14_crossings = getCrossingForQubit(qoi, "q14")
-    q15_crossings = getCrossingForQubit(qoi, "q15")
+    q14_crossings = get_crossing_for_qubit(qoi, "q14")
+    q15_crossings = get_crossing_for_qubit(qoi, "q15")
     assert q14_crossings == pytest.approx([-0.00185, -0.000825, 0.00155], abs=1e-6)
     assert q15_crossings == pytest.approx([-0.0018, -0.00095, 0.00165], abs=1e-6)
 
@@ -309,7 +309,7 @@ def test_no_crossings_for_q16_q17(
     a = CouplerAnticrossingAnalysis("name", qubit_coupler_qois, session_context)
     qoi = a.process_coupler(ds, coupler)
 
-    q16_crossings = getCrossingForQubit(qoi, "q16")
-    q17_crossings = getCrossingForQubit(qoi, "q17")
+    q16_crossings = get_crossing_for_qubit(qoi, "q16")
+    q17_crossings = get_crossing_for_qubit(qoi, "q17")
     assert q16_crossings == pytest.approx([0.000975], abs=1e-6)
     assert len(q17_crossings) == 0

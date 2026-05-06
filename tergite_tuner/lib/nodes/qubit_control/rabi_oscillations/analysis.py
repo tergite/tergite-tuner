@@ -21,7 +21,6 @@ import numpy as np
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import RabiModel
-from tergite_tuner.utils.backend.redis_utils import fetch_redis_params
 from tergite_tuner.utils.dto.qoi import QOI
 
 
@@ -142,8 +141,8 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
 
     def analyse_qubit(self):
         self._analyse_n_rabi()
-        previous_amplitude = fetch_redis_params(
-            "rxy:amp180", self.qubit, self.session.redis
+        previous_amplitude = self.session.redis_store.read_field(
+            "transmons", pk=self.qubit, field_path="rxy:amp180"
         )
         optimal_amp180 = self.correction + previous_amplitude
         analysis_successful = True
@@ -166,8 +165,8 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
 class NRabi_12_QubitAnalysis(NRabiQubitAnalysis):
     def analyse_qubit(self):
         self._analyse_n_rabi()
-        previous_amplitude = fetch_redis_params(
-            "r12:ef_amp180", self.qubit, self.session.redis
+        previous_amplitude = self.session.redis_store.read_field(
+            "transmons", pk=self.qubit, field_path="r12:ef_amp180"
         )
         optimal_ef_amp180 = self.correction + previous_amplitude
 

@@ -18,7 +18,7 @@ from typing import Any, Dict, Union
 
 from redis import Redis
 
-from tergite_tuner.utils.backend.redis_backup import (
+from .redis_backup import (
     dump_redis,
     load_json_to_redis,
     load_redis,
