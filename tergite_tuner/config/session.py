@@ -93,11 +93,14 @@ class SessionOptions(TypedDict, total=False):
     log_dir: Optional[Path]
     cluster_mode: MeasurementMode
     cluster_timeout: int
+    spi_mode: SPIMode
     user_samplespace: dict
     stdout_log_level: int
     file_log_level: int
     spi_serial_port: str
     redis_url: RedisDsn
+    is_recalibration: bool
+    ignore_spec: bool
     data_dir: Path
     device_config: DeviceConfig | Path | str
     node_config: NodeConfig | Path | str
@@ -212,7 +215,6 @@ class SessionContext(BaseModel):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
-    is_recalibration: bool = False
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)
@@ -286,9 +288,20 @@ class SessionContext(BaseModel):
             return MeasurementMode[value.strip()]
         return value
 
-    @field_validator("is_recalibration", mode="before")
+    @field_validator("spi_mode", mode="before")
     @classmethod
-    def cast_is_recalibration(cls, value):
+    def cast_spi_mode(cls, value):
+        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``
+        as well as raw int / :class:`SPIMode` values."""
+        if value is None or isinstance(value, SPIMode):
+            return value
+        if isinstance(value, str):
+            return SPIMode[value.strip()]
+        return value
+
+    @field_validator("is_recalibration", "ignore_spec", mode="before")
+    @classmethod
+    def cast_bool_fields(cls, value):
         """Accept common string representations (e.g. ``'true'``, ``'false'``,
         ``'1'``, ``'0'``) as well as raw bool values from ``os.environ``."""
         if isinstance(value, str):
@@ -297,7 +310,7 @@ class SessionContext(BaseModel):
                 return True
             if normalised in ("false", "0", "no", "n", "off", ""):
                 return False
-            raise ValueError(f"Cannot cast {value!r} to bool for 'is_recalibration'.")
+            raise ValueError(f"Cannot cast {value!r} to bool.")
         return bool(value)
 
     @model_validator(mode="after")

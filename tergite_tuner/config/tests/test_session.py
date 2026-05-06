@@ -94,7 +94,7 @@ def test_session_loads_example_env(clean_environ):
     assert session.spi_serial_port == "/dev/ttyACM0"
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.cluster_timeout == 222
-    assert session.is_recalibration is False
+    assert session.is_recalibration is True
 
 
 def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
