@@ -64,7 +64,7 @@ def run_cz_recalibration(coupler:str):
     for node in nodes:
         run_node(env_file="./.env", qubits=qubits, couplers=[coupler], node=node)
 
+    flip_phase(coupler)
+
 if __name__ == "__main__":
-    # run_cz_recalibration("q13_q14")
-    # flip_phase("q11_q12")
-    flip_phase("q12_q13")
+    run_cz_recalibration("q13_q14")
