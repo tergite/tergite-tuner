@@ -21,6 +21,7 @@ defaults so the package no longer needs to ship a template file.
 
 import json
 from enum import Enum
+import numpy as np
 from os import PathLike
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, Unpack
@@ -78,8 +79,8 @@ class _CouplerUnits(BaseModel):
     cz_pulse_amplitude: str = ""
     cz_pulse_dc_bias: str = ""
     cz_pulse_duration_constant: str = "s"
-    control_rz_lambda: str = "deg"
-    target_rz_lambda: str = "deg"
+    control_rz_lambda: str = "rad"
+    target_rz_lambda: str = "rad"
     pulse_type: str = ""
 
 
@@ -271,5 +272,8 @@ def _assemble_parameters(
             parameterized_return_object[parameter_[0]] = (
                 _DOWNCONVERT_FREQUENCY - parameterized_return_object[parameter_[0]]
             )
+
+        if "cz_dynamic" in parameter_[1]:
+            parameterized_return_object[parameter_[0]] = np.deg2rad(float(parameterized_return_object[parameter_[0]]))
 
     return parameterized_return_object
