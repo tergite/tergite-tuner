@@ -235,7 +235,7 @@ def test_session_loads_configs_from_file_paths():
     ["True", "true", "TRUE", " true ", "1", "yes", "Y", "on", ""],
 )
 def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_value):
-    """Truthy ``IS_RECALIBRATION`` values from the env file coerce to ``True``."""
+    """Truthy ``IS_RECALIBRATION`` values from the env file coerce to ``True``. Default is True also"""
     sample = tmp_path / ".env"
     sample.write_text(f"IS_RECALIBRATION='{raw_value}'\n")
 

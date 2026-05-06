@@ -35,7 +35,30 @@ class DummySpiManager:
         return self._currents_dict
 
 
-def test_set_parking_current_from_redis(redis_connection, session_context):
+def test_set_parking_current_from_redis_recalibration_on(
+    redis_connection, session_context
+):
+    """Set parking currents does nothing if is_recalibration is True."""
+    session_context.is_recalibration = True
+    with loaded_redis(redis_connection, redis_mock):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+        node = CZChevronNode(
+            couplers=DEFAULT_TEST_COUPLERS,
+            qubits=DEFAULT_TEST_QUBITS,
+            session=session_context,
+        )
+        node.spi_manager = DummySpiManager()
+
+        node.set_parking_current_from_redis()
+        assert node.spi_manager.get_dac_current() is None
+
+
+def test_set_parking_current_from_redis_recalibration_off(
+    redis_connection, session_context
+):
+    """Sets parking currents in redis if is_recalibration is False."""
+    # set recalibration false to ensure currents are set
+    session_context.is_recalibration = False
     with loaded_redis(redis_connection, redis_mock):
         # currents are set only when is_recalibration is False
         session_context.is_recalibration = False

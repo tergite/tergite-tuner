@@ -14,12 +14,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import ast
 import json
 import re
-from typing import List, Union
+from typing import Any, Callable, Dict, List, Literal, Mapping, TypeVar, Union
 
 import numpy as np
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
+from redis import Redis
 
 from tergite_tuner.utils.dto import extended_transmon_element
 from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
@@ -28,6 +30,280 @@ from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger
 
 np.set_printoptions(legacy="1.25")
+
+_Value = TypeVar("_Value", bound=Union[str, float, int, bool, list, dict, None])
+_Collection = Literal["transmons", "couplers", "cs"]
+_QueryFunc = Callable[[_Collection, str, str, Any], bool]
+"""(collection, primary_key, field_name, value) -> bool
+
+It returns true if the value should be added to the resulting
+dictionary of Dict[collection, Dict[primary_key, Dict[field_name, _Value]]]
+"""
+
+# All known collections. Used by ``RedisStore.read_object`` to limit the
+# keyspace scan to namespaces this store owns.
+_COLLECTIONS: tuple = ("transmons", "couplers", "cs")
+
+# Suffix appended to a canonical hash key to form a sidecar hash that holds
+# the python type label of each field. Living alongside the canonical hash
+# means legacy callers using e.g. ``hgetall("transmons:q01")`` keep seeing a
+# clean payload.
+_TYPES_SUFFIX = "__types__"
+
+# Stable labels persisted for python types. ``bool`` precedes ``int`` because
+# ``isinstance(True, int)`` is also true.
+_TYPE_LABELS: Dict[type, str] = {
+    bool: "bool",
+    int: "int",
+    float: "float",
+    str: "str",
+    list: "list",
+    tuple: "list",
+    dict: "dict",
+    type(None): "none",
+}
+
+
+class RedisStore[_Value]:
+    """Store to handle persisting and querying data from Redis.
+
+    Layout
+    ------
+    For each ``(collection, primary_key)`` pair the store keeps two parallel
+    hashes:
+
+    * ``{collection}:{primary_key}`` — the canonical hash holding the raw
+      stringified field values. This matches the layout used by the legacy
+      module-level helpers (:func:`load_redis_config` and friends) so that
+      this class can replace them transparently.
+    * ``{collection}:{primary_key}:__types__`` — a sidecar hash mapping each
+      field to a short python type label (``int``, ``float``, ``list`` ...).
+      It exists so that values can be round-tripped back to their original
+      python type without resorting to ``eval`` on list reprs.
+    """
+
+    # Atomically write a field's value and its type label so the canonical
+    # hash and its sidecar can never get out of sync.
+    _SAVE_FIELD_LUA = """
+        redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
+        redis.call('HSET', KEYS[2], ARGV[1], ARGV[3])
+        return 1
+    """
+
+    # Atomically read a field's value and its type label.
+    _READ_FIELD_LUA = """
+        local value = redis.call('HGET', KEYS[1], ARGV[1])
+        local label = redis.call('HGET', KEYS[2], ARGV[1])
+        return {value, label}
+    """
+
+    # Bulk-write every field of a single primary key. ARGV layout:
+    #   [reset_flag, field_count, field_1, value_1, label_1, ...]
+    # When ``reset`` is 1 the canonical hash and its sidecar are deleted
+    # before the new fields are written, yielding a fresh record. When
+    # ``reset`` is 0 the writes are merged on top of any pre-existing
+    # record: fields that share a name are overwritten, the rest are left
+    # untouched.
+    _SAVE_HASH_LUA = """
+        local reset = tonumber(ARGV[1])
+        if reset == 1 then
+            redis.call('DEL', KEYS[1])
+            redis.call('DEL', KEYS[2])
+        end
+        local count = tonumber(ARGV[2])
+        for i = 0, count - 1 do
+            local field = ARGV[3 + i * 3]
+            local value = ARGV[4 + i * 3]
+            local label = ARGV[5 + i * 3]
+            redis.call('HSET', KEYS[1], field, value)
+            redis.call('HSET', KEYS[2], field, label)
+        end
+        return count
+    """
+
+    def __init__(self, connection: Redis):
+        self._connection = connection
+        self._save_field_script = connection.register_script(self._SAVE_FIELD_LUA)
+        self._read_field_script = connection.register_script(self._READ_FIELD_LUA)
+        self._save_hash_script = connection.register_script(self._SAVE_HASH_LUA)
+
+    def save_field(
+        self, collection: _Collection, pk: str, field: str, value: _Value
+    ) -> None:
+        """Save a field to Redis.
+
+        Args:
+            collection: the collection to save to, options are transmons, couplers, cs.
+            pk: the primary key of the object whose field is to be saved.
+            field: the name of the field to be saved.
+            value: the value to be saved.
+        """
+        self._save_field_script(
+            keys=[
+                self._get_hash_key(collection, pk),
+                self._get_types_key(collection, pk),
+            ],
+            args=[field, _serialize(value), _label_for(value)],
+        )
+
+    def read_field(self, collection: _Collection, pk: str, field: str) -> _Value:
+        """Load a field from Redis.
+
+        Args:
+            collection: the collection to read from, options are transmons, couplers, cs.
+            pk: the primary key of the object whose field is to be read.
+            field: the name of the field to be read.
+
+        Returns:
+            the value read from redis but parsed back to its python type.
+        """
+        raw, label = self._read_field_script(
+            keys=[
+                self._get_hash_key(collection, pk),
+                self._get_types_key(collection, pk),
+            ],
+            args=[field],
+        )
+        return _deserialize(raw, label)
+
+    def save_object(
+        self,
+        obj: Mapping[_Collection, Mapping[str, Mapping[str, _Value]]],
+        reset: bool = False,
+    ) -> None:
+        """Save an object to Redis.
+
+        Args:
+            obj: the object to save. It is of format
+                ``Mapping[collection, Mapping[primary_key, Mapping[field_name, _Value]]]``
+            reset: if ``True`` every primary key in ``obj`` is wiped (the
+                canonical hash and its types sidecar are deleted) before the
+                new fields are written, yielding a fresh record. If ``False``
+                (default) the new fields are merged on top of any pre-existing
+                record: fields that share a name are overwritten and the rest
+                are left untouched.
+        """
+        for collection, by_pk in obj.items():
+            for pk, fields in by_pk.items():
+                args: List[Any] = [1 if reset else 0, len(fields)]
+                for field, value in fields.items():
+                    args.extend([field, _serialize(value), _label_for(value)])
+                self._save_hash_script(
+                    keys=[
+                        self._get_hash_key(collection, pk),
+                        self._get_types_key(collection, pk),
+                    ],
+                    args=args,
+                )
+
+    def read_object(
+        self, query: _QueryFunc
+    ) -> Dict[_Collection, Dict[str, Dict[str, _Value]]]:
+        """Read all objects from Redis matching ``query``.
+
+        Args:
+            query: callable ``(collection, primary_key, field_name, value) -> bool``
+                that decides whether a tuple should appear in the result.
+
+        Returns:
+            a dictionary of format
+            ``Dict[collection, Dict[primary_key, Dict[field_name, _Value]]]``.
+        """
+        result: Dict[_Collection, Dict[str, Dict[str, _Value]]] = {}
+        for collection in _COLLECTIONS:
+            pattern = f"{collection}:*"
+            for raw_key in self._connection.scan_iter(match=pattern, count=200):
+                key = raw_key.decode("utf-8") if isinstance(raw_key, bytes) else raw_key
+                # Sidecar ``__types__`` hashes are bookkeeping; skip them.
+                if key.endswith(f":{_TYPES_SUFFIX}"):
+                    continue
+                pk = key[len(collection) + 1 :]
+                raw_fields = self._connection.hgetall(key)
+                if not raw_fields:
+                    continue
+                raw_labels = self._connection.hgetall(
+                    self._get_types_key(collection, pk)
+                )
+                for raw_field, raw_value in raw_fields.items():
+                    field = (
+                        raw_field.decode("utf-8")
+                        if isinstance(raw_field, bytes)
+                        else raw_field
+                    )
+                    label = raw_labels.get(raw_field) or raw_labels.get(field)
+                    value = _deserialize(raw_value, label)
+                    if query(collection, pk, field, value):
+                        result.setdefault(collection, {}).setdefault(pk, {})[
+                            field
+                        ] = value
+        return result
+
+    @staticmethod
+    def _get_hash_key(collection: _Collection, pk: str) -> str:
+        """Returns the canonical hash key for ``(collection, pk)``."""
+        return f"{collection}:{pk}"
+
+    @staticmethod
+    def _get_types_key(collection: _Collection, pk: str) -> str:
+        """Returns the types sidecar hash key for ``(collection, pk)``."""
+        return f"{collection}:{pk}:{_TYPES_SUFFIX}"
+
+
+def _label_for(value: Any) -> str:
+    """Returns a short python type label for ``value``."""
+    for tp, label in _TYPE_LABELS.items():
+        if isinstance(value, tp):
+            return label
+    return "str"
+
+
+def _serialize(value: Any) -> str:
+    """Encode ``value`` as a redis-friendly string.
+
+    Scalars use their natural ``str(...)`` form so that legacy code which
+    runs e.g. ``float(redis_value)`` keeps working unchanged. Collections
+    use JSON which can be parsed back without resorting to ``eval``.
+    """
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        return json.dumps(list(value))
+    if isinstance(value, dict):
+        return json.dumps(value)
+    return str(value)
+
+
+def _deserialize(raw: Any, label: Any) -> Any:
+    """Inverse of :func:`_serialize`.
+
+    Missing or unknown labels fall back to returning the raw decoded string
+    so that hashes written via the legacy helpers can still be read. Lists
+    written via ``str(list_value)`` (legacy format) are recovered using
+    :func:`ast.literal_eval` as a backup.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8")
+    if isinstance(label, bytes):
+        label = label.decode("utf-8")
+
+    if label == "int":
+        return int(raw)
+    if label == "float":
+        return float(raw)
+    if label == "bool":
+        return raw not in ("0", "False", "false", "")
+    if label == "none":
+        return None
+    if label in ("list", "dict"):
+        try:
+            return json.loads(raw)
+        except (TypeError, ValueError):
+            return ast.literal_eval(raw)
+    return raw
 
 
 def load_redis_config(transmon: ExtendedTransmon, channel: int, redis_connection):
