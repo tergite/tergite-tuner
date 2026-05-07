@@ -1,6 +1,31 @@
 from tergite_tuner import run_node, NodeEnum
 
-qubits = [f"q{i}" for i in range(11, 16)]
+qubits5 = [f"q{i}" for i in range(11, 16)]
+
+def run_nodes(nodes:list[str], qubits:list[str], is_parallels:list[bool]):
+    assert len(nodes) == len(is_parallels)
+    for node, is_parallel in zip(nodes, is_parallels):
+        if is_parallel:
+            run_node(
+                env_file="./.env", 
+                qubits=qubits, 
+                couplers=[], 
+                node=node
+            )
+        else:
+            for qubit in qubits:
+                run_node(
+                    env_file="./.env", 
+                    qubits=[qubit], 
+                    couplers=[], 
+                    node=node
+                )
+
+def _is_parallel(node:str):
+    if "correction_12" in node or "T2" in node:
+        return False
+    else:
+        return True
 
 def run_recalibration_with_empty_redis(qubits:list):
     nodes = [
@@ -22,8 +47,7 @@ def run_recalibration_with_empty_redis(qubits:list):
         NodeEnum.RANDOMIZED_BENCHMARKING
     ]
 
-    for node in nodes:
-        run_node(env_file="./.env", qubits=qubits, couplers=[], node=node)
+    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
 
 def run_two_state_recalibration(qubits:list):
     nodes = [
@@ -35,14 +59,15 @@ def run_two_state_recalibration(qubits:list):
         NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION
     ]
 
-    for node in nodes:
-        run_node(env_file="./.env", qubits=qubits, couplers=[], node=node)
+    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
 
 def run_coherence_time_calibration(qubits:list):
-    run_node(env_file="./.env", qubits=qubits, couplers=[], node=NodeEnum.T1)
-    for qubit in qubits:
-        run_node(env_file="./.env", qubits=[qubit], couplers=[], node=NodeEnum.T2)
-        run_node(env_file="./.env", qubits=[qubit], couplers=[], node=NodeEnum.T2_ECHO)
+    nodes = [
+        NodeEnum.T1,
+        NodeEnum.T2, 
+        NodeEnum.T2_ECHO
+    ]
+    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
 
 def run_three_state_recalibration(qubits:list):
     nodes = [
@@ -53,9 +78,21 @@ def run_three_state_recalibration(qubits:list):
         NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
         NodeEnum.RANDOMIZED_BENCHMARKING
     ]
+    
+    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
 
-    for node in nodes:
-        run_node(env_file="./.env", qubits=qubits, couplers=[], node=node)
+def run_fast_recalibration(qubits:list):
+    nodes = [
+        NodeEnum.RABI_OSCILLATIONS,
+        NodeEnum.RAMSEY_CORRECTION,
+        NodeEnum.RAMSEY_CORRECTION_12,
+        NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
+        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
+        NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
+        NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
+    ]
 
+    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
+    
 if __name__ == "__main__":
-    run_three_state_recalibration(qubits)
+    run_fast_recalibration(qubits5)

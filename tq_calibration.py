@@ -1,7 +1,7 @@
 from tergite_tuner import run_node, NodeEnum
 from tergite_tuner.config.session import SessionContext
 
-couplers = ["q11_q12", "q12_q13", "q13_q14" , "q14_q15"]
+couplers4 = ["q11_q12", "q12_q13", "q13_q14" , "q14_q15"]
 
 cz_initial_parameters = {
     "q11_q12": {
@@ -27,6 +27,10 @@ cz_initial_parameters = {
 }
 
 def load_initial_cz_parameters_to_empty_redis(env_file="./.env"):
+    """
+    Load initial cz parameters into an empty redis.
+    This should only be run for the first-time calibration.    
+    """
     session = SessionContext.from_env(env_file)
     redis_connection = session.redis
     for coupler in cz_initial_parameters:
@@ -51,7 +55,7 @@ def flip_phase(coupler):
             phase = -phase
             redis_connection.hset(f"couplers:{coupler}", redis_key, phase)
 
-def run_cz_recalibration(coupler:str):
+def run_cz_recalibration(coupler:str, export_to_bcc:bool=True):
     qubits = coupler.split("_")
     nodes = [
         NodeEnum.CZ_CALIBRATION,
@@ -64,7 +68,7 @@ def run_cz_recalibration(coupler:str):
     for node in nodes:
         run_node(env_file="./.env", qubits=qubits, couplers=[coupler], node=node)
 
-    flip_phase(coupler)
+    if export_to_bcc: flip_phase(coupler)
 
 if __name__ == "__main__":
-    run_cz_recalibration("q13_q14")
+    run_cz_recalibration("q11_q12")
