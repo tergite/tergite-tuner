@@ -183,7 +183,7 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
-    
+
     def plotter(self, ax):
         standard_probabilities = self.state_probabilities.sel(
             {self.interleave_gate_coord: "Standard"}

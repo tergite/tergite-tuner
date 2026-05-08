@@ -12,8 +12,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import numpy as np
 import matplotlib.patches as mpatches
+import numpy as np
 import xarray as xr
 from numpy.linalg import inv
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -142,7 +142,7 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
         # self.optimal_inv_cm = inv(self.cms[self.optimal_index])
 
         return
-    
+
     def plot_iq_scatter(
         self, ax, iq_points: np.ndarray, marker: str, color: str, label: str = ""
     ):
@@ -251,7 +251,7 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         }
         qoi = QOI(analysis_result, analysis_successful)
         return qoi
-    
+
     def plotter(self, ax, secondary_axes):
         self.primary_plotter(ax)
         iq_axis = secondary_axes[0]
@@ -408,7 +408,7 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         }
         qoi = QOI(analysis_result, analysis_successful)
         return qoi
-    
+
     def plot_classified_IQ_points(self, iq_axis, amplitude_index: int):
 
         angle = 0
@@ -627,7 +627,7 @@ class OptimalRO2not2AmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         }
         qoi = QOI(analysis_result, analysis_succesful)
         return qoi
-    
+
     def plotter(self, ax, secondary_axes):
         self.primary_plotter(ax)
 

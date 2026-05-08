@@ -15,10 +15,10 @@
 
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from scipy.stats import spearmanr
-import matplotlib.pyplot as plt
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
@@ -204,7 +204,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
     @property
     def processed_dataset(self):
         return self.probabilities
-    
+
     def plotter(self, figures_dictionary):
 
         current_probabilities = self.probabilities

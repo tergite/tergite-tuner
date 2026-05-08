@@ -122,7 +122,7 @@ class T1QubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
-    
+
     def plotter(self, ax):
         """
         Plot the results of the T1 analysis on the provided axes.

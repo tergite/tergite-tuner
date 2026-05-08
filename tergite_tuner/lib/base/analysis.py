@@ -26,11 +26,11 @@ import numpy as np
 import xarray as xr
 
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
-from tergite_tuner.utils.dto.qoi import QOI
-from tergite_tuner.utils.logging import logger
 from tergite_tuner.lib.base.utils.figure_utils import (
     create_figure_with_top_band,
 )
+from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -100,7 +100,9 @@ class BaseNodeAnalysis(ABC):
         self._qoi = value
 
     @abstractmethod
-    def analyze_node(self, data_path: os.PathLike[str], save_plot: bool = False) -> dict[str, "QOI"]:
+    def analyze_node(
+        self, data_path: os.PathLike[str], save_plot: bool = False
+    ) -> dict[str, "QOI"]:
         """
         Run the fitting of the analysis function
 
@@ -167,7 +169,9 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         self.column_grid, self.plots_per_qubit = 5, 1
         self.qubit_analyses: List[BaseQubitAnalysis] = []
 
-    def analyze_node(self, data_path: Path, save_plot: bool = False) -> dict[str, "QOI"]:
+    def analyze_node(
+        self, data_path: Path, save_plot: bool = False
+    ) -> dict[str, "QOI"]:
         """
         Analyze the node and save the results to redis.
         Args:
@@ -185,7 +189,9 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         analysis_results = self._analyze_all_qubits()
 
         if save_plot:
-            self.fig, self.axs = self._manage_plots(self.column_grid, self.plots_per_qubit)
+            self.fig, self.axs = self._manage_plots(
+                self.column_grid, self.plots_per_qubit
+            )
             self._fill_plots()
             self._save_plots()
             self._save_other_plots()

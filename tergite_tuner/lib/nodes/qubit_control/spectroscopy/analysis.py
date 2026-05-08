@@ -110,7 +110,7 @@ class QubitSpectroscopyAnalysis(BaseQubitAnalysis):
         self.hasPeak = peaks.size == 1
         self.hasPeak = True
         return self.hasPeak
-    
+
     def plotter(self, ax):
         # Plots the data and the fitted model of a qubit spectroscopy experiment
         if self.hasPeak:

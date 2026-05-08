@@ -187,7 +187,7 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
     def _get_magnitudes(self, indx):
         magnitudes = self.magnitudes[self.data_var].isel({self.repeat_coord: indx})
         return magnitudes.values.flatten() * 1e6  # Convert to microseconds
-    
+
     def plotter(self, ax):
         for indx in range(len(self.dataset.coords[self.repeat_coord])):
             magnitudes_flat = self._get_magnitudes(indx)

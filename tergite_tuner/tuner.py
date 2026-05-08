@@ -183,7 +183,9 @@ class NodeManager:
         )
         return order + [target_node]
 
-    def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False):
+    def inspect_node(
+        self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False
+    ):
         node_cls = self.node_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
@@ -389,8 +391,8 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
         node_manager.inspect_node(
             calibration_node,
             ignore_spec=session.ignore_spec,
-            save_plot=session.save_plot
-            )
+            save_plot=session.save_plot,
+        )
         logger.info(f"{calibration_node.value} node is completed")
 
 

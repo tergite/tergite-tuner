@@ -13,9 +13,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
@@ -253,7 +253,7 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
             dim="qubit",
         )
         return self.probabilities
-    
+
     def plotter(self, figures_dictionary):
 
         fig, axs = plt.subplots(ncols=2)

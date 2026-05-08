@@ -59,7 +59,7 @@ class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
-    
+
     def plotter(self, ax, secondary_axes):
         """
         primary axis: the |0> and |1> resonator traces on the IQ plane.

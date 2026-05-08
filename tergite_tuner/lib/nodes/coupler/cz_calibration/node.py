@@ -60,7 +60,11 @@ class CZCalibrationNode(CouplerNode):
         fixed_duration_qubits = session.fixed_duration_qubits
         self.outer_schedule_samplespace = {
             "working_points": {
-                coupler: self.working_points_fixed_duration(coupler) if _has_fixed_duration_qubit(session, coupler) else self.working_points(coupler)
+                coupler: (
+                    self.working_points_fixed_duration(coupler)
+                    if _has_fixed_duration_qubit(session, coupler)
+                    else self.working_points(coupler)
+                )
                 for coupler in self.couplers
             }
         }
@@ -134,6 +138,7 @@ class CZCalibrationNode(CouplerNode):
             dataset[2 * index] = data_array
             dataset[2 * index + 1] = data_array
         return dataset
+
 
 def _has_fixed_duration_qubit(session: SessionContext, coupler: str) -> bool:
     """Checks if the coupler has a fixed duration qubit

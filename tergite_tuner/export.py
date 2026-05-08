@@ -21,11 +21,11 @@ defaults so the package no longer needs to ship a template file.
 
 import json
 from enum import Enum
-import numpy as np
 from os import PathLike
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, Unpack
 
+import numpy as np
 import tomlkit
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -274,6 +274,8 @@ def _assemble_parameters(
             )
 
         if "cz_dynamic" in parameter_[1]:
-            parameterized_return_object[parameter_[0]] = np.deg2rad(float(parameterized_return_object[parameter_[0]]))
+            parameterized_return_object[parameter_[0]] = np.deg2rad(
+                float(parameterized_return_object[parameter_[0]])
+            )
 
     return parameterized_return_object

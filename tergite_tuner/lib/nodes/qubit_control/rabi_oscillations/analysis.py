@@ -153,7 +153,7 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
 
         return qoi
-    
+
     def plotter(self, axis):
         datarray = self.magnitudes[self.data_var]
 

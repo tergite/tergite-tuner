@@ -12,9 +12,9 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
@@ -273,6 +273,7 @@ class CZCalibrationCouplerAnalysis(BaseCouplerAnalysis):
         )
         figures_list.append(fig)
         figures_dictionary[self.coupler] = figures_list
+
 
 class CZCalibrationNodeAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZCalibrationCouplerAnalysis
