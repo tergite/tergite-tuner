@@ -28,8 +28,8 @@ pulse_type = ""
 
 [[calibration_config.qubit]]
 id = "q11"
-frequency = 4735498487.143715
-pi_pulse_amplitude = 0.5665567703254761
+frequency = 4735505904.781757
+pi_pulse_amplitude = 0.5697005850939706
 pi_pulse_duration = 5.6e-08
 pi_pulse_motzoi = -0.05384615384615388
 pulse_type = "Gaussian"
@@ -39,8 +39,8 @@ t2_decoherence = 159.66765935008837
 
 [[calibration_config.qubit]]
 id = "q12"
-frequency = 4253287110.6101584
-pi_pulse_amplitude = 0.49497968853279756
+frequency = 4253281727.985665
+pi_pulse_amplitude = 0.49587901131889855
 pi_pulse_duration = 5.6e-08
 pi_pulse_motzoi = -0.015384615384615441
 pulse_type = "Gaussian"
@@ -50,8 +50,8 @@ t2_decoherence = 59.78233746555917
 
 [[calibration_config.qubit]]
 id = "q13"
-frequency = 5274375547.664419
-pi_pulse_amplitude = 0.4586529513937623
+frequency = 5274367878.845672
+pi_pulse_amplitude = 0.4596002154539405
 pi_pulse_duration = 5.6e-08
 pi_pulse_motzoi = -0.041025641025641046
 pulse_type = "Gaussian"
@@ -61,8 +61,8 @@ t2_decoherence = 48.22239750172286
 
 [[calibration_config.qubit]]
 id = "q14"
-frequency = 4296990230.052584
-pi_pulse_amplitude = 0.643903552795824
+frequency = 4296972149.7487335
+pi_pulse_amplitude = 0.642286529151961
 pi_pulse_duration = 5.6e-08
 pi_pulse_motzoi = -0.11794871794871797
 pulse_type = "Gaussian"
@@ -72,8 +72,8 @@ t2_decoherence = 124.60008690080882
 
 [[calibration_config.qubit]]
 id = "q15"
-frequency = 4570249412.964022
-pi_pulse_amplitude = 0.378336420413072
+frequency = 4570247643.044915
+pi_pulse_amplitude = 0.37940713996316505
 pi_pulse_duration = 5.6e-08
 pi_pulse_motzoi = -0.015384615384615441
 pulse_type = "Gaussian"
@@ -89,17 +89,17 @@ frequency = 6826800000.0
 pulse_delay = 0.0
 pulse_duration = 3.8e-06
 pulse_type = "Square"
-pulse_amplitude = 0.028902272727272728
+pulse_amplitude = 0.030068181818181817
 
 [[calibration_config.readout_resonator]]
 id = "q12"
 acq_delay = 2e-07
 acq_integration_time = 3.6e-06
-frequency = 6411111111.111111
+frequency = 6411155555.555555
 pulse_delay = 0.0
 pulse_duration = 3.8e-06
 pulse_type = "Square"
-pulse_amplitude = 0.03786363636363636
+pulse_amplitude = 0.03933181818181819
 
 [[calibration_config.readout_resonator]]
 id = "q13"
@@ -115,11 +115,11 @@ pulse_amplitude = 0.047136363636363636
 id = "q14"
 acq_delay = 2e-07
 acq_integration_time = 3.6e-06
-frequency = 6631888888.888889
+frequency = 6631800000.0
 pulse_delay = 0.0
 pulse_duration = 3.8e-06
 pulse_type = "Square"
-pulse_amplitude = 0.032176136363636365
+pulse_amplitude = 0.03293181818181819
 
 [[calibration_config.readout_resonator]]
 id = "q15"
@@ -153,45 +153,45 @@ pulse_type = "wacqt_cz"
 
 [[calibration_config.coupler]]
 id = "u2"
-frequency = 3680045972.0
+frequency = 3679930000.0
 cz_pulse_amplitude = 0.554
 cz_pulse_dc_bias = 0.00114288
-cz_pulse_duration_constant = 1.8000000000000002e-07
-control_rz_lambda = 1.180564610148999
-target_rz_lambda = -1.5148354525292707
+cz_pulse_duration_constant = 1.88e-07
+control_rz_lambda = 1.1344640137963142
+target_rz_lambda = -1.6406094968746698
 pulse_type = "wacqt_cz"
 
 [[calibration_config.coupler]]
 id = "u3"
-frequency = 3972770001.0
+frequency = 3972873450.0
 cz_pulse_amplitude = 0.39
 cz_pulse_dc_bias = 0.001058959
-cz_pulse_duration_constant = 2.08e-07
-control_rz_lambda = -0.04332436676552051
-target_rz_lambda = -3.20638100324102
+cz_pulse_duration_constant = 2.04e-07
+control_rz_lambda = 0.10662892943226829
+target_rz_lambda = 2.9826921170327
 pulse_type = "wacqt_cz"
 
 [calibration_config.discriminators.lda.q11]
-coef_0 = -1009.3985795577605
-coef_1 = 9.30781947336076
-intercept = -7.190805090502527
+coef_0 = -949.5693999961151
+coef_1 = 2.3523887752708768
+intercept = -7.481143481481974
 
 [calibration_config.discriminators.lda.q12]
-coef_0 = 294.24019543174
-coef_1 = 991.1627982807072
-intercept = 1.3963940695445411
+coef_0 = 717.3143826272901
+coef_1 = 914.1973076917678
+intercept = -5.242094480895276
 
 [calibration_config.discriminators.lda.q13]
-coef_0 = -466.16187830907035
-coef_1 = 882.4404854336893
-intercept = 3.565432965689564
+coef_0 = -340.82545517613374
+coef_1 = 739.7208327735806
+intercept = 2.0645618738938936
 
 [calibration_config.discriminators.lda.q14]
-coef_0 = 823.493378153801
-coef_1 = 200.34261528225161
-intercept = -10.573330563668005
+coef_0 = 599.1186342765561
+coef_1 = 1115.0688943739492
+intercept = 3.8605600101322795
 
 [calibration_config.discriminators.lda.q15]
-coef_0 = 896.5731460132107
-coef_1 = -107.68707182129565
-intercept = -5.392327893932518
+coef_0 = 933.4738990423625
+coef_1 = -110.24407169248556
+intercept = -5.855584265099097

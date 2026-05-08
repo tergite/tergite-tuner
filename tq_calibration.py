@@ -71,4 +71,4 @@ def run_cz_recalibration(coupler:str, export_to_bcc:bool=True):
     if export_to_bcc: flip_phase(coupler)
 
 if __name__ == "__main__":
-    run_cz_recalibration("q11_q12")
+    run_cz_recalibration("q13_q14")
