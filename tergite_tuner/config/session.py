@@ -101,6 +101,7 @@ class SessionOptions(TypedDict, total=False):
     redis_url: RedisDsn
     is_recalibration: bool
     ignore_spec: bool
+    save_plot: bool
     data_dir: Path
     device_config: DeviceConfig | Path | str
     node_config: NodeConfig | Path | str
@@ -109,6 +110,7 @@ class SessionOptions(TypedDict, total=False):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
     ignored_nodes: Tuple[NodeEnum, ...]
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
+    fixed_duration_qubits: Tuple[str, ...]
 
 
 class SessionContext(BaseModel):
@@ -182,6 +184,7 @@ class SessionContext(BaseModel):
         node_cls_map: the mapping from :class:`NodeEnum` to its
             concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
             to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
+        fixed_duration_qubits: the qubits with a fixed duration working points for cz calibration.
     """
 
     model_config = ConfigDict(
@@ -202,8 +205,6 @@ class SessionContext(BaseModel):
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
     redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
-    is_recalibration: bool = True
-    ignore_spec: bool = True
     data_dir: Path = Field(default_factory=_default_data_dir)
     device_config: DeviceConfig = Field(default_factory=DeviceConfig)
     node_config: NodeConfig = Field(default_factory=NodeConfig)
@@ -215,6 +216,7 @@ class SessionContext(BaseModel):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
+    fixed_duration_qubits: Tuple[str, ...] = ()
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)
@@ -251,7 +253,7 @@ class SessionContext(BaseModel):
             return ClusterConfig.from_json(value)
         return value
 
-    @field_validator("qubits", "couplers", mode="before")
+    @field_validator("qubits", "couplers", "fixed_duration_qubits", mode="before")
     @classmethod
     def cast_comma_separated_to_list(cls, value):
         """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""

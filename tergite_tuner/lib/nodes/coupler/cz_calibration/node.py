@@ -57,7 +57,6 @@ class CZCalibrationNode(CouplerNode):
         self.schedule_keywords["coupler_dict"] = self.gate_qubit_types_dict()
         self.validate()
 
-        fixed_duration_qubits = session.fixed_duration_qubits
         self.outer_schedule_samplespace = {
             "working_points": {
                 coupler: (
@@ -140,7 +139,7 @@ class CZCalibrationNode(CouplerNode):
         return dataset
 
 
-def _has_fixed_duration_qubit(session: SessionContext, coupler: str) -> bool:
+def _has_fixed_duration_qubit(session: "SessionContext", coupler: str) -> bool:
     """Checks if the coupler has a fixed duration qubit
 
     Args:
@@ -150,7 +149,5 @@ def _has_fixed_duration_qubit(session: SessionContext, coupler: str) -> bool:
     Return:
         True if the coupler is connected to a fixed duration qubit
     """
-    # FIXME: Add fixed_duration_qubits: tuple[str] on SessionContext
-    #   - q12 is a good example of these
     fixed_duration_qubits = session.fixed_duration_qubits
     return any(q in coupler for q in fixed_duration_qubits)

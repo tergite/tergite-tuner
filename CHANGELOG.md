@@ -39,6 +39,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   pydantic model (`CalibrationSeed`) with the static unit labels as
   field defaults.
 - Added `examples` folder
+- Added `FIXED_DURATION_QUBITS` env variable for setting qubits with
+  fixed duration working points for CZ calibration
 
 ### Changed
 
