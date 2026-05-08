@@ -38,6 +38,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   | "toml"` and an optional `output` path. The seed shape is now a
   pydantic model (`CalibrationSeed`) with the static unit labels as
   field defaults.
+- Added `examples` folder
 
 ### Changed
 

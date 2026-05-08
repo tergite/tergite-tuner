@@ -13,3 +13,4 @@ prune dummy_datasets
 prune libraries
 prune out
 prune resources
+prune examples
