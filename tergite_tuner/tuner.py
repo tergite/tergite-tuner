@@ -16,9 +16,12 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import os
+import shutil
 from os import PathLike
+from pathlib import Path
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Union, Unpack
+from typing import FrozenSet, List, Optional, Tuple, Union, Unpack
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -293,25 +296,43 @@ class NodeManager:
 def run_node(
     node: NodeEnum,
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    session: Optional[SessionContext] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> RedisStoreQueryResult:
+) -> Tuple[SessionContext, RedisStoreQueryResult]:
     """Run only one node in the calibration sequence
 
     Args:
         node: The calibration node to run
         env_file: Optional environment file to use
+        session: Optional session context to use
+        refresh_session: whether to refresh the session context before running; defaults to True.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: Optional session options
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
+
+    Returns:
+        the session context and the results from that session
     """
-    session = SessionContext.from_env(env_file, **session_options)
-    _tune(session, node=node)
-    return read_session_result(session)
+    if session is None:
+        session = SessionContext.from_env(env_file, **session_options)
+    _tune(
+        session,
+        node=node,
+        refresh_session=refresh_session,
+        keep_data_files=keep_data_files,
+    )
+    return session, read_session_result(session)
 
 
 def tune_device(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    session: Optional[SessionContext] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> RedisStoreQueryResult:
+) -> Tuple[SessionContext, RedisStoreQueryResult]:
     """Run the full calibration pipeline up to ``target_node``.
 
     Builds a :class:`SessionContext` from ``env_file`` (and any extra
@@ -321,18 +342,29 @@ def tune_device(
 
     Args:
         env_file: optional path to .env file to load session config from.
+        session: optional session context to use
+        refresh_session: whether to refresh the session context before running; defaults to True.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
+
+    Returns:
+        the session context and the results from that session
     """
-    session = SessionContext.from_env(env_file, **session_options)
-    _tune(session)
-    return read_session_result(session)
+    if session is None:
+        session = SessionContext.from_env(env_file, **session_options)
+    _tune(session, refresh_session=refresh_session, keep_data_files=keep_data_files)
+    results = read_session_result(session)
+    return session, results
 
 
 def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    session: Optional[SessionContext] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> RedisStoreQueryResult:
+) -> Tuple[SessionContext, RedisStoreQueryResult]:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 
     The cluster mode is forced to :attr:`MeasurementMode.re_analyse`
@@ -340,17 +372,24 @@ def reanalyse(
 
     Args:
         env_file: optional path to .env file to load session config from.
+        session: optional session context to use
+        refresh_session: whether to refresh the session context before running; defaults to True.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
-    session_options.pop("cluster_mode", None)
-    session = SessionContext.from_env(
-        env_file,
-        cluster_mode=MeasurementMode.re_analyse,
-        **session_options,
+    if session is None:
+        session = SessionContext.from_env(
+            env_file,
+            **session_options,
+        )
+
+    session.cluster_mode = MeasurementMode.re_analyse
+    _reanalyse(
+        session, refresh_session=refresh_session, keep_data_files=keep_data_files
     )
-    _re_analyse(session)
-    return read_session_result(session)
+    results = read_session_result(session)
+    return session, results
 
 
 def read_session_result(session: SessionContext) -> RedisStoreQueryResult:
@@ -374,18 +413,26 @@ def read_session_result(session: SessionContext) -> RedisStoreQueryResult:
     return session.redis_store.find_many(pks=pks, query=query_func)
 
 
-def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
+def _tune(
+    session: SessionContext,
+    node: Optional[NodeEnum] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
+) -> None:
     """Tunes the device running all nodes till target node if node is None else only that node.
 
     Args:
         session: the session context to use
         node: the only node to run.
             If not provided, all nodes are run till target node.
+        refresh_session: whether to refresh the session before tuning.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
 
     Returns:
         the current affected state of the device after the tuning
     """
-    session.refresh_redis_fields_log()
+    if refresh_session:
+        session.refresh_redis_fields_log()
     hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
@@ -423,10 +470,26 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
         )
         logger.info(f"{calibration_node.value} node is completed")
 
+    if not keep_data_files and is_safe_path(session.data_dir):
+        shutil.rmtree(session.data_dir)
+        os.makedirs(session.data_dir)
 
-def _re_analyse(session: SessionContext) -> None:
-    """Internal function implementing the re-analysis logic."""
-    session.refresh_redis_fields_log()
+
+def _reanalyse(
+    session: SessionContext,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
+) -> None:
+    """Internal function implementing the re-analysis logic.
+
+    Args:
+        session: the session context to use
+        refresh_session: whether to refresh the session before tuning.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
+    """
+    if refresh_session:
+        session.refresh_redis_fields_log()
+
     if session.cluster_mode != MeasurementMode.re_analyse:
         raise ValueError(
             f"Wrong mode for re-analysis: '{session.cluster_mode}', should be: {MeasurementMode.re_analyse}"
@@ -443,6 +506,35 @@ def _re_analyse(session: SessionContext) -> None:
     )
     node.post_process(session.log_dir)
     logger.status("Analysis completed.")
+
+    if not keep_data_files and is_safe_path(session.data_dir):
+        shutil.rmtree(session.data_dir)
+        os.makedirs(session.data_dir)
+
+
+def is_safe_path(path_str: PathLike[str]) -> bool:
+    """Checks that a path is safe to delete
+
+    Unsafe paths include '/', '/etc', '/var', '/bin', '/usr/'
+
+    Args:
+        path_str: the path to check
+
+    Returns:
+        True if the path is safe to delete, False otherwise
+    """
+    path = Path(path_str).resolve()
+
+    # Check against root
+    if path == path.parents[-1] if path.parents else path == Path("/"):
+        return False
+
+    # Extra safety: Ensure it's not a critical system directory
+    forbidden = {Path("/"), Path("/etc"), Path("/usr"), Path("/bin"), Path("/var")}
+    if path in forbidden:
+        return False
+
+    return True
 
 
 # intermediary function in the call stack in case we want to set other cluster settings
