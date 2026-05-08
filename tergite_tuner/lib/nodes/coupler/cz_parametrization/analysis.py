@@ -15,6 +15,7 @@
 
 from typing import Literal
 
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from scipy.ndimage import convolve
@@ -26,7 +27,7 @@ from tergite_tuner.utils.dto.qoi import QOI
 
 class CZParametrizationAnalysis(BaseCouplerAnalysis):
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.phase_path: Literal["via_20", "via_02"] = kwargs["phase_path"]
 
@@ -69,9 +70,6 @@ class CZParametrizationAnalysis(BaseCouplerAnalysis):
 
 
 class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
-
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config, **kwargs)
 
     def analyze_coupler(self):
         self.calculate_probabilities()
@@ -170,9 +168,60 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
     def processed_dataset(self):
         return self.probabilities
 
+    def plotter(self, figures_dictionary: dict[str, list]):
+        figures_list = []
+        for current_index, current in enumerate(self.dc_currents):
+
+            marker = "8"
+            if current_index == self.optimal_current_index:
+                marker = "*"
+            current_probabilities = self.probabilities.isel(
+                {self.dc_currents_coord: current_index}
+            )
+
+            current_probabilities.plot(
+                x=self.frequencies_coord,
+                cmap="RdBu_r",
+                row="qubit",
+                col="state",
+            )
+
+            population_exchange_points = self.optimal_values.sel(
+                {"index": current_index}
+            )
+            frequency = population_exchange_points[self.frequencies_coord]
+            amplitude = population_exchange_points[self.amplitudes_coord]
+            score = population_exchange_points[self.coupler].item()
+            fig = plt.gcf()
+
+            if self.analysis_succesful:
+                title = f"{score = :.3f}   {current = :.6f}"
+                fig.suptitle(title, x=0.55, color="red")
+                for ax in fig.axes:
+                    ax.scatter(
+                        frequency,
+                        amplitude,
+                        s=100,
+                        color="yellow",
+                        marker=marker,
+                    )
+                if current_index == self.optimal_current_index:
+                    fig.suptitle(
+                        f"{current = :.6f}"
+                        f"  score = {score:.3f}"
+                        f"  freq = {self.optimal_frequency:.5e}"
+                        f"  ampl = {self.optimal_amplitude:.5f}",
+                        x=0.5,
+                        size=14,
+                        color="red",
+                    )
+            else:
+                title = f"No good points found, {score = :.3f}   {current = :.6f}"
+                fig.suptitle(title, x=0.55, color="red")
+            figures_list.append(fig)
+
+        figures_dictionary[self.coupler] = figures_list
+
 
 class CZParametrizationNodeAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZParametrizationCouplerAnalysis
-
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)

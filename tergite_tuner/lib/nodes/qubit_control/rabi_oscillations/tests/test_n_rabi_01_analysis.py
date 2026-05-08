@@ -63,3 +63,22 @@ def test_n_rabi_01(redis_connection, session_context):
 
         assert qoi.analysis_successful
         assert pytest.approx(amp180) == 0.412374722
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        name = "n_rabi_oscillations"
+        file_path = Path(_test_data_dir, name)
+        qubit_qois = ["rxy:amp180"]
+
+        try:
+            analysis = NRabiNodeAnalysis(name, qubit_qois, session=session_context)
+            analysis.analyze_node(file_path, save_plot=True)
+            number_of_qubits = len(analysis.dataset.attrs["elements"])
+            assert analysis.axs.shape == (1, number_of_qubits)
+        finally:
+            (file_path / f"{name}.png").unlink(missing_ok=True)
+            (file_path / f"{name}_preview.png").unlink(missing_ok=True)

@@ -12,10 +12,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import itertools
 from abc import ABC
 from pathlib import Path
 
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy.linalg import inv
 from scipy.linalg import norm
 from scipy.optimize import minimize
@@ -133,6 +135,56 @@ class ProcessTomographyQubitAnalysis(BaseQubitAnalysis):
         logger.debug(f"{self.e_magnitudes = }")
         logger.debug(f"{self.f_magnitudes = }")
         return [g_magnitudes_str, e_magnitudes_str, f_magnitudes_str]
+
+    def plotter(self, axis):
+        state = ["0", "1", "2"]
+        states = list(itertools.product(state, state))
+        states = [state[0] + state[1] for state in states]
+
+        label = ["Reset Off", "Reset On"]
+        name = "Reset"
+        x = range(len(label))
+        marker = [".", "*", "v", "s"]
+        colors = plt.get_cmap("RdBu_r")(np.linspace(0.2, 0.8, len(x)))
+
+        for index, magnitude in enumerate(self.all_magnitudes):
+            axis.plot(
+                self.independents,
+                magnitude[:-3, 0],
+                f"{marker[0]}",
+            )
+
+            axis.plot(
+                self.independents,
+                magnitude[:-3, 1],
+                f"{marker[1]}",
+            )
+            axis.plot(
+                self.independents,
+                magnitude[:-3, 2],
+                f"{marker[2]}",
+            )
+
+        axis.set_xlim([self.independents[0], self.independents[-1]])
+        axis.legend(loc="upper right")
+        axis.set_ylim(-0.01, 1.01)
+        axis.set_xlabel("State")
+        axis.set_ylabel("Population")
+        axis.set_xticklabels(states)
+        # FIXME: Ambiguous information about CONTROL/TARGET Qubit, Coupler context missing
+        # Check git history for more information
+        axis.set_title(f"{name} Calibration - CONTROL/TARGET Qubit {self.qubit[1:]}")
+
+    def save_plot(self):
+        self.fig.tight_layout()
+        preview_path = self.data_path / f"{self.name}_preview.png"
+        full_path = self.data_path / f"{self.name}.png"
+        self.fig.savefig(preview_path, bbox_inches="tight", dpi=100)
+        self.fig.savefig(full_path, bbox_inches="tight", dpi=400)
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close()
+        logger.info(f"Plots saved to {preview_path} and {full_path}")
 
 
 class SingleProcessTomographyNodeAnalysis(BaseAllQubitsAnalysis):

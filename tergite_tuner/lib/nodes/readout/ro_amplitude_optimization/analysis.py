@@ -11,6 +11,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from typing import TYPE_CHECKING
 
 import matplotlib.patches as mpatches
 import numpy as np
@@ -25,6 +26,9 @@ from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.utils import (
 )
 from tergite_tuner.lib.utils.analysis_models import ThreeClassBoundary, TwoClassBoundary
 from tergite_tuner.utils.dto.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
 class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
@@ -466,8 +470,8 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 class OptimalROTwoStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = OptimalROTwoStateAmplitudeQubitAnalysis
 
-    def __init__(self, *args, **kws):
-        super().__init__(*args, **kws)
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.plots_per_qubit = 3
 
     def _fill_plots(self):
@@ -488,8 +492,8 @@ class OptimalROTwoStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
 class ROThreeStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = ROThreeStateAmplitudeQubitAnalysis
 
-    def __init__(self, *args, **kws):
-        super().__init__(*args, **kws)
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.plots_per_qubit = 3
 
     def _fill_plots(self):

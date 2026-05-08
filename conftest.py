@@ -89,5 +89,6 @@ def session_context(redis_connection) -> SessionContext:
         spi_config=_FIXTURE_CONFIG_PATH / "spi_config.toml",
         device_config=_FIXTURE_CONFIG_PATH / "device_config.toml",
         output_dir=_PROJECT_ROOT / "out" / "pytest",
-        fixed_duration_qubits="q12",
+        fixed_duration_qubits=("q12",),
+        save_plot=False,
     )

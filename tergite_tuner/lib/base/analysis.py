@@ -76,9 +76,7 @@ class BaseNodeAnalysis(ABC):
     Base class for the analysis
     """
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         self.name = name
         self.session = session
         self._qoi = None
@@ -159,9 +157,7 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
 
     single_qubit_analysis_cls: Type["BaseQubitAnalysis"]
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.dataset = xr.Dataset()
         self.data_vars = None
@@ -176,6 +172,7 @@ class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
         Analyze the node and save the results to redis.
         Args:
             data_path: Path to the dataset
+            save_plot: Whether to save the plot
 
         Returns:
             analysis_results: Dictionary with the analysis results for each qubit
@@ -234,9 +231,7 @@ class BaseQubitAnalysis(BaseAnalysis, ABC):
     Base class for the analysis of a single qubit
     """
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__()
         self.name = name
         self.redis_fields = redis_fields
@@ -299,9 +294,7 @@ class BaseCouplerAnalysis(BaseAnalysis, ABC):
     Base class for the analysis of a single coupler
     """
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__()
         self.name = name
         self.redis_fields = redis_fields
@@ -352,9 +345,7 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
 
     single_coupler_analysis_obj: Type["BaseCouplerAnalysis"]
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.dataset: xr.Dataset
         self.data_vars = None
@@ -369,6 +360,7 @@ class BaseAllCouplersAnalysis(BaseNodeAnalysis, ABC):
         Analyze the node and save the results to redis.
         Args:
             data_path: Path to the dataset
+            save_plot: Whether to save the plot
 
         Returns:
             analysis_results: Dictionary with the analysis results for each qubit

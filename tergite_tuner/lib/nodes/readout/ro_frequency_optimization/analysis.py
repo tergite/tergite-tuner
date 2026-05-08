@@ -12,6 +12,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from quantify_core.analysis import fitting_models as fm
 
@@ -19,6 +21,9 @@ from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnal
 from tergite_tuner.utils.dto.qoi import QOI
 
 model = fm.ResonatorModel()
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
 class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
@@ -140,8 +145,8 @@ class ROFrequencyThreeStateQubitAnalysis(OptimalRO01FrequencyQubitAnalysis):
 class OptimalRO01FrequencyNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = OptimalRO01FrequencyQubitAnalysis
 
-    def __init__(self, *args, **kws):
-        super().__init__(*args, **kws)
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
+        super().__init__(name, redis_fields, session, **kwargs)
         self.plots_per_qubit = 3
 
     def _fill_plots(self):

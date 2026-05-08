@@ -51,5 +51,4 @@ class ClusterConfig(QbloxHardwareCompilationConfig):
         """
         with open(file, "r") as f:
             data = json.load(f)
-        # return cls.model_validate(data)
-        return QbloxHardwareCompilationConfig.model_validate(data)
+        return cls.model_validate(data)

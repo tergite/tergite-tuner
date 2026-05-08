@@ -36,7 +36,7 @@ class ParabolicFit:
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
@@ -166,6 +166,8 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         cz_working_durations_in_ns = (integer_gate_durations_in_ns // 4) * 4
         cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
 
+        # FIXME: This change breaks the `test_cz_chevron_analysis_good_data`.
+        #   Is the fitting no longer necessary to get the peak of the chevron
         # # fit the working points to a parabola model to extract the peak of the chevron
         # parabolic_fit = self.apply_parabolic_fit(
         #     cz_duration_values, cz_working_frequencies
@@ -255,6 +257,3 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
 class CZChevronAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZChevronCouplerAnalysis
-
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)

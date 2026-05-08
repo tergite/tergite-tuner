@@ -14,6 +14,7 @@
 import ast
 from typing import List
 
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray
 
@@ -32,9 +33,6 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
     """
     This class analyzes the qubit spectroscopy data as a function of the current for a coupler.
     """
-
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
 
     def _find_crossing_currents(
         self,
@@ -195,14 +193,56 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
 
         return crossing_points
 
+    def plotter(self, figures_dictionary: dict[str, list]):
+        """
+        Create the anticrossing figures and populate the figures dictionary.
+        Args:
+             figures_dictionary: A reference to the figures dictionary that the base
+             analysis plots the key is the coupler labe and the value is a list
+             containing the anticrossing figure for that coupler
+        """
+        figures_list = []
+        fig, (ax1, ax2) = plt.subplots(2, 1)
+        control_qubit_magnitudes = xarray.ufuncs.abs(self.control_qubit_data_var)
+        target_qubit_magnitudes = xarray.ufuncs.abs(self.target_qubit_data_var)
+        control_qubit_magnitudes.plot(ax=ax1, x=self.current_coord)
+        target_qubit_magnitudes.plot(ax=ax2, x=self.current_coord)
+
+        ax1.scatter(
+            self.control_qubit_detected_currents,
+            self.control_qubit_detected_frequencies,
+            s=52,
+            c="red",
+        )
+        for cross_current in self.control_crossing_currents:
+            ax1.axvline(
+                cross_current,
+                color="grey",
+                linestyle="dashed",
+                linewidth=2,
+            )
+        ax2.scatter(
+            self.target_qubit_detected_currents,
+            self.target_qubit_detected_frequencies,
+            s=52,
+            c="red",
+        )
+        for cross_current in self.target_crossing_currents:
+            ax2.axvline(
+                cross_current,
+                color="grey",
+                linestyle="dashed",
+                linewidth=2,
+            )
+        figures_list.append(fig)
+        figures_dictionary[self.coupler] = figures_list
+        return
+
 
 class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
     """
     This class analyzes the resonator spectroscopy data as a function of the current for a coupler.
     """
-
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
 
     def detect_peaks(self, res_specs_dataarray: xarray.DataArray):
         detected_frequencies = []
@@ -211,7 +251,9 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
             darray = res_specs_dataarray.sel({self.current_coord: current})
             real_ds = to_real_dataset(darray.to_dataset())
             real_ds = real_ds.drop_vars(self.current_coord)
-            freq_analysis = ResonatorSpectroscopyQubitAnalysis(self.name, "")
+            freq_analysis = ResonatorSpectroscopyQubitAnalysis(
+                self.name, (), session=self.session
+            )
             resonator_frequency = freq_analysis.process_qubit(
                 real_ds, self.data_var[1:]
             ).analysis_result["clock_freqs:readout"]["value"]
@@ -336,6 +378,50 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
         qoi = QOI(analysis_result, analysis_succesful)
         return qoi
 
+    def plotter(self, figures_dictionary):
+        """
+        Create the anticrossing figures and populate the figures dictionary.
+        Args:
+             figures_dictionary: A reference to the figures dictionary that the base
+             analysis plots the key is the coupler labe and the value is a list
+             containing the anticrossing figure for that coupler
+        """
+        figures_list = []
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        control_qubit_magnitudes = xarray.ufuncs.abs(self.control_qubit_data_var)
+        target_qubit_magnitudes = xarray.ufuncs.abs(self.target_qubit_data_var)
+        control_qubit_magnitudes.plot(ax=ax1)
+        target_qubit_magnitudes.plot(ax=ax2)
+        ax1.scatter(
+            self.control_qubit_detected_frequencies,
+            self.control_qubit_detected_currents,
+            s=52,
+            c="red",
+        )
+        for cross_current in self.control_crossing_currents:
+            ax1.axhline(
+                cross_current,
+                color="grey",
+                linestyle="dashed",
+                linewidth=2,
+            )
+        ax2.scatter(
+            self.target_qubit_detected_frequencies,
+            self.target_qubit_detected_currents,
+            s=52,
+            c="red",
+        )
+        for cross_current in self.target_crossing_currents:
+            ax2.axhline(
+                cross_current,
+                color="grey",
+                linestyle="dashed",
+                linewidth=2,
+            )
+        figures_list.append(fig)
+        figures_dictionary[self.coupler] = figures_list
+        return
+
 
 class ResonatorSpectroscopyVsCurrentNodeAnalysis(BaseAllCouplersAnalysis):
     """
@@ -344,9 +430,6 @@ class ResonatorSpectroscopyVsCurrentNodeAnalysis(BaseAllCouplersAnalysis):
 
     single_coupler_analysis_obj = ResonatorSpectroscopyVsCurrentCouplerAnalysis
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-
 
 class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
     """
@@ -354,6 +437,3 @@ class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
     """
 
     single_coupler_analysis_obj = CouplerAnticrossingAnalysis
-
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)

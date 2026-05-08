@@ -66,3 +66,32 @@ def test_decode_multi_index(redis_connection, session_context):
         assert "l2" in dataset.working_points.coords
         assert "working_points" in dataset.working_points.coords
         assert dataset.working_points.size == 11
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_calibration.hdf5")
+        dataset = xr.open_dataset(file_path)
+        dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
+
+        analysis = CZCalibrationCouplerAnalysis(
+            "cz_calibration",
+            ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
+        )
+
+        figures_dictionary = {}
+
+        analysis.process_coupler(dataset, "q13_q14")
+        analysis.plotter(figures_dictionary)
+
+        assert "q13_q14" in figures_dictionary
+
+        figure = figures_dictionary["q13_q14"][0]
+
+        # axes are the (freq, duration) plots + figure title +
+        # figure x label + figure y label + global trend plot
+        assert len(figure.get_axes()) == dataset.working_points.size + 4

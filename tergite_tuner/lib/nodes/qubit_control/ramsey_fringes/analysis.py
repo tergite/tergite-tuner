@@ -21,7 +21,7 @@ from tergite_tuner.utils.dto.qoi import QOI
 
 
 class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = ""
 
@@ -96,7 +96,7 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
 
 
 class RamseyDetunings01QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = "clock_freqs:f01"
 
@@ -117,7 +117,7 @@ class RamseyDetunings01QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
 
 
 class RamseyDetunings12QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = "clock_freqs:f12"
 

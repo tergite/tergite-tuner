@@ -38,3 +38,26 @@ def test_cz_rb(redis_connection, session_context):
 
         assert qoi.analysis_successful
         assert pytest.approx(cz_fidelity) == 0.95848
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_rb.hdf5")
+        dataset = xr.open_dataset(file_path)
+
+        analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
+
+        figures_dictionary = {}
+
+        analysis.process_coupler(dataset, "q12_q13")
+        analysis.plotter(figures_dictionary)
+
+        assert "q12_q13" in figures_dictionary
+
+        figure = figures_dictionary["q12_q13"][0]
+
+        # one axis for the standard exponentials and one for the leakage RB exponentials
+        assert len(figure.get_axes()) == 2

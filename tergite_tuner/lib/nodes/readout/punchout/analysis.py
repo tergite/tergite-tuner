@@ -14,8 +14,11 @@
 from typing import List
 
 import numpy as np
+from matplotlib import patches
+from matplotlib import pyplot as plt
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
+from tergite_tuner.lib.base.utils.figure_utils import create_figure_with_top_band
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
     ResonatorSpectroscopyQubitAnalysis,
 )
@@ -28,7 +31,7 @@ class PunchoutQubitAnalysis(BaseQubitAnalysis):
     measure the readout amplitude.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.amplitude_coord = None
         self.frequency_coord = None
@@ -66,7 +69,9 @@ class PunchoutQubitAnalysis(BaseQubitAnalysis):
         for i, amplitude in enumerate(self.amplitudes):
             ds = self.dataset.sel({self.amplitude_coord: amplitude})
 
-            res_spec_analysis = ResonatorSpectroscopyQubitAnalysis(self.name, "")
+            res_spec_analysis = ResonatorSpectroscopyQubitAnalysis(
+                self.name, "", session=self.session
+            )
             resonator_frequency = res_spec_analysis.process_qubit(
                 ds, self.data_var[1:]
             ).analysis_result["clock_freqs:readout"]["value"]
@@ -104,6 +109,83 @@ class PunchoutQubitAnalysis(BaseQubitAnalysis):
 
         return qoi
 
+    def plotter(self, ax: plt.Axes):
+        """
+        This method plots the results of the analysis. It creates a 2D
+        scatter plot of the detected resonator frequencies against the
+        readout pulse amplitudes. It also highlights the best amplitude
+        with a red cross and adds a colorbar indicating the normalized
+        |S21| values.
+        """
+
+        cax = self.S21[self.data_var].plot(ax=ax, x=self.amplitude_coord)
+        ax.scatter(
+            self.detected_frequencies,
+            self.amplitudes,
+            c="b",
+            label="Fitted resonator freq.",
+            marker="o",
+        )
+        ax.scatter(
+            self.best_amplitude,
+            self.last_good_freq,
+            c="r",
+            label=f"Amplitude = {self.best_amplitude:.3f}",
+            marker="X",
+            s=200,
+            edgecolors="k",
+            linewidth=1.5,
+            zorder=10,
+        )
+        ax.set_ylabel("Resonator frequency [Hz]")
+        ax.set_xlabel("Readout pulse amplitude [V?]")
+
+        cbar = cax.colorbar  # Only add colorbar if it's an image or similar plot
+        cbar.set_label(
+            "Normalized |S21|", rotation=270, labelpad=15
+        )  # Custom label here
+
+        ax.legend()  # Add legend to the plot
+
+    def plot_spectroscopies(self, data_path):
+        """
+        This method creates a figure with subplots for each resonator
+        spectroscopy analysis. It highlights the best amplitude with a red
+        rectangle around the corresponding subplot.
+        """
+
+        n_analyses = len(self.resonator_spectroscopy_analyses)
+        ncols = 4
+        nrows = int(np.ceil(n_analyses / ncols))
+
+        fig, axs = create_figure_with_top_band(nrows, ncols)
+
+        selected_index = -1
+        for i, ana in enumerate(self.resonator_spectroscopy_analyses):
+            ana.plotter(axs[int(i / ncols), i % ncols])
+            if self.best_amplitude == self.amplitudes[i]:
+                selected_index = i
+
+        row = selected_index // ncols
+        col = selected_index % ncols
+        ax = axs[row, col]
+
+        # Add a red rectangle around the entire axes
+        rect = patches.Rectangle(
+            (0, 0),
+            1,
+            1,
+            transform=ax.transAxes,
+            linewidth=3,
+            edgecolor="red",
+            facecolor="none",
+            zorder=20,
+        )
+        ax.add_patch(rect)
+
+        full_path = data_path / f"{self.name}_{self.qubit}_spectroscopies.png"
+        fig.savefig(full_path, bbox_inches="tight", dpi=300)
+
 
 class PunchoutNodeAnalysis(BaseAllQubitsAnalysis):
     """
@@ -112,3 +194,7 @@ class PunchoutNodeAnalysis(BaseAllQubitsAnalysis):
     """
 
     single_qubit_analysis_cls = PunchoutQubitAnalysis
+
+    def _save_other_plots(self):
+        for q_ana in self.qubit_analyses:
+            q_ana.plot_spectroscopies(self.data_path)

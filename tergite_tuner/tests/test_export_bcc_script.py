@@ -12,6 +12,7 @@
 
 import os
 
+import numpy as np
 import pytest
 import toml
 
@@ -34,7 +35,7 @@ _EXPECTED_QUBIT_Q11 = {
     "pulse_type": "Gaussian",
     "pulse_sigma": pytest.approx(0.0),
     "t1_decoherence": pytest.approx(63.39282543781701),
-    "t2_decoherence": pytest.approx(7.486213589808061),
+    "t2_decoherence": pytest.approx(11.620495475043516),
 }
 _EXPECTED_QUBIT_Q12 = {
     "id": "q12",
@@ -45,7 +46,7 @@ _EXPECTED_QUBIT_Q12 = {
     "pulse_type": "Gaussian",
     "pulse_sigma": pytest.approx(0.0),
     "t1_decoherence": pytest.approx(86.61716166660516),
-    "t2_decoherence": pytest.approx(20.27724290001215),
+    "t2_decoherence": pytest.approx(26.53776031990094),
 }
 _EXPECTED_RESONATOR_Q11 = {
     "id": "q11",
@@ -63,8 +64,8 @@ _EXPECTED_COUPLER_Q11_Q12 = {
     "cz_pulse_amplitude": pytest.approx(0.245),
     "cz_pulse_dc_bias": pytest.approx(0.00095),
     "cz_pulse_duration_constant": pytest.approx(3.8e-07),
-    "control_rz_lambda": pytest.approx(121.0),
-    "target_rz_lambda": pytest.approx(134.0),
+    "control_rz_lambda": pytest.approx(np.deg2rad(121.0)),
+    "target_rz_lambda": pytest.approx(np.deg2rad(134.0)),
     "pulse_type": "wacqt_cz",
 }
 _EXPECTED_LDA_Q11 = {
@@ -81,7 +82,7 @@ def _assert_seed_full(seed: dict) -> None:
     # Static unit labels
     assert cfg["units"]["qubit"]["frequency"] == "Hz"
     assert cfg["units"]["readout_resonator"]["frequency"] == "Hz"
-    assert cfg["units"]["coupler"]["control_rz_lambda"] == "deg"
+    assert cfg["units"]["coupler"]["control_rz_lambda"] == "rad"
 
     # Per-element parameter lists
     assert cfg["qubit"] == [_EXPECTED_QUBIT_Q11, _EXPECTED_QUBIT_Q12]

@@ -53,3 +53,26 @@ def test_randomized_benchmarking_analysis(redis_connection, session_context):
         assert pytest.approx(standard_leakage_11) == 0.00207032
         assert pytest.approx(standard_fidelity_15) == 0.99788337
         assert pytest.approx(standard_leakage_15) == 0.0064318
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
+        name = "randomized_benchmarking"
+        analysis = RandomizedBenchmarkingNodeAnalysis(
+            name,
+            redis_fields=qubit_qois,
+            session_context=session_context,
+        )
+        try:
+            analysis.analyze_node(_test_data_dir, save_plot=True)
+            figure = analysis.fig
+
+            # TODO: this will change when the top band is removed
+            assert len(figure.get_axes()) == 8
+        finally:
+            Path(_test_data_dir, f"{name}.png").unlink(missing_ok=True)
+            Path(_test_data_dir, f"{name}_preview.png").unlink(missing_ok=True)

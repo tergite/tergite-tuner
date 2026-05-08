@@ -26,7 +26,7 @@ from tergite_tuner.utils.dto.qoi import QOI
 
 class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = SineOscillatingModel()
 
@@ -220,6 +220,3 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
 
 class CZLocalPhasesNodeAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZLocalPhasesCouplerAnalysis
-
-    def __init__(self, name, redis_fields, config=None, **kwargs):
-        super().__init__(name, redis_fields, config)

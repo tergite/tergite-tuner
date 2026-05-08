@@ -109,6 +109,7 @@ sequence.json
 tergite_tuner/utils/**.csv
 out/**
 tmp/
+**.png
 
 # internal
 external/

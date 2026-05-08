@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 
 import lmfit
 import numpy as np
+from matplotlib.axes import Axes
 from quantify_core.analysis.fitting_models import ExpDecayModel, fft_freq_phase_guess
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
@@ -99,7 +100,7 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
     specific fitting models and extraction methods.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.t2_times = []
         self.average_t2 = None
@@ -213,7 +214,7 @@ class T2QubitAnalysis(BaseT2QubitAnalysis):
     It fits the model to the data and extracts the T2 time.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = T2Model()
         self.label = "T2"
@@ -244,7 +245,7 @@ class T2EchoQubitAnalysis(BaseT2QubitAnalysis):
     It fits the model to the data and extracts the T2 Echo time.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = ExpDecayModel()
         self.label = "T2 Echo"
@@ -265,6 +266,31 @@ class T2EchoQubitAnalysis(BaseT2QubitAnalysis):
     def fit_model(self, magnitudes_flat):
         guess = self.model.guess(data=magnitudes_flat, delay=self.delays)
         return self.model.fit(magnitudes_flat, params=guess, t=self.delays)
+
+    def plotter(self, ax: Axes):
+        super().plotter(ax)
+
+        params_upper = self.average_params.copy()
+        params_upper["tau"].value = self.average_t2 + self.error
+        average_t2_upper = self.model.eval(params=params_upper, t=self.fit_delays)
+
+        params_lower = self.average_params.copy()
+        params_lower["tau"].value = self.average_t2 - self.error
+        average_t2_lower = self.model.eval(params=params_lower, t=self.fit_delays)
+
+        ax.fill_between(
+            self.fit_delays,
+            average_t2_lower,
+            average_t2_upper,
+            color="red",
+            alpha=0.2,
+            label="±1σ",
+        )
+
+        ax.set_xlabel("Delay (μs)")
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()
+        ax.legend()
 
 
 class T2NodeAnalysis(BaseAllQubitsAnalysis):

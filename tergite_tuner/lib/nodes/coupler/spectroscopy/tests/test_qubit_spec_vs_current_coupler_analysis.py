@@ -10,12 +10,14 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
+import os
 import re
 from pathlib import Path
 
+import matplotlib
 import pytest
 import xarray as xr
+from matplotlib import pyplot as plt
 from numpy import ndarray
 
 from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
@@ -27,8 +29,8 @@ from tergite_tuner.lib.utils.redis import update_redis_trusted_values
 from tergite_tuner.utils.dto.qoi import QOI
 
 
-def test_CanCreate():
-    a = CouplerAnticrossingAnalysis("name", ["redis_field"])
+def test_coupler_anticrossing_analysis_create(session_context):
+    a = CouplerAnticrossingAnalysis("name", ["redis_field"], session=session_context)
     assert isinstance(a, CouplerAnticrossingAnalysis)
     assert isinstance(a, BaseCouplerAnalysis)
     assert isinstance(a, BaseAnalysis)
@@ -236,6 +238,52 @@ def test_get_crossings_for_q14_q15(
     q15_crossings = getCrossingForQubit(qoi, "q15")
     assert q14_crossings == pytest.approx([-0.00185, -0.000825, 0.00155], abs=1e-6)
     assert q15_crossings == pytest.approx([-0.0018, -0.00095, 0.00165], abs=1e-6)
+
+
+def test_coupler_plot_is_created(setup_q06_q07_data, session_context):
+    matplotlib.use("Agg")
+    ds_res, ds_qu, coupler = setup_q06_q07_data
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        "resonator_spectroscopy_vs_current",
+        res_coupler_qois,
+        session_context,
+    )
+    qoi = a.process_coupler(ds_res, coupler)
+    update_redis_trusted_values(
+        "resonator_spectroscopy_vs_current",
+        coupler,
+        session_context.redis,
+        qoi,
+        res_coupler_qois,
+    )
+
+    b = CouplerAnticrossingAnalysis(
+        "qubit_spectroscopy_vs_current",
+        qubit_coupler_qois,
+        session_context,
+    )
+    qoi = b.process_coupler(ds_qu, coupler)
+
+    figure_path = session_context.data_dir / "qubit_spectroscopy_vs_current.png"
+    # Remove the file if it already exists
+    if os.path.exists(figure_path):
+        os.remove(figure_path)
+
+    figures_dictionary = {}
+    b.plotter(figures_dictionary)
+    fig_list = figures_dictionary[coupler]
+    fig = fig_list[0]
+    try:
+        fig.savefig(figure_path)
+        plt.close()
+
+        assert os.path.exists(figure_path)
+        from PIL import Image
+
+        with Image.open(figure_path) as img:
+            assert img.format == "PNG", "File should be a PNG image"
+    finally:
+        figure_path.unlink(missing_ok=True)
 
 
 @pytest.fixture(autouse=False)

@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from conftest import session_context
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.analysis import (
     Motzoi01NodeAnalysis,
@@ -41,7 +42,7 @@ def test_motzoi_parameter(redis_connection, session_context):
         ds_13 = filter_ds_by_element(full_dataset, "q13")
         ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-        analysis = Motzoi01QubitAnalysis(name, qubit_qois)
+        analysis = Motzoi01QubitAnalysis(name, qubit_qois, session=session_context)
         s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
         analysis.magnitudes = np.abs(s21)
         analysis.data_var = "yq13"
@@ -61,3 +62,25 @@ def test_motzoi_parameter(redis_connection, session_context):
 
         assert qoi.analysis_successful
         assert pytest.approx(motzoi_01) == -0.0923076923077
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    with save_plot=True
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        name = "motzoi_parameter"
+        file_path = Path(_test_data_dir, name)
+        qubit_qois = ["rxy:motzoi"]
+
+        try:
+            analysis = Motzoi01NodeAnalysis(name, qubit_qois, session=session_context)
+            analysis.analyze_node(file_path, save_plot=True)
+            assert hasattr(analysis, "fig")
+            number_of_qubits = len(analysis.dataset.attrs["elements"])
+
+            assert analysis.axs.shape == (1, number_of_qubits)
+        finally:
+            (file_path / f"{name}.png").unlink(missing_ok=True)
+            (file_path / f"{name}_preview.png").unlink(missing_ok=True)

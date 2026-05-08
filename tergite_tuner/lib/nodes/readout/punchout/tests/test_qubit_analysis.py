@@ -15,12 +15,13 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
+from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.nodes.readout.punchout.analysis import PunchoutQubitAnalysis
 
 
-def test_CanCreate():
-    a = PunchoutQubitAnalysis("name", ["redis_field"])
+def test_CanCreate(session_context: SessionContext):
+    a = PunchoutQubitAnalysis("name", ["redis_field"], session=session_context)
     assert isinstance(a, PunchoutQubitAnalysis)
     assert isinstance(a, BaseQubitAnalysis)
     assert isinstance(a, BaseAnalysis)
@@ -33,41 +34,41 @@ def setup_data():
     return ds
 
 
-def amplitude_for_qubit(ds, qubit):
+def amplitude_for_qubit(ds, qubit, session):
     long_name = f"y{qubit}"
     ds = xr.merge(ds[var] for var in [long_name])
     ds.attrs["qubit"] = qubit
 
-    a = PunchoutQubitAnalysis("name", ["measure:pulse_amp"])
+    a = PunchoutQubitAnalysis("name", ["measure:pulse_amp"], session=session)
     qoi = a.process_qubit(ds, qubit)
     return qoi.analysis_result["measure:pulse_amp"]["value"]
 
 
-def test_amplitude_for_q06(setup_data: xr.Dataset):
+def test_amplitude_for_q06(setup_data: xr.Dataset, session_context: SessionContext):
     ds = setup_data
-    amplitude = amplitude_for_qubit(ds, "q06")
+    amplitude = amplitude_for_qubit(ds, "q06", session=session_context)
     assert amplitude - 0.016 < 0.001
 
 
-def test_amplitude_for_q07(setup_data: xr.Dataset):
+def test_amplitude_for_q07(setup_data: xr.Dataset, session_context: SessionContext):
     ds = setup_data
-    amplitude = amplitude_for_qubit(ds, "q07")
+    amplitude = amplitude_for_qubit(ds, "q07", session=session_context)
     assert amplitude - 0.016 < 0.001
 
 
-def test_amplitude_for_q10(setup_data: xr.Dataset):
+def test_amplitude_for_q10(setup_data: xr.Dataset, session_context: SessionContext):
     ds = setup_data
-    amplitude = amplitude_for_qubit(ds, "q10")
+    amplitude = amplitude_for_qubit(ds, "q10", session=session_context)
     assert amplitude - 0.045 < 0.001
 
 
-def test_amplitude_for_q12(setup_data: xr.Dataset):
+def test_amplitude_for_q12(setup_data: xr.Dataset, session_context: SessionContext):
     ds = setup_data
-    amplitude = amplitude_for_qubit(ds, "q12")
+    amplitude = amplitude_for_qubit(ds, "q12", session=session_context)
     assert amplitude - 0.030 < 0.001
 
 
-def test_amplitude_for_q15(setup_data: xr.Dataset):
+def test_amplitude_for_q15(setup_data: xr.Dataset, session_context: SessionContext):
     ds = setup_data
-    amplitude = amplitude_for_qubit(ds, "q15")
+    amplitude = amplitude_for_qubit(ds, "q15", session=session_context)
     assert amplitude - 0.06 < 0.001

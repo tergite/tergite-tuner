@@ -14,6 +14,7 @@
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+from matplotlib.axes import Axes
 from scipy.linalg import norm
 from scipy.optimize import minimize
 
@@ -51,9 +52,7 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
     Analysis that fits an exponential decay function to randomized benchmarking data.
     """
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 

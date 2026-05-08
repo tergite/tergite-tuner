@@ -48,7 +48,9 @@ def test_ro_ampl_3states(redis_connection, session_context):
         ds_13 = filter_ds_by_element(full_dataset, "q13")
         ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-        analysis = ROThreeStateAmplitudeQubitAnalysis(name, qubit_qois)
+        analysis = ROThreeStateAmplitudeQubitAnalysis(
+            name, qubit_qois, session=session_context
+        )
         analysis.S21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
         analysis.data_var = "yq13"
         qoi = analysis.analyse_qubit()
@@ -86,3 +88,32 @@ def test_ro_ampl_3states(redis_connection, session_context):
         assert pytest.approx(omega_01) == 274.3834996
         assert pytest.approx(omega_12) == 156.0215330
         assert pytest.approx(omega_20) == 10.16925296
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        name = "ro_amplitude_three_state_optimization"
+        file_path = Path(_test_data_dir, name)
+        qubit_qois = [
+            "measure_3state_opt:pulse_amp",
+            "centroid_I",
+            "centroid_Q",
+            "omega_01",
+            "omega_12",
+            "omega_20",
+            "inv_cm_opt",
+        ]
+
+        try:
+            analysis = ROThreeStateAmplitudeNodeAnalysis(
+                name, qubit_qois, session=session_context
+            )
+            analysis.analyze_node(file_path, save_plot=True)
+            number_of_qubits = len(analysis.dataset.attrs["elements"])
+            assert analysis.axs.shape == (3, number_of_qubits)
+        finally:
+            (file_path / f"{name}.png").unlink(missing_ok=True)
+            (file_path / f"{name}_preview.png").unlink(missing_ok=True)

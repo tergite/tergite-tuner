@@ -25,7 +25,7 @@ from tergite_tuner.utils.dto.qoi import QOI
 
 class CZRBCouplerAnalysis(BaseCouplerAnalysis):
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.single_model = ExpDecayModel(inverted=False)
 

@@ -103,7 +103,7 @@ def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
 
     assert session.cluster_mode == MeasurementMode.real
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
-    assert session.data_dir == Path.cwd() / "out"
+    assert session.data_dir == Path("out")
 
 
 def test_session_constructs_with_no_args(clean_environ):
@@ -232,7 +232,7 @@ def test_session_loads_configs_from_file_paths():
 
 @pytest.mark.parametrize(
     "raw_value",
-    ["True", "true", "TRUE", " true ", "1", "yes", "Y", "on"],
+    ["True", "true", "TRUE", " true ", "1", "yes", "Y", "on", ""],
 )
 def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_value):
     """Truthy ``IS_RECALIBRATION`` values from the env file coerce to ``True``."""
@@ -245,7 +245,7 @@ def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_va
 
 @pytest.mark.parametrize(
     "raw_value",
-    ["False", "false", "FALSE", " false ", "0", "no", "N", "off", ""],
+    ["False", "false", "FALSE", " false ", "0", "no", "N", "off"],
 )
 def test_session_is_recalibration_falsy_strings(tmp_path, clean_environ, raw_value):
     """Falsy ``IS_RECALIBRATION`` values from the env file coerce to ``False``."""

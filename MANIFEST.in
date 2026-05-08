@@ -1,6 +1,7 @@
 # MANIFEST.in
-recursive-exclude tergite_autocalibration  **/tests/**
-recursive-exclude tergite_autocalibration  **/templates/**
+recursive-exclude tergite_tuner  **/tests/**
+recursive-exclude tergite_tuner  **/templates/**
+recursive-exclude tergite_tuner  **/data/**
 prune docs
 prune docs_editable
 prune .github

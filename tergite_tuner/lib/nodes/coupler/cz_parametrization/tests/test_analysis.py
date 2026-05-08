@@ -85,3 +85,33 @@ def test_cz_parametrization_analysis_bad_data(redis_connection, session_context)
 
         # Make sure that the analysis returns as unsuccessful
         assert qoi.analysis_successful is False
+
+
+def test_plotting(redis_connection, session_context, tmp_path):
+    """
+    Test whether plotting produces right plots
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        # Copy dataset to the temporary data path
+        shutil.copy(
+            os.path.join(_test_data_dir, "data_0", "dataset_cz_parametrization.hdf5"),
+            os.path.join(tmp_path, "dataset_cz_parametrization.hdf5"),
+        )
+
+        coupler = "q14_q15"
+        # Run the node analysis
+        analysis = CZParametrizationNodeAnalysis(
+            "cz_parametrization",
+            ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
+            session=session_context,
+            **{coupler: {"phase_path": "via_20"}},
+        )
+        analysis.analyze_node(tmp_path, save_plot=True)
+
+        # Check whether output images exist
+        for i in range(5):
+            image_path = tmp_path / f"cz_parametrization_{coupler}_{i}_preview.png"
+            try:
+                assert image_path.exists()
+            finally:
+                image_path.unlink(missing_ok=True)

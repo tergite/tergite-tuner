@@ -36,9 +36,7 @@ class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
     Analysis that fits the data of a resonator spectroscopy experiment for one qubit.
     """
 
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
 
     def analyse_qubit(self):
@@ -114,12 +112,25 @@ class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
             qoi = QOI(analysis_result, analysis_successful)
             return qoi
 
+    def plotter(self, ax):
+        if self.fitting_model.success:
+            self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
+            ax.axvline(
+                self.minimum_freq,
+                c="blue",
+                ls="solid",
+                label=f"f = {self.minimum_freq:.6E}",
+                # label=f"f = {self.minimum_freq:.6E} ± {self.uncertainty:.1E} (Hz)",
+            )
+        else:
+            ax.plot(self.frequencies, np.abs(self.s21_values))
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel("|S21| (V)")
+        ax.legend()
+        ax.grid()
+
 
 class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
-        super().__init__(name, redis_fields, session, **kwargs)
 
     def analyse_qubit(self):
         super().analyse_qubit()
@@ -141,11 +152,21 @@ class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         qoi = QOI(analysis_result, analysis_successful)
         return qoi
 
+    def plotter(self, ax):
+        this_qubit = self.dataset.attrs["qubit"]
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel("|S21| (V)")
+        ro_freq = float(
+            self.session.redis.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
+        )
+        self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
+        ax.axvline(self.minimum_freq, c="green", ls="solid", label="frequency |1> ")
+        ax.axvline(ro_freq, c="blue", ls="dashed", label="frequency |0>")
+        ax.grid()
+
 
 class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
-    def __init__(
-        self, name, redis_fields, session: Optional["SessionContext"] = None, **kwargs
-    ):
+    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 
@@ -160,6 +181,24 @@ class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         }
         qoi = QOI(analysis_result, analysis_successful)
         return qoi
+
+    def plotter(self, ax):
+        this_qubit = self.dataset.attrs["qubit"]
+        ax.set_xlabel("Frequency (Hz)")
+        ax.set_ylabel("|S21| (V)")
+        ro_freq = float(
+            self.session.redis.hget(f"transmons:{this_qubit}", "clock_freqs:readout")
+        )
+        ro_freq_1 = float(
+            self.session.redis.hget(
+                f"transmons:{this_qubit}", "extended_clock_freqs:readout_1"
+            )
+        )
+        self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
+        ax.axvline(self.minimum_freq, c="red", ls="solid", label="frequency |2>")
+        ax.axvline(ro_freq_1, c="green", ls="dashed", label="frequency |1>")
+        ax.axvline(ro_freq, c="blue", ls="dashed", label="frequency |0>")
+        ax.grid()
 
 
 class ResonatorSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):

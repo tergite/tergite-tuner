@@ -35,7 +35,7 @@ class QubitSpectroscopyAnalysis(BaseQubitAnalysis):
     The resulting fit can be analyzed to determine if a peak was found or not.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
 
@@ -260,6 +260,12 @@ class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
         self.hasPeak = peaks.size > 0
         self.hasPeak = True
         return self.hasPeak
+
+    def plotter(self, ax):
+        self.magnitudes[self.data_var].plot(
+            ax=ax, x=self.frequency_coords
+        )  # Here, `self.frequency_coords` is the coordinate name
+        ax.scatter(self.qubit_freq, self.spec_ampl, s=52, c="red")
 
 
 class QubitSpectroscopy12MultidimAnalysis(QubitSpectroscopyMultidimAnalysis):

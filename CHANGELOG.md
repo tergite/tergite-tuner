@@ -76,6 +76,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   `EXCLUDED_NODES` / `filtered_topological_order` deleted.
 - `conftest.py` moved to the repository root so it is no longer
   shipped with the built wheel.
+- Made `session: SessionContext` arg on Analysis classes mandatory
 
 ### Removed
 

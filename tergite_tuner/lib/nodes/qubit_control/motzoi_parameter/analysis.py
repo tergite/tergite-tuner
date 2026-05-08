@@ -16,7 +16,7 @@ from tergite_tuner.utils.dto.qoi import QOI
 
 
 class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
         self.optimal_motzoi = None

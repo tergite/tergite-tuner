@@ -44,3 +44,29 @@ def test_cz_local_phases(redis_connection, session_context):
         assert qoi.analysis_successful
         # assert pytest.approx(control_local_phase) == -135.2184
         # assert pytest.approx(target_local_phase) == 73.0427
+
+
+def test_plotting(redis_connection, session_context):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    with loaded_redis(redis_connection, _redis_values):
+        file_path = os.path.join(_test_data_dir, "dataset_cz_local_phases.hdf5")
+        dataset = xr.open_dataset(file_path)
+
+        analysis = CZLocalPhasesCouplerAnalysis(
+            "cz_calibration",
+            ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+            session_context,
+        )
+
+        figures_dictionary = {}
+
+        analysis.process_coupler(dataset, "q13_q14")
+        analysis.plotter(figures_dictionary)
+
+        assert "q13_q14" in figures_dictionary
+
+        figure = figures_dictionary["q13_q14"][0]
+
+        assert len(figure.get_axes()) == 4

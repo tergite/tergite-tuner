@@ -18,6 +18,7 @@ Module containing a class that fits and plots data from a T1 experiment.
 """
 
 import numpy as np
+from matplotlib.axes import Axes
 from quantify_core.analysis.fitting_models import ExpDecayModel
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
@@ -30,7 +31,7 @@ class T1QubitAnalysis(BaseQubitAnalysis):
     and plots the results.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.t1_times = []
         self.offset_times = []

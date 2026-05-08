@@ -17,7 +17,9 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 from lmfit.model import ModelResult
+from matplotlib.figure import Figure
 
+from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.analysis import (
     PurityBenchmarkingQubitAnalysis,
 )
@@ -32,9 +34,12 @@ class TestPurityBenchmarkingAnalysis(unittest.TestCase):
             test_dir / "data" / "dataset_purity_benchmarking_0.hdf5"
         )  # "testdata.hdf5"
         self.dataset = xr.open_dataset(file_path)
+        self.session = SessionContext()
 
     def test_initialization(self):
-        self.analysis = PurityBenchmarkingQubitAnalysis("name", ["purity_fidelity"])
+        self.analysis = PurityBenchmarkingQubitAnalysis(
+            "name", ["purity_fidelity"], session=self.session
+        )
         self.analysis.process_qubit(self.dataset, "yq06")
         # Check that the analysis object has the expected attributes
         self.assertTrue(hasattr(self.analysis, "purity_results_dict"))
@@ -44,7 +49,9 @@ class TestPurityBenchmarkingAnalysis(unittest.TestCase):
         )
 
     def test_run_fitting(self):
-        analysis = PurityBenchmarkingQubitAnalysis("name", ["purity_fidelity"])
+        analysis = PurityBenchmarkingQubitAnalysis(
+            "name", ["purity_fidelity"], session=self.session
+        )
         analysis.process_qubit(self.dataset, "yq06")
         # Verify the average purity result is within the expected range
         self.assertTrue(
@@ -64,6 +71,25 @@ class TestPurityBenchmarkingAnalysis(unittest.TestCase):
         self.assertTrue(fidelity > 0.99)
         self.assertTrue(0 <= fidelity <= 1.002)
         self.assertIsInstance(analysis.fit_results, ModelResult)
+
+    def test_plotter(self):
+        analysis = PurityBenchmarkingQubitAnalysis(
+            "name", ["purity_fidelity"], session=self.session
+        )
+        analysis.process_qubit(self.dataset, "yq14")
+
+        # Trim the dataset to only 5 Cliffords before plotting, same reason as above
+        analysis.number_of_cliffords = analysis.number_of_cliffords[:5]
+        for key in analysis.purity_results_dict.keys():
+            analysis.purity_results_dict[key] = analysis.purity_results_dict[key][:5]
+
+        analysis.analyse_qubit()
+        fig = Figure()
+        ax = fig.subplots()
+        analysis.plotter(ax)
+
+        # Check that three lines were plotted (data and fit)
+        self.assertEqual(len(ax.lines), 3)
 
 
 if __name__ == "__main__":

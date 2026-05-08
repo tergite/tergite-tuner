@@ -17,15 +17,19 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
 )
 
 
-def test_CS_node_analysis_can_be_initialized():
-    node_analysis = CouplerAnticrossingNodeAnalysis("name", ["redis_field"])
+def test_cs_node_analysis_can_be_initialized(session_context):
+    node_analysis = CouplerAnticrossingNodeAnalysis(
+        "name", ["redis_field"], session=session_context
+    )
 
     assert node_analysis.name == "name"
     assert node_analysis.redis_fields == ["redis_field"]
 
 
-def test_CRS_node_analysis_can_be_initialized():
-    node_analysis = ResonatorSpectroscopyVsCurrentNodeAnalysis("name", ["redis_field"])
+def test_crs_node_analysis_can_be_initialized(session_context):
+    node_analysis = ResonatorSpectroscopyVsCurrentNodeAnalysis(
+        "name", ["redis_field"], session=session_context
+    )
 
     assert node_analysis.name == "name"
     assert node_analysis.redis_fields == ["redis_field"]
