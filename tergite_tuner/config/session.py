@@ -33,6 +33,7 @@ from os import PathLike
 from pathlib import Path
 from typing import (
     Any,
+    Dict,
     List,
     Mapping,
     Optional,
@@ -70,7 +71,7 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_DAG_EDGES,
 )
 from tergite_tuner.lib.utils.redis import RedisStore
-from tergite_tuner.utils.dto.enums import ApplicationStatus, MeasurementMode, SPIMode
+from tergite_tuner.utils.dto.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 
 
@@ -89,7 +90,7 @@ class SessionOptions(TypedDict, total=False):
     cluster_ip: Optional[IPv4Address]
     target_node: Optional[NodeEnum]
     qubits: List[str]
-    couplers: Optional[List[str]]
+    couplers: List[str]
     name: Optional[str]
     log_dir: Optional[Path]
     cluster_mode: MeasurementMode
@@ -125,7 +126,7 @@ class SessionContext(BaseModel):
     ``.env`` file (with ``os.environ`` as a fallback).
 
     Attributes:
-        _redis: an active Redis client (or fakeredis) used by
+        _redis: an active Redis client used by
             the calibration. ``None`` until injected at the start of a
             run. Carried on the session so it can flow alongside the
             rest of the run state.
@@ -195,7 +196,7 @@ class SessionContext(BaseModel):
     cluster_ip: Optional[IPv4Address] = None
     target_node: Optional[NodeEnum] = None
     qubits: List[str] = []
-    couplers: Optional[List[str]] = None
+    couplers: List[str] = []
     name: Optional[str] = None
     log_dir: Optional[Path] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
@@ -208,18 +209,17 @@ class SessionContext(BaseModel):
     redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
     is_recalibration: bool = True
     ignore_spec: bool = True
+    save_plot: bool = False
     data_dir: Path = Field(default_factory=_default_data_dir)
     device_config: DeviceConfig = Field(default_factory=DeviceConfig)
     node_config: NodeConfig = Field(default_factory=NodeConfig)
     spi_config: Optional[SpiConfig] = None
     cluster_config: Optional[ClusterConfig] = None
-    is_recalibration: bool = True
-    ignore_spec: bool = True
-    save_plot: bool = False
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
     fixed_duration_qubits: Tuple[str, ...] = ()
+    _redis_fields_touched: Dict[str, int] = {}
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)
@@ -359,6 +359,26 @@ class SessionContext(BaseModel):
         if self._redis_store is None:
             self._redis_store = RedisStore(self.redis)
         return self._redis_store
+
+    @computed_field
+    @property
+    def redis_fields_touched(self) -> Dict[str, int]:
+        """The redis fields that might have been touched by the calibration"""
+        return self._redis_fields_touched
+
+    def update_redis_fields_log(self, node: BaseNode):
+        """Updates the redis fields that might have been touched
+
+        Args:
+            node: the current node running
+        """
+        for field in node.redis_fields:
+            old_count = self._redis_fields_touched.setdefault(field, 0)
+            self._redis_fields_touched[field] = old_count + 1
+
+    def refresh_redis_fields_log(self):
+        """Refreshes the log that tracks the fields that have been touched in the session"""
+        self._redis_fields_touched.clear()
 
     @classmethod
     def from_env(

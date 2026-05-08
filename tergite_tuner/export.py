@@ -184,7 +184,7 @@ def extract_bcc_params(
     session = SessionContext.from_env(env_file, **session_options)
     redis_connection = session.redis
     qubits = session.qubits
-    couplers = session.couplers or []
+    couplers = session.couplers
 
     qubit_entries = [
         _assemble_parameters(_qubit_parameters, q, redis_connection) for q in qubits

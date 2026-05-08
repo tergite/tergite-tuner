@@ -21,11 +21,11 @@ from matplotlib import pyplot as plt
 from numpy import ndarray
 
 from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
+from tergite_tuner.lib.base.node import qoi_to_redis_record
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingAnalysis,
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.lib.utils.redis import qoi_to_redis_record
 from tergite_tuner.utils.dto.qoi import QOI
 
 

@@ -56,17 +56,15 @@ def populate_node_parameters(
         logger.status(f"{node_name} is already calibrated")
         return
     data = transmon_configuration[node_name]
+    couplers = session.couplers
+    qubits = session.qubits
 
     all_components_node_conf = data.get("all", {})
     session.redis_store.save_many(
         {
-            "transmons": {
-                k: all_components_node_conf for k in session.qubits + session.couplers
-            },
+            "transmons": {k: all_components_node_conf for k in qubits + couplers},
             "couplers": {
-                coupler: data[coupler]
-                for coupler in session.couplers
-                if coupler in data
+                coupler: data[coupler] for coupler in couplers if coupler in data
             },
         }
     )

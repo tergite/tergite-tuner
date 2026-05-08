@@ -14,7 +14,7 @@
 Next Labs quantum hardware."""
 
 from tergite_tuner.export import extract_bcc_params
-from tergite_tuner.tuner import reanalyse, run_node, tune_device
+from tergite_tuner.tuner import read_session_result, reanalyse, run_node, tune_device
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 
 __all__ = [
@@ -22,5 +22,6 @@ __all__ = [
     "reanalyse",
     "tune_device",
     "run_node",
+    "read_session_result",
     "NodeEnum",
 ]

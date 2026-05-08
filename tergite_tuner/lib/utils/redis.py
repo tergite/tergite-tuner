@@ -28,6 +28,7 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
+    Sequence,
     Tuple,
     TypedDict,
     Union,
@@ -36,7 +37,6 @@ from typing import (
 import numpy as np
 from redis import Redis
 
-from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.misc.helpers import insert_nested_key
 
 np.set_printoptions(legacy="1.25")
@@ -44,7 +44,9 @@ np.set_printoptions(legacy="1.25")
 
 _Value = Union[str, float, int, bool, list, dict, None]
 _Collection = Literal["transmons", "couplers", "cs"]
-_RedisStoreObject = Mapping[_Collection, Mapping[str, Mapping[str, _Value]]]
+RedisStoreQueryResult = Mapping[_Collection, Mapping[str, Mapping[str, _Value]]]
+
+_ALL_COLLECTIONS = ("transmons", "couplers", "cs")
 
 # The prefix for the hashes that keep types data
 _TYPES_COLLECTION = "__types__"
@@ -251,7 +253,7 @@ class RedisStore:
         )
         return _deserialize(raw, label)
 
-    def save_many(self, obj: _RedisStoreObject, reset: bool = False) -> None:
+    def save_many(self, obj: RedisStoreQueryResult, reset: bool = False) -> None:
         """Save many records to Redis, with the records nested in their collections
 
         Args:
@@ -280,9 +282,9 @@ class RedisStore:
     def find_many(
         self,
         collection: Optional[_Collection] = None,
-        pks: Optional[Iterable[str]] = None,
+        pks: Optional[Sequence[str]] = None,
         query: Optional[RedisStoreQueryFunc] = None,
-    ) -> _RedisStoreObject:
+    ) -> RedisStoreQueryResult:
         """Read all objects from Redis matching ``query``.
 
         Args:
@@ -295,17 +297,30 @@ class RedisStore:
             a dictionary of format
             ``Dict[collection, Dict[primary_key, Dict[field_name, _Value]]]``.
         """
-        pattern = _get_scan_pattern(collection=collection, pks=pks)
+        pattern = "*" if not collection else f"{collection}:*"
         result = {}
 
-        for key in self._connection.scan_iter(match=pattern, count=200, _type="HASH"):
+        if pks:
+            # if pks are provided, skip the scan
+            collections: Tuple[_Collection] = (
+                (collection,) if collection else _ALL_COLLECTIONS
+            )
+            hash_keys = (
+                self._get_hash_key(coln, pk) for pk in pks for coln in collections
+            )
+        else:
+            hash_keys = self._connection.scan_iter(
+                match=pattern, count=200, _type="HASH"
+            )
+
+        for key in hash_keys:
             if key.startswith(f"{_TYPES_COLLECTION}:"):
                 # Skip all keys that are for types
                 continue
 
             try:
                 record = self._find_by_hash_key(key)
-                collection, pk = key.split(":", maxsplit=1)
+                collection, pk = key.split(":", maxsplit=1)  # type: _Collection, str
             except (KeyError, ValueError) as e:
                 continue
 
@@ -368,34 +383,6 @@ class RedisStore:
         return f"{collection}:{pk}"
 
 
-def qoi_to_redis_record(
-    qoi: QOI = None,
-    redis_fields: List[str] = (),
-) -> Dict[str, _Value]:
-    """Converts the quantity of interest (QOI) into a redis record
-
-    Args:
-        qoi: The quantity of interest as QOI wrapped object
-        redis_fields: List of redis fields that are allowed for this QOI
-
-    Returns:
-        the record that would be saved in redis for this QOI
-    """
-    results = qoi.analysis_result
-    rogue_fields = results.keys() - set(redis_fields)
-    if rogue_fields:
-        raise ValueError(
-            f"The QOI's {rogue_fields} are not in redis fields: {redis_fields}"
-        )
-
-    record = {}
-    for k, res in results.items():
-        record[k] = res["value"]
-        record[f"{k}_error"] = res["error"]
-
-    return record
-
-
 def _get_key_segments(key: str, expected_count: int = 2) -> Tuple[str, ...]:
     """Get key's segments, as separated by ``:``
 
@@ -417,31 +404,6 @@ def _get_type_str(value: Any) -> str:
         if isinstance(value, tp):
             return label
     return "str"
-
-
-def _get_scan_pattern(
-    collection: Optional[_Collection] = None, pks: Optional[Iterable[str]] = None
-) -> str:
-    """Returns the scan glob pattern given collection and primary keys.
-
-    Args:
-        collection: the collection to get scan pattern from.
-        pks: the primary keys to look into.
-
-    Returns:
-        the glob pattern to use in redis SCAN
-    """
-    if not collection:
-        collection = "*"
-
-    if pks and len(pks) == 1:
-        return f"{collection}:{pks[0]}"
-
-    # return the records for all
-    if collection == "*":
-        return "*"
-
-    return f"{collection}:*"
 
 
 def _serialize(value: Any) -> str:

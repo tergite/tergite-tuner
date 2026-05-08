@@ -29,6 +29,7 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
+from tergite_tuner.lib.utils.redis import QueryOptions, RedisStoreQueryResult
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -293,7 +294,7 @@ def run_node(
     node: NodeEnum,
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
     **session_options: Unpack[SessionOptions],
-):
+) -> RedisStoreQueryResult:
     """Run only one node in the calibration sequence
 
     Args:
@@ -304,12 +305,13 @@ def run_node(
     """
     session = SessionContext.from_env(env_file, **session_options)
     _tune(session, node=node)
+    return read_session_result(session)
 
 
 def tune_device(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
     **session_options: Unpack[SessionOptions],
-) -> None:
+) -> RedisStoreQueryResult:
     """Run the full calibration pipeline up to ``target_node``.
 
     Builds a :class:`SessionContext` from ``env_file`` (and any extra
@@ -324,12 +326,13 @@ def tune_device(
     """
     session = SessionContext.from_env(env_file, **session_options)
     _tune(session)
+    return read_session_result(session)
 
 
 def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
     **session_options: Unpack[SessionOptions],
-) -> None:
+) -> RedisStoreQueryResult:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 
     The cluster mode is forced to :attr:`MeasurementMode.re_analyse`
@@ -347,37 +350,70 @@ def reanalyse(
         **session_options,
     )
     _re_analyse(session)
+    return read_session_result(session)
+
+
+def read_session_result(session: SessionContext) -> RedisStoreQueryResult:
+    """Retrieves the results after tuneup for the given session
+
+    If the session has not been used yet for tuneup,
+    the result will be empty
+
+    Args:
+        session: the session context to use
+
+    Returns:
+        the results in redis for the current session
+    """
+    pks = session.qubits + session.couplers
+    affected_fields = session.redis_fields_touched.keys()
+
+    def query_func(opts: QueryOptions):
+        return any(opts["field"] in k for k in affected_fields)
+
+    return session.redis_store.find_many(pks=pks, query=query_func)
 
 
 def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
-    """Internal function implementing the tuning/calibration logic."""
+    """Tunes the device running all nodes till target node if node is None else only that node.
+
+    Args:
+        session: the session context to use
+        node: the only node to run.
+            If not provided, all nodes are run till target node.
+
+    Returns:
+        the current affected state of the device after the tuning
+    """
+    session.refresh_redis_fields_log()
     hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
-    if node is None:
-        topo_order = node_manager.topo_order(session.target_node)
-    else:
+    qubits = session.qubits
+    couplers = session.couplers
+
+    if node:
         topo_order = [node]
+    else:
+        topo_order = node_manager.topo_order(session.target_node)
 
     logger.info("Node Manager is initialized")
-
     logger.info("Starting System Calibration")
-    number_of_qubits = len(session.qubits)
 
     draw_arrow_chart(
-        f"Qubits: {number_of_qubits}",
+        f"Qubits: {len(qubits)}",
         [str(n.value) for n in topo_order],
     )
 
-    # The node manager provides every node with access to the DACS
-    if session.couplers:
-        node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
+    # The node manager provides every node with access to the DACs
+    if couplers:
+        node_manager.spi_manager = hardware_manager.create_spi(couplers)
         # no setting initial parking currents during recalibration
         if not session.is_recalibration:
             assert (
                 session.spi_mode == SPIMode.real
             ), 'Set spi_mode to "real" in the session.'
-            node_manager.spi_manager.set_initial_parking_currents(session.couplers)
+            node_manager.spi_manager.set_initial_parking_currents(couplers)
 
     for calibration_node in topo_order:
         node_manager.inspect_node(
@@ -390,6 +426,7 @@ def _tune(session: SessionContext, node: Optional[NodeEnum] = None) -> None:
 
 def _re_analyse(session: SessionContext) -> None:
     """Internal function implementing the re-analysis logic."""
+    session.refresh_redis_fields_log()
     if session.cluster_mode != MeasurementMode.re_analyse:
         raise ValueError(
             f"Wrong mode for re-analysis: '{session.cluster_mode}', should be: {MeasurementMode.re_analyse}"

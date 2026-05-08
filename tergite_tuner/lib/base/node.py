@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type
 
 import matplotlib
 import numpy as np
@@ -30,9 +30,9 @@ from tergite_tuner.lib.utils.device import (
     configure_device,
     save_serial_device,
 )
-from tergite_tuner.lib.utils.redis import qoi_to_redis_record
 from tergite_tuner.lib.utils.schedule_execution import execute_schedule, get_compiler
 from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.hardware.spi import SpiDAC
 from tergite_tuner.utils.io.dataset import save_dataset
 from tergite_tuner.utils.logging import logger
@@ -185,6 +185,7 @@ class BaseNode(ABC):
             insert_nested_key(redis_data, path=("cs", pk), value="calibrated")
 
         self.session.redis_store.save_many(redis_data)
+        self.session.update_redis_fields_log(self)
         return results
 
     def configure_dataset(
@@ -601,3 +602,31 @@ class CouplerNode(BaseNode):
 
     def __repr__(self):
         return f"Node({self.name}, {self.couplers})"
+
+
+def qoi_to_redis_record(
+    qoi: QOI = None,
+    redis_fields: List[str] = (),
+) -> Dict[str, Any]:
+    """Converts the quantity of interest (QOI) into a redis record
+
+    Args:
+        qoi: The quantity of interest as QOI wrapped object
+        redis_fields: List of redis fields that are allowed for this QOI
+
+    Returns:
+        the record that would be saved in redis for this QOI
+    """
+    results = qoi.analysis_result
+    rogue_fields = results.keys() - set(redis_fields)
+    if rogue_fields:
+        raise ValueError(
+            f"The QOI's {rogue_fields} are not in redis fields: {redis_fields}"
+        )
+
+    record = {}
+    for k, res in results.items():
+        record[k] = res["value"]
+        record[f"{k}_error"] = res["error"]
+
+    return record
