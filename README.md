@@ -55,24 +55,22 @@ cp .example.env .env
 ```
 
 The `.env` file controls the cluster IP, redis URL, target node,
-qubits/couplers under calibration, log levels, and so on. Every field
+qubits/couplers under calibration, and so on. Every field
 on `SessionContext` (see `tergite_tuner/config/session.py`)
 can be set here, or passed as a keyword argument to the public API.
 
 
-On top of having a `.env` file, more configuration files are required in one folder whose path you can set via the `CONFIG_DIR` env var. 
+On top of having a `.env` file, more configuration files maybe required. 
 (See [`.example.env` file](./.example.env) for more details)
 
-- [`configuration.meta.toml`](./tergite_tuner/config/templates/fc8a/configuration.meta.toml): 
-  It holds metadata about the other files
-- [`configs/cluster_config.json`](./tergite_tuner/config/templates/fc8a/configs/cluster_config.json): 
+- [`cluster_config.json`](./cluster_config.example.json): 
   It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
-- [`configs/device_config.toml`](./tergite_tuner/config/templates/fc8a/configs/device_config.toml): 
-  It contains details about the quantum chip
-- [`configs/node_config.toml`](./tergite_tuner/config/templates/fc8a/configs/node_config.toml): 
-  It contains details about the calibration nodes to run
-- [`configs/spi_config.toml`](./tergite_tuner/config/templates/fc8a/configs/spi_config.toml): 
-  It contains details about the SPI instrument for driving the couplers
+- [`device_config.toml`](./device_config.example.toml): 
+  It contains details about the quantum chip, including initial values of params of the chip.
+- [`node_config.toml`](./node_config.example.toml): 
+  It contains details about the calibration nodes to run, including initial values for each node
+- __Optional:__ [`spi_config.toml`](./spi_config.example.toml): 
+  It contains details about the SPI instrument for driving the couplers. 
 
 ### Public API
 
@@ -82,7 +80,7 @@ The library exposes three entry points from
 ```python
 from tergite_tuner import (
     tune_device,
-    re_analyse,
+    reanalyse,
     extract_bcc_params,
 )
 ```
@@ -91,6 +89,7 @@ from tergite_tuner import (
 
 ```python
 from tergite_tuner import tune_device
+from tergite_tuner.lib.nodes import NodeEnum
 
 # Use a .env file as the only source of configuration
 tune_device(env_file=".env")
@@ -98,7 +97,7 @@ tune_device(env_file=".env")
 # Or override individual SessionContext fields inline
 tune_device(
     env_file=".env",
-    target_node="rabi_oscillations",
+    target_node=NodeEnum.RABI_OSCILLATIONS,
     qubits=["q00", "q01"],
     couplers=["q00_q01"],
 )
@@ -111,9 +110,9 @@ in spec.
 #### Re-run analysis on already-recorded data
 
 ```python
-from tergite_tuner import re_analyse
+from tergite_tuner import reanalyse
 
-re_analyse(
+reanalyse(
     env_file=".env",
     log_dir="path/to/run/folder",
 )
@@ -143,6 +142,19 @@ extract_bcc_params(
     output="calibration_seed.toml",
 )
 ```
+
+## ToDos
+
+- [ ] Remove logging to a directory. Let logs log to the default logger but maybe with a unique format
+- [ ] Reduce the number of logs or change the level of logging
+- [x] Allow the input of the node_graph via an argument in the entry point functions, with a good default
+- [x] Move the example configs to the root of the project
+- [x] Move the default location of configs to the root of the project, not a folder
+- [x] Remove the config meta
+- [x] Enable configs to be passed as python objects in the args of the entry point functions, as opposed to files
+- [ ] Add a return value to all entry point functions, e.g. the output of the export to bcc can be the return of tune_device
+- [x] Fix MotzoiParameter measurement for recalibration vs bringup
+- [x] Improve typing intellisense for the entry functions
 
 ## Contributing to the project
 

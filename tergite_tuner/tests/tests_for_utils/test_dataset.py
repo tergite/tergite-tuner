@@ -18,9 +18,7 @@ import pandas
 import xarray as xr
 
 import tergite_tuner.utils.reanalysis_utils as ra_utils
-from tergite_tuner.lib.nodes.coupler.cz_calibration.node import (
-    CZCalibrationNode,
-)
+from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
     ResonatorSpectroscopyNode,
 )
@@ -31,24 +29,24 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
-from tergite_tuner.utils.io.dataset import (
-    save_dataset,
-    scrape_and_copy_hdf5_files,
+from tergite_tuner.utils.io.dataset import save_dataset, scrape_and_copy_hdf5_files
+
+_test_data_dir = os.path.join(
+    Path(__file__).parent.parent.parent, "lib/nodes/coupler/cz_calibration/tests/data"
 )
+_redis_values_path = os.path.join(_test_data_dir, "redis-2025-12-25-12-40-59.json")
 
 
-def test_scrape_and_copy_hdf5_files():
+def test_scrape_and_copy_hdf5_files(tmp_path):
     """
     Base case, copies all measurement files and counts whether they are in the target directory
     """
-    scrape_directory = os.path.join(
-        get_fixture_path(),
+    scrape_directory = get_fixture_path(
         "data",
         "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
     )
     target_directory = os.path.join(
-        get_fixture_path(),
-        "tmp",
+        tmp_path,
         "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
     )
 
@@ -58,13 +56,10 @@ def test_scrape_and_copy_hdf5_files():
     n_copied_files = os.listdir(target_directory)
     assert len(n_copied_files) == 15
 
-    shutil.rmtree(target_directory)
-
 
 def test_is_run_folder():
     """Check that the standard run test fixture is a run folder"""
-    run_dir = os.path.join(
-        get_fixture_path(),
+    run_dir = get_fixture_path(
         "data",
         "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
     )
@@ -74,8 +69,7 @@ def test_is_run_folder():
 def test_is_measurement_folder():
     """Check that the standard run test fixture contains the correct measurement folders"""
     run_dir = Path(
-        os.path.join(
-            get_fixture_path(),
+        get_fixture_path(
             "data",
             "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
         )
@@ -115,12 +109,6 @@ def test_save_dataset(tmp_path, session_context):
     save_dataset(result_dataset, "resonator_spectroscopy", tmp_path)
 
     assert os.path.exists(os.path.join(tmp_path, "dataset_resonator_spectroscopy.hdf5"))
-
-
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent, "lib/nodes/coupler/cz_calibration/tests/data"
-)
-_redis_values_path = os.path.join(_test_data_dir, "redis-2025-12-25-12-40-59.json")
 
 
 def test_save_dataset_with_working_points(tmp_path, redis_connection, session_context):

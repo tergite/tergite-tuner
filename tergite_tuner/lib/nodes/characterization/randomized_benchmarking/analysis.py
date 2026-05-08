@@ -11,22 +11,19 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from scipy.linalg import norm
 from scipy.optimize import minimize
 
-from tergite_tuner.config.session import SessionContext
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
-from tergite_tuner.lib.utils.classification_functions import (
-    calculate_probabilities,
-)
+from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 from tergite_tuner.utils.dto.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
 def mitigate(v, cm_inv):

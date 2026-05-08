@@ -14,7 +14,7 @@
 that would otherwise form between :mod:`tergite_tuner.config.session` (which
 references :class:`NodeEnum` for field validation) and
 :mod:`tergite_tuner.lib.nodes` (which imports every concrete
-node class to populate :data:`__NODE_ENUM_CLS_MAP__`).
+node class to populate :data:`DEFAULT_NODE_CLS_MAP`).
 
 :mod:`tergite_tuner.lib.nodes` re-exports :class:`NodeEnum`
 for backwards compatibility."""

@@ -26,9 +26,7 @@ from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.measurement import (
     CZParametrizationMeasurement,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
 from tergite_tuner.lib.utils.classification_functions import generate_iq_shots
 
 if TYPE_CHECKING:

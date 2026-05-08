@@ -16,20 +16,28 @@ from os import PathLike
 from typing import Any, Dict
 
 import toml
-from pydantic import RootModel, model_validator
+from pydantic import Field, RootModel, model_validator
 
 
-class NodeConfigFile(RootModel[Dict[str, Dict[str, Any]]]):
-    """Schema for the ``node_config.toml`` file.
+class NodeConfig(RootModel[Dict[str, Dict[str, Any]]]):
+    """The configuration for each node, including initial parameter values to use
+
+    It is also the schema for the ``node_config.toml`` file.
 
     Each top-level section is a node name (e.g. ``resonator_spectroscopy``)
     and its body is a mapping of qubit identifiers (or the special
     ``all`` key) to arbitrary, possibly nested parameter dicts such as
     ``reset.duration = 60e-6`` or ``spec.spec_amp = 6e-4``.
+
+    The empty mapping is a valid configuration: ``NodeConfig()`` returns
+    a config with no nodes, which is useful as a default in
+    :class:`SessionContext`.
     """
 
+    root: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+
     @model_validator(mode="after")
-    def _check_section_shape(self) -> "NodeConfigFile":
+    def _check_section_shape(self) -> "NodeConfig":
         """Each section must itself be a mapping of qubit -> parameters."""
         for node_name, node_section in self.root.items():
             if not isinstance(node_section, dict):
@@ -41,14 +49,14 @@ class NodeConfigFile(RootModel[Dict[str, Dict[str, Any]]]):
         return self
 
     @classmethod
-    def from_toml(cls, file: "PathLike[str]") -> "NodeConfigFile":
+    def from_toml(cls, file: "PathLike[str]") -> "NodeConfig":
         """Loads the node configuration from a TOML file.
 
         Args:
             file: path to the ``node_config.toml`` file
 
         Returns:
-            the parsed and validated ``NodeConfigFile`` instance
+            the parsed and validated ``NodeConfig`` instance
         """
         with open(file, "r", encoding="utf-8") as f:
             data = toml.load(f)

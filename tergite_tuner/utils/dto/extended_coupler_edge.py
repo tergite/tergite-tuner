@@ -24,9 +24,7 @@ from quantify_scheduler.device_under_test.transmon_element import pulse_factorie
 from quantify_scheduler.helpers.validators import Numbers
 
 # from quantify_scheduler.operations.pulse_factories import composite_square_pulse
-from tergite_tuner.utils.dto.extended_pulse_factories import (
-    composite_soft_square_pulse,
-)
+from tergite_tuner.utils.dto.extended_pulse_factories import composite_soft_square_pulse
 
 
 class Spec(InstrumentChannel):

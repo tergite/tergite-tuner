@@ -248,7 +248,7 @@ class BaseCouplerAnalysis(BaseAnalysis, ABC):
 
     def process_coupler(self, dataset: xr.Dataset, coupler_element) -> "QOI":
         self.control_qubit, self.target_qubit = (
-            self.session.config.device.get_control_target_qubit_pair_by_coupler(
+            self.session.device_config.get_control_target_qubit_pair_by_coupler(
                 coupler_element
             )
         )

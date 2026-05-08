@@ -17,10 +17,7 @@ from typing import List
 import numpy as np
 import xarray
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllCouplersAnalysis,
-    BaseCouplerAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.analysis import (
     QubitSpectroscopyMaxThresholdQubitAnalysis,
 )

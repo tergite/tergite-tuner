@@ -23,10 +23,7 @@ from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
 )
-from tergite_tuner.lib.utils.analysis_models import (
-    QuadraticModel,
-    SineOscillatingModel,
-)
+from tergite_tuner.lib.utils.analysis_models import QuadraticModel, SineOscillatingModel
 from tergite_tuner.utils.dto.qoi import QOI
 
 

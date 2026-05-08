@@ -16,7 +16,7 @@
 
 from typing import List
 
-from tergite_tuner.lib.nodes import __NODE_STR_CLS_MAP__
+from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.utils.logging import logger
 
 
@@ -25,7 +25,7 @@ def reset_all_redis_nodes(
 ) -> None:
     """
     Wraps :func:`reset_redis_nodes` and resets every node in the
-    canonical :data:`__NODE_STR_CLS_MAP__`.
+    canonical :data:`DEFAULT_NODE_NAME_CLS_MAP`.
 
     Args:
         qubits: list of qubit identifiers (e.g. ``["q00", "q01"]``) to reset.
@@ -33,7 +33,7 @@ def reset_all_redis_nodes(
         redis_connection: redis client to write to.
     """
     reset_redis_nodes(
-        qubits, couplers, list(__NODE_STR_CLS_MAP__.keys()), redis_connection
+        qubits, couplers, list(DEFAULT_NODE_NAME_CLS_MAP.keys()), redis_connection
     )
 
 
@@ -53,7 +53,7 @@ def reset_redis_nodes(
         redis_connection: redis client to write to.
     """
     for node_name in node_names:
-        node_cls = __NODE_STR_CLS_MAP__[node_name]
+        node_cls = DEFAULT_NODE_NAME_CLS_MAP[node_name]
 
         logger.status(f"Resetting node: {node_name}")
         qubit_qois = getattr(node_cls, "qubit_qois", None)

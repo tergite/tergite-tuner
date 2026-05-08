@@ -19,28 +19,34 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from tergite_tuner.config.session import Configuration
+    from tergite_tuner.config.session import SessionContext
 
 
-def resonator_samples(qubit: str, config: "Configuration") -> np.ndarray:
+def resonator_samples(qubit: str, session: "SessionContext") -> np.ndarray:
     res_spec_samples = 91
     sweep_range = 4.0e6
-    VNA_frequency = config.device.resonators[qubit]["VNA_frequency"]
-    min_freq = VNA_frequency - sweep_range / 2
-    max_freq = VNA_frequency + sweep_range / 2
+    vna_frequency = session.device_config.resonators[qubit]["VNA_frequency"]
+    min_freq = vna_frequency - sweep_range / 2
+    max_freq = vna_frequency + sweep_range / 2
     return np.linspace(min_freq, max_freq, res_spec_samples)
 
 
 def qubit_samples(
-    qubit: str, config: "Configuration", transition: str = "01"
+    qubit: str, session: "SessionContext", transition: str = "01"
 ) -> np.ndarray:
+    """
+    Raises:
+        ValueError: If `transition` is not one of "01", or "12
+    """
     qub_spec_samples = 71
     sweep_range = 6e6
     if transition == "01":
-        VNA_frequency = config.device.qubits[qubit]["VNA_f01_frequency"]
+        vna_frequency = session.device_config.qubits[qubit]["VNA_f01_frequency"]
     elif transition == "12":
-        VNA_frequency = config.device.qubits[qubit]["VNA_f12_frequency"]
-    # FIXME: This is not safe, because VNA_frequency might be undefined
-    min_freq = VNA_frequency - sweep_range / 2
-    max_freq = VNA_frequency + sweep_range / 2
+        vna_frequency = session.device_config.qubits[qubit]["VNA_f12_frequency"]
+    else:
+        raise ValueError(f"Unknown transition type '{transition}'")
+    # FIXME: This is not safe, because vna_frequency might be undefined
+    min_freq = vna_frequency - sweep_range / 2
+    max_freq = vna_frequency + sweep_range / 2
     return np.linspace(min_freq, max_freq, qub_spec_samples)

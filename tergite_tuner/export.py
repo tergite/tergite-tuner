@@ -23,12 +23,12 @@ import json
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, Unpack
 
 import tomlkit
 from pydantic import BaseModel, ConfigDict, Field
 
-from tergite_tuner.config.session import SessionContext
+from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.utils.logging import logger
 
 # Frequency offset (Hz) used to convert the coupler ``cz_pulse_frequency``
@@ -156,10 +156,9 @@ _coupler_parameters: List[Tuple[str, str, _DataSource, Type]] = [
 
 def extract_bcc_params(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    *,
     format: Literal["dict", "json", "toml"] = "dict",
     output: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options,
+    **session_options: Unpack[SessionOptions],
 ) -> Any:
     """Build a BCC calibration seed payload from redis-stored values.
 
@@ -176,6 +175,7 @@ def extract_bcc_params(
             usefully ``qubits``, ``couplers``, and ``redis_url`` — to
             override values that would otherwise come from
             ``env_file`` / ``os.environ``.
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
 
     Returns:
         The payload in the requested format.

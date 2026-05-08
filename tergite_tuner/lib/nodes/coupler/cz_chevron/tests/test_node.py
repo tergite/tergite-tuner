@@ -12,12 +12,8 @@
 # that they have been altered from the originals.
 
 from tergite_tuner.lib.base.node import CouplerNode
-from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import (
-    CZChevronAnalysis,
-)
-from tergite_tuner.lib.nodes.coupler.cz_chevron.measurement import (
-    CZChevronMeasurement,
-)
+from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronAnalysis
+from tergite_tuner.lib.nodes.coupler.cz_chevron.measurement import CZChevronMeasurement
 from tergite_tuner.lib.nodes.coupler.cz_chevron.node import CZChevronNode
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.fixtures import (

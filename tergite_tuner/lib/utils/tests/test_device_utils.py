@@ -48,8 +48,7 @@ def test_create_serial_device(redis_connection, session_context):
             device_name,
             qubits=DEFAULT_TEST_QUBITS,
             couplers=DEFAULT_TEST_COUPLERS,
-            config=session_context.config,
-            redis_connection=redis_connection,
+            session=session_context,
         )
 
         q00 = test_device.get_element("q00")
@@ -78,8 +77,7 @@ def test_save_serial_device(tmp_path, redis_connection, session_context):
             device_name,
             qubits=DEFAULT_TEST_QUBITS,
             couplers=DEFAULT_TEST_COUPLERS,
-            config=session_context.config,
-            redis_connection=redis_connection,
+            session=session_context,
         )
         save_serial_device(test_device, data_path=tmp_path)
 

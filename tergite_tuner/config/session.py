@@ -24,7 +24,6 @@ Build a :class:`SessionContext` directly with kwargs, or via the
 ``.env`` file with the matching ``os.environ`` entries.
 """
 
-import getpass
 import os
 import os.path
 from datetime import datetime
@@ -32,14 +31,25 @@ from functools import cached_property
 from ipaddress import IPv4Address
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List, Optional, Self, Union
+from typing import (
+    Any,
+    List,
+    Literal,
+    Mapping,
+    NotRequired,
+    Optional,
+    Self,
+    Tuple,
+    Type,
+    TypedDict,
+    Union,
+)
 
 from dotenv import dotenv_values
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    IPvAnyAddress,
     PrivateAttr,
     RedisDsn,
     computed_field,
@@ -48,113 +58,56 @@ from pydantic import (
 )
 from redis import Redis
 
-from tergite_tuner.config.files import (
-    ClusterConfigFile,
+from tergite_tuner.config.types import (
+    ClusterConfig,
     DeviceConfig,
     DeviceConfigFile,
-    MetaConfigFile,
-    NodeConfigFile,
-    SpiConfigFile,
+    NodeConfig,
+    SpiConfig,
 )
-from tergite_tuner.utils.dto.enums import ApplicationStatus, MeasurementMode
+from tergite_tuner.lib.base.node import BaseNode
+from tergite_tuner.lib.nodes import (
+    DEFAULT_IGNORED_NODES,
+    DEFAULT_NODE_CLS_MAP,
+    DEFAULT_NODE_DAG_EDGES,
+)
+from tergite_tuner.utils.dto.enums import MeasurementMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
-from tergite_tuner.utils.logging import logger
 
 
-def _default_root_dir() -> Path:
-    """The default ``root_dir``: two levels up from the ``config`` package."""
-    return Path(__file__).resolve().parent.parent.parent
+def _default_data_dir() -> Path:
+    """The default ``data_dir``: 'out' in the current working directory."""
+    return Path.cwd() / "./out"
 
 
-def _default_prefix() -> str:
-    """The default ``default_prefix``: the current OS user, whitespace stripped."""
-    return getpass.getuser().replace(" ", "")
+class SessionOptions(TypedDict, total=False):
+    """Options for initializing the SessionContext as copied from SessionContext.
 
-
-class Configuration(BaseModel):
-    """A loaded configuration package.
-
-    Attributes:
-        meta_path: absolute path to the ``configuration.meta.toml`` file.
-        device: the runtime view of the device configuration. The
-            ``[layout]`` section of ``device_config.toml`` is parsed by
-            :class:`DeviceConfigFile` but not exposed here, since
-            calibration code only needs the device parameters.
-        node: the parsed ``node_config.toml``.
-        spi: the parsed ``spi_config.toml``, or ``None`` if the package
-            does not include one (single-qubit calibrations don't need
-            SPI wiring).
-        misc: extra folders shipped alongside the package, mapping the
-            user-chosen key to the absolute path of the folder.
-        cluster: the parsed ``cluster_config.json`` (delegated to
-            quantify-scheduler), or ``None`` if not declared in the
-            meta file.
+    This is useful in functions that create a session context object.
+    You just need to use ``**kwargs: Unpack[SessionOptions]``
     """
 
-    meta_path: PathLike[str]
-    device: DeviceConfig
-    node: NodeConfigFile
-    spi: Optional[SpiConfigFile]
-    misc: Dict[str, PathLike[str]]
-    cluster: Optional[ClusterConfigFile]
-
-    @classmethod
-    def from_dir(
-        cls, folder: PathLike[str], meta_filename: str = "configuration.meta.toml"
-    ) -> Self:
-        """Load a configuration package from its ``configuration.meta.toml``.
-
-        Resolves the relative paths declared in the meta file against the
-        directory containing the meta file, eagerly parses the device, node
-        and (if present) SPI configs, and defers the cluster config until
-        :attr:`Configuration.cluster` is accessed.
-
-        Args:
-            folder: path to the folder containing the meta file.
-            meta_filename: name of the meta file; default = ``configuration.meta.toml``.
-
-        Returns:
-            the loaded :class:`Configuration`.
-
-        Raises:
-            TypeError: When file is invalid type
-            TomlDecodeError: Error while decoding toml
-            IOError / FileNotFoundError: When file does not exist
-        """
-        base_dir = Path(folder)
-        meta_path = base_dir / meta_filename
-        meta = MetaConfigFile.from_toml(meta_path)
-        config_dir = base_dir / meta.path_prefix
-
-        device_path = config_dir / meta.files.device_config
-        node_path = config_dir / meta.files.node_config
-        spi_path = config_dir / meta.files.spi_config
-        cluster_path = config_dir / meta.files.cluster_config
-
-        logger.info(f"Loading device_config: {meta.files.device_config}")
-        device_file = DeviceConfigFile.from_toml(device_path)
-        device = device_file.device
-
-        logger.info(f"Loading node_config: {meta.files.node_config}")
-        node = NodeConfigFile.from_toml(node_path)
-
-        logger.info(f"Loading spi_config: {meta.files.spi_config}")
-        spi = SpiConfigFile.from_toml(spi_path)
-
-        logger.info(f"Loading cluster_config: {meta.files.cluster_config}")
-        cluster = ClusterConfigFile.from_json(cluster_path)
-
-        misc = {key: (base_dir / rel_path) for key, rel_path in meta.misc.items()}
-
-        logger.info(f"Loaded configuration described by {meta_path}")
-        return Configuration(
-            meta_path=meta_path,
-            device=device,
-            node=node,
-            spi=spi,
-            misc=misc,
-            cluster=cluster,
-        )
+    cluster_ip: Optional[IPv4Address]
+    target_node: Optional[NodeEnum]
+    qubits: List[str]
+    couplers: Optional[List[str]]
+    name: Optional[str]
+    log_dir: Optional[Path]
+    cluster_mode: MeasurementMode
+    cluster_timeout: int
+    user_samplespace: dict
+    stdout_log_level: int
+    file_log_level: int
+    spi_serial_port: str
+    redis_url: RedisDsn
+    data_dir: Path
+    device_config: DeviceConfig | Path | str
+    node_config: NodeConfig | Path | str
+    spi_config: Optional[SpiConfig] | Path | str
+    cluster_config: Optional[ClusterConfig] | Path | str
+    node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
+    ignored_nodes: Tuple[NodeEnum, ...]
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
 
 
 class SessionContext(BaseModel):
@@ -172,8 +125,6 @@ class SessionContext(BaseModel):
             the calibration. ``None`` until injected at the start of a
             run. Carried on the session so it can flow alongside the
             rest of the run state.
-        _config: the loaded :class:`Configuration` package. ``None``
-            until injected at the start of a run.
         cluster_ip: IP address of the Qblox cluster being used.
         target_node: the calibration node on which to stop. Stored as a
             :class:`NodeEnum`; the lower-case string form is exposed via
@@ -184,8 +135,7 @@ class SessionContext(BaseModel):
             comma-separated string from env vars.
         name: human-readable name for the run; defaults to the target
             node name in lower case.
-        log_dir: relative path (under ``data_dir``) where the log files
-            are stored. Auto-derived from the timestamp and the run name.
+        data_dir: path where the data files are stored. default: 'out' in the working directory.
         cluster_mode: measurement mode (``real``, ``dummy`` or
             ``re_analyse``).
         cluster_timeout: timeout in seconds used when waiting on the
@@ -199,28 +149,31 @@ class SessionContext(BaseModel):
         spi_serial_port: serial port on which the SPI rack is connected.
         redis_url: the URL to the redis server that is to be used effectively
             as RAM for this calibration.
-        data_browser_host: host URL under which the data browser should
-            be available.
-        data_browser_port: port on which the data browser runs.
-        hw_config_generator_host: host URL under which the hardware
-            configuration generator should be available.
-        hw_config_generator_port: port on which the hardware
-            configuration generator runs.
-        default_prefix: prefix added to logfiles, redis entries and the
-            data directory. The actual value does not matter, but it is
-            typically the user's name. Defaults to the current user as
-            reported by :func:`getpass.getuser`.
-        root_dir: top-level folder of the ``tergite-tuner``
-            checkout. In most cases the path to the cloned repository.
-            Defaults to two levels up from this module.
-        data_dir: directory where calibration data and plots are stored.
-            Created automatically if it does not exist. Defaults to
-            ``<root_dir>/out``.
-        config_dir: directory where the configuration package is stored.
-            Defaults to ``<root_dir>``.
         id: stable identifier of this session, derived from the
             timestamp.
+        cluster_config: config that QBlox needs to compile schedules on the
+            hardware. It can also be a path to the quantify-scheduler-based cluster_config JSON file.
+            See cluster_config.example.json
+        device_config: config with the initial values for the device
+            configuration. It can also be a path to the device_config TOML file.
+            See device_config.example.toml
+        spi_config: config that configures the wiring on the QBlox SPI
+            rack. Only required when running two-qubit calibrations.
+            It can also be a path to the spi_config TOML file.
+            See spi_config.example.toml
+        node_config: file with the runtime values for the calibration
+            nodes. It can also be a path to the node_config TOML file.
+            See node_config.example.toml
         target_node_name: lower-case name of :attr:`target_node`.
+        node_dag_edges: the directed edges of the calibration Directed Acyclic Graph (DAG)
+            with edges of format ``(parent, child)`` where ``child`` depends on ``parent``.
+            Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`
+        ignored_nodes: the nodes that should not be included in the final DAG
+            even if there are nodes that depend on them. Defaults to
+            :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`
+        node_cls_map: the mapping from :class:`NodeEnum` to its
+            concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
+            to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
     """
 
     model_config = ConfigDict(
@@ -232,7 +185,7 @@ class SessionContext(BaseModel):
     qubits: List[str] = []
     couplers: Optional[List[str]] = None
     name: Optional[str] = None
-    log_dir: Optional[str] = None
+    log_dir: Optional[Path] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
     user_samplespace: dict = {}
@@ -240,19 +193,49 @@ class SessionContext(BaseModel):
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
     redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
-    data_browser_host: IPvAnyAddress = "127.0.0.1"
-    data_browser_port: int = 8179
-    hw_config_generator_host: IPvAnyAddress = "127.0.0.1"
-    hw_config_generator_port: int = 8079
-    default_prefix: str = Field(default_factory=_default_prefix)
-    root_dir: Path = Field(default_factory=_default_root_dir)
-    data_dir: Optional[Path] = None
-    config_dir: Optional[Path] = None
-    config_meta_filename: str = "configuration.meta.toml"
+    data_dir: Path = Field(default_factory=_default_data_dir)
+    device_config: DeviceConfig = Field(default_factory=DeviceConfig)
+    node_config: NodeConfig = Field(default_factory=NodeConfig)
+    spi_config: Optional[SpiConfig] = None
+    cluster_config: Optional[ClusterConfig] = None
+    node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
+    ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
-    _config: Optional[Configuration] = PrivateAttr(default=None)
     _redis: Optional[Redis] = PrivateAttr(default=None)
+
+    @field_validator("device_config", mode="before")
+    @classmethod
+    def load_device_config_file(cls, value: Any):
+        """If file paths are passed, it converts them to DeviceConfig."""
+        if isinstance(value, (str, Path)):
+            return DeviceConfigFile.from_toml(value).device
+        return value
+
+    @field_validator("node_config", mode="before")
+    @classmethod
+    def load_node_config_file(cls, value: Any):
+        """If file paths are passed, it converts them to NodeConfig."""
+        if isinstance(value, (str, Path)):
+            return NodeConfig.from_toml(value)
+        return value
+
+    @field_validator("spi_config", mode="before")
+    @classmethod
+    def load_spi_config_file(cls, value: Any):
+        """If file paths are passed, it converts them to SpiConfig."""
+        if isinstance(value, (str, Path)):
+            return SpiConfig.from_toml(value)
+        return value
+
+    @field_validator("cluster_config", mode="before")
+    @classmethod
+    def load_cluster_config_file(cls, value: Any):
+        """If file paths are passed, it converts them to ClusterConfig."""
+        if isinstance(value, (str, Path)):
+            return ClusterConfig.from_json(value)
+        return value
 
     @field_validator("qubits", "couplers", mode="before")
     @classmethod
@@ -294,17 +277,14 @@ class SessionContext(BaseModel):
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
         """Derive cross-field defaults: data_dir, config_dir, name, log_dir."""
-        if self.data_dir is None:
-            self.data_dir = self.root_dir / "out"
-        if self.config_dir is None:
-            self.config_dir = self.root_dir
         if self.name is None and isinstance(self.target_node, NodeEnum):
             self.name = self.target_node.value
         if self.log_dir is None and self.name is not None:
-            self.log_dir = os.path.join(
-                self._timestamp.strftime("%Y-%m-%d"),
-                f"{self._timestamp.strftime('%H-%M-%S')}_{self.name}-{str(ApplicationStatus.ACTIVE.value)}",
-            )
+            self.log_dir = self.data_dir / self.name
+            ## To reduce on the logs accumulated, we will get rid of the timestamped folders by commenting out code below
+            # date_str = self._timestamp.strftime("%Y-%m-%d")
+            # time_str = f"{self._timestamp.strftime('%H-%M-%S')}"
+            # self.log_dir = self.data_dir / date_str /f"{time_str}_{self.name}-{str(ApplicationStatus.ACTIVE.value)}"
         return self
 
     @computed_field
@@ -327,15 +307,6 @@ class SessionContext(BaseModel):
         if self._redis is None:
             self._redis = Redis.from_url(self.redis_url, decode_responses=True)
         return self._redis
-
-    @property
-    def config(self) -> Configuration:
-        """The configuration derived from the config files"""
-        if self._config is None:
-            self._config = Configuration.from_dir(
-                self.config_dir, meta_filename=self.config_meta_filename
-            )
-        return self._config
 
     @classmethod
     def from_env(

@@ -14,10 +14,10 @@
 Next Labs quantum hardware."""
 
 from tergite_tuner.export import extract_bcc_params
-from tergite_tuner.tuner import re_analyse, tune_device
+from tergite_tuner.tuner import reanalyse, tune_device
 
 __all__ = [
     "extract_bcc_params",
-    "re_analyse",
+    "reanalyse",
     "tune_device",
 ]

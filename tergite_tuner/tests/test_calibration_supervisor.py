@@ -13,10 +13,7 @@
 from qblox_instruments import Cluster
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
-from tergite_tuner.tuner import (
-    HardwareManager,
-    NodeManager,
-)
+from tergite_tuner.tuner import HardwareManager, NodeManager
 from tergite_tuner.utils.dto.enums import MeasurementMode
 from tergite_tuner.utils.dto.node_enum import NodeEnum
 

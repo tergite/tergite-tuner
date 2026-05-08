@@ -14,9 +14,7 @@
 from tergite_tuner.lib.nodes.coupler.spectroscopy.node import (
     QubitSpectroscopyVsCurrentNode,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,

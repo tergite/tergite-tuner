@@ -20,10 +20,7 @@ Module containing a class that fits and plots data from a T1 experiment.
 import numpy as np
 from quantify_core.analysis.fitting_models import ExpDecayModel
 
-from tergite_tuner.lib.base.analysis import (
-    BaseAllQubitsAnalysis,
-    BaseQubitAnalysis,
-)
+from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.utils.dto.qoi import QOI
 
 

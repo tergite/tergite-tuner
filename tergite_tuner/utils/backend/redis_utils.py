@@ -19,47 +19,31 @@ from tergite_tuner.lib.base.node import BaseNode, CouplerNode, QubitNode
 from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
-    from tergite_tuner.config.session import Configuration
+    from tergite_tuner.config.session import SessionContext
 
 
-def populate_initial_parameters(
-    qubits: list, couplers: list, redis_connection, config: "Configuration"
-):
-    initial_qubit_parameters = config.device.qubits
-    initial_coupler_parameters = config.device.couplers
+def populate_initial_parameters(session: "SessionContext"):
+    initial_qubit_parameters = session.device_config.qubits
+    initial_coupler_parameters = session.device_config.couplers
 
     # Populate the Redis database with the initial 'reasonable'
-    # parameter values from the toml file
-
-    # ``CONFIG.device.qubits`` and ``.couplers`` already merged
-    # ``[device.qubit.all]`` / ``[device.coupler.all]`` defaults into every
-    # entry, so a single per-component loop is sufficient.
-    for qubit in qubits:
+    # parameter values from the device_config object
+    for qubit in session.qubits:
         per_qubit = initial_qubit_parameters.get(qubit, {})
         for module_key, module_value in per_qubit.items():
             if isinstance(module_value, dict):
                 for parameter_key, parameter_value in module_value.items():
                     sub_module_key = module_key + ":" + parameter_key
-                    redis_connection.hset(
+                    session.redis.hset(
                         f"transmons:{qubit}", sub_module_key, parameter_value
                     )
             else:
-                redis_connection.hset(f"transmons:{qubit}", module_key, module_value)
+                session.redis.hset(f"transmons:{qubit}", module_key, module_value)
 
-    for coupler in couplers:
+    for coupler in session.couplers:
         per_coupler = initial_coupler_parameters.get(coupler, {})
         for module_key, module_value in per_coupler.items():
-            redis_connection.hset(f"couplers:{coupler}", module_key, module_value)
-
-
-def populate_parking_currents(
-    couplers: list, redis_connection, config: "Configuration"
-):
-    initial_coupler_parameters = config.device.couplers
-    for coupler in couplers:
-        if coupler in initial_coupler_parameters:
-            for module_key, module_value in initial_coupler_parameters[coupler].items():
-                redis_connection.hset(f"couplers:{coupler}", module_key, module_value)
+            session.redis.hset(f"couplers:{coupler}", module_key, module_value)
 
 
 def _qubit_fields_to_redis(qubits: list[str], key: str, value: str, redis_connection):
@@ -77,13 +61,10 @@ def _coupler_fields_to_redis(
 def populate_node_parameters(
     node_name: str,
     is_node_calibrated: bool,
-    qubits: list,
-    couplers: list,
-    redis_connection,
-    config: "Configuration",
+    session: "SessionContext",
 ):
     # Populate the Redis database with node specific parameter values from the toml file
-    transmon_configuration = config.node
+    transmon_configuration = session.node_config
     if not node_name in transmon_configuration:
         logger.status(f"{node_name} does not have specific node config")
         return
@@ -97,32 +78,34 @@ def populate_node_parameters(
             for sub_field_key, sub_field_value in field_value.items():
                 sub_field_key = field_key + ":" + sub_field_key
                 _qubit_fields_to_redis(
-                    qubits, sub_field_key, sub_field_value, redis_connection
+                    session.qubits, sub_field_key, sub_field_value, session.redis
                 )
                 _coupler_fields_to_redis(
-                    couplers, sub_field_key, sub_field_value, redis_connection
+                    session.couplers, sub_field_key, sub_field_value, session.redis
                 )
         else:
-            _qubit_fields_to_redis(qubits, field_key, field_value, redis_connection)
-            _coupler_fields_to_redis(couplers, field_key, field_value, redis_connection)
+            _qubit_fields_to_redis(
+                session.qubits, field_key, field_value, session.redis
+            )
+            _coupler_fields_to_redis(
+                session.couplers, field_key, field_value, session.redis
+            )
 
     # node config for specific couplers:
-    for coupler in couplers:
+    for coupler in session.couplers:
         if coupler in transmon_configuration[node_name]:
             coupler_specific_config = transmon_configuration[node_name][coupler]
             for field_key, field_value in coupler_specific_config.items():
-                redis_connection.hset(f"couplers:{coupler}", field_key, field_value)
+                session.redis.hset(f"couplers:{coupler}", field_key, field_value)
 
 
-def revert_node_parameters(
-    node_name: str, qubits: list, redis_connection, config: "Configuration"
-):
+def revert_node_parameters(node_name: str, session: "SessionContext"):
 
-    node_configuration = config.node
+    node_configuration = session.node_config
     if not node_name in node_configuration:
         return  # no node specific config found
 
-    initial_qubit_parameters = config.device.qubits
+    initial_qubit_parameters = session.device_config.qubits
 
     node_specific_dict = node_configuration[node_name].get("all", {})
 
@@ -130,12 +113,12 @@ def revert_node_parameters(
         if not isinstance(field_value, dict):
             raise NotImplementedError("Only field modules supported")
         for sub_field_key in field_value.keys():
-            for qubit in qubits:
+            for qubit in session.qubits:
                 initial_qubit_field = initial_qubit_parameters[qubit][field_key]
                 initial_value = initial_qubit_field[sub_field_key]
                 key = field_key + ":" + sub_field_key
                 # restore initial parameter value
-                redis_connection.hset(f"transmons:{qubit}", key, initial_value)
+                session.redis.hset(f"transmons:{qubit}", key, initial_value)
 
 
 def populate_quantities_of_interest(

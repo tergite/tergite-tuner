@@ -18,15 +18,9 @@ from time import sleep
 import numpy as np
 
 from tergite_tuner.lib.base.node import QubitNode
-from tergite_tuner.lib.nodes.characterization.t1.analysis import (
-    T1NodeAnalysis,
-)
-from tergite_tuner.lib.nodes.characterization.t1.measurement import (
-    T1Measurement,
-)
-from tergite_tuner.lib.nodes.external_parameter_node import (
-    ExternalParameterNode,
-)
+from tergite_tuner.lib.nodes.characterization.t1.analysis import T1NodeAnalysis
+from tergite_tuner.lib.nodes.characterization.t1.measurement import T1Measurement
+from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
 from tergite_tuner.utils.logging import logger
 
 

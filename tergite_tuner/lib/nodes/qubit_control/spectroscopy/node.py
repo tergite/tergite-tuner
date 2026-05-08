@@ -26,10 +26,7 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
     TwoTonesAmplitudeMeasurement,
     TwoTonesMultidimMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import (
-    OuterScheduleNode,
-    ScheduleNode,
-)
+from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode, ScheduleNode
 from tergite_tuner.lib.utils.samplespace import qubit_samples
 
 if TYPE_CHECKING:
@@ -56,13 +53,13 @@ class QubitSpectroscopyBase(QubitNode):
             self.schedule_samplespace["spec_pulse_amplitudes"][first_qubit]
         )
         for index, qubit in enumerate(self.all_qubits):
-            qubit_freq = self.session.config.device.qubits[qubit]["VNA_f01_frequency"]
-            samples = qubit_samples(qubit, self.session.config)
+            qubit_freq = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
+            samples = qubit_samples(qubit, self.session)
             if self.name == "qubit_12_spectroscopy":
-                qubit_freq = self.session.config.device.qubits[qubit][
+                qubit_freq = self.session.device_config.qubits[qubit][
                     "VNA_f12_frequency"
                 ]
-                samples = qubit_samples(qubit, self.session.config, transition="12")
+                samples = qubit_samples(qubit, self.session, transition="12")
             true_params = peak.make_params(
                 amplitude=0.2, center=qubit_freq, sigma=0.1e6
             )
@@ -105,8 +102,7 @@ class Qubit01SpectroscopyNode(QubitSpectroscopyBase):
                 qubit: np.linspace(1e-3, 8e-3, 5) for qubit in self.all_qubits
             },
             "spec_frequencies": {
-                qubit: qubit_samples(qubit, self.session.config)
-                for qubit in self.all_qubits
+                qubit: qubit_samples(qubit, self.session) for qubit in self.all_qubits
             },
         }
 
@@ -134,7 +130,7 @@ class Qubit12SpectroscopyNode(QubitSpectroscopyBase):
                 qubit: np.linspace(6e-3, 3e-2, 3) for qubit in self.all_qubits
             },
             "spec_frequencies": {
-                qubit: qubit_samples(qubit, self.session.config, transition="12")
+                qubit: qubit_samples(qubit, self.session, transition="12")
                 for qubit in self.all_qubits
             },
         }
@@ -171,7 +167,7 @@ class Qubit01SpectroscopyAmplitudeNode(QubitNode):
     def qubit_samples(self, qubit: str) -> np.ndarray:
         qub_spec_samples = 821
         sweep_range = 500e6
-        VNA_frequency = self.session.config.device.qubits[qubit]["VNA_f01_frequency"]
+        VNA_frequency = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
         min_freq = VNA_frequency - sweep_range / 2 + 0 * 50e6
         max_freq = VNA_frequency + sweep_range / 2 + 0 * 50e6
         return np.linspace(min_freq, max_freq, qub_spec_samples)

@@ -16,10 +16,9 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 from os import PathLike
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Tuple, Type, Union
+from typing import FrozenSet, List, Optional, Union, Unpack
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -27,15 +26,9 @@ from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
-from tergite_tuner.config.session import SessionContext
+from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
-from tergite_tuner.lib.nodes import (
-    __NODE_DEPENDENCIES__,
-    __NODE_ENUM_CLS_MAP__,
-)
-from tergite_tuner.lib.utils.graph import (
-    get_dependencies_in_topological_order,
-)
+from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -77,7 +70,7 @@ class HardwareManager:
         Creates and initializes a Cluster object to represent the hardware cluster
         based on the given IP address in the configuration.
         """
-        cluster_name = list(self.config.config.cluster.hardware_description.keys())[0]
+        cluster_name = list(self.config.cluster_config.hardware_description.keys())[0]
         cluster: "Cluster"
         if self.config.cluster_mode == MeasurementMode.real:
             # Ensure all previous connections are closed before creating a new cluster instance
@@ -120,12 +113,12 @@ class HardwareManager:
 
         # Load attenuation settings for entire system (possibly across multiple clusters)
         output_attenuation_settings = (
-            self.config.config.device.get_output_attenuations()
+            self.config.device_config.get_output_attenuations()
         )
         connectivity = MappingProxyType(
             {
                 str(n): frozenset(neigh.keys())
-                for n, neigh in self.config.config.cluster.connectivity.graph.adj.items()
+                for n, neigh in self.config.cluster_config.connectivity.graph.adj.items()
             }
         )
 
@@ -160,48 +153,36 @@ class NodeManager:
         self,
         lab_ic: "InstrumentCoordinator",
         session: "SessionContext",
-        node_enum_cls_map: MappingProxyType[
-            NodeEnum, Type[BaseNode]
-        ] = __NODE_ENUM_CLS_MAP__,
-        ignore_nodes: Tuple[NodeEnum, ...] = (NodeEnum.TOF, NodeEnum.PUNCHOUT),
-        node_dependencies: Tuple[
-            Tuple[NodeEnum, NodeEnum], ...
-        ] = __NODE_DEPENDENCIES__,
     ) -> None:
         self.session = session
         self.lab_ic = lab_ic
         self.spi_manager: Optional[SpiDAC] = None
 
-        self.node_enum_cls_map = node_enum_cls_map
-        self.ignore_nodes = ignore_nodes
-        self.node_dependencies = node_dependencies
+        self.node_cls_map = session.node_cls_map
+        self.ignored_nodes = session.ignored_nodes
+        self.node_dag_edges = session.node_dag_edges
 
         # Build the calibration DAG from the dependency edges
         # excluding any given nodes of choice
         self.node_graph: "nx.DiGraph" = nx.DiGraph()
-        self.node_graph.add_edges_from(self.node_dependencies)
-        for member in self.node_enum_cls_map:
+        self.node_graph.add_edges_from(self.node_dag_edges)
+        for member in self.node_cls_map:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
-        populate_initial_parameters(
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-            self.session.config,
-        )
+        populate_initial_parameters(self.session)
 
     def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
         """Return ``target_node``'s ancestors in topological order plus itself."""
         order = get_dependencies_in_topological_order(
             self.node_graph,
             target_node,
-            exclude_nodes=self.ignore_nodes,
+            exclude_nodes=self.ignored_nodes,
         )
         return order + [target_node]
 
     def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False):
-        node_cls = self.node_enum_cls_map[node]
+        node_cls = self.node_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
 
@@ -222,11 +203,8 @@ class NodeManager:
 
         populate_node_parameters(
             node_name,
-            status == DataStatus.in_spec,
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-            self.session.config,
+            is_node_calibrated=status == DataStatus.in_spec,
+            session=self.session,
         )
 
         # Log status
@@ -239,28 +217,24 @@ class NodeManager:
             calibration_node = self._initialize_node(node)
             logger.info(f"Calibrating node {calibration_node.name}")
 
-            # Determine the data path for calibration
-            data_path = (
-                self.session.log_dir
-                if self.session.cluster_mode == MeasurementMode.re_analyse
-                else create_node_data_path(
+            data_path = self.session.log_dir
+            # avoid creating new logs folders if we are re_analysing or recalibrating
+            if (
+                self.session.cluster_mode != MeasurementMode.re_analyse
+                and not self.session.is_recalibration
+            ):
+                data_path = create_node_data_path(
                     self.session, node_name=calibration_node.name
                 )
-            )
 
             # Perform calibration
             calibration_node.calibrate(data_path, self.session.cluster_mode)
 
-        revert_node_parameters(
-            node_name,
-            self.session.qubits,
-            self.session.redis,
-            self.session.config,
-        )
+        revert_node_parameters(node_name, self.session)
 
     def _initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
-        node_cls = self.node_enum_cls_map[node]
+        node_cls = self.node_cls_map[node]
         node_obj = node_cls(
             all_qubits=self.session.qubits,
             couplers=self.session.couplers,
@@ -289,7 +263,7 @@ class NodeManager:
     def _check_calibration_status_redis(self, node: NodeEnum) -> DataStatus:
         """Queries Redis for the calibration status of each qubit or coupler
         associated with ``node``, determining if it is in or out of specification."""
-        node_cls = self.node_enum_cls_map[node]
+        node_cls = self.node_cls_map[node]
         node_name = node.value
         elements = (
             self.session.couplers
@@ -319,7 +293,7 @@ class NodeManager:
 
 def tune_device(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options,
+    **session_options: Unpack[SessionOptions],
 ) -> None:
     """Run the full calibration pipeline up to ``target_node``.
 
@@ -331,14 +305,15 @@ def tune_device(
     Args:
         env_file: optional path to .env file to load session config from.
         **session_options: optional keyword arguments to override config settings.
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session = SessionContext.from_env(env_file, **session_options)
     _tune(session)
 
 
-def re_analyse(
+def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options,
+    **session_options: Unpack[SessionOptions],
 ) -> None:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 
@@ -348,6 +323,7 @@ def re_analyse(
     Args:
         env_file: optional path to .env file to load session config from.
         **session_options: optional keyword arguments to override config settings.
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     session_options.pop("cluster_mode", None)
     session = SessionContext.from_env(

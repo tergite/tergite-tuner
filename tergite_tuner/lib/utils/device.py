@@ -17,41 +17,34 @@ from typing import TYPE_CHECKING
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.json_utils import SchedulerJSONEncoder
 
-from tergite_tuner.lib.utils.redis import (
-    load_redis_config,
-    load_redis_config_coupler,
-)
-from tergite_tuner.utils.dto.extended_coupler_edge import (
-    ExtendedCompositeSquareEdge,
-)
+from tergite_tuner.lib.utils.redis import load_redis_config, load_redis_config_coupler
+from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 
 if TYPE_CHECKING:
-    from tergite_tuner.config.session import Configuration
+    from tergite_tuner.config.session import SessionContext
 
 
 def configure_device(
     name: str,
     qubits: list[str],
     couplers: list[str],
-    *,
-    config: "Configuration",
-    redis_connection,
+    session: "SessionContext",
 ) -> QuantumDevice:
     device = QuantumDevice(name)
     for channel, qubit in enumerate(qubits):
         transmon = ExtendedTransmon(qubit)
-        transmon = load_redis_config(transmon, channel, redis_connection)
+        transmon = load_redis_config(transmon, channel, session.redis)
         device.add_element(transmon)
 
     if couplers is not None:
         for coupler in couplers:
             control, target = coupler.split(sep="_")
             edge = ExtendedCompositeSquareEdge(control, target)
-            edge = load_redis_config_coupler(edge, redis_connection)
+            edge = load_redis_config_coupler(edge, session.redis)
             device.add_edge(edge)
 
-    device.hardware_config(config.cluster)
+    device.hardware_config(session.cluster_config)
     return device
 
 

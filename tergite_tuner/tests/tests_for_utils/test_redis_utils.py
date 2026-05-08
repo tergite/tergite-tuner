@@ -11,7 +11,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from tergite_tuner.lib.nodes import __NODE_STR_CLS_MAP__
+from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.utils.backend.redis_utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -25,17 +25,17 @@ def test_populate_initial_parameters(redis_connection, session_context):
     redis_connection.flushall()
     assert not redis_connection.keys()
 
-    configuration = session_context.config
-    device = configuration.device
-    qubits = list(device.qubits.keys())
-    couplers = list(device.couplers.keys())
-    populate_initial_parameters(qubits, couplers, redis_connection, configuration)
+    device = session_context.device_config
+    populate_initial_parameters(session_context)
     redis_keys = redis_connection.keys()
 
-    # test that all device elements are on redis
-    for qubit in qubits:
+    # ``populate_initial_parameters`` pushes only the qubits and couplers
+    # selected for *this* calibration run (``session.qubits`` /
+    # ``session.couplers``); the device config can describe more
+    # components than are actually being calibrated.
+    for qubit in session_context.qubits:
         assert f"transmons:{qubit}" in redis_keys
-    for coupler in couplers:
+    for coupler in session_context.couplers:
         assert f"couplers:{coupler}" in redis_keys
 
     # test values are correctly uploaded onto redis
@@ -56,21 +56,12 @@ def test_populate_node_parameters(redis_connection, session_context):
     redis_connection.flushall()
     assert not redis_connection.keys()
 
-    configuration = session_context.config
-    device = configuration.device
-    qubits = device.qubits.keys()
-    couplers = device.couplers.keys()
     populate_node_parameters(
-        "resonator_spectroscopy",
-        False,
-        list(qubits),
-        list(couplers),
-        redis_connection,
-        configuration,
+        "resonator_spectroscopy", is_node_calibrated=False, session=session_context
     )
 
     # test node config values are correctly uploaded onto redis
-    node_config = configuration.node["resonator_spectroscopy"]["all"]
+    node_config = session_context.node_config["resonator_spectroscopy"]["all"]
     reset_duration_config = node_config["reset"]["duration"]
     reset_duration_redis = float(
         redis_connection.hget("transmons:q00", "reset:duration")
@@ -83,16 +74,14 @@ def test_revert_node_parameters(redis_connection, session_context):
     redis_connection.flushall()
     assert not redis_connection.keys()
 
-    configuration = session_context.config
-    device = configuration.device
-    qubits = device.qubits.keys()
+    device = session_context.device_config
     initial_qubit_parameters = device.qubits
     node = "resonator_spectroscopy"
 
     # flush the duration value
     redis_connection.hset("transmons:q00", "reset:duration", "nan")
 
-    revert_node_parameters(node, list(qubits), redis_connection, configuration)
+    revert_node_parameters(node, session_context)
     reset_duration_redis = float(
         redis_connection.hget("transmons:q00", "reset:duration")
     )
@@ -110,7 +99,7 @@ def test_populate_quantities_of_interest(redis_connection):
     redis_connection.flushall()
     assert not redis_connection.keys()
 
-    for node_name, node_cls in __NODE_STR_CLS_MAP__.items():
+    for node_name, node_cls in DEFAULT_NODE_NAME_CLS_MAP.items():
         redis_connection.flushall()
         assert not redis_connection.keys()
 

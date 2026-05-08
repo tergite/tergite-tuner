@@ -14,7 +14,7 @@ from itertools import product
 
 import pytest
 
-from tergite_tuner.lib.nodes import __NODE_STR_CLS_MAP__
+from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
@@ -25,7 +25,7 @@ from tergite_tuner.utils.measurement_utils import (
 )
 
 _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
-_node_names = list(__NODE_STR_CLS_MAP__.keys())
+_node_names = list(DEFAULT_NODE_NAME_CLS_MAP.keys())
 
 
 @pytest.mark.parametrize("node_name", _node_names)
@@ -34,7 +34,7 @@ def test_precompile_all_nodes_without_error(
 ):
     with loaded_redis(redis_connection, _redis_values):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-        node_cls = __NODE_STR_CLS_MAP__[node_name]
+        node_cls = DEFAULT_NODE_NAME_CLS_MAP[node_name]
         node = node_cls(
             all_qubits=["q00", "q01"],
             couplers=["q00_q01"],

@@ -22,20 +22,14 @@ import numpy as np
 import xarray
 
 from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
-from tergite_tuner.lib.base.measurement import (
-    BaseMeasurement,
-    MeasurementType,
-)
+from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
 from tergite_tuner.lib.utils.device import (
     close_device_resources,
     configure_device,
     save_serial_device,
 )
 from tergite_tuner.lib.utils.redis import update_redis_trusted_values
-from tergite_tuner.lib.utils.schedule_execution import (
-    execute_schedule,
-    get_compiler,
-)
+from tergite_tuner.lib.utils.schedule_execution import execute_schedule, get_compiler
 from tergite_tuner.utils.dto.enums import MeasurementMode
 from tergite_tuner.utils.hardware.spi import SpiDAC
 from tergite_tuner.utils.io.dataset import save_dataset
@@ -292,8 +286,7 @@ class QubitNode(BaseNode):
             self.name,
             qubits=self.all_qubits,
             couplers=self.couplers,
-            config=self.session.config,
-            redis_connection=self.session.redis,
+            session=self.session,
         )
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
@@ -346,8 +339,7 @@ class CouplerNode(BaseNode):
             self.name,
             qubits=self.all_qubits,
             couplers=self.couplers,
-            config=self.session.config,
-            redis_connection=self.session.redis,
+            session=self.session,
         )
 
     def measure_node(self, cluster_status) -> xarray.Dataset:
