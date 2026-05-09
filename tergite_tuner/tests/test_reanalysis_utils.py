@@ -24,7 +24,7 @@ from datetime import date, time
 
 import pytest
 
-from tergite_tuner.utils.reanalysis_utils import (
+from tergite_tuner.utils.reanalysis import (
     DayInfo,
     MeasurementInfo,
     RunInfo,

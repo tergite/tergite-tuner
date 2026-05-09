@@ -13,16 +13,17 @@
 
 import json
 from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
-from tergite_tuner.lib.utils.redis import RedisStore
-from tergite_tuner.utils.dto import extended_transmon_element
-from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.storage.redis import RedisStore
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types import extended_transmon
+from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -85,7 +86,7 @@ def save_serial_device(device: QuantumDevice, data_path: str) -> None:
         serial_config = json.loads(element_config)
         serial_device[element] = serial_config
 
-    data_path.mkdir(parents=True, exist_ok=True)
+    Path(data_path).mkdir(parents=True, exist_ok=True)
     with open(f"{data_path}/{name}.json", "w") as f:
         json.dump(serial_device, f, indent=4)
 
@@ -132,7 +133,7 @@ def _load_transmon_from_redis(
 
     # create a transmon with the same name but with updated config
     transmon = json.loads(
-        encoded_transmon, cls=SchedulerJSONDecoder, modules=[extended_transmon_element]
+        encoded_transmon, cls=SchedulerJSONDecoder, modules=[extended_transmon]
     )
 
     return transmon

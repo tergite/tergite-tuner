@@ -18,7 +18,7 @@ import xarray as xr
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBCouplerAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
+from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-2026-03-05-10-55-35.json"
 

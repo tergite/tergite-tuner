@@ -20,8 +20,8 @@ from tergite_tuner.lib.nodes.coupler.cz_calibration.measurement import (
 )
 from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
-from tergite_tuner.tests.utils.decorators import loaded_redis
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_DATA_FILENAME = "redis-2025-12-25-12-40-59.json"
 

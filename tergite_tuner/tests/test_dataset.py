@@ -16,19 +16,19 @@ from pathlib import Path
 import pandas
 import xarray as xr
 
-import tergite_tuner.utils.reanalysis_utils as ra_utils
+import tergite_tuner.utils.reanalysis as ra_utils
 from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
     ResonatorSpectroscopyNode,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
+from tergite_tuner.storage.fs.dataset import save_dataset, scrape_and_copy_hdf5_files
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
-from tergite_tuner.utils.io.dataset import save_dataset, scrape_and_copy_hdf5_files
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
 

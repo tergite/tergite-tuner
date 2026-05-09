@@ -20,7 +20,7 @@ from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.analysis import (
     Rabi12QubitAnalysis,
     RabiQubitAnalysis,
 )
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 def test_setup_rabi_oscillations_01(node_data_dir):

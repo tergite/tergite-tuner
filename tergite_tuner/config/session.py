@@ -70,9 +70,9 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
 )
-from tergite_tuner.lib.utils.redis import RedisStore
-from tergite_tuner.utils.dto.enums import MeasurementMode, SPIMode
-from tergite_tuner.utils.dto.node_enum import NodeEnum
+from tergite_tuner.storage.redis import RedisStore
+from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
 def _default_data_dir() -> Path:

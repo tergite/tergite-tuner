@@ -35,12 +35,12 @@ import pytest
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.tests.utils.fixtures import get_fixture_path, load_fixture
-from tergite_tuner.tests.utils.redis_backup import (
+from tergite_tuner.tests.utils.redis import (
     dump_redis,
     load_json_to_redis,
     load_redis,
 )
-from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.utils.types.enums import MeasurementMode
 
 _FIXTURE_CONFIGS_DIR = Path(get_fixture_path("configs"))
 _PROJECT_ROOT = Path(__file__).parent

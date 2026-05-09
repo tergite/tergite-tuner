@@ -21,7 +21,7 @@ from cycler import cycler
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):

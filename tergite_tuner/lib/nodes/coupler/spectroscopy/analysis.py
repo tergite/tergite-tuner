@@ -25,8 +25,8 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.analysis import (
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
     ResonatorSpectroscopyQubitAnalysis,
 )
-from tergite_tuner.utils.dto.qoi import QOI
-from tergite_tuner.utils.io.dataset import to_real_dataset
+from tergite_tuner.storage.fs.dataset import to_real_dataset
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):

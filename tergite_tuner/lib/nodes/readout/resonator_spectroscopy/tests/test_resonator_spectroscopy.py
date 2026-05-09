@@ -19,7 +19,7 @@ from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
     ResonatorSpectroscopyQubitAnalysis,
 )
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 def test_resonator_spectroscopy_setup(node_data_dir):

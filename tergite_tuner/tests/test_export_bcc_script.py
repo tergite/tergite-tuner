@@ -17,8 +17,8 @@ import pytest
 import toml
 
 from tergite_tuner.export import extract_bcc_params
-from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
+from tergite_tuner.tests.utils.redis import loaded_redis
 
 _redis_backup_path = get_fixture_path("redis", "export_bcc_script.json")
 

@@ -32,18 +32,18 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
-from tergite_tuner.lib.utils.redis import QueryOptions, RedisStoreQueryResult
-from tergite_tuner.utils.backend.redis_utils import (
+from tergite_tuner.storage.fs.dataset import create_node_data_path
+from tergite_tuner.storage.redis import QueryOptions, RedisStoreQueryResult
+from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
     revert_node_parameters,
 )
-from tergite_tuner.utils.dto.enums import DataStatus, MeasurementMode, SPIMode
-from tergite_tuner.utils.dto.node_enum import NodeEnum
 from tergite_tuner.utils.hardware.spi import SpiDAC
-from tergite_tuner.utils.io.dataset import create_node_data_path
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
+from tergite_tuner.utils.types.enums import DataStatus, MeasurementMode, SPIMode
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
 class HardwareManager:

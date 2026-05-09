@@ -4,6 +4,7 @@
 # (c) Copyright Stefan Hill 2024
 # (C) Copyright Michele Faucci Giannelli 2025
 # (C) Copyright Abdullah Al Amin 2026
+# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -15,8 +16,8 @@
 
 from typing import TYPE_CHECKING
 
+from tergite_tuner.utils.dicts import insert_nested_key
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.misc.helpers import insert_nested_key
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext

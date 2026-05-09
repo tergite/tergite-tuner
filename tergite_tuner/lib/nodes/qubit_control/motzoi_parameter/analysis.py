@@ -12,7 +12,7 @@
 # that they have been altered from the originals.
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):

@@ -29,19 +29,13 @@ This module exposes:
   DAG. Reading ``(A, B)`` as "B depends on A".
 """
 
-from types import MappingProxyType
 from typing import Mapping, Tuple, Type
 
 from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes.characterization.all_xy.node import AllXYNode
-
-# NOTE: ProcessTomographySSRONode currently fails to import because
-# tergite_tuner.utils.dto.extended_gates does not export
-# ``Rxy_12``. The node is therefore intentionally absent from
-# ``DEFAULT_NODE_CLS_MAP`` (its enum member and dependency edge are
-# kept so that the calibration graph still references it correctly).
-# Restore the import and the class-map entry once the missing gate is
-# added.
+from tergite_tuner.lib.nodes.characterization.process_tomography.node import (
+    ProcessTomographySSRONode,
+)
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.node import (
     PurityBenchmarkingNode,
 )
@@ -95,7 +89,7 @@ from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node import (
     ROFrequencyThreeStateOptimizationNode,
     ROFrequencyTwoStateOptimizationNode,
 )
-from tergite_tuner.utils.dto.node_enum import NodeEnum
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.PUNCHOUT: PunchoutNode,
@@ -127,7 +121,7 @@ DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.ALL_XY: AllXYNode,
     NodeEnum.RANDOMIZED_BENCHMARKING: RandomizedBenchmarkingNode,
     NodeEnum.PURITY_BENCHMARKING: PurityBenchmarkingNode,
-    # NodeEnum.PROCESS_TOMOGRAPHY_SSRO: ProcessTomographySSRONode,  # see import block above
+    # NodeEnum.PROCESS_TOMOGRAPHY_SSRO: ProcessTomographySSRONode,
     NodeEnum.CZ_PARAMETRIZATION: CZParametrizationNode,
     NodeEnum.CZ_CHEVRON: CZChevronNode,
     NodeEnum.CZ_CALIBRATION: CZCalibrationNode,
@@ -138,8 +132,6 @@ DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
 
 ``TOF`` is intentionally absent; it has no implementation and is only
 used as a virtual predecessor in :data:`DEFAULT_NODE_DAG_EDGES`.
-``PROCESS_TOMOGRAPHY_SSRO`` is also absent for now because its node
-module has a broken import (see comment near the imports above).
 """
 
 DEFAULT_NODE_NAME_CLS_MAP: Mapping[str, Type[BaseNode]] = {
@@ -219,7 +211,7 @@ DEFAULT_NODE_DAG_EDGES: Tuple[Tuple[NodeEnum, NodeEnum], ...] = (
     # (
     #     NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
     #     NodeEnum.PROCESS_TOMOGRAPHY_SSRO,
-    # ),  # see import-block note above; restore once Rxy_12 is added.
+    # ),
 )
 """The default directed edges of the calibration DAG.
 

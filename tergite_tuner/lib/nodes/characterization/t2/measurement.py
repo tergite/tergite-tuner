@@ -17,7 +17,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
 
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 from ....base.measurement import BaseMeasurement
 

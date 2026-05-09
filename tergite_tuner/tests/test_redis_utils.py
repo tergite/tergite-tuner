@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
-from tergite_tuner.utils.backend.redis_utils import (
+from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
     revert_node_parameters,

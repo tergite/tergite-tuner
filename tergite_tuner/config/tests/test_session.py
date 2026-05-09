@@ -39,7 +39,7 @@ from tergite_tuner.lib.nodes import (
     Qubit01SpectroscopyAmplitudeNode,
     ResonatorSpectroscopy1Node,
 )
-from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.utils.types.enums import MeasurementMode
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 

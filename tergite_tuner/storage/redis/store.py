@@ -21,7 +21,6 @@ from contextlib import suppress
 from typing import (
     Any,
     Dict,
-    Iterable,
     Iterator,
     List,
     Literal,
@@ -37,7 +36,7 @@ from typing import (
 import numpy as np
 from redis import Redis
 
-from tergite_tuner.utils.misc.helpers import insert_nested_key
+from tergite_tuner.utils.dicts import insert_nested_key
 
 np.set_printoptions(legacy="1.25")
 

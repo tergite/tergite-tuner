@@ -22,7 +22,7 @@ from matplotlib.axes import Axes
 from quantify_core.analysis.fitting_models import ExpDecayModel, fft_freq_phase_guess
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 def cos_func(

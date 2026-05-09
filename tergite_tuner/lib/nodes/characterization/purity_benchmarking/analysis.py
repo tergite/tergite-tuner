@@ -21,8 +21,8 @@ from matplotlib.axes import Axes
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.functions import exponential_decay_function
-from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class ExpDecayModel(lmfit.model.Model):

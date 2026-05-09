@@ -24,8 +24,8 @@ from lmfit.models import LorentzianModel
 from scipy import signal
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.qoi import QOI
 
 
 # TODO: this is flagged for removal

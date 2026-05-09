@@ -21,7 +21,7 @@ from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationCouplerAnalysis,
     CZParametrizationNodeAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
+from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-export-2025-12-16.json"
 

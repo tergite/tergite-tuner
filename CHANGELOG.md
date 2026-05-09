@@ -44,6 +44,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Added `examples` folder
 - Added `FIXED_DURATION_QUBITS` env variable for setting qubits with
   fixed duration working points for CZ calibration
+- Added back the `Rx_12` gate in the `extended_gates` module
 
 ### Changed
 
@@ -84,6 +85,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Made `session: SessionContext` arg on Analysis classes mandatory
 - Removed the `data` folder in the lib directory
 - Moved data files of nodes to their individual folders
+- Moved redis to the `storage` pacakge
+- Renamed `io` utils to `fs` and moved it to the storage package
 
 ### Removed
 
@@ -101,6 +104,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - `process_tomography` from the canonical class map until the missing
   `Rxy_12` extended-gate import is restored; its `NodeEnum` member
   remains but no class is registered.
+- Removed `decorators` and `helpers` that are no longer used in the actual code (vs in tests)
 
 ## [2026.03.0] - 2026-03-06
 

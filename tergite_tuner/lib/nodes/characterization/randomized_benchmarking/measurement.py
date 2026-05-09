@@ -26,10 +26,10 @@ from quantify_scheduler.operations.gate_library import Reset, Rxy
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.schedules.schedule import Schedule
 
-import tergite_tuner.utils.clifford_elements_decomposition as cliffords
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.dto.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils import cliffords
+from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class RandomizedBenchmarkingMeasurement(BaseMeasurement):

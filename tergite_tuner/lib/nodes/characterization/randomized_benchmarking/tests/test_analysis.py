@@ -19,7 +19,7 @@ from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis i
     RandomizedBenchmarkingNodeAnalysis,
     RandomizedBenchmarkingQubitAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
+from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
 

@@ -13,7 +13,7 @@
 import numpy as np
 import pytest
 
-from tergite_tuner.utils.measurement_utils import (
+from tergite_tuner.utils.measurement import (
     reduce_samplespace,
     samplespace_dimensions,
 )

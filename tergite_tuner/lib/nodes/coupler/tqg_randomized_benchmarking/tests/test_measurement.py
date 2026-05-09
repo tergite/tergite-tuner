@@ -18,8 +18,8 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZR
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_align_cliffords(redis_connection, session_context, node_data_dir):

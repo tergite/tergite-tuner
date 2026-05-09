@@ -29,8 +29,8 @@ from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.base.utils.figure_utils import (
     create_figure_with_top_band,
 )
-from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext

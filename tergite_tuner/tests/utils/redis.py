@@ -10,10 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""Utilities for handling redis"""
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Union
+
+from redis import Redis
 
 if TYPE_CHECKING:
     import redis
@@ -153,3 +157,24 @@ def load_json_to_redis(
         data = json.load(f)
 
     load_redis(data, redis_session)
+
+
+@contextmanager
+def loaded_redis(redis_connection: Redis, path_: Union[Path, str]):
+    """
+    Context manager that loads a Redis backup into ``redis_connection`` for
+    the duration of the ``with`` block, then restores the original contents.
+
+    Args:
+        redis_connection: The Redis client to populate (e.g. the
+            ``redis_connection`` pytest fixture).
+        path_: Path to the Redis backup JSON file.
+    """
+    redis_backup = dump_redis(redis_connection)
+    redis_connection.flushall()
+    load_json_to_redis(path_, redis_connection)
+    try:
+        yield redis_connection
+    finally:
+        redis_connection.flushall()
+        load_redis(redis_backup, redis_connection)

@@ -20,7 +20,7 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.analysis import (
     QubitSpectroscopy12MultidimAnalysis,
     QubitSpectroscopyMultidimAnalysis,
 )
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 def test_setup_qubit_01_spectroscopy(node_data_dir):

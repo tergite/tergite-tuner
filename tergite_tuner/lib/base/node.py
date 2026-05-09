@@ -31,14 +31,14 @@ from tergite_tuner.lib.utils.device import (
     save_serial_device,
 )
 from tergite_tuner.lib.utils.schedule_execution import execute_schedule, get_compiler
-from tergite_tuner.utils.dto.enums import MeasurementMode
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.storage.fs.dataset import save_dataset
+from tergite_tuner.utils.dicts import insert_nested_key, to_flat_map
 from tergite_tuner.utils.hardware.spi import SpiDAC
-from tergite_tuner.utils.io.dataset import save_dataset
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import print_measurement_info
-from tergite_tuner.utils.measurement_utils import samplespace_dimensions
-from tergite_tuner.utils.misc.helpers import insert_nested_key, to_flat_map
+from tergite_tuner.utils.measurement import samplespace_dimensions
+from tergite_tuner.utils.types.enums import MeasurementMode
+from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice

@@ -22,7 +22,7 @@ from tergite_tuner.lib.base.utils.figure_utils import create_figure_with_top_ban
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
     ResonatorSpectroscopyQubitAnalysis,
 )
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class PunchoutQubitAnalysis(BaseQubitAnalysis):

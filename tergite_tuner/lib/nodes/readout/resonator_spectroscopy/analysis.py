@@ -22,8 +22,8 @@ import xarray as xr
 from quantify_core.analysis import fitting_models as fm
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.dto.qoi import QOI
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext

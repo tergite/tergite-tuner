@@ -10,24 +10,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""Utility functions for dicts"""
+
 from typing import Any, Dict, Iterator, List
 from typing import Mapping
 from typing import Mapping as MappingABC
 from typing import Tuple
-
-
-def generate_n_qubit_list(n_qubits: int, starting_from: int = 1) -> List[str]:
-    """
-    This generates a list of qubits.
-
-    Args:
-        n_qubits: The number of qubits.
-        starting_from: Start counting from when numbering the qubits (default: 1).
-
-    Returns:
-        List of qubits ["qXX", ...] starting with "q01" (default, regulated by starting_from parameter).
-    """
-    return [f"q{i:02}" for i in range(starting_from, starting_from + n_qubits)]
 
 
 def update_nested(target: Dict, updates: Dict) -> None:

@@ -20,8 +20,8 @@ from typing import Any, Dict, Tuple
 import toml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from tergite_tuner.utils.dto.enums import QubitRole
-from tergite_tuner.utils.misc.helpers import update_nested
+from tergite_tuner.utils.dicts import update_nested
+from tergite_tuner.utils.types.enums import QubitRole
 
 
 class _Position(BaseModel):

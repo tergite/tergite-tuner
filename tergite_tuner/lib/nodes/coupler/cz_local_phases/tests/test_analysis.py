@@ -17,7 +17,7 @@ from conftest import node_data_dir
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesCouplerAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
+from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-coupler-run-2026-02.json"
 

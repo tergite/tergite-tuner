@@ -25,7 +25,7 @@ from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.utils import (
     align_on_y_axis,
 )
 from tergite_tuner.lib.utils.analysis_models import ThreeClassBoundary, TwoClassBoundary
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext

@@ -20,9 +20,9 @@ from quantify_scheduler.operations.pulse_library import IdlePulse, RampPulse
 from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.dto.extended_gates import Rxy_12
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
+from tergite_tuner.utils.types.extended_gates import Rxy_12
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class ResetChevronDCMeasurement(BaseMeasurement):

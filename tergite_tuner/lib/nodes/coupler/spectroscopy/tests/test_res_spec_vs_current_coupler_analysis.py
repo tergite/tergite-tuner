@@ -20,7 +20,7 @@ from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 RES_COUPLER_QOIS = [
     "control_resonator_crossing_points",
