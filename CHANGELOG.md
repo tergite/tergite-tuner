@@ -82,6 +82,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - `conftest.py` moved to the repository root so it is no longer
   shipped with the built wheel.
 - Made `session: SessionContext` arg on Analysis classes mandatory
+- Removed the `data` folder in the lib directory
+- Moved data files of nodes to their individual folders
 
 ### Removed
 

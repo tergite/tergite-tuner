@@ -11,30 +11,22 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
-
 import pytest
 import xarray as xr
 
+from conftest import node_data_dir
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis import (
     ROThreeStateAmplitudeNodeAnalysis,
     ROThreeStateAmplitudeQubitAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
-
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
-)
-_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-def test_ro_ampl_3states(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        name = "ro_amplitude_three_state_optimization"
-        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-        full_dataset = xr.open_dataset(file_path)
+def test_ro_ampl_3states(seeded_redis, session_context, node_data_dir):
+    name = "ro_amplitude_three_state_optimization"
+    file_path = node_data_dir / f"dataset_{name}.hdf5"
+
+    with xr.open_dataset(file_path) as full_dataset:
         qubit_qois = [
             "measure_3state_opt:pulse_amp",
             "centroid_I",
@@ -90,30 +82,24 @@ def test_ro_ampl_3states(redis_connection, session_context):
         assert pytest.approx(omega_20) == 10.16925296
 
 
-def test_plotting(redis_connection, session_context):
+def test_plotting(seeded_redis, session_context, node_data_dir):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    with loaded_redis(redis_connection, _redis_values):
-        name = "ro_amplitude_three_state_optimization"
-        file_path = Path(_test_data_dir, name)
-        qubit_qois = [
-            "measure_3state_opt:pulse_amp",
-            "centroid_I",
-            "centroid_Q",
-            "omega_01",
-            "omega_12",
-            "omega_20",
-            "inv_cm_opt",
-        ]
+    name = "ro_amplitude_three_state_optimization"
+    qubit_qois = [
+        "measure_3state_opt:pulse_amp",
+        "centroid_I",
+        "centroid_Q",
+        "omega_01",
+        "omega_12",
+        "omega_20",
+        "inv_cm_opt",
+    ]
 
-        try:
-            analysis = ROThreeStateAmplitudeNodeAnalysis(
-                name, qubit_qois, session=session_context
-            )
-            analysis.analyze_node(file_path, save_plot=True)
-            number_of_qubits = len(analysis.dataset.attrs["elements"])
-            assert analysis.axs.shape == (3, number_of_qubits)
-        finally:
-            (file_path / f"{name}.png").unlink(missing_ok=True)
-            (file_path / f"{name}_preview.png").unlink(missing_ok=True)
+    analysis = ROThreeStateAmplitudeNodeAnalysis(
+        name, qubit_qois, session=session_context
+    )
+    analysis.analyze_node(node_data_dir, save_plot=True)
+    number_of_qubits = len(analysis.dataset.attrs["elements"])
+    assert analysis.axs.shape == (3, number_of_qubits)

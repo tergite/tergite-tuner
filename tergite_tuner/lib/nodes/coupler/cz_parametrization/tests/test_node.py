@@ -32,7 +32,7 @@ from tergite_tuner.tests.utils.fixtures import (
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 
 
-def test_cannotCreateCorrectType(redis_connection, session_context):
+def test_cannot_create_correct_type(redis_connection, session_context):
     """
     raise error if parking current does not exist on redis
     """
@@ -49,7 +49,7 @@ def test_cannotCreateCorrectType(redis_connection, session_context):
         )
 
 
-def test_canCreateCorrectType(redis_connection, session_context):
+def test_can_create_correct_type(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
     redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
@@ -68,7 +68,7 @@ def test_canCreateCorrectType(redis_connection, session_context):
     assert isinstance(node, CouplerNode)
 
 
-def test_ValidationReturnErrorWithSameQubitCoupler(session_context):
+def test_validation_return_error_with_same_qubit_coupler(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     with pytest.raises(ValueError):
         CZParametrizationNode(
@@ -79,7 +79,7 @@ def test_ValidationReturnErrorWithSameQubitCoupler(session_context):
 
 
 @pytest.mark.skip
-def test_ValidationReturnErrorWithQubitsNotMatchingCouplers(session_context):
+def test_validation_return_error_with_qubits_not_matching_couplers(session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     with pytest.raises(ValueError):
         CZParametrizationNode(
@@ -89,7 +89,7 @@ def test_ValidationReturnErrorWithQubitsNotMatchingCouplers(session_context):
         )
 
 
-def test_MeasurementClassType(redis_connection, session_context):
+def test_measurement_class_type(redis_connection, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
     redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")

@@ -13,7 +13,7 @@
 from tergite_tuner.lib.nodes.readout.punchout.analysis import PunchoutNodeAnalysis
 
 
-def test_InitSetDataMember(session_context):
+def test_init_set_data_member(session_context):
     node_analysis = PunchoutNodeAnalysis(
         "name", ["measure:pulse_amp"], session=session_context
     )

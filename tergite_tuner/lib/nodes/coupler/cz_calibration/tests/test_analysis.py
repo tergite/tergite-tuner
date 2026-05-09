@@ -12,7 +12,6 @@
 # that they have been altered from the originals.
 
 import os
-from pathlib import Path
 
 import cf_xarray as cf
 import pytest
@@ -24,42 +23,43 @@ from tergite_tuner.lib.nodes.coupler.cz_calibration.analysis import (
 )
 from tergite_tuner.tests.utils.decorators import loaded_redis
 
-_test_data_dir = os.path.join(Path(__file__).parent, "data")
-_redis_values = os.path.join(_test_data_dir, "redis-coupler-run-2026-02.json")
+_REDIS_DATA_FILENAME = "redis-coupler-run-2026-02.json"
 
 
-def test_cz_calibration_success(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        file_path = os.path.join(_test_data_dir, "dataset_cz_calibration.hdf5")
-        dataset = xr.open_dataset(file_path)
-        dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
+def test_cz_calibration_success(redis_connection, session_context, node_data_dir):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
+        file_path = node_data_dir / "dataset_cz_calibration.hdf5"
+        with xr.open_dataset(file_path) as dataset:
+            dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
 
-        analysis = CZCalibrationCouplerAnalysis(
-            "cz_calibration",
-            ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
-            session_context,
-        )
-        qoi = analysis.process_coupler(dataset, "q13_q14")
+            analysis = CZCalibrationCouplerAnalysis(
+                "cz_calibration",
+                ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+                session_context,
+            )
+            qoi = analysis.process_coupler(dataset, "q13_q14")
 
-        cz_pulse_frequency = qoi.analysis_result["cz_pulse_frequency"]["value"]
-        cz_pulse_duration = qoi.analysis_result["cz_pulse_duration"]["value"]
-        cz_phase = qoi.analysis_result["cz_phase"]["value"]
+            cz_pulse_frequency = qoi.analysis_result["cz_pulse_frequency"]["value"]
+            cz_pulse_duration = qoi.analysis_result["cz_pulse_duration"]["value"]
+            cz_phase = qoi.analysis_result["cz_phase"]["value"]
 
-        assert qoi.analysis_successful
-        assert pytest.approx(cz_pulse_frequency) == 713980000
-        assert pytest.approx(cz_pulse_duration) == 192e-9
-        assert pytest.approx(cz_phase) == 181.450086
+            assert qoi.analysis_successful
+            assert pytest.approx(cz_pulse_frequency) == 713980000
+            assert pytest.approx(cz_pulse_duration) == 192e-9
+            assert pytest.approx(cz_phase) == 181.450086
 
 
-def test_decode_multi_index(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
+def test_decode_multi_index(redis_connection, session_context, node_data_dir):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
         base_analysis = BaseAllCouplersAnalysis(
             "cz_calibration",
             ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
             session_context,
         )
         base_analysis.name = "cz_calibration"
-        base_analysis.data_path = _test_data_dir
+        base_analysis.data_path = node_data_dir
         dataset = base_analysis.open_dataset()
 
         assert "l1" in dataset.working_points.coords
@@ -68,30 +68,31 @@ def test_decode_multi_index(redis_connection, session_context):
         assert dataset.working_points.size == 11
 
 
-def test_plotting(redis_connection, session_context):
+def test_plotting(redis_connection, session_context, node_data_dir):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    with loaded_redis(redis_connection, _redis_values):
-        file_path = os.path.join(_test_data_dir, "dataset_cz_calibration.hdf5")
-        dataset = xr.open_dataset(file_path)
-        dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
+        file_path = node_data_dir / "dataset_cz_calibration.hdf5"
+        with xr.open_dataset(file_path) as dataset:
+            dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
 
-        analysis = CZCalibrationCouplerAnalysis(
-            "cz_calibration",
-            ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
-            session_context,
-        )
+            analysis = CZCalibrationCouplerAnalysis(
+                "cz_calibration",
+                ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+                session_context,
+            )
 
-        figures_dictionary = {}
+            figures_dictionary = {}
 
-        analysis.process_coupler(dataset, "q13_q14")
-        analysis.plotter(figures_dictionary)
+            analysis.process_coupler(dataset, "q13_q14")
+            analysis.plotter(figures_dictionary)
 
-        assert "q13_q14" in figures_dictionary
+            assert "q13_q14" in figures_dictionary
 
-        figure = figures_dictionary["q13_q14"][0]
+            figure = figures_dictionary["q13_q14"][0]
 
-        # axes are the (freq, duration) plots + figure title +
-        # figure x label + figure y label + global trend plot
-        assert len(figure.get_axes()) == dataset.working_points.size + 4
+            # axes are the (freq, duration) plots + figure title +
+            # figure x label + figure y label + global trend plot
+            assert len(figure.get_axes()) == dataset.working_points.size + 4

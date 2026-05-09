@@ -9,15 +9,12 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-import os
 import re
-from pathlib import Path
 
 import matplotlib
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
-from numpy import ndarray
 
 from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
@@ -25,8 +22,28 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
 )
 from tergite_tuner.utils.dto.qoi import QOI
 
+RES_COUPLER_QOIS = [
+    "control_resonator_crossing_points",
+    "target_resonator_crossing_points",
+]
+_COUPLER_CROSSINGS = [
+    # (coupler, q1_crossings, q2_crossings)
+    (
+        "q06_q07",
+        [-0.000425, 0.000675],
+        [-0.00025, 0.000525],
+    ),
+    (
+        "q08_q09",
+        [-0.0008, 0.00075],
+        [],
+    ),
+    ("q12_q13", [-0.000425, 0.000825], []),
+    ("q14_q15", [], [-0.00025, 0.000925]),
+]
 
-def test_CanCreate(session_context):
+
+def test_can_create_resonator_spec_vs_curr_coupler_analysis(session_context):
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
         "name", ["redis_field"], session=session_context
     )
@@ -35,7 +52,65 @@ def test_CanCreate(session_context):
     assert isinstance(a, BaseAnalysis)
 
 
-def getCrossingForQubit(qoi: QOI, qubit: str = "q06"):
+@pytest.mark.parametrize("coupler, q1_crossings, q2_crossings", _COUPLER_CROSSINGS)
+def test_get_crossings(
+    session_context,
+    redis_connection,
+    node_data_dir,
+    coupler,
+    q1_crossings,
+    q2_crossings,
+):
+    dataset_path = node_data_dir / "dataset_coupler_resonator_spectroscopy_0.hdf5"
+    q1, q2 = coupler.split("_")
+    with xr.open_dataset(dataset_path) as ds:
+        ds = xr.merge(ds[var] for var in [f"y{q1}", f"y{q2}"])
+        ds.attrs["coupler"] = coupler
+        a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+            "name",
+            RES_COUPLER_QOIS,
+            session_context,
+        )
+        qoi = a.process_coupler(ds, coupler)
+
+        q1_crossings = _get_crossing_for_qubit(qoi, q1)
+        q2_crossings = _get_crossing_for_qubit(qoi, q2)
+        assert q1_crossings == pytest.approx(q1_crossings, abs=1e-6)
+        assert q2_crossings == pytest.approx(q2_crossings, abs=1e-6)
+
+
+def test_coupler_plot_is_created(node_data_dir, session_context, redis_connection):
+    matplotlib.use("Agg")
+    dataset_path = node_data_dir / "dataset_coupler_resonator_spectroscopy_0.hdf5"
+    with xr.open_dataset(dataset_path) as ds:
+        coupler = "q06_q07"
+        ds = xr.merge(ds[var] for var in ["yq06", "yq07"])
+        ds.attrs["coupler"] = coupler
+        a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+            "name",
+            RES_COUPLER_QOIS,
+            session_context,
+        )
+        a.process_coupler(ds, coupler)
+
+        figure_path = node_data_dir / "name.png"
+        figure_path.unlink(missing_ok=True)
+
+        figures_dictionary = {}
+        a.plotter(figures_dictionary)
+        fig_list = figures_dictionary[coupler]
+        fig = fig_list[0]
+        fig.savefig(figure_path)
+        plt.close()
+
+        assert figure_path.exists()
+        from PIL import Image
+
+        with Image.open(figure_path) as img:
+            assert img.format == "PNG", "File should be a PNG image"
+
+
+def _get_crossing_for_qubit(qoi: QOI, qubit: str = "q06"):
     results = qoi.analysis_result
     qubit_number = int(re.sub("[^0-9]", "", qubit))
     if qubit_number % 2 == 0:
@@ -46,164 +121,3 @@ def getCrossingForQubit(qoi: QOI, qubit: str = "q06"):
         raise ValueError("Invalid qubit number")
     crossings = results[crossing_points]["value"]
     return crossings
-
-
-@pytest.fixture(autouse=False)
-def setup_q06_q07_data():
-    dataset_path = (
-        Path(__file__).parent / "data" / "dataset_coupler_resonator_spectroscopy_0.hdf5"
-    )
-    ds = xr.open_dataset(dataset_path)
-    coupler = "q06_q07"
-    ds = xr.merge(ds[var] for var in ["yq06", "yq07"])
-    ds.attrs["coupler"] = coupler
-    return ds, coupler
-
-
-res_coupler_qois = [
-    "control_resonator_crossing_points",
-    "target_resonator_crossing_points",
-]
-
-
-def test_get_crossings_for_q06_q07(
-    setup_q06_q07_data: tuple[xr.Dataset, str, ndarray, ndarray],
-    session_context,
-    redis_connection,
-):
-    ds, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name",
-        res_coupler_qois,
-        session_context,
-    )
-    qoi = a.process_coupler(ds, coupler)
-
-    q6_crossings = getCrossingForQubit(qoi, "q06")
-    q7_crossings = getCrossingForQubit(qoi, "q07")
-    assert q6_crossings == pytest.approx([-0.000425, 0.000675], abs=1e-6)
-    assert q7_crossings == pytest.approx([-0.00025, 0.000525], abs=1e-6)
-
-
-@pytest.fixture(autouse=False)
-def setup_q08_q09_data():
-    dataset_path = (
-        Path(__file__).parent / "data" / "dataset_coupler_resonator_spectroscopy_0.hdf5"
-    )
-    ds = xr.open_dataset(dataset_path)
-    coupler = "q08_q09"
-    ds = xr.merge(ds[var] for var in ["yq08", "yq09"])
-    ds.attrs["coupler"] = coupler
-    return ds, coupler
-
-
-def test_get_crossings_for_q08_q09(
-    setup_q08_q09_data: tuple[xr.Dataset, str, ndarray, ndarray],
-    session_context,
-    redis_connection,
-):
-    ds, coupler = setup_q08_q09_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name",
-        res_coupler_qois,
-        session_context,
-    )
-    qoi = a.process_coupler(ds, coupler)
-
-    q8_crossings = getCrossingForQubit(qoi, "q08")
-    q9_crossings = getCrossingForQubit(qoi, "q09")
-    assert q8_crossings == pytest.approx([-0.0008, 0.00075], abs=1e-6)
-    assert not q9_crossings
-
-
-@pytest.fixture(autouse=False)
-def setup_q12_q13_data():
-    dataset_path = (
-        Path(__file__).parent / "data" / "dataset_coupler_resonator_spectroscopy_0.hdf5"
-    )
-    ds = xr.open_dataset(dataset_path)
-    coupler = "q12_q13"
-    ds = xr.merge(ds[var] for var in ["yq12", "yq13"])
-    ds.attrs["coupler"] = coupler
-    return ds, coupler
-
-
-def test_get_crossings_for_q12_q13(
-    setup_q12_q13_data: tuple[xr.Dataset, str, ndarray, ndarray],
-    session_context,
-    redis_connection,
-):
-    ds, coupler = setup_q12_q13_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name",
-        res_coupler_qois,
-        session_context,
-    )
-    qoi = a.process_coupler(ds, coupler)
-
-    q12_crossings = getCrossingForQubit(qoi, "q12")
-    q13_crossings = getCrossingForQubit(qoi, "q13")
-    assert q12_crossings == pytest.approx([-0.000425, 0.000825], abs=1e-6)
-    assert not q13_crossings
-
-
-@pytest.fixture(autouse=False)
-def setup_q14_q15_data():
-    dataset_path = (
-        Path(__file__).parent / "data" / "dataset_coupler_resonator_spectroscopy_0.hdf5"
-    )
-    ds = xr.open_dataset(dataset_path)
-    coupler = "q14_q15"
-    ds = xr.merge(ds[var] for var in ["yq14", "yq15"])
-    ds.attrs["coupler"] = coupler
-    return ds, coupler
-
-
-def test_get_crossings_for_q14_q15(
-    setup_q14_q15_data: tuple[xr.Dataset, str, ndarray, ndarray],
-    session_context,
-    redis_connection,
-):
-    ds, coupler = setup_q14_q15_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name",
-        res_coupler_qois,
-        session_context,
-    )
-    qoi = a.process_coupler(ds, coupler)
-
-    q14_crossings = getCrossingForQubit(qoi, "q14")
-    q15_crossings = getCrossingForQubit(qoi, "q15")
-    assert not q14_crossings
-    assert q15_crossings == pytest.approx([-0.00025, 0.000925], abs=1e-6)
-
-
-def test_coupler_plot_is_created(setup_q06_q07_data, session_context, redis_connection):
-    matplotlib.use("Agg")
-    ds, coupler = setup_q06_q07_data
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name",
-        res_coupler_qois,
-        session_context,
-    )
-    a.process_coupler(ds, coupler)
-
-    figure_path = session_context.data_dir / "name.png"
-    # Remove the file if it already exists
-    if os.path.exists(figure_path):
-        os.remove(figure_path)
-
-    figures_dictionary = {}
-    a.plotter(figures_dictionary)
-    fig_list = figures_dictionary[coupler]
-    fig = fig_list[0]
-    fig.savefig(figure_path)
-    plt.close()
-    try:
-        assert figure_path.exists()
-        from PIL import Image
-
-        with Image.open(figure_path) as img:
-            assert img.format == "PNG", "File should be a PNG image"
-    finally:
-        figure_path.unlink(missing_ok=True)

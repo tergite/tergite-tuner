@@ -26,17 +26,17 @@ from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node impor
 from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 
-_test_data_dir = os.path.join(Path(__file__).parent, "data")
-_redis_values_path = os.path.join(_test_data_dir, "redis-2026-03-10-21-33-32.json")
+_REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
 
 
-def test_align_cliffords(redis_connection, session_context):
+def test_align_cliffords(redis_connection, session_context, node_data_dir):
     """
     Test whether the one_by_one or parallel schedule_keyword is
     correctly applied. Node that it would be safer to test compiled
     schedule durations, but this would require a mocj hardware config
     """
-    with loaded_redis(redis_connection, _redis_values_path):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q11", "q12", "q13", "q14", "q15"]
         couplers = ["q14_q15"]

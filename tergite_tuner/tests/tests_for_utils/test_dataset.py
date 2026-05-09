@@ -54,7 +54,7 @@ def test_scrape_and_copy_hdf5_files(tmp_path):
     assert os.path.exists(target_directory)
 
     n_copied_files = os.listdir(target_directory)
-    assert len(n_copied_files) == 15
+    assert len(n_copied_files) == 4
 
 
 def test_is_run_folder():
@@ -77,7 +77,7 @@ def test_is_measurement_folder():
     measurement_folders = set(
         filter(lambda m: ra_utils.is_measurement_folder(m), run_dir.iterdir())
     )
-    assert len(measurement_folders) == 15
+    assert len(measurement_folders) == 4
     measurement_folders = set(map(lambda m: m.name, measurement_folders))
 
     assert measurement_folders == {
@@ -85,17 +85,6 @@ def test_is_measurement_folder():
         "20250728-165142-378-6c2eaa-qubit_01_spectroscopy",
         "20250728-165219-145-8960cd-rabi_oscillations",
         "20250728-165237-029-8e7bcc-ramsey_correction",
-        "20250728-165346-613-912106-motzoi_parameter",
-        "20250728-165426-836-fc0537-n_rabi_oscillations",
-        "20250728-165458-851-fa4816-resonator_spectroscopy_1",
-        "20250728-165524-927-753fdf-qubit_12_spectroscopy",
-        "20250728-165602-013-a5fc29-rabi_oscillations_12",
-        "20250728-165620-147-1dfae4-ramsey_correction_12",
-        "20250728-165730-657-d5eed8-motzoi_parameter_12",
-        "20250728-165807-020-2a9930-n_rabi_oscillations_12",
-        "20250728-165843-459-edbc8e-resonator_spectroscopy_2",
-        "20250728-165910-014-f02261-ro_frequency_three_state_optimization",
-        "20250728-170030-376-c25885-ro_amplitude_three_state_optimization",
     }
 
 
@@ -106,9 +95,14 @@ def test_save_dataset(tmp_path, session_context):
     )
     dummy_raw_dataset = node.generate_dummy_dataset()
     result_dataset = node.configure_dataset(dummy_raw_dataset)
-    save_dataset(result_dataset, "resonator_spectroscopy", tmp_path)
+    name = "resonator_spectroscopy"
+    results_file = tmp_path / f"dataset_{name}.hdf5"
 
-    assert os.path.exists(os.path.join(tmp_path, "dataset_resonator_spectroscopy.hdf5"))
+    try:
+        save_dataset(result_dataset, name, tmp_path)
+        assert results_file.exists()
+    finally:
+        results_file.unlink(missing_ok=True)
 
 
 def test_save_dataset_with_working_points(tmp_path, redis_connection, session_context):
@@ -143,11 +137,20 @@ def test_save_dataset_with_working_points(tmp_path, redis_connection, session_co
             [result_dataset_1, result_dataset_2], join="outer", compat="no_conflicts"
         )
 
-        save_dataset(result_dataset, "cz_calibration", tmp_path)
-        save_path = os.path.join(tmp_path, "dataset_cz_calibration.hdf5")
-        assert os.path.exists(save_path)
+        name = "cz_calibration"
+        save_path = tmp_path / f"dataset_{name}.hdf5"
+        loaded_dataset = None
 
-        loaded_dataset = xr.open_dataset(save_path)
-        assert "working_points" in loaded_dataset
-        assert "l1" in loaded_dataset
-        assert "l2" in loaded_dataset
+        try:
+            save_dataset(result_dataset, name, tmp_path)
+            assert save_path.exists()
+
+            loaded_dataset = xr.open_dataset(save_path)
+            loaded_dataset.close()
+            assert "working_points" in loaded_dataset
+            assert "l1" in loaded_dataset
+            assert "l2" in loaded_dataset
+        finally:
+            save_path.unlink(missing_ok=True)
+            if loaded_dataset:
+                loaded_dataset.close()

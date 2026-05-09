@@ -34,11 +34,17 @@ import numpy as np
 import pytest
 
 from tergite_tuner.config.session import SessionContext
-from tergite_tuner.tests.utils.fixtures import get_fixture_path
+from tergite_tuner.tests.utils.fixtures import get_fixture_path, load_fixture
+from tergite_tuner.tests.utils.redis_backup import (
+    dump_redis,
+    load_json_to_redis,
+    load_redis,
+)
 from tergite_tuner.utils.dto.enums import MeasurementMode
 
 _FIXTURE_CONFIGS_DIR = Path(get_fixture_path("configs"))
 _PROJECT_ROOT = Path(__file__).parent
+_SINGLE_RUN_REDIS_JSON = load_fixture("redis/single-run-redis-data.json")
 
 
 @pytest.fixture(autouse=True)
@@ -87,3 +93,37 @@ def session_context(redis_connection) -> SessionContext:
         fixed_duration_qubits=("q12",),
         save_plot=False,
     )
+
+
+@pytest.fixture
+def node_data_dir(request):
+    """
+    Returns the 'data' directory located in the same parent
+    folder as the current test file.
+    """
+    data_dir = request.path.parent / "data"
+    initial_files = set(data_dir.iterdir())
+
+    if not data_dir.is_dir():
+        pytest.fail(f"Expected data directory not found at: {data_dir}")
+
+    yield data_dir
+
+    current_files = set(data_dir.iterdir())
+    new_files = current_files - initial_files
+
+    for file in new_files:
+        file.unlink(missing_ok=True)
+
+
+@pytest.fixture
+def seeded_redis(redis_connection):
+    """Redis connection with seed data"""
+    redis_backup = dump_redis(redis_connection)
+    redis_connection.flushall()
+    load_redis(_SINGLE_RUN_REDIS_JSON, redis_connection)
+    try:
+        yield redis_connection
+    finally:
+        redis_connection.flushall()
+        load_redis(redis_backup, redis_connection)
