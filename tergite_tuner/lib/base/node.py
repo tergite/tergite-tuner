@@ -531,7 +531,9 @@ class CouplerNode(BaseNode):
                 for k, v in redis_data["couplers"].items()
             }
         except KeyError as e:
-            logger.warning(f"Some couplers control and target qubits are missing: {redis_data}")
+            logger.warning(
+                f"Some couplers control and target qubits are missing: {redis_data}"
+            )
             raise e
 
     def validate(self) -> None:

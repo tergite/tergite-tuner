@@ -42,7 +42,7 @@ _FIXTURE_DEVICE_UNDER_TEST_DIR = get_fixture_path(
     "templates",
     "default_device_under_test",
 )
-_FIXTURE_CONFIG_PATH = Path(_FIXTURE_DEVICE_UNDER_TEST_DIR).resolve()
+_FIXTURE_CONFIG_PATH = Path(_FIXTURE_DEVICE_UNDER_TEST_DIR).resolve() / "configs"
 _PROJECT_ROOT = Path(__file__).parent
 
 

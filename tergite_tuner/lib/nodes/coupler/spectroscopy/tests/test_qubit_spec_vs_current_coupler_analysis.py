@@ -243,18 +243,19 @@ def test_get_crossings_for_q14_q15(
 def test_coupler_plot_is_created(setup_q06_q07_data, session_context):
     matplotlib.use("Agg")
     ds_res, ds_qu, coupler = setup_q06_q07_data
+    name = "resonator_spectroscopy_vs_current"
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current",
+        name,
         res_coupler_qois,
         session_context,
     )
     qoi = a.process_coupler(ds_res, coupler)
-    update_redis_trusted_values(
-        "resonator_spectroscopy_vs_current",
-        coupler,
-        session_context.redis,
-        qoi,
-        res_coupler_qois,
+    redis_value = qoi_to_redis_record(qoi, redis_fields=res_coupler_qois)
+    session_context.redis_store.save_many(
+        {
+            "couplers": {coupler: {name: redis_value}},
+            "cs": {coupler: {name: "calibrated"}},
+        }
     )
 
     b = CouplerAnticrossingAnalysis(
