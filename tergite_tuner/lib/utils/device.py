@@ -12,14 +12,18 @@
 # that they have been altered from the originals.
 
 import json
+from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.json_utils import SchedulerJSONEncoder
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
-from tergite_tuner.lib.utils.redis import load_redis_config, load_redis_config_coupler
-from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.storage.redis import RedisStore
+from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types import extended_transmon
+from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -33,15 +37,14 @@ def configure_device(
 ) -> QuantumDevice:
     device = QuantumDevice(name)
     for channel, qubit in enumerate(qubits):
-        transmon = ExtendedTransmon(qubit)
-        transmon = load_redis_config(transmon, channel, session.redis)
+        transmon = _load_transmon_from_redis(
+            session.redis_store, qubit=qubit, channel=channel
+        )
         device.add_element(transmon)
 
     if couplers is not None:
         for coupler in couplers:
-            control, target = coupler.split(sep="_")
-            edge = ExtendedCompositeSquareEdge(control, target)
-            edge = load_redis_config_coupler(edge, session.redis)
+            edge = _load_coupler_from_redis(session.redis_store, coupler=coupler)
             device.add_edge(edge)
 
     device.hardware_config(session.cluster_config)
@@ -83,6 +86,112 @@ def save_serial_device(device: QuantumDevice, data_path: str) -> None:
         serial_config = json.loads(element_config)
         serial_device[element] = serial_config
 
-    data_path.mkdir(parents=True, exist_ok=True)
+    Path(data_path).mkdir(parents=True, exist_ok=True)
     with open(f"{data_path}/{name}.json", "w") as f:
         json.dump(serial_device, f, indent=4)
+
+
+def _load_transmon_from_redis(
+    redis_store: RedisStore,
+    qubit: str,
+    channel: int,
+) -> ExtendedTransmon:
+    """Initializes the transmon using data from redis
+
+    Args:
+        redis_store: the Redis store
+        qubit: the qubit name
+        channel: the channel number
+
+    Returns:
+        the ExtendedTransmon instance as loaded from redis
+    """
+    transmon = ExtendedTransmon(qubit)
+    redis_data = {}
+    with suppress(KeyError):
+        # ignore if key does not exist
+        redis_data = redis_store.find_one(collection="transmons", pk=qubit)
+
+    # Transmon config is the one that is in the nested dicts
+    transmon_redis_config = {k: v for k, v in redis_data.items() if isinstance(v, dict)}
+
+    # get the transmon template in dictionary form
+    serialized_transmon = json.dumps(transmon, cls=SchedulerJSONEncoder)
+    decoded_transmon = json.loads(serialized_transmon)
+    decoded_transmon["name"] = qubit
+
+    for k, v in decoded_transmon["data"].items():
+        if isinstance(v, dict) and k in transmon_redis_config:
+            v.update(transmon_redis_config[k])
+        if "measure" in k:
+            v.update({"acq_channel": channel})
+
+    encoded_transmon = json.dumps(decoded_transmon)
+
+    # free the transmon
+    transmon.close()
+
+    # create a transmon with the same name but with updated config
+    transmon = json.loads(
+        encoded_transmon, cls=SchedulerJSONDecoder, modules=[extended_transmon]
+    )
+
+    return transmon
+
+
+def _load_coupler_from_redis(
+    redis_store: RedisStore, coupler: str
+) -> ExtendedCompositeSquareEdge:
+    """Loads the coupler from redis store
+
+    Args:
+        coupler: the coupler name of format qXX_qXX
+        redis_store: the RedisStore instance
+
+    Returns:
+        the ExtendedCompositeSquareEdge instance
+    """
+    control, target = coupler.split(sep="_")
+    coupler_edge = ExtendedCompositeSquareEdge(
+        parent_element_name=control, child_element_name=target
+    )
+    redis_data = {}
+    with suppress(KeyError):
+        # ignore if the key does not exist
+        redis_data = redis_store.find_one(collection="couplers", pk=coupler)
+
+    attrs_map = {
+        "cz_pulse_frequency": coupler_edge.clock_freqs.cz_freq,
+        "cz_pulse_amplitude": coupler_edge.cz.square_amp,
+        "cz_pulse_duration": coupler_edge.cz.square_duration,
+        "cz_half_duration": coupler_edge.cz.half_square_duration,
+        "cz_pulse_width": coupler_edge.cz.cz_width,
+        "parking_current": coupler_edge.coupler_parameters.parking_current,
+        "initial_parking_current": coupler_edge.coupler_parameters.parking_current,
+        "cz_phase_path": coupler_edge.coupler_parameters.phase_path,
+    }
+
+    for k, param in attrs_map.items():
+        try:
+            param(redis_data[k])
+        except (KeyError, TypeError):
+            logger.warning(
+                f"{k} is not present in redis. Ignore this for single qubit nodes"
+            )
+
+    try:
+        if control == redis_data["target_qubit"]:
+            logger.info(f"Reading Target Qubit from Redis: {control}")
+            coupler_edge.cz.parent_phase_correction(redis_data["cz_dynamic_target"])
+            coupler_edge.cz.child_phase_correction(redis_data["cz_dynamic_control"])
+
+        elif control == redis_data["control_qubit"]:
+            logger.info(f"Reading Control Qubit from Redis: {control}")
+            coupler_edge.cz.parent_phase_correction(redis_data["cz_dynamic_control"])
+            coupler_edge.cz.child_phase_correction(redis_data["cz_dynamic_target"])
+        else:
+            raise ValueError("Control - Target types not defined")
+    except (KeyError, ValueError, TypeError):
+        logger.warning("Invalid Control and Target")
+
+    return coupler_edge

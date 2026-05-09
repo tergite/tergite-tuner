@@ -74,7 +74,7 @@ On top of having a `.env` file, more configuration files maybe required.
 
 ### Public API
 
-The library exposes three entry points from
+The library exposes the following entry points from
 `tergite_tuner.__init__`:
 
 ```python
@@ -82,39 +82,112 @@ from tergite_tuner import (
     tune_device,
     reanalyse,
     extract_bcc_params,
+    run_node,
+    read_session_result,
 )
 ```
 
 #### Run the full calibration pipeline
 
 ```python
-from tergite_tuner import tune_device
+from tergite_tuner import tune_device, read_session_result
 from tergite_tuner.lib.nodes import NodeEnum
 
 # Use a .env file as the only source of configuration
-tune_device(env_file=".env")
+_, results = tune_device(env_file=".env")
 
 # Or override individual SessionContext fields inline
-tune_device(
+session, results = tune_device(
     env_file=".env",
     target_node=NodeEnum.RABI_OSCILLATIONS,
     qubits=["q00", "q01"],
     couplers=["q00_q01"],
 )
+
+# you can even pass a session from before or construct it yourself with 
+# SessionContext.from_env()
+tune_device(session=session, refresh_session=False)
+
+# if you disabled session-refresh, you can read all results on 
+# that session at once
+results = read_session_result(session)
 ```
 
 `tune_device` constructs a `SessionContext`, walks the dependency
 DAG up to `target_node`, and calibrates any nodes that are not yet
 in spec.
 
+#### Recalibrate the device
+
+First ensure your `device_config.toml` has the latest device values or if you have already run the tuneup using the 
+same redis database, the old values should still be there so have a `device_config.toml` without initial values.  
+Note that this may mean you have two `device_config.toml`'s, one for the first run and the other for subsequent runs.  
+Do the same with `node_config.toml`.  
+
+```python
+from tergite_tuner import tune_device, NodeEnum
+
+# Use a .env file as the only source of configuration
+_, results = tune_device(env_file=".env")
+
+# Or override individual SessionContext fields inline
+session, results = tune_device(
+    env_file=".env",
+    target_node=NodeEnum.RABI_OSCILLATIONS,
+    qubits=["q00", "q01"],
+    couplers=["q00_q01"],
+    is_recalibration=True,
+)
+
+# you can even pass a session from before or construct it yourself with 
+# SessionContext.from_env()
+_, results = tune_device(session=session, refresh_session=False)
+
+# you could clear up all the data files after the run
+_, results = tune_device(
+    session=session, refresh_session=False, keep_data_files=False)
+```
+
+#### Run one node
+
+```python
+from tergite_tuner import run_node, NodeEnum, read_session_result
+
+# Use a .env file as the only source of configuration
+session, results = run_node(
+    env_file=".env", node=NodeEnum.QUBIT_01_SPECTROSCOPY)
+
+# Or override individual SessionContext fields inline
+_, results = run_node(
+    env_file=".env",
+    qubits=["q00", "q01"],
+    couplers=["q00_q01"],
+    node=NodeEnum.QUBIT_01_SPECTROSCOPY
+)
+
+# you can even pass a session from before or construct it yourself with 
+# SessionContext.from_env()
+run_node(
+    node=NodeEnum.QUBIT_01_SPECTROSCOPY, session=session, refresh_session=False)
+
+# if you disabled session-refresh, you can read all results on 
+# that session at once
+results = read_session_result(session)
+
+# you could clear up all the data files after the run
+_, results = run_node(
+    session=session, refresh_session=False, keep_data_files=False)
+```
+
 #### Re-run analysis on already-recorded data
 
 ```python
+from pathlib import Path
 from tergite_tuner import reanalyse
 
-reanalyse(
+_, results = reanalyse(
     env_file=".env",
-    log_dir="path/to/run/folder",
+    log_dir=Path("path/to/run/folder"),
 )
 ```
 
@@ -126,10 +199,10 @@ from tergite_tuner import extract_bcc_params
 # Reads qubits / couplers / redis_url from the .env file. Returns a
 # dict by default; pass ``format="json"`` or ``format="toml"`` to get
 # a serialised string.
-bcc_params_1 = extract_bcc_params(env_file=".env")
+bcc_params = extract_bcc_params(env_file=".env")
 
 # Or override individual SessionContext fields inline:
-bcc_params_2 = extract_bcc_params(
+bcc_params = extract_bcc_params(
     qubits=["q00", "q01"],
     couplers=["q00_q01"],
     redis_url="redis://127.0.0.1:6379/0",

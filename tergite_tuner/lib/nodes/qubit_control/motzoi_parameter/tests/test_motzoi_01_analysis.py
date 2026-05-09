@@ -11,37 +11,29 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
 
 import numpy as np
 import pytest
 import xarray as xr
 
+from conftest import session_context
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.analysis import (
     Motzoi01NodeAnalysis,
     Motzoi01QubitAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
-
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
-)
-_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-def test_motzoi_parameter(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        name = "motzoi_parameter"
-        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-        full_dataset = xr.open_dataset(file_path)
+def test_motzoi_parameter(seeded_redis, session_context, node_data_dir):
+    name = "motzoi_parameter"
+    file_path = node_data_dir / f"dataset_motzoi_parameter.hdf5"
+    with xr.open_dataset(file_path) as full_dataset:
         qubit_qois = ["rxy:motzoi"]
 
         ds_13 = filter_ds_by_element(full_dataset, "q13")
         ds_15 = filter_ds_by_element(full_dataset, "q15")
 
-        analysis = Motzoi01QubitAnalysis(name, qubit_qois)
+        analysis = Motzoi01QubitAnalysis(name, qubit_qois, session=session_context)
         s21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
         analysis.magnitudes = np.abs(s21)
         analysis.data_var = "yq13"
@@ -61,3 +53,19 @@ def test_motzoi_parameter(redis_connection, session_context):
 
         assert qoi.analysis_successful
         assert pytest.approx(motzoi_01) == -0.0923076923077
+
+
+def test_plotting(seeded_redis, session_context, node_data_dir):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    with save_plot=True
+    """
+    name = "motzoi_parameter"
+    qubit_qois = ["rxy:motzoi"]
+
+    analysis = Motzoi01NodeAnalysis(name, qubit_qois, session=session_context)
+    analysis.analyze_node(node_data_dir, save_plot=True)
+    assert hasattr(analysis, "fig")
+    number_of_qubits = len(analysis.dataset.attrs["elements"])
+
+    assert analysis.axs.shape == (1, number_of_qubits)

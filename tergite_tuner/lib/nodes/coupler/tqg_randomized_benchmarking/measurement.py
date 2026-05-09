@@ -33,10 +33,10 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomize
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
-from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.dto.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
+from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 # Constants
 IDLE_TIME = 12e-9

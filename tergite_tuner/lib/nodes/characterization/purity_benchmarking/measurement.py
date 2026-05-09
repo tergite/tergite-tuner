@@ -19,9 +19,9 @@ from quantify_scheduler.operations.gate_library import X90, H, Measure, Reset, R
 from quantify_scheduler.operations.pulse_library import DRAGPulse
 from quantify_scheduler.schedules.schedule import Schedule
 
-import tergite_tuner.utils.clifford_elements_decomposition as cliffords
+import tergite_tuner.utils.cliffords as cliffords
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class PurityBenchmarkingMeasurement(BaseMeasurement):

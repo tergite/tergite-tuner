@@ -22,9 +22,9 @@ from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import LoopOperation
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.dto.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.dto.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
+from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class CZLocalPhasesMeasurement(BaseMeasurement):
@@ -98,6 +98,8 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
 
                         shot.add(X90(target_qubit), ref_op=starting_op)
 
+                        shot.add(IdlePulse(4e-9))
+
                         if gate_mode:
                             shot.add(
                                 SoftSquarePulse(
@@ -109,6 +111,8 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
                             )
                         else:
                             shot.add(IdlePulse(cz_duration))
+
+                        shot.add(IdlePulse(4e-9))
 
                         final = shot.add(
                             Rxy(theta=90, phi=local_phase, qubit=target_qubit)

@@ -9,8 +9,14 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Added
 
+- Added the `read_session_results` function to the entry point
+- Added `keep_data_files` and `refresh_session` params to the entry point
+  functions of `tune_device`, `reanalyse` and `run_node`
+- Added the `is_recalibration` (`IS_RECALIBRATION`) SessionContext flag 
+  to disable certain operations that would be destructive in a recalibration
+- Added `run_node` function for running only a single calibration node.
 - Public API exported from `tergite_tuner.__init__`:
-  `tune_device`, `re_analyse`, and
+  `tune_device`, `reanalyse`, `run_node` and
   `extract_bcc_params`. The first two replace the old
   `CalibrationSupervisor` class and accept an env-file path plus
   arbitrary `SessionContext` field overrides as kwargs.
@@ -35,9 +41,15 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   | "toml"` and an optional `output` path. The seed shape is now a
   pydantic model (`CalibrationSeed`) with the static unit labels as
   field defaults.
+- Added `examples` folder
+- Added `FIXED_DURATION_QUBITS` env variable for setting qubits with
+  fixed duration working points for CZ calibration
+- Added back the `Rx_12` gate in the `extended_gates` module
 
 ### Changed
 
+- Changed the storage to use `RedisStore`, a wrapper around redis
+  which puts the data persistence code in one layer
 - Enabled passing the node_dag_edges, ignored_nodes and node_cls_map 
   as arguments in the entry point functions, defaulting to the 
   constants `DEFAULT_IGNORED_NODES`, `DEFAULT_NODE_CLS_MAP`,
@@ -70,6 +82,11 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
   `EXCLUDED_NODES` / `filtered_topological_order` deleted.
 - `conftest.py` moved to the repository root so it is no longer
   shipped with the built wheel.
+- Made `session: SessionContext` arg on Analysis classes mandatory
+- Removed the `data` folder in the lib directory
+- Moved data files of nodes to their individual folders
+- Moved redis to the `storage` pacakge
+- Renamed `io` utils to `fs` and moved it to the storage package
 
 ### Removed
 
@@ -87,6 +104,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - `process_tomography` from the canonical class map until the missing
   `Rxy_12` extended-gate import is restored; its `NodeEnum` member
   remains but no class is registered.
+- Removed `decorators` and `helpers` that are no longer used in the actual code (vs in tests)
 
 ## [2026.03.0] - 2026-03-06
 

@@ -16,13 +16,13 @@ import pytest
 
 from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
-from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
-from tergite_tuner.utils.measurement_utils import (
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.measurement import (
     reduce_samplespace,
     samplespace_dimensions,
 )
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
 _node_names = list(DEFAULT_NODE_NAME_CLS_MAP.keys())

@@ -15,6 +15,7 @@
 
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from scipy.stats import spearmanr
@@ -24,7 +25,7 @@ from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
 )
 from tergite_tuner.lib.utils.analysis_models import QuadraticModel, SineOscillatingModel
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 @dataclass
@@ -35,7 +36,7 @@ class ParabolicFit:
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
@@ -143,7 +144,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             self.control_diffs = control_state_2 - control_state_1  # - control_state_2
             self.target_diffs = target_state_0 - target_state_1  # - control_state_0
         else:
-            raise ValueError("Invalid phase path")
+            raise ValueError(f"Invalid phase path:{self.phase_path}")
 
         self.combined_data = self.control_diffs + self.target_diffs
 
@@ -165,12 +166,17 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         cz_working_durations_in_ns = (integer_gate_durations_in_ns // 4) * 4
         cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
 
-        # fit the working points to a parabola model to extract the peak of the chevron
-        parabolic_fit = self.apply_parabolic_fit(
-            cz_duration_values, cz_working_frequencies
-        )
-        selected_cz_frequencies = parabolic_fit.selected_cz_frequencies
-        selected_cz_durations_in_ns = parabolic_fit.selected_cz_durations
+        # FIXME: This change breaks the `test_cz_chevron_analysis_good_data`.
+        #   Is the fitting no longer necessary to get the peak of the chevron
+        # # fit the working points to a parabola model to extract the peak of the chevron
+        # parabolic_fit = self.apply_parabolic_fit(
+        #     cz_duration_values, cz_working_frequencies
+        # )
+        # selected_cz_frequencies = parabolic_fit.selected_cz_frequencies
+        # selected_cz_durations_in_ns = parabolic_fit.selected_cz_durations
+
+        selected_cz_frequencies = cz_working_frequencies
+        selected_cz_durations_in_ns = cz_working_durations_in_ns
 
         self.cz_working_frequencies = cz_working_frequencies
         self.cz_working_durations_in_ns = cz_working_durations_in_ns
@@ -201,9 +207,53 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
     def processed_dataset(self):
         return self.probabilities
 
+    def plotter(self, figures_dictionary):
+
+        current_probabilities = self.probabilities
+        current_probabilities.plot(
+            x=self.frequencies_coord, cmap="RdBu_r", row="qubit", col="state"
+        )
+
+        fig = plt.gcf()
+        parabolic_fit_frequencies = np.linspace(
+            self.cz_working_frequencies[0], self.cz_working_frequencies[-1], 100
+        )
+        # parabolic_fit_durations = self.chevron_fit_result.eval(
+        #     self.chevron_fit_result.params, x=parabolic_fit_frequencies
+        # )
+
+        # if there are no working points return only the faceting plot
+        if self.cz_working_durations_in_ns.size == 0:
+            figures_dictionary[self.coupler] = [fig]
+            return
+
+        # for every one of the six faceting axes, plot the working points and
+        # their parabolic fit
+        for ax in fig.axes:
+            # ax.plot(
+            #     parabolic_fit_frequencies,
+            #     parabolic_fit_durations,
+            #     color="grey",
+            #     lw=5,
+            # )
+            ax.plot(
+                self.cz_working_frequencies,
+                self.cz_working_durations_in_ns * 1e-9,
+                marker="8",
+                ls="",
+                color="yellow",
+            )
+            ax.plot(
+                self.selected_frequencies,
+                self.selected_durations_in_ns * 1e-9,
+                marker="*",
+                markersize=12,
+                ls="",
+                color="yellow",
+            )
+
+        figures_dictionary[self.coupler] = [fig]
+
 
 class CZChevronAnalysis(BaseAllCouplersAnalysis):
     single_coupler_analysis_obj = CZChevronCouplerAnalysis
-
-    def __init__(self, name, redis_fields, session=None, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)

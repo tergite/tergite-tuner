@@ -13,7 +13,9 @@
 from tergite_tuner.lib.nodes.readout.punchout.analysis import PunchoutNodeAnalysis
 
 
-def test_InitSetDataMember():
-    node_analysis = PunchoutNodeAnalysis("name", ["measure:pulse_amp"])
+def test_init_set_data_member(session_context):
+    node_analysis = PunchoutNodeAnalysis(
+        "name", ["measure:pulse_amp"], session=session_context
+    )
     assert node_analysis.name == "name"
     assert node_analysis.redis_fields == ["measure:pulse_amp"]

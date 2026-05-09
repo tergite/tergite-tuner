@@ -16,9 +16,12 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import os
+import shutil
 from os import PathLike
+from pathlib import Path
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Union, Unpack
+from typing import FrozenSet, List, Optional, Tuple, Union, Unpack
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -29,18 +32,18 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
-from tergite_tuner.utils.backend.redis_utils import (
+from tergite_tuner.storage.fs.dataset import create_node_data_path
+from tergite_tuner.storage.redis import QueryOptions, RedisStoreQueryResult
+from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
-    populate_quantities_of_interest,
     revert_node_parameters,
 )
-from tergite_tuner.utils.dto.enums import DataStatus, MeasurementMode
-from tergite_tuner.utils.dto.node_enum import NodeEnum
 from tergite_tuner.utils.hardware.spi import SpiDAC
-from tergite_tuner.utils.io.dataset import create_node_data_path
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
+from tergite_tuner.utils.types.enums import DataStatus, MeasurementMode, SPIMode
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
 class HardwareManager:
@@ -48,14 +51,14 @@ class HardwareManager:
     Manages hardware setup, including initializing clusters and instrument coordinators.
     """
 
-    def __init__(self, config: "SessionContext") -> None:
+    def __init__(self, session: "SessionContext") -> None:
         # Store the configuration settings and initialize the instrument coordinator
-        self.config = config
+        self.session = session
         self.lab_ic: Optional[InstrumentCoordinator] = None
         logger.info("Initializing Hardware")
 
         # Check if hardware setup is necessary based on measurement mode
-        if self.config.cluster_mode == MeasurementMode.re_analyse:
+        if self.session.cluster_mode == MeasurementMode.re_analyse:
             # In re-analysis mode, measurements are not needed, so no hardware setup is performed
             logger.info(
                 "Cluster will not be defined as there is no need to take a measurement in re-analysis mode."
@@ -70,15 +73,15 @@ class HardwareManager:
         Creates and initializes a Cluster object to represent the hardware cluster
         based on the given IP address in the configuration.
         """
-        cluster_name = list(self.config.cluster_config.hardware_description.keys())[0]
+        cluster_name = list(self.session.cluster_config.hardware_description.keys())[0]
         cluster: "Cluster"
-        if self.config.cluster_mode == MeasurementMode.real:
+        if self.session.cluster_mode == MeasurementMode.real:
             # Ensure all previous connections are closed before creating a new cluster instance
             Cluster.close_all()
 
             try:
                 # Create a new cluster instance using the specified cluster name and IP address
-                cluster = Cluster(cluster_name, str(self.config.cluster_ip))
+                cluster = Cluster(cluster_name, str(self.session.cluster_ip))
             except ConnectionRefusedError:
                 msg = "Cluster is disconnected. Maybe it has crushed? Try flick it off and on"
                 logger.status("-" * len(msg))
@@ -86,10 +89,12 @@ class HardwareManager:
                 logger.status("-" * len(msg))
                 quit()
 
-            logger.status(
-                f" \n⚠ Resetting Cluster at IP *{str(self.config.cluster_ip)[-3:]}\n"
-            )
-            cluster.reset()  # Reset the cluster to a default state for consistency
+            # don't reset cluster when doing recalibration
+            if not self.session.is_recalibration:
+                cluster.reset()  # Reset the cluster to a default state for consistency
+                logger.status(
+                    f" \n⚠ Resetting Cluster at IP *{str(self.session.cluster_ip)[-3:]}\n"
+                )
             return cluster
         else:
             Cluster.close_all()
@@ -113,12 +118,12 @@ class HardwareManager:
 
         # Load attenuation settings for entire system (possibly across multiple clusters)
         output_attenuation_settings = (
-            self.config.device_config.get_output_attenuations()
+            self.session.device_config.get_output_attenuations()
         )
         connectivity = MappingProxyType(
             {
                 str(n): frozenset(neigh.keys())
-                for n, neigh in self.config.cluster_config.connectivity.graph.adj.items()
+                for n, neigh in self.session.cluster_config.connectivity.graph.adj.items()
             }
         )
 
@@ -132,12 +137,12 @@ class HardwareManager:
 
             # Add the configured cluster to the instrument coordinator and set a timeout
             lab_ic.add_component(ClusterComponent(cluster))
-            lab_ic.timeout(self.config.cluster_timeout)
+            lab_ic.timeout(self.session.cluster_timeout)
 
         return lab_ic
 
     def create_spi(self, couplers) -> SpiDAC:
-        return SpiDAC(couplers, self.config)
+        return SpiDAC(couplers, self.session)
 
     def get_instrument_coordinator(self):
         """Access the instrument coordinator for use by other classes."""
@@ -181,18 +186,13 @@ class NodeManager:
         )
         return order + [target_node]
 
-    def inspect_node(self, node: NodeEnum, *, ignore_spec: bool = False):
+    def inspect_node(
+        self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False
+    ):
         node_cls = self.node_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
-
-        populate_quantities_of_interest(
-            node_cls,
-            node_name,
-            self.session.qubits,
-            self.session.couplers,
-            self.session.redis,
-        )
+        node_cls.persist_qois(self.session, node_name=node_name)
 
         # Check Redis if node is calibrated
         if ignore_spec:
@@ -214,7 +214,7 @@ class NodeManager:
             logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
 
             # Initialize node and update samplespace
-            calibration_node = self._initialize_node(node)
+            calibration_node = self.initialize_node(node)
             logger.info(f"Calibrating node {calibration_node.name}")
 
             data_path = self.session.log_dir
@@ -228,11 +228,13 @@ class NodeManager:
                 )
 
             # Perform calibration
-            calibration_node.calibrate(data_path, self.session.cluster_mode)
+            calibration_node.calibrate(data_path, self.session.cluster_mode, save_plot)
 
-        revert_node_parameters(node_name, self.session)
+        # if we are in recalibration, we should not revert node parameters
+        if not self.session.is_recalibration:
+            revert_node_parameters(self.session, node_name=node_name)
 
-    def _initialize_node(self, node: NodeEnum) -> BaseNode:
+    def initialize_node(self, node: NodeEnum) -> BaseNode:
         """Initializes a node and updates it with user-defined samplespace if available."""
         node_cls = self.node_cls_map[node]
         node_obj = node_cls(
@@ -291,10 +293,46 @@ class NodeManager:
         return
 
 
+def run_node(
+    node: NodeEnum,
+    env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    session: Optional[SessionContext] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
+    **session_options: Unpack[SessionOptions],
+) -> Tuple[SessionContext, RedisStoreQueryResult]:
+    """Run only one node in the calibration sequence
+
+    Args:
+        node: The calibration node to run
+        env_file: Optional environment file to use
+        session: Optional session context to use
+        refresh_session: whether to refresh the session context before running; defaults to True.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
+        **session_options: Optional session options
+            See `<tergite_tuner.config.session.SessionContext>`_ for details.
+
+    Returns:
+        the session context and the results from that session
+    """
+    if session is None:
+        session = SessionContext.from_env(env_file, **session_options)
+    _tune(
+        session,
+        node=node,
+        refresh_session=refresh_session,
+        keep_data_files=keep_data_files,
+    )
+    return session, read_session_result(session)
+
+
 def tune_device(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    session: Optional[SessionContext] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> None:
+) -> Tuple[SessionContext, RedisStoreQueryResult]:
     """Run the full calibration pipeline up to ``target_node``.
 
     Builds a :class:`SessionContext` from ``env_file`` (and any extra
@@ -304,17 +342,29 @@ def tune_device(
 
     Args:
         env_file: optional path to .env file to load session config from.
+        session: optional session context to use
+        refresh_session: whether to refresh the session context before running; defaults to True.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
+
+    Returns:
+        the session context and the results from that session
     """
-    session = SessionContext.from_env(env_file, **session_options)
-    _tune(session)
+    if session is None:
+        session = SessionContext.from_env(env_file, **session_options)
+    _tune(session, refresh_session=refresh_session, keep_data_files=keep_data_files)
+    results = read_session_result(session)
+    return session, results
 
 
 def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    session: Optional[SessionContext] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> None:
+) -> Tuple[SessionContext, RedisStoreQueryResult]:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 
     The cluster mode is forced to :attr:`MeasurementMode.re_analyse`
@@ -322,78 +372,169 @@ def reanalyse(
 
     Args:
         env_file: optional path to .env file to load session config from.
+        session: optional session context to use
+        refresh_session: whether to refresh the session context before running; defaults to True.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
-    session_options.pop("cluster_mode", None)
-    session = SessionContext.from_env(
-        env_file,
-        cluster_mode=MeasurementMode.re_analyse,
-        **session_options,
+    if session is None:
+        session = SessionContext.from_env(
+            env_file,
+            **session_options,
+        )
+
+    session.cluster_mode = MeasurementMode.re_analyse
+    _reanalyse(
+        session, refresh_session=refresh_session, keep_data_files=keep_data_files
     )
-    _re_analyse(session)
+    results = read_session_result(session)
+    return session, results
 
 
-def _tune(session: SessionContext) -> None:
-    """Internal function implementing the tuning/calibration logic."""
-    hardware_manager = HardwareManager(config=session)
+def read_session_result(session: SessionContext) -> RedisStoreQueryResult:
+    """Retrieves the results after tuneup for the given session
+
+    If the session has not been used yet for tuneup,
+    the result will be empty
+
+    Args:
+        session: the session context to use
+
+    Returns:
+        the results in redis for the current session
+    """
+    pks = session.qubits + session.couplers
+    affected_fields = session.redis_fields_touched.keys()
+
+    def query_func(opts: QueryOptions):
+        return any(opts["field"] in k for k in affected_fields)
+
+    return session.redis_store.find_many(pks=pks, query=query_func)
+
+
+def _tune(
+    session: SessionContext,
+    node: Optional[NodeEnum] = None,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
+) -> None:
+    """Tunes the device running all nodes till target node if node is None else only that node.
+
+    Args:
+        session: the session context to use
+        node: the only node to run.
+            If not provided, all nodes are run till target node.
+        refresh_session: whether to refresh the session before tuning.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
+
+    Returns:
+        the current affected state of the device after the tuning
+    """
+    if refresh_session:
+        session.refresh_redis_fields_log()
+    hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
-    topo_order = node_manager.topo_order(session.target_node)
+    qubits = session.qubits
+    couplers = session.couplers
+
+    if node:
+        topo_order = [node]
+    else:
+        topo_order = node_manager.topo_order(session.target_node)
 
     logger.info("Node Manager is initialized")
-
-    # Handle CZ chain insertion for THREE_STATE_DISCRIMINATION
-    cz_chain = [
-        NodeEnum.CZ_PARAMETRIZATION,
-        NodeEnum.CZ_CHEVRON,
-        NodeEnum.CZ_CALIBRATION,
-        NodeEnum.CZ_LOCAL_PHASES,
-        NodeEnum.CZ_RB,
-    ]
-    is_cz_calibration = session.target_node in cz_chain
-    if is_cz_calibration:
-        for index, ordered_node in enumerate(topo_order):
-            if ordered_node in cz_chain:
-                topo_order.insert(index, NodeEnum.THREE_STATE_DISCRIMINATION)
-                break
-
     logger.info("Starting System Calibration")
-    number_of_qubits = len(session.qubits)
 
     draw_arrow_chart(
-        f"Qubits: {number_of_qubits}",
-        [n.value for n in topo_order],
+        f"Qubits: {len(qubits)}",
+        [str(n.value) for n in topo_order],
     )
 
-    # The node manager provides every node with access to the DACS
-    node_manager.spi_manager = hardware_manager.create_spi(session.couplers)
-    node_manager.spi_manager.set_initial_parking_currents(session.couplers)
+    # The node manager provides every node with access to the DACs
+    if couplers:
+        node_manager.spi_manager = hardware_manager.create_spi(couplers)
+        # no setting initial parking currents during recalibration
+        if not session.is_recalibration:
+            assert (
+                session.spi_mode == SPIMode.real
+            ), 'Set spi_mode to "real" in the session.'
+            node_manager.spi_manager.set_initial_parking_currents(couplers)
 
     for calibration_node in topo_order:
-        ignore_spec = calibration_node == NodeEnum.THREE_STATE_DISCRIMINATION
-        node_manager.inspect_node(calibration_node, ignore_spec=ignore_spec)
+        node_manager.inspect_node(
+            calibration_node,
+            ignore_spec=session.ignore_spec,
+            save_plot=session.save_plot,
+        )
         logger.info(f"{calibration_node.value} node is completed")
 
+    if not keep_data_files and is_safe_path(session.data_dir):
+        shutil.rmtree(session.data_dir)
+        os.makedirs(session.data_dir)
 
-def _re_analyse(session: SessionContext) -> None:
-    """Internal function implementing the re-analysis logic."""
+
+def _reanalyse(
+    session: SessionContext,
+    refresh_session: bool = True,
+    keep_data_files: bool = True,
+) -> None:
+    """Internal function implementing the re-analysis logic.
+
+    Args:
+        session: the session context to use
+        refresh_session: whether to refresh the session before tuning.
+        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
+    """
+    if refresh_session:
+        session.refresh_redis_fields_log()
+
     if session.cluster_mode != MeasurementMode.re_analyse:
         raise ValueError(
             f"Wrong mode for re-analysis: '{session.cluster_mode}', should be: {MeasurementMode.re_analyse}"
         )
 
-    hardware_manager = HardwareManager(config=session)
+    hardware_manager = HardwareManager(session=session)
     lab_ic = hardware_manager.get_instrument_coordinator()
     node_manager = NodeManager(lab_ic, session=session)
 
     target_node = session.target_node
-    node = node_manager._initialize_node(target_node)
+    node = node_manager.initialize_node(target_node)
     logger.status(
         f"Analysing '{session.target_node_name}' with {node.analysis_cls.__name__}"
     )
     node.post_process(session.log_dir)
     logger.status("Analysis completed.")
+
+    if not keep_data_files and is_safe_path(session.data_dir):
+        shutil.rmtree(session.data_dir)
+        os.makedirs(session.data_dir)
+
+
+def is_safe_path(path_str: PathLike[str]) -> bool:
+    """Checks that a path is safe to delete
+
+    Unsafe paths include '/', '/etc', '/var', '/bin', '/usr/'
+
+    Args:
+        path_str: the path to check
+
+    Returns:
+        True if the path is safe to delete, False otherwise
+    """
+    path = Path(path_str).resolve()
+
+    # Check against root
+    if path == path.parents[-1] if path.parents else path == Path("/"):
+        return False
+
+    # Extra safety: Ensure it's not a critical system directory
+    forbidden = {Path("/"), Path("/etc"), Path("/usr"), Path("/bin"), Path("/var")}
+    if path in forbidden:
+        return False
+
+    return True
 
 
 # intermediary function in the call stack in case we want to set other cluster settings

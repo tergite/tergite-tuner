@@ -11,8 +11,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+
+fig, ax = plt.subplots(1, 1)
 
 
 def assign_state(iq_values: xr.DataArray, redis_connection) -> xr.DataArray:

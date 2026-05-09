@@ -31,7 +31,7 @@ class CZLocalPhasesNode(CouplerNode):
     measurement_cls = CZLocalPhasesMeasurement
     analysis_cls = CZLocalPhasesNodeAnalysis
     measurement_type_cls = ScheduleNode
-    coupler_qois = ["control_local_phase", "target_local_phase"]
+    coupler_qois = ["cz_dynamic_control", "cz_dynamic_target"]
 
     def __init__(self, couplers: list[str], **schedule_keywords):
         super().__init__(couplers, **schedule_keywords)
@@ -46,7 +46,7 @@ class CZLocalPhasesNode(CouplerNode):
 
         self.schedule_samplespace = {
             "local_phases": {
-                qubit: np.linspace(0, 360, 45) for qubit in self.coupled_qubits
+                qubit: np.linspace(0, 360, 31) for qubit in self.coupled_qubits
             },
             "gate_modes": {
                 coupler: np.array([True, False]) for coupler in self.couplers

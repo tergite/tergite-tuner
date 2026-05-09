@@ -20,6 +20,7 @@ Improvements on the CZ gate automatic tune-up
 ## Tong Liu
 
 Added demodulation channels
+Added functionality for recalibration
 
 ## Michele Faucci Giannelli
 

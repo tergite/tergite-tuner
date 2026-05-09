@@ -11,11 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
-
-import pytest
-
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
 )
@@ -23,15 +18,13 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZR
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
-
-_test_data_dir = os.path.join(Path(__file__).parent, "data")
-_redis_values_path = os.path.join(_test_data_dir, "redis-2026-02-10-11-23-12.json")
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
-def test_align_cliffords(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values_path):
+def test_align_cliffords(redis_connection, session_context, node_data_dir):
+    redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
+    with loaded_redis(redis_connection, redis_data_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q13", "q14"]
         couplers = ["q13_q14"]

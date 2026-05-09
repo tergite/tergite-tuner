@@ -18,10 +18,11 @@ from abc import ABC, abstractmethod
 
 import lmfit
 import numpy as np
+from matplotlib.axes import Axes
 from quantify_core.analysis.fitting_models import ExpDecayModel, fft_freq_phase_guess
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 def cos_func(
@@ -99,7 +100,7 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
     specific fitting models and extraction methods.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.t2_times = []
         self.average_t2 = None
@@ -188,6 +189,22 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
         magnitudes = self.magnitudes[self.data_var].isel({self.repeat_coord: indx})
         return magnitudes.values.flatten() * 1e6  # Convert to microseconds
 
+    def plotter(self, ax):
+        for indx in range(len(self.dataset.coords[self.repeat_coord])):
+            magnitudes_flat = self._get_magnitudes(indx)
+            ax.plot(self.delays, magnitudes_flat, alpha=0.3)
+
+        ax.plot(
+            self.fit_delays,
+            self.average_t2_y,
+            color="red",
+            label=f"Mean {self.label} = {self.average_t2:.1f} ± {self.error :.1f} μs",
+        )
+        ax.set_xlabel("Delay (μs)")
+        ax.set_ylabel("|S21| (V)")
+        ax.legend()
+        ax.grid()
+
 
 class T2QubitAnalysis(BaseT2QubitAnalysis):
     """
@@ -197,7 +214,7 @@ class T2QubitAnalysis(BaseT2QubitAnalysis):
     It fits the model to the data and extracts the T2 time.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = T2Model()
         self.label = "T2"
@@ -228,7 +245,7 @@ class T2EchoQubitAnalysis(BaseT2QubitAnalysis):
     It fits the model to the data and extracts the T2 Echo time.
     """
 
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = ExpDecayModel()
         self.label = "T2 Echo"
@@ -249,6 +266,31 @@ class T2EchoQubitAnalysis(BaseT2QubitAnalysis):
     def fit_model(self, magnitudes_flat):
         guess = self.model.guess(data=magnitudes_flat, delay=self.delays)
         return self.model.fit(magnitudes_flat, params=guess, t=self.delays)
+
+    def plotter(self, ax: Axes):
+        super().plotter(ax)
+
+        params_upper = self.average_params.copy()
+        params_upper["tau"].value = self.average_t2 + self.error
+        average_t2_upper = self.model.eval(params=params_upper, t=self.fit_delays)
+
+        params_lower = self.average_params.copy()
+        params_lower["tau"].value = self.average_t2 - self.error
+        average_t2_lower = self.model.eval(params=params_lower, t=self.fit_delays)
+
+        ax.fill_between(
+            self.fit_delays,
+            average_t2_lower,
+            average_t2_upper,
+            color="red",
+            alpha=0.2,
+            label="±1σ",
+        )
+
+        ax.set_xlabel("Delay (μs)")
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()
+        ax.legend()
 
 
 class T2NodeAnalysis(BaseAllQubitsAnalysis):

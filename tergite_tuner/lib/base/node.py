@@ -15,9 +15,11 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type
 
+import matplotlib
 import numpy as np
 import xarray
 
@@ -28,14 +30,15 @@ from tergite_tuner.lib.utils.device import (
     configure_device,
     save_serial_device,
 )
-from tergite_tuner.lib.utils.redis import update_redis_trusted_values
 from tergite_tuner.lib.utils.schedule_execution import execute_schedule, get_compiler
-from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.storage.fs.dataset import save_dataset
+from tergite_tuner.utils.dicts import insert_nested_key, to_flat_map
 from tergite_tuner.utils.hardware.spi import SpiDAC
-from tergite_tuner.utils.io.dataset import save_dataset
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import print_measurement_info
-from tergite_tuner.utils.measurement_utils import samplespace_dimensions
+from tergite_tuner.utils.measurement import samplespace_dimensions
+from tergite_tuner.utils.types.enums import MeasurementMode
+from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -55,6 +58,10 @@ class BaseNode(ABC):
 
     def __init__(self, session: "SessionContext", **node_dictionary):
         self.session = session
+        # The matplotlib backend depends on whether plots should be shown
+        # while the run is in progress. Set this once per node to keep the
+        # behaviour consistent across the run.
+        matplotlib.use("tkagg" if session.save_plot else "agg")
         self.node_dictionary = node_dictionary
         self.lab_instr_coordinator: Optional["InstrumentCoordinator"] = None
         self.spi_manager: Optional[SpiDAC] = None
@@ -78,6 +85,17 @@ class BaseNode(ABC):
     def precompile(self, samplespace):
         pass
 
+    @classmethod
+    @abstractmethod
+    def persist_qois(cls, session: "SessionContext", node_name: str):
+        """Saves the qois of this node in the store
+
+        Args:
+            session: The session context we are working in
+            node_name: The name of the node
+        """
+        raise NotImplementedError(f"Persist qois is not implemented for {cls.__name__}")
+
     def measure_node(self, cluster_status) -> xarray.Dataset:
         """
         Here we attach the measure_node method according to the
@@ -87,14 +105,14 @@ class BaseNode(ABC):
         dataset = measurement_type.measure_node(cluster_status)
         return dataset
 
-    def calibrate(self, data_path, measurement_mode):
+    def calibrate(self, data_path, measurement_mode, save_plot):
         if measurement_mode != MeasurementMode.re_analyse:
             result_dataset = self.measure_node(measurement_mode)
             save_serial_device(self.device, data_path)
             save_dataset(result_dataset, self.name, data_path)
         # After the measurement free the device resources
         close_device_resources(self.device)
-        self.post_process(data_path)
+        self.post_process(data_path, save_plot)
         logger.info("analysis completed")
 
     def measure_compiled_schedule(
@@ -141,24 +159,34 @@ class BaseNode(ABC):
             duration *= self.node_dictionary["loop_repetitions"]
         return duration
 
-    def post_process(self, data_path: Path):
+    def post_process(self, data_path: PathLike[str], save_plot: bool = False):
         analysis_kwargs = getattr(self, "analysis_keywords", dict())
         node_analysis: BaseNodeAnalysis = self.analysis_cls(
-            self.name,
-            self.redis_fields,
-            self.session,
+            name=self.name,
+            redis_fields=self.redis_fields,
+            session=self.session,
             **analysis_kwargs,
         )
-        QOI_dict = node_analysis.analyze_node(data_path)
-        for element_id_, qois_ in QOI_dict.items():
-            update_redis_trusted_values(
-                self.name,
-                element_id_,
-                self.session.redis,
-                qoi=qois_,
-                redis_fields=self.redis_fields,
-            )
-        return QOI_dict
+        results = node_analysis.analyze_node(data_path, save_plot)
+        redis_data = {}
+
+        for pk, qoi in results.items():
+            if not qoi.analysis_successful:
+                logger.warning(f"Analysis failed for {pk}")
+                continue
+
+            try:
+                record = qoi_to_redis_record(qoi, redis_fields=self.redis_fields)
+            except ValueError as e:
+                raise ValueError(f"Element: {pk}: {e}") from e
+
+            collection = "couplers" if "_" in pk else "transmons"
+            insert_nested_key(redis_data, path=(collection, pk), value=record)
+            insert_nested_key(redis_data, path=("cs", pk), value="calibrated")
+
+        self.session.redis_store.save_many(redis_data)
+        self.session.update_redis_fields_log(self)
+        return results
 
     def configure_dataset(
         self,
@@ -259,7 +287,6 @@ class BaseNode(ABC):
             dataset.attrs["elements"].append(element)
         # take the set of elements because couplers appear duplicated
         dataset.attrs["elements"] = list(set(dataset.attrs["elements"]))
-
         return dataset
 
 
@@ -312,6 +339,59 @@ class QubitNode(BaseNode):
 
         return compiled_schedule
 
+    @classmethod
+    def persist_qois(cls, session: "SessionContext", node_name: str):
+        """Saves the qois of this node in the store
+
+        Args:
+            session: The session context we are working in
+            node_name: The name of the node
+        """
+        redis_store = session.redis_store
+        qubits = session.qubits
+
+        qubit_qois = cls.qubit_qois
+        if qubit_qois is None:
+            logger.warning(f"No qois for node {node_name}")
+            return
+
+        zero_based_qois = (
+            "measure_3state_opt:pulse_amp",
+            "measure_2state_opt:pulse_amp",
+            "rxy:motzoi",
+            "r12:ef_motzoi",
+        )
+        new_qubit_data = {k: (0 if k in zero_based_qois else "nan") for k in qubit_qois}
+
+        query_result = redis_store.find_many("transmons", pks=qubits)
+        existing_qubits = query_result.get("transmons", {})
+
+        query_result = redis_store.find_many("cs", pks=qubits)
+        existing_supervisor_records = query_result.get("cs", {})
+
+        existing_qubits = {k: dict(to_flat_map(v)) for k, v in existing_qubits.items()}
+
+        updated_qubit_data = {
+            q: {
+                k: v
+                for k, v in new_qubit_data.items()
+                if k not in existing_qubits.get(q, {})
+            }
+            for q in qubits
+        }
+        updated_supervisor_data = {
+            q: {node_name: "not_calibrated"}
+            for q in qubits
+            if node_name not in existing_supervisor_records.get(q, {})
+        }
+
+        redis_store.save_many(
+            {
+                "transmons": updated_qubit_data,
+                "cs": updated_supervisor_data,
+            }
+        )
+
     def __str__(self):
         return f"Node representation for {self.name} on qubits {self.all_qubits}"
 
@@ -354,6 +434,54 @@ class CouplerNode(BaseNode):
         dataset = measurement_type.measure_node(cluster_status)
         return dataset
 
+    @classmethod
+    def persist_qois(cls, session: "SessionContext", node_name: str):
+        """Saves the qois of this node in the store
+
+        Args:
+            session: The session context we are working in
+            node_name: The name of the node
+        """
+        redis_store = session.redis_store
+        couplers = session.couplers
+
+        coupler_qois = cls.coupler_qois
+        if coupler_qois is None:
+            return
+
+        new_coupler_data = dict.fromkeys(coupler_qois, "nan")
+        query_result = redis_store.find_many("couplers", pks=couplers)
+        existing_couplers = query_result.get("couplers", {})
+
+        query_result = redis_store.find_many("cs", pks=couplers)
+        existing_supervisor_records = query_result.get("cs", {})
+
+        existing_couplers = {
+            k: dict(to_flat_map(v)) for k, v in existing_couplers.items()
+        }
+
+        updated_coupler_data = {
+            c: {
+                k: v
+                for k, v in new_coupler_data.items()
+                if k not in existing_couplers.get(c, {})
+            }
+            for c in couplers
+        }
+
+        updated_supervisor_data = {
+            c: {node_name: "not_calibrated"}
+            for c in couplers
+            if node_name not in existing_supervisor_records.get(c, {})
+        }
+
+        redis_store.save_many(
+            {
+                "couplers": updated_coupler_data,
+                "cs": updated_supervisor_data,
+            }
+        )
+
     def set_parking_current_from_redis(self):
         """
         At the beginning of the calibration, the parking current is set by
@@ -364,18 +492,23 @@ class CouplerNode(BaseNode):
         This method fetches the redis value and sets the update DC current
         to the appropriate SPI dacs.
         """
-        redis_connection = self.session.redis
-        currents_dict = {}
-        for coupler in self.couplers:
-            parking_current = float(
-                redis_connection.hget(f"couplers:{coupler}", "parking_current")
-            )
-            if np.isnan(parking_current):
-                logger.warning(f"nan current for coupler {coupler}")
-                return
-            currents_dict[coupler] = parking_current
-        logger.status("Setting updated DC currents")
-        self.spi_manager.set_dac_current(currents_dict)
+        redis_data = self.session.redis_store.find_many(
+            collection="couplers", pks=self.couplers
+        )
+        try:
+            currents_dict = {
+                k: v["parking_current"] for k, v in redis_data["couplers"].items()
+            }
+        except KeyError:
+            logger.error(f"Some couplers are missing currents: {redis_data}")
+            return
+
+        # do not set dac currents when in calibration
+        if not self.session.is_recalibration:
+            logger.status("Setting updated DC currents")
+            self.spi_manager.set_dac_current(currents_dict)
+        else:
+            logger.debug("Skipping setting DC currents")
 
     def get_coupled_qubits(self) -> list:
         coupled_qubits = []
@@ -386,18 +519,22 @@ class CouplerNode(BaseNode):
         return coupled_qubits
 
     def gate_qubit_types_dict(self) -> dict[str, dict]:
-        redis_connection = self.session.redis
-        qubit_types_dict = {}
-        for coupler in self.couplers:
-            control_qubit = redis_connection.hget(
-                f"couplers:{coupler}", "control_qubit"
-            )
-            target_qubit = redis_connection.hget(f"couplers:{coupler}", "target_qubit")
-            qubit_types_dict[coupler] = {
-                "control_qubit": control_qubit,
-                "target_qubit": target_qubit,
+        redis_data = self.session.redis_store.find_many(
+            collection="couplers", pks=self.couplers
+        )
+        try:
+            return {
+                k: {
+                    "control_qubit": v["control_qubit"],
+                    "target_qubit": v["target_qubit"],
+                }
+                for k, v in redis_data["couplers"].items()
             }
-        return qubit_types_dict
+        except KeyError as e:
+            logger.warning(
+                f"Some couplers control and target qubits are missing: {redis_data}"
+            )
+            raise e
 
     def validate(self) -> None:
         all_coupled_qubits = []
@@ -410,14 +547,16 @@ class CouplerNode(BaseNode):
     def transition_frequency(
         self, coupler: str, phase_path: Literal["via_20", "via_02"]
     ) -> float:
-        redis_connection = self.session.redis
+        redis_store = self.session.redis_store
         qubit_roles = self.gate_qubit_types_dict()[coupler]
         c_qubit = qubit_roles["control_qubit"]
         t_qubit = qubit_roles["target_qubit"]
-        c_f01 = float(redis_connection.hget(f"transmons:{c_qubit}", "clock_freqs:f01"))
-        t_f01 = float(redis_connection.hget(f"transmons:{t_qubit}", "clock_freqs:f01"))
-        c_f12 = float(redis_connection.hget(f"transmons:{c_qubit}", "clock_freqs:f12"))
-        t_f12 = float(redis_connection.hget(f"transmons:{t_qubit}", "clock_freqs:f12"))
+        c_record = redis_store.find_one("transmons", c_qubit)
+        t_record = redis_store.find_one("transmons", t_qubit)
+        c_f01 = float(c_record["clock_freqs"]["f01"])
+        t_f01 = float(t_record["clock_freqs"]["f01"])
+        c_f12 = float(c_record["clock_freqs"]["f12"])
+        t_f12 = float(t_record["clock_freqs"]["f12"])
 
         if phase_path == "via_20":
             ac_frequency = np.abs(c_f01 + t_f01 - (c_f01 + c_f12))
@@ -465,3 +604,31 @@ class CouplerNode(BaseNode):
 
     def __repr__(self):
         return f"Node({self.name}, {self.couplers})"
+
+
+def qoi_to_redis_record(
+    qoi: QOI = None,
+    redis_fields: List[str] = (),
+) -> Dict[str, Any]:
+    """Converts the quantity of interest (QOI) into a redis record
+
+    Args:
+        qoi: The quantity of interest as QOI wrapped object
+        redis_fields: List of redis fields that are allowed for this QOI
+
+    Returns:
+        the record that would be saved in redis for this QOI
+    """
+    results = qoi.analysis_result
+    rogue_fields = results.keys() - set(redis_fields)
+    if rogue_fields:
+        raise ValueError(
+            f"The QOI's {rogue_fields} are not in redis fields: {redis_fields}"
+        )
+
+    record = {}
+    for k, res in results.items():
+        record[k] = res["value"]
+        record[f"{k}_error"] = res["error"]
+
+    return record

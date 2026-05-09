@@ -11,9 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
-
 from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesNodeAnalysis,
@@ -23,15 +20,15 @@ from tergite_tuner.lib.nodes.coupler.cz_local_phases.measurement import (
 )
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import CZLocalPhasesNode
 from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
-from tergite_tuner.tests.utils.decorators import loaded_redis
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
-_test_data_dir = os.path.join(Path(__file__).parent, "data")
-_redis_values_path = os.path.join(_test_data_dir, "redis-2026-02-06-18.json")
+_REDIS_DATA_FILENAME = "redis-2026-02-06-18.json"
 
 
-def test_node_creation(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values_path):
+def test_node_creation(redis_connection, session_context, node_data_dir):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZLocalPhasesNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
@@ -39,8 +36,9 @@ def test_node_creation(redis_connection, session_context):
         assert isinstance(node, CouplerNode)
 
 
-def test_class_attribute_objects(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values_path):
+def test_class_attribute_objects(redis_connection, session_context, node_data_dir):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZLocalPhasesNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
@@ -50,8 +48,9 @@ def test_class_attribute_objects(redis_connection, session_context):
         assert issubclass(node.measurement_type_cls, ScheduleNode)
 
 
-def test_dummy_generation(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values_path):
+def test_dummy_generation(redis_connection, session_context, node_data_dir):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
 
         coupler = "q13_q14"

@@ -8,6 +8,7 @@ schedules/
 
 # notebooks
 notebooks/0
+*.ipynb
 
 #user config files
 # utils/user_input.py
@@ -19,10 +20,8 @@ send_to_lefteris.ps1
 #dataset folders
 20[0-9][0-9]*/
 # Allow year-based folders under tests/fixtures/data/
-!tergite_autocalibration/tests/fixtures/data/01-44-14_simple_coupler_run-SUCCESS/20[0-9][0-9]*/
-!tergite_autocalibration/tests/fixtures/data/01-44-14_simple_coupler_run-SUCCESS/20[0-9][0-9]*/**
-!tergite_autocalibration/tests/fixtures/data/16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS/20[0-9][0-9]*/
-!tergite_autocalibration/tests/fixtures/data/16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS/20[0-9][0-9]*/**
+!tergite_tuner/tests/fixtures/data/16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS/20[0-9][0-9]*/
+!tergite_tuner/tests/fixtures/data/16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS/20[0-9][0-9]*/**
 
 data_directory/
 
@@ -50,6 +49,9 @@ dist/
 
 # Package files
 *.jar
+
+# Vscode
+.vscode
 
 # JetBrains IDE
 .idea/
@@ -90,28 +92,30 @@ configs/**
 !configs/configs-readme.md
 !tergite_acl/config/__init__.py
 !tergite_acl/config/settings.py
-!tergite_autocalibration/config/__init__.py
-!tergite_autocalibration/config/env.py
+!tergite_tuner/config/__init__.py
+!tergite_tuner/config/env.py
 configuration.meta.toml
 !datasets/**/configuration.meta.toml
-!tergite_autocalibration/tests/fixtures/**/configuration.meta.toml
+!tergite_tuner/tests/fixtures/**/configuration.meta.toml
 misc/**
 .browser
+j2_templates/**
 
 # dev-generated artefacts
 tergite_acl/utils/**.csv
 sequence.json
-tergite_autocalibration/utils/**.csv
-out/
+tergite_tuner/utils/**.csv
+out/**
 tmp/
+**.png
 
 # internal
 external/
 workbench/
-tergite_autocalibration/lib/nodes/coupler/cz_chevron/tests/results/**
+tergite_tuner/lib/nodes/coupler/cz_chevron/tests/results/**
 
 tergite_acl/utils/clifford_module/**
-tergite_autocalibration/lib/nodes/coupler/cz_characterisation/tests/results/**
+tergite_tuner/lib/nodes/coupler/cz_characterisation/tests/results/**
 
 # documentation
 site/

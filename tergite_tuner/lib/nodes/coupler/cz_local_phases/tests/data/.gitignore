@@ -1,0 +1,5 @@
+*
+!.gitignore
+!**.hdf5
+!redis-coupler-run-2026-02.json
+!redis-2026-02-06-18.json

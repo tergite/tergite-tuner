@@ -1,0 +1,4 @@
+*
+!.gitignore
+!**.hdf5
+!redis-export-2025-12-16.json

@@ -19,12 +19,6 @@ import yaml
 _TESTS_FOLDER = path.dirname(path.dirname(path.abspath(__file__)))
 _FIXTURES_PATH = path.join(_TESTS_FOLDER, "fixtures")
 
-# Mirrors ``tests/fixtures/templates/default_device_under_test/configs/
-# run_config.toml``. Tests previously read these values via
-# ``CONFIG.run.qubits``/``CONFIG.run.couplers`` etc.; with the new pydantic
-# config the run configuration is no longer carried on ``CONFIG`` and
-# instead lives on a per-run :class:`SessionContext`. Tests that just need
-# a stable default qubit/coupler set can use these constants directly.
 DEFAULT_TEST_QUBITS: List[str] = ["q00", "q01"]
 DEFAULT_TEST_COUPLERS: List[str] = ["q00_q01"]
 DEFAULT_TEST_RUN_NAME: str = "no_name_for_this_run_set"

@@ -19,7 +19,7 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_measurement_01_type(session_context):

@@ -16,17 +16,16 @@
 Module containing a schedule class for DRAG pulse motzoi parameter calibration.
 """
 
-from __future__ import annotations
-
 import numpy as np
 from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.pulse_library import DRAGPulse
 from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.dto.extended_gates import Measure_RO1
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_gates import Measure_RO1
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class MotzoiParameterMeasurement(BaseMeasurement):
@@ -89,7 +88,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                 )
 
         # This is the common reference operation so the qubits can be operated in parallel
-        root_relaxation = schedule.add(Reset(*qubits))
+        root_relaxation = schedule.add(Reset(*qubits, duration=4e-9), label="Reset")
 
         # The outer loop, iterates over all qubits
         for this_qubit, X_values in X_repetitions.items():
@@ -97,7 +96,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
             mw_amplitude = this_transmon.rxy.amp180()
             mw_pulse_duration = this_transmon.rxy.duration()
             mw_pulse_port = this_transmon.ports.microwave()
-            measure_function = Measure
+
             this_clock = f"{this_qubit}.01"
 
             motzoi_parameter_values = mw_motzois[this_qubit]
@@ -105,12 +104,16 @@ class MotzoiParameterMeasurement(BaseMeasurement):
 
             if qubit_state == 1:
                 mw_amplitude = this_transmon.r12.ef_amp180()
-                mw_pulse_duration = this_transmon.r12.ef_duration()
                 this_clock = f"{this_qubit}.12"
                 measure_function = Measure_RO1
+            elif qubit_state == 0:
+                measure_function = Measure
+                this_clock = f"{this_qubit}.01"
+            else:
+                raise ValueError(f"Invalid qubit state: {qubit_state}")
 
             schedule.add(
-                Reset(*qubits), ref_op=root_relaxation
+                Reset(*qubits), ref_op=root_relaxation, ref_pt_new="end"
             )  # To enforce parallelism we refer to the root relaxation
 
             # The intermediate loop iterates over all numbers of X pulses
@@ -143,8 +146,33 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                             ),
                         )
 
+                        if qubit_state == 0:
+                            schedule.add(
+                                DRAGPulse(
+                                    duration=mw_pulse_duration,
+                                    G_amp=mw_amplitude,
+                                    D_amp=mw_motzoi,
+                                    port=mw_pulse_port,
+                                    clock=this_clock,
+                                    phase=90,
+                                ),
+                            )
+                            # inversion pulse requires 180 deg phase
+                            schedule.add(
+                                DRAGPulse(
+                                    duration=mw_pulse_duration,
+                                    G_amp=mw_amplitude,
+                                    D_amp=mw_motzoi,
+                                    port=mw_pulse_port,
+                                    clock=this_clock,
+                                    phase=270,
+                                ),
+                            )
+
                     schedule.add(
-                        measure_function(this_qubit, acq_index=this_index),
+                        measure_function(
+                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
+                        ),
                     )
 
                     schedule.add(Reset(this_qubit))

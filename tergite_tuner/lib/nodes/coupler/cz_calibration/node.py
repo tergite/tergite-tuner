@@ -59,7 +59,12 @@ class CZCalibrationNode(CouplerNode):
 
         self.outer_schedule_samplespace = {
             "working_points": {
-                coupler: self.working_points(coupler) for coupler in self.couplers
+                coupler: (
+                    self.working_points_fixed_duration(coupler)
+                    if _has_fixed_duration_qubit(session, coupler)
+                    else self.working_points(coupler)
+                )
+                for coupler in self.couplers
             }
         }
         self.schedule_samplespace = {
@@ -92,8 +97,30 @@ class CZCalibrationNode(CouplerNode):
         working_points_array = np.array(list(working_points))
         return working_points_array
 
+    def working_points_fixed_duration(self, coupler: str):
+        cz_pulse_duration = float(
+            self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_duration")
+        )
+        cz_pulse_frequency = float(
+            self.session.redis.hget(f"couplers:{coupler}", "cz_pulse_frequency")
+        )
+        # FIXME: another hard coded value. Is it possible to add these to configurations?
+        sweep_range = 0.2e6
+        number_of_points = 20
+        sweep_frequencies = np.linspace(
+            cz_pulse_frequency - sweep_range,
+            cz_pulse_frequency + sweep_range,
+            number_of_points,
+        )
+        working_points_fixed_duration_array = np.array(
+            list(zip(sweep_frequencies, [cz_pulse_duration] * number_of_points))
+        )
+        return working_points_fixed_duration_array
+
     def initial_operation(self):
-        self.spi_manager.set_initial_parking_currents(self.couplers)
+        # don't set parking currents when recalibration is happening
+        if not self.session.is_recalibration:
+            self.spi_manager.set_initial_parking_currents(self.couplers)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()
@@ -110,3 +137,17 @@ class CZCalibrationNode(CouplerNode):
             dataset[2 * index] = data_array
             dataset[2 * index + 1] = data_array
         return dataset
+
+
+def _has_fixed_duration_qubit(session: "SessionContext", coupler: str) -> bool:
+    """Checks if the coupler has a fixed duration qubit
+
+    Args:
+        session: the SessionContext that is being worked in
+        coupler: the name of the coupler
+
+    Return:
+        True if the coupler is connected to a fixed duration qubit
+    """
+    fixed_duration_qubits = session.fixed_duration_qubits
+    return any(q in coupler for q in fixed_duration_qubits)

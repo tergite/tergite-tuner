@@ -64,7 +64,8 @@ class CZRBNode(CouplerNode):
 
         self.schedule_samplespace = {
             "number_of_cliffords": {
-                coupler: np.array([0, 2, 4, 8, 16, 32, 64, 128])
+                # coupler: np.array([0, 2, 4, 8, 16, 32, 64, 128])
+                coupler: np.array([0, 1, 2, 3, 4, 8, 16, 32, 48, 64])
                 for coupler in self.couplers
             },
             "interleave_modes": {
@@ -79,7 +80,9 @@ class CZRBNode(CouplerNode):
         return cz_freq
 
     def initial_operation(self):
-        self.spi_manager.set_initial_parking_currents(self.couplers)
+        # No setting parking currents when we are running a recalibration
+        if not self.session.is_recalibration:
+            self.spi_manager.set_initial_parking_currents(self.couplers)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()

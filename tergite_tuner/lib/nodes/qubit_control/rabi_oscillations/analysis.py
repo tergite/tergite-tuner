@@ -21,8 +21,7 @@ import numpy as np
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import RabiModel
-from tergite_tuner.utils.backend.redis_utils import fetch_redis_params
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class RabiQubitAnalysis(BaseQubitAnalysis):
@@ -81,6 +80,24 @@ class RabiQubitAnalysis(BaseQubitAnalysis):
 
         return qoi
 
+    def plotter(self, ax):
+        ax.plot(
+            self.fit_plot_amplitudes,
+            self.fit_y,
+            "r-",
+            lw=3.0,
+            label=f"π_ampl = {self.pi_amplitude:.2E}"
+            r"$\pm$"
+            f"{self.uncertainty:.2E}(V)\n"
+            f"scaled uncertainty: {self.scaled_uncertainty:.2E}",
+        )
+
+        ax.plot(self.amplitudes, self.magnitudes[self.data_var].values, "bo-", ms=3.0)
+        ax.set_title(f"Rabi Oscillations for {self.qubit}")
+        ax.set_xlabel("Amplitude (V)")
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()
+
 
 class Rabi12QubitAnalysis(RabiQubitAnalysis):
     def analyse_qubit(self):
@@ -124,8 +141,8 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
 
     def analyse_qubit(self):
         self._analyse_n_rabi()
-        previous_amplitude = fetch_redis_params(
-            "rxy:amp180", self.qubit, self.session.redis
+        previous_amplitude = self.session.redis_store.read_field(
+            "transmons", pk=self.qubit, field_path="rxy:amp180"
         )
         optimal_amp180 = self.correction + previous_amplitude
         analysis_successful = True
@@ -136,12 +153,20 @@ class NRabiQubitAnalysis(BaseQubitAnalysis):
 
         return qoi
 
+    def plotter(self, axis):
+        datarray = self.magnitudes[self.data_var]
+
+        datarray.plot(ax=axis, x=self.mw_amplitudes_coord, cmap="RdBu_r")
+        axis.set_xlabel("mw amplitude correction")
+
+        axis.axvline(self.correction, c="k", lw=4, linestyle="--")
+
 
 class NRabi_12_QubitAnalysis(NRabiQubitAnalysis):
     def analyse_qubit(self):
         self._analyse_n_rabi()
-        previous_amplitude = fetch_redis_params(
-            "r12:ef_amp180", self.qubit, self.session.redis
+        previous_amplitude = self.session.redis_store.read_field(
+            "transmons", pk=self.qubit, field_path="r12:ef_amp180"
         )
         optimal_ef_amp180 = self.correction + previous_amplitude
 

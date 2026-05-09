@@ -83,7 +83,7 @@ class RamseyFringesNode(RamseyFringesBase):
         super().__init__(all_qubits, couplers, **schedule_keywords)
         self.schedule_samplespace = {
             "ramsey_delays": {
-                qubit: np.arange(4e-9, 2048e-9, 8 * 8e-9) for qubit in self.all_qubits
+                qubit: np.arange(4e-9, 2048e-9, 12 * 8e-9) for qubit in self.all_qubits
             },
             "artificial_detunings": {
                 qubit: np.arange(-2.1, 2.1, 0.8) * 1e6 for qubit in self.all_qubits

@@ -20,7 +20,7 @@ import numpy as np
 import xarray
 
 from tergite_tuner.lib.base.measurement import MeasurementType
-from tergite_tuner.utils.measurement_utils import (
+from tergite_tuner.utils.measurement import (
     reduce_samplespace,
     samplespace_dimensions,
 )

@@ -11,9 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
-
 import numpy as np
 import pytest
 import xarray as xr
@@ -23,19 +20,12 @@ from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.analysis import (
     NRabiNodeAnalysis,
     NRabiQubitAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
-
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
-)
-_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
 
 
-def test_n_rabi_01(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        name = "n_rabi_oscillations"
-        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-        full_dataset = xr.open_dataset(file_path)
+def test_n_rabi_01(seeded_redis, session_context, node_data_dir):
+    name = "n_rabi_oscillations"
+    file_path = node_data_dir / f"dataset_{name}.hdf5"
+    with xr.open_dataset(file_path) as full_dataset:
         qubit_qois = ["rxy:amp180"]
 
         ds_13 = filter_ds_by_element(full_dataset, "q13")
@@ -63,3 +53,16 @@ def test_n_rabi_01(redis_connection, session_context):
 
         assert qoi.analysis_successful
         assert pytest.approx(amp180) == 0.412374722
+
+
+def test_plotting(seeded_redis, session_context, node_data_dir):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    name = "n_rabi_oscillations"
+    qubit_qois = ["rxy:amp180"]
+
+    analysis = NRabiNodeAnalysis(name, qubit_qois, session=session_context)
+    analysis.analyze_node(node_data_dir, save_plot=True)
+    number_of_qubits = len(analysis.dataset.attrs["elements"])
+    assert analysis.axs.shape == (1, number_of_qubits)

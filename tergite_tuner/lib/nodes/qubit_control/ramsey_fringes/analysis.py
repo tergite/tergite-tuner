@@ -17,11 +17,11 @@ import numpy as np
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import RamseyModel
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = ""
 
@@ -75,9 +75,28 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
             self.qubit_frequency + self.frequency_correction
         )
 
+    def plotter(self, ax):
+        ax.plot(self.artificial_detunings, self.fitted_detunings, "bo", ms=5.0)
+        ax.axvline(
+            self.frequency_correction,
+            color="red",
+            label=f"correction: {int(self.frequency_correction) / 1e3} kHz",
+        )
+        ax.plot(
+            self.artificial_detunings,
+            self.poly1d_fn(self.artificial_detunings),
+            "--b",
+            lw=1,
+        )
+        ax.axvline(0, color="black", lw=1)
+        ax.set_xlabel("Artificial detuning (Hz)")
+        ax.set_ylabel("Fitted detuning (Hz)")
+
+        ax.grid()
+
 
 class RamseyDetunings01QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = "clock_freqs:f01"
 
@@ -98,7 +117,7 @@ class RamseyDetunings01QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
 
 
 class RamseyDetunings12QubitAnalysis(RamseyDetuningsBaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.redis_field = "clock_freqs:f12"
 

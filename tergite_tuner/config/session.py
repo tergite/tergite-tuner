@@ -33,10 +33,9 @@ from os import PathLike
 from pathlib import Path
 from typing import (
     Any,
+    Dict,
     List,
-    Literal,
     Mapping,
-    NotRequired,
     Optional,
     Self,
     Tuple,
@@ -71,8 +70,9 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
 )
-from tergite_tuner.utils.dto.enums import MeasurementMode
-from tergite_tuner.utils.dto.node_enum import NodeEnum
+from tergite_tuner.storage.redis import RedisStore
+from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
 def _default_data_dir() -> Path:
@@ -90,16 +90,20 @@ class SessionOptions(TypedDict, total=False):
     cluster_ip: Optional[IPv4Address]
     target_node: Optional[NodeEnum]
     qubits: List[str]
-    couplers: Optional[List[str]]
+    couplers: List[str]
     name: Optional[str]
     log_dir: Optional[Path]
     cluster_mode: MeasurementMode
     cluster_timeout: int
+    spi_mode: SPIMode
     user_samplespace: dict
     stdout_log_level: int
     file_log_level: int
     spi_serial_port: str
     redis_url: RedisDsn
+    is_recalibration: bool
+    ignore_spec: bool
+    save_plot: bool
     data_dir: Path
     device_config: DeviceConfig | Path | str
     node_config: NodeConfig | Path | str
@@ -108,6 +112,7 @@ class SessionOptions(TypedDict, total=False):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
     ignored_nodes: Tuple[NodeEnum, ...]
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
+    fixed_duration_qubits: Tuple[str, ...]
 
 
 class SessionContext(BaseModel):
@@ -121,7 +126,7 @@ class SessionContext(BaseModel):
     ``.env`` file (with ``os.environ`` as a fallback).
 
     Attributes:
-        _redis: an active Redis client (or fakeredis) used by
+        _redis: an active Redis client used by
             the calibration. ``None`` until injected at the start of a
             run. Carried on the session so it can flow alongside the
             rest of the run state.
@@ -140,6 +145,7 @@ class SessionContext(BaseModel):
             ``re_analyse``).
         cluster_timeout: timeout in seconds used when waiting on the
             cluster for acquisitions.
+        spi_mode: spi mode (``real`` or ``dummy``).
         user_samplespace: the user samplespace for this session.
         stdout_log_level: console logger level (Python ``logging``
             convention). Defaults to ``25`` to suppress noisy
@@ -165,6 +171,12 @@ class SessionContext(BaseModel):
             nodes. It can also be a path to the node_config TOML file.
             See node_config.example.toml
         target_node_name: lower-case name of :attr:`target_node`.
+        is_recalibration: recalibrate specific nodes (True) or tune up
+            the device from the scratch (False).
+        ignore_spec: recalibrate the nodes by ignoring the previous
+            calibration status (True) or skip the calibration if it is
+            already calibrated (False).
+        save_plot: save the analysis plot (True) or not (False).
         node_dag_edges: the directed edges of the calibration Directed Acyclic Graph (DAG)
             with edges of format ``(parent, child)`` where ``child`` depends on ``parent``.
             Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`
@@ -174,6 +186,7 @@ class SessionContext(BaseModel):
         node_cls_map: the mapping from :class:`NodeEnum` to its
             concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
             to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
+        fixed_duration_qubits: the qubits with a fixed duration working points for cz calibration.
     """
 
     model_config = ConfigDict(
@@ -183,16 +196,20 @@ class SessionContext(BaseModel):
     cluster_ip: Optional[IPv4Address] = None
     target_node: Optional[NodeEnum] = None
     qubits: List[str] = []
-    couplers: Optional[List[str]] = None
+    couplers: List[str] = []
     name: Optional[str] = None
     log_dir: Optional[Path] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
+    spi_mode: SPIMode = SPIMode.dummy
     user_samplespace: dict = {}
     stdout_log_level: int = 25
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
     redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
+    is_recalibration: bool = True
+    ignore_spec: bool = True
+    save_plot: bool = False
     data_dir: Path = Field(default_factory=_default_data_dir)
     device_config: DeviceConfig = Field(default_factory=DeviceConfig)
     node_config: NodeConfig = Field(default_factory=NodeConfig)
@@ -201,9 +218,12 @@ class SessionContext(BaseModel):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
+    fixed_duration_qubits: Tuple[str, ...] = ()
+    _redis_fields_touched: Dict[str, int] = {}
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)
+    _redis_store: RedisStore = PrivateAttr(default=None)
 
     @field_validator("device_config", mode="before")
     @classmethod
@@ -237,7 +257,7 @@ class SessionContext(BaseModel):
             return ClusterConfig.from_json(value)
         return value
 
-    @field_validator("qubits", "couplers", mode="before")
+    @field_validator("qubits", "couplers", "fixed_duration_qubits", mode="before")
     @classmethod
     def cast_comma_separated_to_list(cls, value):
         """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""
@@ -274,6 +294,31 @@ class SessionContext(BaseModel):
             return MeasurementMode[value.strip()]
         return value
 
+    @field_validator("spi_mode", mode="before")
+    @classmethod
+    def cast_spi_mode(cls, value):
+        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``
+        as well as raw int / :class:`SPIMode` values."""
+        if value is None or isinstance(value, SPIMode):
+            return value
+        if isinstance(value, str):
+            return SPIMode[value.strip()]
+        return value
+
+    @field_validator("is_recalibration", "ignore_spec", mode="before")
+    @classmethod
+    def cast_bool_fields(cls, value):
+        """Accept common string representations (e.g. ``'true'``, ``'false'``,
+        ``'1'``, ``'0'``) as well as raw bool values from ``os.environ``."""
+        if isinstance(value, str):
+            normalised = value.strip().lower()
+            if normalised in ("true", "1", "yes", "y", "on"):
+                return True
+            if normalised in ("false", "0", "no", "n", "off", ""):
+                return False
+            raise ValueError(f"Cannot cast {value!r} to bool.")
+        return bool(value)
+
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
         """Derive cross-field defaults: data_dir, config_dir, name, log_dir."""
@@ -305,8 +350,35 @@ class SessionContext(BaseModel):
     def redis(self) -> Redis:
         """The redis connection where data is being saved"""
         if self._redis is None:
-            self._redis = Redis.from_url(self.redis_url, decode_responses=True)
+            self._redis = Redis.from_url(str(self.redis_url), decode_responses=True)
         return self._redis
+
+    @property
+    def redis_store(self) -> RedisStore:
+        """The redis store instance that handles data persistence"""
+        if self._redis_store is None:
+            self._redis_store = RedisStore(self.redis)
+        return self._redis_store
+
+    @computed_field
+    @property
+    def redis_fields_touched(self) -> Dict[str, int]:
+        """The redis fields that might have been touched by the calibration"""
+        return self._redis_fields_touched
+
+    def update_redis_fields_log(self, node: BaseNode):
+        """Updates the redis fields that might have been touched
+
+        Args:
+            node: the current node running
+        """
+        for field in node.redis_fields:
+            old_count = self._redis_fields_touched.setdefault(field, 0)
+            self._redis_fields_touched[field] = old_count + 1
+
+    def refresh_redis_fields_log(self):
+        """Refreshes the log that tracks the fields that have been touched in the session"""
+        self._redis_fields_touched.clear()
 
     @classmethod
     def from_env(

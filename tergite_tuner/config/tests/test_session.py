@@ -39,7 +39,7 @@ from tergite_tuner.lib.nodes import (
     Qubit01SpectroscopyAmplitudeNode,
     ResonatorSpectroscopy1Node,
 )
-from tergite_tuner.utils.dto.enums import MeasurementMode
+from tergite_tuner.utils.types.enums import MeasurementMode
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -78,6 +78,7 @@ def clean_environ(monkeypatch):
         "COUPLERS",
         "NAME",
         "CLUSTER_TIMEOUT",
+        "IS_RECALIBRATION",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -93,6 +94,7 @@ def test_session_loads_example_env(clean_environ):
     assert session.spi_serial_port == "/dev/ttyACM0"
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.cluster_timeout == 222
+    assert session.is_recalibration is True
 
 
 def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
@@ -101,6 +103,7 @@ def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
 
     assert session.cluster_mode == MeasurementMode.real
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
+    assert session.data_dir == Path("out")
 
 
 def test_session_constructs_with_no_args(clean_environ):
@@ -109,6 +112,7 @@ def test_session_constructs_with_no_args(clean_environ):
 
     assert session.stdout_log_level == 25
     assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
+    assert session.is_recalibration is True
 
 
 def test_session_overrides_optional_vars(tmp_path, clean_environ):
@@ -224,6 +228,67 @@ def test_session_loads_configs_from_file_paths():
     assert session.node_config == _NODE_CONFIG
     assert session.cluster_config.model_dump() == _CLUSTER_CONFIG.model_dump()
     assert session.spi_config == _SPI_CONFIG
+
+
+@pytest.mark.parametrize(
+    "raw_value",
+    ["True", "true", "TRUE", " true ", "1", "yes", "Y", "on", ""],
+)
+def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_value):
+    """Truthy ``IS_RECALIBRATION`` values from the env file coerce to ``True``. Default is True also"""
+    sample = tmp_path / ".env"
+    sample.write_text(f"IS_RECALIBRATION='{raw_value}'\n")
+
+    session = SessionContext.from_env(sample)
+    assert session.is_recalibration is True
+
+
+@pytest.mark.parametrize(
+    "raw_value",
+    ["False", "false", "FALSE", " false ", "0", "no", "N", "off"],
+)
+def test_session_is_recalibration_falsy_strings(tmp_path, clean_environ, raw_value):
+    """Falsy ``IS_RECALIBRATION`` values from the env file coerce to ``False``."""
+    sample = tmp_path / ".env"
+    sample.write_text(f"IS_RECALIBRATION='{raw_value}'\n")
+
+    session = SessionContext.from_env(sample)
+    assert session.is_recalibration is False
+
+
+def test_session_is_recalibration_from_os_environ(monkeypatch, clean_environ):
+    """``IS_RECALIBRATION`` can be supplied via ``os.environ``."""
+    monkeypatch.setenv("IS_RECALIBRATION", "true")
+
+    session = SessionContext.from_env()
+    assert session.is_recalibration is True
+
+
+def test_session_is_recalibration_kwarg_overrides_env(tmp_path, clean_environ):
+    """A ``kwargs`` value for ``is_recalibration`` overrides the env file."""
+    sample = tmp_path / ".env"
+    sample.write_text("IS_RECALIBRATION='False'\n")
+
+    session = SessionContext.from_env(sample, is_recalibration=True)
+    assert session.is_recalibration is True
+
+
+def test_session_is_recalibration_kwarg_bool_directly(clean_environ):
+    """Passing a real ``bool`` directly as a kwarg is preserved."""
+    assert SessionContext(is_recalibration=True).is_recalibration is True
+    assert SessionContext(is_recalibration=False).is_recalibration is False
+
+
+def test_session_rejects_invalid_is_recalibration(tmp_path, clean_environ):
+    """Unrecognised string values for ``IS_RECALIBRATION`` fail validation."""
+    sample = tmp_path / ".env"
+    sample.write_text("IS_RECALIBRATION='maybe'\n")
+
+    with pytest.raises(ValidationError) as excinfo:
+        SessionContext.from_env(sample)
+
+    locs = [err["loc"] for err in excinfo.value.errors()]
+    assert ("is_recalibration",) in locs
 
 
 def test_session_loads_node_vars_from_py_objects():

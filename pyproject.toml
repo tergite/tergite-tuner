@@ -89,12 +89,12 @@ test = [
     "pytest>=8.3.3",
     "requests-mock>=1.11.0",
     "pytest-cov>=7.0.0",
-    "fakeredis>=2.32.1"
+    "fakeredis[lua]>=2.32.1"
 ]
 
 [tool.setuptools.packages.find]
 include = ["tergite_tuner*"]
-exclude = ["*.tests", "*.tests.*"]
+exclude = ["*.tests", "*.tests.*", "examples*", "*.data", "*.data.*"]
 
 [tool.setuptools.exclude-package-data]
 "tergite_tuner.config" = ["templates/**"]

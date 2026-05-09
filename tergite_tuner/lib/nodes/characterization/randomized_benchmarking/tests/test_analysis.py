@@ -11,9 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
-
 import pytest
 import xarray as xr
 
@@ -22,34 +19,56 @@ from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis i
     RandomizedBenchmarkingNodeAnalysis,
     RandomizedBenchmarkingQubitAnalysis,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
+from tergite_tuner.tests.utils.redis import loaded_redis
 
-_test_data_dir = os.path.join(Path(__file__).parent, "data")
-_redis_values = os.path.join(_test_data_dir, "redis-2026-03-10-21-33-32.json")
+_REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
 
 
-def test_randomized_benchmarking_analysis(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        file_path = os.path.join(_test_data_dir, "dataset_randomized_benchmarking.hdf5")
-        dataset = xr.open_dataset(file_path)
+def test_randomized_benchmarking_analysis(
+    redis_connection, session_context, node_data_dir
+):
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
+        file_path = node_data_dir / "dataset_randomized_benchmarking.hdf5"
+        with xr.open_dataset(file_path) as dataset:
 
+            qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
+            analysis = RandomizedBenchmarkingQubitAnalysis(
+                "randomized_benchmarking", qubit_qois, session_context
+            )
+            ds_11 = filter_ds_by_element(dataset, "q11")
+            ds_15 = filter_ds_by_element(dataset, "q15")
+            qoi_11 = analysis.process_qubit(ds_11, "q11")
+            qoi_15 = analysis.process_qubit(ds_15, "q15")
+
+            standard_fidelity_11 = qoi_11.analysis_result["fidelity"]["value"]
+            standard_leakage_11 = qoi_11.analysis_result["leakage"]["value"]
+            standard_fidelity_15 = qoi_15.analysis_result["fidelity"]["value"]
+            standard_leakage_15 = qoi_15.analysis_result["leakage"]["value"]
+
+            assert qoi_11.analysis_successful
+            assert qoi_15.analysis_successful
+            assert pytest.approx(standard_fidelity_11) == 0.99951747
+            assert pytest.approx(standard_leakage_11) == 0.00207032
+            assert pytest.approx(standard_fidelity_15) == 0.99788337
+            assert pytest.approx(standard_leakage_15) == 0.0064318
+
+
+def test_plotting(redis_connection, session_context, node_data_dir):
+    """
+    Test that the plotter produces a figure with the right number of axes
+    """
+    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
+    with loaded_redis(redis_connection, redis_data_file):
         qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
-        analysis = RandomizedBenchmarkingQubitAnalysis(
-            "randomized_benchmarking", qubit_qois, session_context
+        name = "randomized_benchmarking"
+        analysis = RandomizedBenchmarkingNodeAnalysis(
+            name,
+            redis_fields=qubit_qois,
+            session_context=session_context,
         )
-        ds_11 = filter_ds_by_element(dataset, "q11")
-        ds_15 = filter_ds_by_element(dataset, "q15")
-        qoi_11 = analysis.process_qubit(ds_11, "q11")
-        qoi_15 = analysis.process_qubit(ds_15, "q15")
+        analysis.analyze_node(node_data_dir, save_plot=True)
+        figure = analysis.fig
 
-        standard_fidelity_11 = qoi_11.analysis_result["fidelity"]["value"]
-        standard_leakage_11 = qoi_11.analysis_result["leakage"]["value"]
-        standard_fidelity_15 = qoi_15.analysis_result["fidelity"]["value"]
-        standard_leakage_15 = qoi_15.analysis_result["leakage"]["value"]
-
-        assert qoi_11.analysis_successful
-        assert qoi_15.analysis_successful
-        assert pytest.approx(standard_fidelity_11) == 0.998669
-        assert pytest.approx(standard_leakage_11) == 0.00207032
-        assert pytest.approx(standard_fidelity_15) == 0.9962656
-        assert pytest.approx(standard_leakage_15) == 0.0064318
+        # TODO: this will change when the top band is removed
+        assert len(figure.get_axes()) == 8

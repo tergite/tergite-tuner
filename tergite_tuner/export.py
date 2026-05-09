@@ -25,6 +25,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, Unpack
 
+import numpy as np
 import tomlkit
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -58,8 +59,8 @@ class _QubitUnits(BaseModel):
     pi_pulse_duration: str = "s"
     pi_pulse_motzoi: str = ""
     pulse_sigma: str = ""
-    t1_decoherence: str = "s"
-    t2_decoherence: str = "s"
+    t1_decoherence: str = "us"
+    t2_decoherence: str = "us"
     anharmonicity: str = "Hz"
 
 
@@ -78,8 +79,8 @@ class _CouplerUnits(BaseModel):
     cz_pulse_amplitude: str = ""
     cz_pulse_dc_bias: str = ""
     cz_pulse_duration_constant: str = "s"
-    control_rz_lambda: str = "deg"
-    target_rz_lambda: str = "deg"
+    control_rz_lambda: str = "rad"
+    target_rz_lambda: str = "rad"
     pulse_type: str = ""
 
 
@@ -124,13 +125,13 @@ _qubit_parameters: List[Tuple[str, str, _DataSource, Type]] = [
     ("pulse_type", "Gaussian", _DataSource.LITERAL, str),
     ("pulse_sigma", "rxy:sigma", _DataSource.REDIS, float),
     ("t1_decoherence", "t1_time", _DataSource.REDIS, float),
-    ("t2_decoherence", "t2_time", _DataSource.REDIS, float),
+    ("t2_decoherence", "t2_echo_time", _DataSource.REDIS, float),
 ]
 
 _readout_resonator_parameters: List[Tuple[str, str, _DataSource, Type]] = [
     ("acq_delay", "measure:acq_delay", _DataSource.REDIS, float),
     ("acq_integration_time", "measure:integration_time", _DataSource.REDIS, float),
-    ("frequency", "clock_freqs:readout", _DataSource.REDIS, float),
+    ("frequency", "extended_clock_freqs:readout_2state_opt", _DataSource.REDIS, float),
     ("pulse_delay", "measure:ro_pulse_delay", _DataSource.REDIS, float),
     ("pulse_duration", "measure:pulse_duration", _DataSource.REDIS, float),
     ("pulse_type", "Square", _DataSource.LITERAL, str),
@@ -183,7 +184,7 @@ def extract_bcc_params(
     session = SessionContext.from_env(env_file, **session_options)
     redis_connection = session.redis
     qubits = session.qubits
-    couplers = session.couplers or []
+    couplers = session.couplers
 
     qubit_entries = [
         _assemble_parameters(_qubit_parameters, q, redis_connection) for q in qubits
@@ -270,6 +271,11 @@ def _assemble_parameters(
             )
             parameterized_return_object[parameter_[0]] = (
                 _DOWNCONVERT_FREQUENCY - parameterized_return_object[parameter_[0]]
+            )
+
+        if "cz_dynamic" in parameter_[1]:
+            parameterized_return_object[parameter_[0]] = np.deg2rad(
+                float(parameterized_return_object[parameter_[0]])
             )
 
     return parameterized_return_object

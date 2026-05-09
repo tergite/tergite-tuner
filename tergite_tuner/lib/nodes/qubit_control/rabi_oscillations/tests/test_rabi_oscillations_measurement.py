@@ -11,10 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-
-import os
-from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -24,12 +20,11 @@ from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
     RabiOscillations12Node,
     RabiOscillationsNode,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_dummy_01_generation(session_context):
@@ -62,30 +57,23 @@ def test_dummy_12_generation(session_context):
     assert dummy_dataset_12.data_vars[0].size == number_of_amplitudes_12
 
 
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
-)
-_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
+def test_12_pulse_duration(seeded_redis, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+    qubits = ["q13", "q14", "q15"]
+    node_12 = RabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
+    samplespace = {  # small samplespace
+        "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
+    }
+    transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
+    measurement_class = node_12.measurement_cls(transmons_dict)
+    schedule = measurement_class.schedule_function(
+        **samplespace, **node_12.schedule_keywords
+    )
+    for pulses in schedule.operations.values():
+        if pulses["name"] == "DRAGPulse":
+            pulse_duration = pulses["pulse_info"][0]["duration"]
 
-
-def test_12_pulse_duration(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-        qubits = ["q13", "q14", "q15"]
-        node_12 = RabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
-        samplespace = {  # small samplespace
-            "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
-        }
-        transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-        measurement_class = node_12.measurement_cls(transmons_dict)
-        schedule = measurement_class.schedule_function(
-            **samplespace, **node_12.schedule_keywords
-        )
-        for pulses in schedule.operations.values():
-            if pulses["name"] == "DRAGPulse":
-                pulse_duration = pulses["pulse_info"][0]["duration"]
-
-        assert pytest.approx(pulse_duration) == 7.6e-8
+    assert pytest.approx(pulse_duration) == 7.6e-8
 
 
 def test_dummy_n_rabi_generation(session_context):
@@ -107,24 +95,21 @@ def test_dummy_n_rabi_generation(session_context):
     )
 
 
-def test_12_pulse_duration(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-        qubits = ["q13", "q14", "q15"]
-        node_12 = NRabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
-        samplespace = {
-            "mw_amplitudes_sweep": {
-                qubit: np.linspace(-0.05, 0.05, 3) for qubit in qubits
-            },
-            "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
-        }
-        transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-        measurement_class = node_12.measurement_cls(transmons_dict)
-        schedule = measurement_class.schedule_function(
-            **samplespace, **node_12.schedule_keywords
-        )
-        for pulses in schedule.operations.values():
-            if pulses["name"] == "DRAGPulse":
-                pulse_duration = pulses["pulse_info"][0]["duration"]
+def test_12_pulse_duration(seeded_redis, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+    qubits = ["q13", "q14", "q15"]
+    node_12 = NRabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
+    samplespace = {
+        "mw_amplitudes_sweep": {qubit: np.linspace(-0.05, 0.05, 3) for qubit in qubits},
+        "X_repetitions": {qubit: np.arange(1, 8, 4) for qubit in qubits},
+    }
+    transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
+    measurement_class = node_12.measurement_cls(transmons_dict)
+    schedule = measurement_class.schedule_function(
+        **samplespace, **node_12.schedule_keywords
+    )
+    for pulses in schedule.operations.values():
+        if pulses["name"] == "DRAGPulse":
+            pulse_duration = pulses["pulse_info"][0]["duration"]
 
-        assert pytest.approx(pulse_duration) == 7.6e-8
+    assert pytest.approx(pulse_duration) == 7.6e-8

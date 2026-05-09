@@ -58,3 +58,12 @@ class AllXYAnalysis(BaseAnalysis):
         self.x_labels = labels
 
         return [0]
+
+    def plotter(self, ax):
+        ax.set_title(f"All-XY analysis_base for {self.qubit}")
+        ax.scatter(self.independents[:-2], self.rotated_data, marker="o", s=48)
+        ax.set_xlabel("Gate")
+        ax.set_xticks(self.independents[:-2])
+        ax.set_xticklabels(self.x_labels, rotation=90)
+        ax.set_ylabel("|S21| (V)")
+        ax.grid()

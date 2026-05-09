@@ -16,7 +16,9 @@
 # that they have been altered from the originals.
 
 import time
+from enum import Enum
 from pathlib import Path
+from sys import platform
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -24,9 +26,8 @@ from qblox_instruments import SpiRack
 from qcodes import validators
 from rich.progress import Progress
 
-from tergite_tuner.utils.dto.enums import MeasurementMode
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.misc.os import OperatingSystem, get_os
+from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -45,7 +46,8 @@ def _find_and_validate_spi_port(spi_serial_port: str):
     """
 
     # We validate on unix based systems whether the port is actually taken
-    if get_os() == OperatingSystem.LINUX or get_os() == OperatingSystem.MAC:
+    current_os = _get_os()
+    if current_os == OperatingSystem.LINUX or current_os == OperatingSystem.MAC:
 
         # Path to serial devices
         path = Path("/dev/")
@@ -77,7 +79,8 @@ class SpiDAC:
         self.session = session
         self.port = _find_and_validate_spi_port(session.spi_serial_port)
         self.is_dummy = (
-            session.cluster_mode == MeasurementMode.dummy
+            session.spi_mode == SPIMode.dummy
+            or session.cluster_mode == MeasurementMode.dummy
             or session.cluster_mode == MeasurementMode.re_analyse
         )
         if self.is_dummy:
@@ -220,3 +223,29 @@ class SpiDAC:
     def close_spi_rack(self):
         self.spi.close()
         logger.info("Closing SPI rack")
+
+
+class OperatingSystem(Enum):
+    LINUX = "LINUX"
+    MAC = "MAC"
+    WINDOWS = "WINDOWS"
+    UNDEFINED = "UNDEFINED"
+
+
+def _get_os() -> "OperatingSystem":
+    # Safe way to retrieve a string about the operating system
+    platform_str: str
+    if isinstance(platform, str):
+        platform_str = platform.lower()
+    else:
+        platform_str = platform.system().lower()
+
+    # Return as enum
+    if platform_str == "linux":
+        return OperatingSystem.LINUX
+    elif platform_str == "darwin":
+        return OperatingSystem.MAC
+    elif "win" in platform_str:
+        return OperatingSystem.WINDOWS
+    else:
+        return OperatingSystem.UNDEFINED

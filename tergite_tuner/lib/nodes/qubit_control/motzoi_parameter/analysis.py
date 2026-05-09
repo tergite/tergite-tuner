@@ -12,11 +12,11 @@
 # that they have been altered from the originals.
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.dto.qoi import QOI
+from tergite_tuner.utils.types.qoi import QOI
 
 
 class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.fit_results = {}
         self.optimal_motzoi = None
@@ -36,6 +36,16 @@ class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
         sums = self.magnitudes.sum(self.x_repetitions_coord)
 
         self.optimal_motzoi = sums.idxmin()[self.data_var].item()
+
+    def plotter(self, axis):
+        datarray = self.magnitudes[self.data_var]
+        datarray.plot(ax=axis, x=f"mw_motzois{self.qubit}", cmap="RdBu_r")
+
+        # Mark the optimal motzoi on the plot
+        label = f"Optimal Motzoi: {self.optimal_motzoi:.3f}"
+        styles = dict(c="k", lw=4, linestyle="--", label=label)
+        axis.axvline(self.optimal_motzoi, **styles)
+        axis.legend()
 
 
 class Motzoi01QubitAnalysis(MotzoiBaseQubitAnalysis):

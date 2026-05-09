@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING
 import tqdm
 import xarray
 
-from tergite_tuner.utils.dto.enums import MeasurementMode
 from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.enums import MeasurementMode
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends import SerialCompiler

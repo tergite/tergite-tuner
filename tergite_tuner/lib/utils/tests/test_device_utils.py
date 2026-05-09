@@ -27,13 +27,13 @@ from tergite_tuner.lib.utils.validators import (
     get_number_of_batches,
     reduce_batch,
 )
-from tergite_tuner.tests.utils.decorators import loaded_redis
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
-from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
+from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 

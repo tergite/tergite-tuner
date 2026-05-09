@@ -15,6 +15,7 @@
 from enum import Enum
 from functools import singledispatchmethod
 
+import matplotlib.patches as mpatches
 import numpy as np
 from scipy.optimize import leastsq
 
@@ -262,9 +263,54 @@ class ResetChevronQubitAnalysis(BaseQubitAnalysis):
                 self.opt_freq, self.opt_cz = 0, 0
         return [self.opt_freq, self.opt_cz]
 
+    def plotter(self, axis):
+        datarray = self.magnitudes[f"{self.qubit}"]
+        datarray.plot(ax=axis, x=self.amplitudes_coord, cmap="RdBu_r")
+        axis.scatter(0, 0, label="Min = {:.4f}".format(self.min))
+        axis.scatter(
+            self.opt_freq,
+            self.opt_cz,
+            c="r",
+            label="Duration = {:.1f} ns".format(self.opt_cz * 1e9),
+            marker="*",
+            s=200,
+            edgecolors="k",
+            linewidth=0.5,
+            zorder=10,
+        )
+        axis.vlines(
+            self.opt_freq,
+            self.times[0],
+            self.times[-1],
+            label="Amplitude = {:.5f} V".format(self.opt_freq),
+            colors="k",
+            linestyles="--",
+            linewidth=1.5,
+        )
+        axis.hlines(
+            self.opt_cz,
+            self.amps[0],
+            self.amps[-1],
+            colors="k",
+            linestyles="--",
+            linewidth=1.5,
+        )
+        axis.set_xlim([self.amps[0], self.amps[-1]])
+        axis.set_ylim([self.times[0], self.times[-1]])
+        axis.set_ylabel("Drive Durations (s)")
+        axis.set_xlabel("Drive Amplitude (V)")
+        axis.set_title(f"Reset Chevron - Qubit {self.qubit[1:]}")
+        axis.legend()  # Add legend to the plot
+
+        # Customize plot as needed
+        handles, labels = axis.get_legend_handles_labels()
+        patch = mpatches.Patch(color="red", label=f"{self.qubit}")
+        handles.append(patch)
+        axis.legend(handles=handles, fontsize="small")
+
 
 class ResetChevronCouplerAnalysis(BaseCouplerAnalysis):
-    def __init__(self, name, redis_fields, session=None, **kwargs):
+    def __init__(self, name, redis_fields, session, **kwargs):
         super().__init__(name, redis_fields, session, **kwargs)
         self.data_path = ""
         self.q1 = ""
@@ -302,6 +348,10 @@ class ResetChevronCouplerAnalysis(BaseCouplerAnalysis):
         res2 = self.q2.process_qubit(ds2, q2_data_var[0])
 
         return res1
+
+    def plotter(self, primary_axis, secondary_axis):
+        self.q1.plotter(primary_axis)
+        self.q2.plotter(secondary_axis)
 
 
 class ResetChevronNodeAnalysis(BaseAllCouplersAnalysis):
