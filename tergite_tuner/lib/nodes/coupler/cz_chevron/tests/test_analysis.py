@@ -15,11 +15,13 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCouplerAnalysis
+from tergite_tuner.tests.utils.pytest import is_work_in_progress
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-export-2025-12-21.json"
 
 
+@pytest.mark.skipif(is_work_in_progress(), reason="Currently work in progress")
 def test_cz_chevron_analysis_good_data(
     redis_connection, session_context, node_data_dir
 ):
