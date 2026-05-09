@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tergite-tuner"
-version = "2026.03.0"
+version = "2026.05.0"
 description = "Library to tune up the WACQT quantum computers"
 readme = "README.md"
 authors = [

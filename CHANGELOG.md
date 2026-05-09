@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.05.0] - 2026-05-09
+
 ### Added
 
 - Added the `read_session_results` function to the entry point
