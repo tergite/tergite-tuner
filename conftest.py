@@ -37,12 +37,7 @@ from tergite_tuner.config.session import SessionContext
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.utils.dto.enums import MeasurementMode
 
-_FIXTURE_ENV_FILE = get_fixture_path("configs", "env", "default.env")
-_FIXTURE_DEVICE_UNDER_TEST_DIR = get_fixture_path(
-    "templates",
-    "default_device_under_test",
-)
-_FIXTURE_CONFIG_PATH = Path(_FIXTURE_DEVICE_UNDER_TEST_DIR).resolve() / "configs"
+_FIXTURE_CONFIGS_DIR = Path(get_fixture_path("configs"))
 _PROJECT_ROOT = Path(__file__).parent
 
 
@@ -74,7 +69,7 @@ def session_context(redis_connection) -> SessionContext:
     ``session.config`` loads the test configuration package.
     """
     return SessionContext.from_env(
-        _FIXTURE_ENV_FILE,
+        _FIXTURE_CONFIGS_DIR / "default.env",
         cluster_mode=MeasurementMode.dummy,
         user_samplespace={
             "resonator_spectroscopy": {
@@ -84,10 +79,10 @@ def session_context(redis_connection) -> SessionContext:
                 }
             },
         },
-        cluster_config=_FIXTURE_CONFIG_PATH / "cluster_config.json",
-        node_config=_FIXTURE_CONFIG_PATH / "node_config.toml",
-        spi_config=_FIXTURE_CONFIG_PATH / "spi_config.toml",
-        device_config=_FIXTURE_CONFIG_PATH / "device_config.toml",
+        cluster_config=_FIXTURE_CONFIGS_DIR / "cluster_config.json",
+        node_config=_FIXTURE_CONFIGS_DIR / "node_config.toml",
+        spi_config=_FIXTURE_CONFIGS_DIR / "spi_config.toml",
+        device_config=_FIXTURE_CONFIGS_DIR / "device_config.toml",
         output_dir=_PROJECT_ROOT / "out" / "pytest",
         fixed_duration_qubits=("q12",),
         save_plot=False,

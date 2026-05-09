@@ -20,8 +20,6 @@ send_to_lefteris.ps1
 #dataset folders
 20[0-9][0-9]*/
 # Allow year-based folders under tests/fixtures/data/
-!tergite_tuner/tests/fixtures/data/01-44-14_simple_coupler_run-SUCCESS/20[0-9][0-9]*/
-!tergite_tuner/tests/fixtures/data/01-44-14_simple_coupler_run-SUCCESS/20[0-9][0-9]*/**
 !tergite_tuner/tests/fixtures/data/16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS/20[0-9][0-9]*/
 !tergite_tuner/tests/fixtures/data/16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS/20[0-9][0-9]*/**
 

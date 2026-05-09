@@ -26,17 +26,18 @@ from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.analysis import (
 )
 from tergite_tuner.tests.utils.decorators import loaded_redis
 
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent.parent, "data", "single_qubits_run"
+_TEST_DATA_DIR = (
+    Path(__file__).parent.parent.parent.parent / "data" / "single_qubits_run"
 )
-_redis_values = os.path.join(_test_data_dir, "redis-single-qubits-run.json")
+_NODE_TEST_DIR = _TEST_DATA_DIR / "motzoi_parameter"
+_HDF_FILE = _NODE_TEST_DIR / "dataset_motzoi_parameter.hdf5"
+_REDIS_DATA_FILE = _TEST_DATA_DIR / "redis-single-qubits-run.json"
 
 
 def test_motzoi_parameter(redis_connection, session_context):
-    with loaded_redis(redis_connection, _redis_values):
+    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
         name = "motzoi_parameter"
-        file_path = os.path.join(_test_data_dir, name, f"dataset_{name}.hdf5")
-        full_dataset = xr.open_dataset(file_path)
+        full_dataset = xr.open_dataset(_HDF_FILE)
         qubit_qois = ["rxy:motzoi"]
 
         ds_13 = filter_ds_by_element(full_dataset, "q13")
@@ -69,18 +70,17 @@ def test_plotting(redis_connection, session_context):
     Test that the plotter produces a figure with the right number of axes
     with save_plot=True
     """
-    with loaded_redis(redis_connection, _redis_values):
+    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
         name = "motzoi_parameter"
-        file_path = Path(_test_data_dir, name)
         qubit_qois = ["rxy:motzoi"]
 
         try:
             analysis = Motzoi01NodeAnalysis(name, qubit_qois, session=session_context)
-            analysis.analyze_node(file_path, save_plot=True)
+            analysis.analyze_node(_NODE_TEST_DIR, save_plot=True)
             assert hasattr(analysis, "fig")
             number_of_qubits = len(analysis.dataset.attrs["elements"])
 
             assert analysis.axs.shape == (1, number_of_qubits)
         finally:
-            (file_path / f"{name}.png").unlink(missing_ok=True)
-            (file_path / f"{name}_preview.png").unlink(missing_ok=True)
+            (_NODE_TEST_DIR / f"{name}.png").unlink(missing_ok=True)
+            (_NODE_TEST_DIR / f"{name}_preview.png").unlink(missing_ok=True)

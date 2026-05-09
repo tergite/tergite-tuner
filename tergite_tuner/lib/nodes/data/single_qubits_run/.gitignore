@@ -1,1 +1,3 @@
-!configuration.meta.toml
+**.json
+**.png
+!redis-single-qubits-run.json
