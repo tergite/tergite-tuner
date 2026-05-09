@@ -8,6 +8,11 @@ on:
       - "v*"
   pull_request:
 
+concurrency:
+  # cancel any previous run on this branch or tag that is still in progress
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -28,13 +33,13 @@ jobs:
           python -m pip install --upgrade pip
           python --version
           pip install ."[test,dev]"
-        env:
-          CODE_STATUS: ${{ vars.CODE_STATUS }}
       - name: Lint
         if: ${{ vars.SHOULD_LINT == 'true' }}
         run: black tergite_tuner --check
       - name: Run tests
         run: pytest tergite_tuner
+        env:
+          CODE_STATUS: ${{ vars.CODE_STATUS }}
 
   release:
     name: Release
