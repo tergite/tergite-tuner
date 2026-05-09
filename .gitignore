@@ -119,3 +119,7 @@ tergite_tuner/lib/nodes/coupler/cz_characterisation/tests/results/**
 
 # documentation
 site/
+
+# pyenv
+.python-version
+env/

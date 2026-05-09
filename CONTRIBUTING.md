@@ -80,7 +80,7 @@ pip install -e ".[test,dev]"
 
 A couple of configuration files are required in one folder whose path you can set via the `CONFIG_DIR` env var. (See [`.example.env` file](./.example.env) for more details)
 
-- [`configuration.meta.toml`](./tergite_tuner/config/templates/fc8a/configuration.meta.toml): 
+- [`configuration.meta.toml`](./tergite_tuner/config/templatesconfiguration.meta.toml): 
   It holds metadata about the other files
 - [`configs/cluster_config.json`](./tergite_tuner/config/templates/fc8a/configs/cluster_config.json): 
   It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file

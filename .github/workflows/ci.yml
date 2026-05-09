@@ -28,6 +28,8 @@ jobs:
           python -m pip install --upgrade pip
           python --version
           pip install ."[test,dev]"
+        env:
+          CODE_STATUS: ${{ vars.CODE_STATUS }}
       - name: Lint
         if: ${{ vars.SHOULD_LINT == 'true' }}
         run: black tergite_tuner --check

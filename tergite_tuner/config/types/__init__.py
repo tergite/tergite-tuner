@@ -10,21 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Schemas of the configuration files expected for this library.
-
-These pydantic models mirror the structure of the templates kept under
-``tergite_tuner/config/templates/<device>``. Each top-level
-configuration file lives in its own submodule and exposes a
-``from_toml`` / ``from_json`` classmethod that loads and validates the
-file in one shot. The pattern loosely follows
-``tergite-backend/app/libs/device_parameters/dtos.py``.
-
-Note:
-    Importing :class:`ClusterConfig` pulls in ``quantify_scheduler``,
-    which has a non-trivial import chain. The calibration tool needs it
-    anyway, so we pay the cost once at startup rather than working
-    around it.
-"""
+"""Schemas of the configuration files expected for this library."""
 
 from tergite_tuner.config.types.cluster import ClusterConfig
 from tergite_tuner.config.types.device import DeviceConfig, DeviceConfigFile

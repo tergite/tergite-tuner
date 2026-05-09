@@ -1,17 +1,34 @@
-# MANIFEST.in
-recursive-exclude tergite_tuner  **/tests/**
-recursive-exclude tergite_tuner  **/templates/**
-recursive-exclude tergite_tuner  **/data/**
-prune docs
-prune docs_editable
+exclude *.json
+exclude *.toml
+exclude *.yml
+exclude *.env
+exclude *.md
+exclude conftest.py
+
+recursive-exclude tergite_tuner **/tests/**
+recursive-exclude tergite_tuner **/data/**
+
+prune examples
+prune out
+prune build
+prune dist
 prune .github
-prune .idea
 prune .gitlab
 prune .vscode
-prune datasets
-prune development
-prune dummy_datasets
-prune libraries
-prune out
-prune resources
-prune examples
+prune .idea
+prune env
+
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude *.log
+global-exclude *.hdf5
+global-exclude *.png
+
+# inclusions
+include LICENSE.txt
+include README.md
+include CHANGELOG.md
+include CREDITS.md
+include pyproject.toml
