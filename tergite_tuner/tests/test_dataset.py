@@ -11,7 +11,6 @@
 # that they have been altered from the originals.
 
 import os.path
-import shutil
 from pathlib import Path
 
 import pandas
@@ -31,10 +30,7 @@ from tergite_tuner.tests.utils.fixtures import (
 from tergite_tuner.utils.dto.extended_transmon_element import ExtendedTransmon
 from tergite_tuner.utils.io.dataset import save_dataset, scrape_and_copy_hdf5_files
 
-_test_data_dir = os.path.join(
-    Path(__file__).parent.parent.parent, "lib/nodes/coupler/cz_calibration/tests/data"
-)
-_redis_values_path = os.path.join(_test_data_dir, "redis-2025-12-25-12-40-59.json")
+_REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
 
 
 def test_scrape_and_copy_hdf5_files(tmp_path):
@@ -109,7 +105,7 @@ def test_save_dataset_with_working_points(tmp_path, redis_connection, session_co
     """
     for nodes like cz calibration where two coords are packed into a Multindex object
     """
-    with loaded_redis(redis_connection, _redis_values_path) as conn:
+    with loaded_redis(redis_connection, _REDIS_FILE) as conn:
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         coupler = "q13_q14"
         couplers = [coupler]
