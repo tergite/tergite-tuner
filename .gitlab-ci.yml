@@ -33,6 +33,8 @@ test_lint_build:
     - pip install --upgrade pip
     # Install test dependencies
     - pip install ".[test,dev]"
+    # print the status of the code
+    - echo "CODE_STATUS=${CODE_STATUS}"
     # Run tests
     - pytest tergite_tuner --cov=tergite_tuner --cov-report xml --cov-report term-missing --junitxml=report.xml
     # Run formatter
