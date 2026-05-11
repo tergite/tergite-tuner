@@ -168,6 +168,7 @@ class BaseNode(ABC):
             **analysis_kwargs,
         )
         results = node_analysis.analyze_node(data_path, save_plot)
+        node_name = self.name
         redis_data = {}
 
         for pk, qoi in results.items():
@@ -182,7 +183,9 @@ class BaseNode(ABC):
 
             collection = "couplers" if "_" in pk else "transmons"
             insert_nested_key(redis_data, path=(collection, pk), value=record)
-            insert_nested_key(redis_data, path=("cs", pk), value="calibrated")
+            insert_nested_key(
+                redis_data, path=("cs", pk, node_name), value="calibrated"
+            )
 
         self.session.redis_store.save_many(redis_data)
         self.session.update_redis_fields_log(self)

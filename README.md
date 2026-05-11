@@ -225,7 +225,7 @@ You can find a few examples in the [`./examples`](./examples) folder
 - [ ] Update readme to show how to install the package
 - [ ] Change the `fixed_duration_qubits` to `fixed_duration_couplers`
 - [x] Add a proper default to the log_dir (say to out or the data_dir itself)
-- [ ] Saving the processed QOI results is saving cs in a wrong format. We need ('cs', pk, self.name)
+- [x] Saving the processed QOI results is saving cs in a wrong format. We need ('cs', pk, self.name)
 - [ ] Add tests for entire calibration runs
 - [x] Remove the failing tests for chevron, comment out the old tests
 - [x] Remove the unwanted dependencies
