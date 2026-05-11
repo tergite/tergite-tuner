@@ -99,7 +99,7 @@ class SessionOptions(TypedDict, total=False):
     stdout_log_level: int
     file_log_level: int
     spi_serial_port: str
-    redis_url: RedisDsn | str
+    redis_url: RedisDsn
     is_recalibration: bool
     ignore_spec: bool
     save_plot: bool

@@ -42,22 +42,16 @@ redis-server
 ### Installation
 
 ```shell
-git clone git@github.com:tergite/tergite-tuner.git
-cd tergite-tuner
-python -m venv .venv && source .venv/bin/activate     # or use conda
-pip install -e .
+pip install tergite-tuner
 ```
 
-Copy the example environment file and edit it as needed:
-
-```shell
-cp .example.env .env
-```
+Copy the [example environment file](./.example.env) and edit it as needed.  
 
 The `.env` file controls the cluster IP, redis URL, target node,
-qubits/couplers under calibration, and so on. Every field
-on `SessionContext` (see `tergite_tuner/config/session.py`)
-can be set here, or passed as a keyword argument to the public API.
+qubits/couplers under calibration, and so on.   
+
+Every field on `SessionContext`can be set in the `.env` (in upper case), 
+or passed as a keyword argument to the public API of the entry point functions.  
 
 
 On top of having a `.env` file, more configuration files maybe required. 
@@ -71,6 +65,111 @@ On top of having a `.env` file, more configuration files maybe required.
   It contains details about the calibration nodes to run, including initial values for each node
 - __Optional:__ [`spi_config.toml`](./spi_config.example.toml): 
   It contains details about the SPI instrument for driving the couplers. 
+
+The contents of each of these files can as well be passed to the entry functions
+as python objects e.g.
+
+```python
+from tergite_tuner import tune_device
+from tergite_tuner.config.types import (
+    DeviceConfig, 
+    ClusterConfig, 
+    SpiConfig, 
+    NodeConfig,
+)
+
+_, results = tune_device(
+    device_config=DeviceConfig(
+        name = "matthias",
+        resonator={
+            "all": {"attenuation": 10},
+            "q01": { "VNA_frequency": 6433000000.0 },
+            "q02":{ "VNA_frequency": 6290000000.0 },
+        },
+        # ...
+    ), 
+    node_config=NodeConfig.model_validate(
+        {
+            "qubit_spectroscopy_vs_current": {
+                "all": {
+                    "spec.spec_duration": 6e-6,
+                    "reset.duration": 200e-6,
+                },
+            }
+        }
+    ), 
+    spi_config=SpiConfig.model_validate({
+        "q11_q12": {
+            "spi_module_number": 1,
+            "dac_name": "dac0",
+            "edge_group": 1,
+        },        
+        "q12_q13": {
+            "spi_module_number": 2,
+            "dac_name": "dac1",
+            "edge_group": 2,
+        }
+    }),                
+    cluster_config=ClusterConfig.model_validate({
+      "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+      "hardware_description": {
+        "clusterA": {
+          "instrument_type": "Cluster",
+          "ref": "internal",
+          "modules": {
+            "1": {
+              "instrument_type": "QCM_RF"
+            },
+          }
+        }
+      },
+      # ...
+    })
+)
+```
+
+#### Customization of Nodes
+
+It is also possible to pass in your own implementation of the `Nodes` as long as they
+are inherited from the base nodes `BaseNode`, `QubitNode`, `CouplerNode` etc. 
+
+You can also change the order in which the nodes run or even choose to skip some of them
+by supplying your own `ignored_nodes: tuple[NodeEnum, ...] = ...` and 
+`node_dag_edges: tuple[tuple[NodeEnum, NodeEnum], ...]` as args to the entry point functions.
+
+```python
+
+from tergite_tuner.lib.base.node import QubitNode, BaseNode, CouplerNode
+from tergite_tuner import tune_device, NodeEnum
+
+
+class CustomQubitNode(QubitNode):
+    ...
+
+
+class CustomDeviceNode(BaseNode):
+    def precompile(self, samplespace): ...
+
+    @classmethod
+    def persist_qois(cls, session: "SessionContext", node_name: str): ...
+
+
+class CustomCouplerNode(QubitNode):
+    ...
+
+
+_, results = tune_device(
+    node_cls_map={
+        NodeEnum.QUBIT_01_SPECTROSCOPY: CustomQubitNode,
+        NodeEnum.COUPLER_ANTICROSSING: CustomCouplerNode,
+    },
+    node_dag_edges=(
+        (NodeEnum.PUNCHOUT, NodeEnum.TOF,),
+        (NodeEnum.QUBIT_01_SPECTROSCOPY, NodeEnum.COUPLER_ANTICROSSING),
+    ),
+    ignored_nodes=(NodeEnum.PUNCHOUT,)
+)
+```
 
 ### Public API
 
@@ -222,7 +321,7 @@ You can find a few examples in the [`./examples`](./examples) folder
 
 ### ToDo
 
-- [ ] Update readme to show how to install the package
+- [x] Update readme to show how to install the package
 - [x] Change the `fixed_duration_qubits` to `fixed_duration_couplers`
 - [ ] Update export to BCC to be more generic to allow any BaseModel class to be output
 - [x] Add a proper default to the log_dir (say to out or the data_dir itself)
@@ -230,6 +329,7 @@ You can find a few examples in the [`./examples`](./examples) folder
 - [ ] Add tests for entire calibration runs
 - [x] Remove the failing tests for chevron, comment out the old tests
 - [x] Remove the unwanted dependencies
+- [ ] Add ability to add new nodes in the NodeEnum map or allow a more flexible type in the mapping
 
 ## Contributing to the project
 
