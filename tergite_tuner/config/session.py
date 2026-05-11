@@ -92,7 +92,6 @@ class SessionOptions(TypedDict, total=False):
     qubits: List[str]
     couplers: List[str]
     name: Optional[str]
-    log_dir: Optional[Path]
     cluster_mode: MeasurementMode
     cluster_timeout: int
     spi_mode: SPIMode
@@ -100,7 +99,7 @@ class SessionOptions(TypedDict, total=False):
     stdout_log_level: int
     file_log_level: int
     spi_serial_port: str
-    redis_url: RedisDsn
+    redis_url: RedisDsn | str
     is_recalibration: bool
     ignore_spec: bool
     save_plot: bool
@@ -198,7 +197,6 @@ class SessionContext(BaseModel):
     qubits: List[str] = []
     couplers: List[str] = []
     name: Optional[str] = None
-    log_dir: Optional[Path] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
     spi_mode: SPIMode = SPIMode.dummy
@@ -321,15 +319,9 @@ class SessionContext(BaseModel):
 
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
-        """Derive cross-field defaults: data_dir, config_dir, name, log_dir."""
+        """Derive cross-field defaults: name"""
         if self.name is None and isinstance(self.target_node, NodeEnum):
             self.name = self.target_node.value
-        if self.log_dir is None and self.name is not None:
-            self.log_dir = self.data_dir / self.name
-            ## To reduce on the logs accumulated, we will get rid of the timestamped folders by commenting out code below
-            # date_str = self._timestamp.strftime("%Y-%m-%d")
-            # time_str = f"{self._timestamp.strftime('%H-%M-%S')}"
-            # self.log_dir = self.data_dir / date_str /f"{time_str}_{self.name}-{str(ApplicationStatus.ACTIVE.value)}"
         return self
 
     @computed_field

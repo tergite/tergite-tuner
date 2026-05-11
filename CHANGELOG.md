@@ -10,6 +10,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 ### Changed
 
 - Updated dependencies to match those in tergite-backend e.g. "quantify-scheduler~=0.22.2"
+- Removed the `LOG_DIR` option on SessionContext so that all that is needed is the `DATA_DIR`
 
 ## [2026.05.0] - 2026-05-09
 

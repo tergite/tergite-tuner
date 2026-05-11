@@ -108,7 +108,6 @@ def test_plotting_01(node_data_dir):
             ["clock_freqs:f01", "spec:spec_ampl_optimal"],
             session=SessionContext(
                 data_dir=node_data_dir,
-                log_dir=node_data_dir,
             ),
         )
         analysis.process_qubit(dataset, "yq06")
@@ -133,7 +132,6 @@ def test_plotting_12(node_data_dir):
             ["clock_freqs:f12", "spec:spec_ampl_12_optimal"],
             session=SessionContext(
                 data_dir=node_data_dir,
-                log_dir=node_data_dir,
             ),
         )
         analysis.process_qubit(dataset, "yq06")
