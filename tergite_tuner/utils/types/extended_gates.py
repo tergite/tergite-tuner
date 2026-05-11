@@ -16,10 +16,10 @@
 import math
 from typing import Any, Literal, Optional
 
+from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.channel import InstrumentChannel
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators
-from quantify_scheduler.device_under_test.transmon_element import InstrumentBase
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.operations.gate_library import Measure, Rxy

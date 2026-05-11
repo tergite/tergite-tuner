@@ -32,7 +32,7 @@ test_lint_build:
     - apt-get install ffmpeg libsm6 libxext6 -y
     - pip install --upgrade pip
     # Install test dependencies
-    - pip install ".[test,dev]"
+    - pip install --group test --group dev .
     # print the status of the code
     - echo "CODE_STATUS=${CODE_STATUS}"
     # Run tests

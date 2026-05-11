@@ -123,3 +123,7 @@ site/
 # pyenv
 .python-version
 env/
+build/
+
+# aider AI stuff
+.aider*

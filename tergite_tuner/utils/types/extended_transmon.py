@@ -11,14 +11,24 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import collections
+import math
+from typing import Any, Hashable, Literal
 
+import numpy as np
+from qcodes import ChannelTuple
+from qcodes.instrument import InstrumentBase, InstrumentModule
+from qcodes.metadatable import Metadatable
 from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
 from quantify_scheduler.device_under_test.transmon_element import (
     BasicTransmonElement,
+    ClocksFrequencies,
     DispersiveMeasurement,
+    IdlingReset,
+    RxyDRAG,
     measurement_factories,
     pulse_factories,
     pulse_library,
@@ -34,21 +44,26 @@ from tergite_tuner.utils.types.extended_gates import (
 class ExtendedTransmon(BasicTransmonElement):
     def __init__(self, name: str, **kwargs):
         submodules_to_add = {
-            "measure_1": DispersiveMeasurement,
-            "measure_2": DispersiveMeasurement,
-            "measure_2state_opt": DispersiveMeasurement,
-            "measure_3state_opt": DispersiveMeasurement,
+            "reset": _ExtendedIdlingReset,
+            "rxy": _ExtendedRxyDRAG,
+            "measure": _ExtendedDispersiveMeasurement,
+            "clock_freqs": _ExtendedClocksFrequencies,
+            "measure_1": _ExtendedDispersiveMeasurement,
+            "measure_2": _ExtendedDispersiveMeasurement,
+            "measure_2state_opt": _ExtendedDispersiveMeasurement,
+            "measure_3state_opt": _ExtendedDispersiveMeasurement,
             "r12": R12,
             "spec": Spec,
             "extended_clock_freqs": ExtendedClocksFrequencies,
         }
+
         submodule_data = {
             sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add.keys()
         }
         super().__init__(name, **kwargs)
 
         for sub_name, sub_class in submodules_to_add.items():
-            self.add_submodule(
+            self.upsert_submodule(
                 sub_name,
                 sub_class(
                     parent=self, name=sub_name, **submodule_data.get(sub_name, {})
@@ -228,3 +243,144 @@ class ExtendedTransmon(BasicTransmonElement):
         dev_cfg = DeviceCompilationConfig.parse_obj(cfg_dict)
 
         return dev_cfg
+
+    def upsert_submodule(
+        self, name: str, submodule: InstrumentModule | ChannelTuple
+    ) -> None:
+        """
+        Replaces a submodule if it exists or insert is new.
+
+        This is to sidestep using add_submodule which just immediately errs out
+        if the submodule already exists.
+
+        Args:
+            name: How the submodule will be stored within
+                ``instrument.submodules`` and also how it can be
+                addressed.
+            submodule: The submodule to be stored.
+
+        Raises:
+            KeyError: If this instrument already contains a submodule with this
+                name.
+            TypeError: If the submodule that we are trying to add is
+                not an instance of an ``Metadatable`` object.
+
+        """
+        if name in self.submodules and isinstance(submodule, Metadatable):
+            # remove the submodule
+            old_submodule = self.submodules[name]
+            if isinstance(old_submodule, collections.abc.Sequence):
+                del self._channel_lists[name]
+            else:
+                del self.instrument_modules[name]
+
+            del self.submodules[name]
+
+        return self.add_submodule(name, submodule)
+
+
+class _ExtendedRxyDRAG(RxyDRAG):
+    # """Allows kwargs explicitly for newer versions of quantify"""
+
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        amp180: float = math.nan,
+        motzoi: float = 0,
+        duration: float = 20e-9,
+        reference_magnitude_dBm: float = math.nan,
+        reference_magnitude_V: float = math.nan,
+        reference_magnitude_A: float = math.nan,
+        **kwargs: Any,
+    ):
+        super().__init__(
+            parent,
+            name,
+            amp180=amp180,
+            motzoi=motzoi,
+            duration=duration,
+            reference_magnitude_dBm=reference_magnitude_dBm,
+            reference_magnitude_V=reference_magnitude_V,
+            reference_magnitude_A=reference_magnitude_A,
+        )
+
+
+class _ExtendedIdlingReset(IdlingReset):
+    # """Allows kwargs explicitly for newer versions of quantify"""
+
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        duration: float = 200e-6,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(parent=parent, name=name, duration=duration)
+
+
+class _ExtendedClocksFrequencies(ClocksFrequencies):
+    # """Allows kwargs explicitly for newer versions of quantify"""
+
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        f01: float = math.nan,
+        f12: float = math.nan,
+        readout: float = math.nan,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(parent=parent, name=name, f01=f01, f12=f12, readout=readout)
+
+
+class _ExtendedDispersiveMeasurement(DispersiveMeasurement):
+    # """Allows kwargs explicitly for newer versions of quantify"""
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        pulse_type: str = "SquarePulse",
+        pulse_amp: float = 0.25,
+        pulse_duration: float = 300e-9,
+        acq_channel: Hashable = 0,
+        acq_delay: float = 0,
+        integration_time: float = 1e-6,
+        reset_clock_phase: bool = True,
+        acq_weights_a: np.ndarray | None = None,
+        acq_weights_b: np.ndarray | None = None,
+        acq_weights_sampling_rate: float = 1e9,
+        acq_weight_type: Literal["SSB", "Numerical"] = "SSB",
+        reference_magnitude_dBm: float = math.nan,
+        reference_magnitude_V: float = math.nan,
+        reference_magnitude_A: float = math.nan,
+        acq_rotation: float = 0,
+        acq_threshold: float = 0,
+        num_points: int = 1,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            parent=parent,
+            name=name,
+            pulse_type=pulse_type,
+            pulse_amp=pulse_amp,
+            pulse_duration=pulse_duration,
+            acq_channel=acq_channel,
+            acq_delay=acq_delay,
+            integration_time=integration_time,
+            reset_clock_phase=reset_clock_phase,
+            acq_weights_a=acq_weights_a,
+            acq_weights_b=acq_weights_b,
+            acq_weights_sampling_rate=acq_weights_sampling_rate,
+            acq_weight_type=acq_weight_type,
+            reference_magnitude_dBm=reference_magnitude_dBm,
+            reference_magnitude_V=reference_magnitude_V,
+            reference_magnitude_A=reference_magnitude_A,
+            acq_rotation=acq_rotation,
+            acq_threshold=acq_threshold,
+            num_points=num_points,
+        )

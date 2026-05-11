@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated dependencies to match those in tergite-backend e.g. "quantify-scheduler~=0.22.2"
+
 ## [2026.05.0] - 2026-05-09
 
 ### Added
