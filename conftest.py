@@ -90,7 +90,7 @@ def session_context(redis_connection) -> SessionContext:
         spi_config=_FIXTURE_CONFIGS_DIR / "spi_config.toml",
         device_config=_FIXTURE_CONFIGS_DIR / "device_config.toml",
         output_dir=_PROJECT_ROOT / "out" / "pytest",
-        fixed_duration_qubits=("q12",),
+        fixed_duration_couplers=("q11_q12", "q12_q13"),
         save_plot=False,
     )
 
