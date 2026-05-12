@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.05.1] - 2026-05-12
+
 ### Fixed
 
 - Fixed wrong structure of data in redis 'cs' collection on post-processing the node
