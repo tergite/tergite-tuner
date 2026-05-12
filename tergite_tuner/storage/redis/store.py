@@ -191,8 +191,7 @@ class RedisStoreQueryFunc(Protocol):
 
 
 class RedisStore:
-    """Store to handle persisting and querying data from Redis.
-    """
+    """Store to handle persisting and querying data from Redis."""
 
     def __init__(self, connection: Redis):
         self._connection = connection
