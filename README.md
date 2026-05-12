@@ -321,14 +321,8 @@ You can find a few examples in the [`./examples`](./examples) folder
 
 ### ToDo
 
-- [x] Update readme to show how to install the package
-- [x] Change the `fixed_duration_qubits` to `fixed_duration_couplers`
 - [ ] Update export to BCC to be more generic to allow any BaseModel class to be output
-- [x] Add a proper default to the log_dir (say to out or the data_dir itself)
-- [x] Saving the processed QOI results is saving cs in a wrong format. We need ('cs', pk, self.name)
-- [ ] Add tests for entire calibration runs
-- [x] Remove the failing tests for chevron, comment out the old tests
-- [x] Remove the unwanted dependencies
+- [ ] Add tests for entire calibration runs, maybe using `mode=dummy`
 - [ ] Add ability to add new nodes in the NodeEnum map or allow a more flexible type in the mapping
 
 ## Contributing to the project
