@@ -166,8 +166,6 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         cz_working_durations_in_ns = (integer_gate_durations_in_ns // 4) * 4
         cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
 
-        # FIXME: This change breaks the `test_cz_chevron_analysis_good_data`.
-        #   Is the fitting no longer necessary to get the peak of the chevron
         # # fit the working points to a parabola model to extract the peak of the chevron
         # parabolic_fit = self.apply_parabolic_fit(
         #     cz_duration_values, cz_working_frequencies

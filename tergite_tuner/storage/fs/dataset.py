@@ -51,7 +51,7 @@ def create_node_data_path(session_config: "SessionContext", node_name: str) -> P
     measurement_id = (
         f"{now_.strftime('%Y%m%d-%H%M%S-%f')[:19]}-{str(uuid4())[:6]}-{node_name}"
     )
-    data_path = Path(os.path.join(session_config.log_dir, measurement_id))
+    data_path = Path(os.path.join(session_config.data_dir, measurement_id))
     return data_path
 
 

@@ -16,9 +16,11 @@ Module containing a schedule class for two-tone (qubit) spectroscopy calibration
 """
 
 import numpy as np
+from quantify_scheduler.backends.qblox.operations.pulse_factories import (
+    long_square_pulse,
+)
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
     SetClockFrequency,
     SoftSquarePulse,

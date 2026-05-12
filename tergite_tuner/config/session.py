@@ -92,7 +92,6 @@ class SessionOptions(TypedDict, total=False):
     qubits: List[str]
     couplers: List[str]
     name: Optional[str]
-    log_dir: Optional[Path]
     cluster_mode: MeasurementMode
     cluster_timeout: int
     spi_mode: SPIMode
@@ -112,7 +111,7 @@ class SessionOptions(TypedDict, total=False):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
     ignored_nodes: Tuple[NodeEnum, ...]
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
-    fixed_duration_qubits: Tuple[str, ...]
+    fixed_duration_couplers: Tuple[str, ...]
 
 
 class SessionContext(BaseModel):
@@ -186,7 +185,7 @@ class SessionContext(BaseModel):
         node_cls_map: the mapping from :class:`NodeEnum` to its
             concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
             to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
-        fixed_duration_qubits: the qubits with a fixed duration working points for cz calibration.
+        fixed_duration_couplers: the couplers with a fixed duration working points for cz calibration.
     """
 
     model_config = ConfigDict(
@@ -198,7 +197,6 @@ class SessionContext(BaseModel):
     qubits: List[str] = []
     couplers: List[str] = []
     name: Optional[str] = None
-    log_dir: Optional[Path] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
     spi_mode: SPIMode = SPIMode.dummy
@@ -218,7 +216,7 @@ class SessionContext(BaseModel):
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
-    fixed_duration_qubits: Tuple[str, ...] = ()
+    fixed_duration_couplers: Tuple[str, ...] = ()
     _redis_fields_touched: Dict[str, int] = {}
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
@@ -257,7 +255,7 @@ class SessionContext(BaseModel):
             return ClusterConfig.from_json(value)
         return value
 
-    @field_validator("qubits", "couplers", "fixed_duration_qubits", mode="before")
+    @field_validator("qubits", "couplers", "fixed_duration_couplers", mode="before")
     @classmethod
     def cast_comma_separated_to_list(cls, value):
         """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""
@@ -321,15 +319,9 @@ class SessionContext(BaseModel):
 
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
-        """Derive cross-field defaults: data_dir, config_dir, name, log_dir."""
+        """Derive cross-field defaults: name"""
         if self.name is None and isinstance(self.target_node, NodeEnum):
             self.name = self.target_node.value
-        if self.log_dir is None and self.name is not None:
-            self.log_dir = self.data_dir / self.name
-            ## To reduce on the logs accumulated, we will get rid of the timestamped folders by commenting out code below
-            # date_str = self._timestamp.strftime("%Y-%m-%d")
-            # time_str = f"{self._timestamp.strftime('%H-%M-%S')}"
-            # self.log_dir = self.data_dir / date_str /f"{time_str}_{self.name}-{str(ApplicationStatus.ACTIVE.value)}"
         return self
 
     @computed_field

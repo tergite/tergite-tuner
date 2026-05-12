@@ -85,7 +85,6 @@ def test_plotting_rabi_oscillations_01(node_data_dir):
             ["rxy:amp180"],
             session=SessionContext(
                 data_dir=node_data_dir,
-                log_dir=node_data_dir,
             ),
         )
         analysis.process_qubit(dataset, "yq06")

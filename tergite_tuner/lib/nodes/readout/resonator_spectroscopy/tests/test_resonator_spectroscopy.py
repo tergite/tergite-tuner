@@ -28,7 +28,7 @@ def test_resonator_spectroscopy_setup(node_data_dir):
         analysis = ResonatorSpectroscopyQubitAnalysis(
             "name",
             ["clock_freqs:readout", "Ql", "resonator_minimum"],
-            session=SessionContext(data_dir=node_data_dir, log_dir=node_data_dir),
+            session=SessionContext(data_dir=node_data_dir),
         )
         qoi = analysis.process_qubit(dataset, "yq06")
         result_values = qoi.analysis_result
@@ -47,7 +47,7 @@ def test_run_fitting(node_data_dir):
         analysis = ResonatorSpectroscopyQubitAnalysis(
             "name",
             ["clock_freqs:readout", "Ql", "resonator_minimum"],
-            session=SessionContext(data_dir=node_data_dir, log_dir=node_data_dir),
+            session=SessionContext(data_dir=node_data_dir),
         )
         qoi = analysis.process_qubit(dataset, "yq06")
         minimum_freq = qoi.analysis_result["clock_freqs:readout"]["value"]
@@ -69,7 +69,7 @@ def test_plotting(node_data_dir):
         analysis = ResonatorSpectroscopyQubitAnalysis(
             "name",
             ["clock_freqs:readout", "Ql", "resonator_minimum"],
-            session=SessionContext(data_dir=node_data_dir, log_dir=node_data_dir),
+            session=SessionContext(data_dir=node_data_dir),
         )
         analysis.process_qubit(dataset, "yq06")
         figure_path = node_data_dir / "Resonator_spectroscopy_q06.png"

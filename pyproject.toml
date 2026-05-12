@@ -16,9 +16,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tergite-tuner"
-version = "2026.05.0"
+version = "2026.05.1"
 description = "Library to tune up the WACQT quantum computers"
 readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
 authors = [
     { name = "Eleftherios Moschandreou", email = "elemos@chalmers.se" },
     { name = "Liangyu Chen", email = "liangyuc@chalmers.se" },
@@ -37,49 +41,27 @@ maintainers = [
 ]
 requires-python = ">=3.12, <3.13"
 dependencies = [
-    # ``pyqt5`` is a transitive dependency of ``quantify-core``, but the
-    # constraints below override what ``quantify-core`` requests because of
-    # platform-specific wheel availability:
-    #   - ``pyqt5-qt5==5.15.2`` is the ONLY Windows wheel ever published, and
-    #     also the long-standing manylinux2014 x86_64 wheel for Linux. We pin
-    #     it on Linux/Windows to keep installs reproducible and to avoid pip
-    #     trying to build from source.
-    #   - On macOS (Darwin), 5.15.2 has no Apple Silicon wheel, so we allow
-    #     newer versions there.
-    #   - ``pyqt5>=5.15.11`` ensures the Apple Silicon ``macosx_11_0_arm64``
-    #     wheel is available (it first appeared at 5.15.11).
-    "pyqt5-qt5==5.15.2; platform_system == 'Linux'",
-    "pyqt5-qt5==5.15.2; platform_system == 'Windows'",
-    "pyqt5-qt5>=5.15.2,<6.0.0; platform_system == 'Darwin'",
-    # Required transitively by xarray as the HDF5 backend used when reading
-    # and writing the ``.hdf5`` files via ``to_netcdf`` / ``open_dataset``.
-    "h5netcdf==1.4.0",
     "h5py>=3.12.1",
     "numpy>=2.0",
-    "qblox-instruments==0.14.2",
-    "qcodes==0.49.0",
-    "quantify-core==0.7.8",
-    "quantify-scheduler==0.21.2",
-    "redis==5.0.0",
-    "scikit-learn==1.5.2",
-    "toml==0.10.2",
-    "python-dotenv==1.0.1",
+    "qblox-instruments~=0.14.2",
+    "qcodes~=0.49.0",
+    "quantify-scheduler~=0.22.2",
+    "redis>=5.0.0",
+    "scikit-learn~=1.5.2",
+    "toml>=0.10.2",
+    "python-dotenv>=1.0.1",
     "requests>=2.32.3",
-    "optuna==4.0.0",
-    "netcdf4==1.7.1.post2",
+    "netcdf4~=1.7.1.post2",
     "tomlkit>=0.13.2",
     "matplotlib>=3.9.3",
     "scipy>=1.14.1",
     "pandas>=2.2.3",
     "xarray>=2024.11.0",
-    "filelock>=3.16.1",
-    "pyqtgraph>=0.13.7",
-    "pyqt5>=5.15.11",
-    "pydantic==2.9.2",
-    "networkx==3.4.2", # TODO: This can be removed when updating to newer versions of quantify scheduler
+    "pydantic~=2.11.3",
+    "networkx~=3.4.2",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "black>=24.10.0",
     "isort>=5.12.0",
@@ -92,9 +74,16 @@ test = [
     "fakeredis[lua]>=2.32.1"
 ]
 
+[project.urls]
+Homepage = "https://github.com/tergite/tergite-tuner"
+Repository = "https://github.com/tergite/tergite-tuner"
+Documentation = "https://github.com/tergite/tergite-tuner"
+Issues = "https://github.com/tergite/tergite-tuner/issues"
+Changelog = "https://github.com/tergite/tergite-tuner/blob/main/CHANGELOG.md"
+
 [tool.setuptools.packages.find]
 include = ["tergite_tuner*"]
 exclude = ["*.tests", "*.tests.*", "examples*", "*.data", "*.data.*"]
 
-[tool.setuptools.exclude-package-data]
-"tergite_tuner.config" = ["templates/**"]
+[tool.isort]
+skip_gitignore = true

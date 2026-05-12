@@ -61,7 +61,7 @@ class CZCalibrationNode(CouplerNode):
             "working_points": {
                 coupler: (
                     self.working_points_fixed_duration(coupler)
-                    if _has_fixed_duration_qubit(session, coupler)
+                    if _has_fixed_duration(session, coupler)
                     else self.working_points(coupler)
                 )
                 for coupler in self.couplers
@@ -139,8 +139,8 @@ class CZCalibrationNode(CouplerNode):
         return dataset
 
 
-def _has_fixed_duration_qubit(session: "SessionContext", coupler: str) -> bool:
-    """Checks if the coupler has a fixed duration qubit
+def _has_fixed_duration(session: "SessionContext", coupler: str) -> bool:
+    """Checks if the coupler has a fixed duration
 
     Args:
         session: the SessionContext that is being worked in
@@ -149,5 +149,5 @@ def _has_fixed_duration_qubit(session: "SessionContext", coupler: str) -> bool:
     Return:
         True if the coupler is connected to a fixed duration qubit
     """
-    fixed_duration_qubits = session.fixed_duration_qubits
-    return any(q in coupler for q in fixed_duration_qubits)
+    fixed_duration_couplers = session.fixed_duration_couplers
+    return any(q in coupler for q in fixed_duration_couplers)

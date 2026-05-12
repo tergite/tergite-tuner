@@ -217,7 +217,7 @@ class NodeManager:
             calibration_node = self.initialize_node(node)
             logger.info(f"Calibrating node {calibration_node.name}")
 
-            data_path = self.session.log_dir
+            data_path = self.session.data_dir
             # avoid creating new logs folders if we are re_analysing or recalibrating
             if (
                 self.session.cluster_mode != MeasurementMode.re_analyse
@@ -504,7 +504,7 @@ def _reanalyse(
     logger.status(
         f"Analysing '{session.target_node_name}' with {node.analysis_cls.__name__}"
     )
-    node.post_process(session.log_dir)
+    node.post_process(session.data_dir)
     logger.status("Analysis completed.")
 
     if not keep_data_files and is_safe_path(session.data_dir):

@@ -191,22 +191,7 @@ class RedisStoreQueryFunc(Protocol):
 
 
 class RedisStore:
-    """Store to handle persisting and querying data from Redis.
-
-    Layout
-    ------
-    For each ``(collection, primary_key)`` pair the store keeps two parallel
-    hashes:
-
-    * ``{collection}:{primary_key}`` — the canonical hash holding the raw
-      stringified field values. This matches the layout used by the legacy
-      module-level helpers (:func:`load_redis_config` and friends) so that
-      this class can replace them transparently.
-    * ``{collection}:{primary_key}:__types__`` — a sidecar hash mapping each
-      field to a short python type label (``int``, ``float``, ``list`` ...).
-      It exists so that values can be round-tripped back to their original
-      python type without resorting to ``eval`` on list reprs.
-    """
+    """Store to handle persisting and querying data from Redis."""
 
     def __init__(self, connection: Redis):
         self._connection = connection

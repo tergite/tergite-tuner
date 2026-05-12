@@ -16,10 +16,10 @@
 import math
 from typing import Any, Literal, Optional
 
+from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.channel import InstrumentChannel
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators
-from quantify_scheduler.device_under_test.transmon_element import InstrumentBase
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.operations.gate_library import Measure, Rxy
@@ -189,7 +189,7 @@ class Measure_RO1(Measure):
                     "unitary": None,
                     "plot_func": plot_func,
                     "tex": r"$\langle0|$",
-                    "qubits": list(qubits),
+                    "device_elements": list(qubits),
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
@@ -227,7 +227,7 @@ class Measure_RO2(Measure):
                     "unitary": None,
                     "plot_func": plot_func,
                     "tex": r"$\langle0|$",
-                    "qubits": list(qubits),
+                    "device_elements": list(qubits),
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
@@ -267,7 +267,7 @@ class Measure_RO_3state_Opt(Measure):
                     "unitary": None,
                     "plot_func": plot_func,
                     "tex": r"$\langle opt|$",
-                    "qubits": list(qubits),
+                    "device_elements": list(qubits),
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
@@ -307,7 +307,7 @@ class Measure_RO_2state_Opt(Measure):
                     "unitary": None,
                     "plot_func": plot_func,
                     "tex": r"$\langle opt|$",
-                    "qubits": list(qubits),
+                    "device_elements": list(qubits),
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
