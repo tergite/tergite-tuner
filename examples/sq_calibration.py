@@ -95,6 +95,7 @@ def run_fast_recalibration(qubits: list):
         NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
         NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
         NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
+        NodeEnum.RANDOMIZED_BENCHMARKING,
     ]
 
     run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])

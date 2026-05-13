@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Removed the hard-coded fixes for CZ local phases for reverse phase qubits
+
 ## [2026.05.1] - 2026-05-12
 
 ### Fixed

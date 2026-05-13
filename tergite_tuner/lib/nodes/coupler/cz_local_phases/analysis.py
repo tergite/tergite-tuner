@@ -112,12 +112,14 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
         )
 
         # phase 01 correction
+        reverse_phase_qubits = self.session.reverse_phase_qubits
         phi_gate_on = phi_fits.sel({self.gate_mode_coord: True})
         phi_gate_off = phi_fits.sel({self.gate_mode_coord: False})
         phi_01_rad = (phi_gate_on - phi_gate_off).item()
         self.phase_01 = np.rad2deg(phi_01_rad)
         self.cz_dynamic_target = np.rad2deg(phi_01_rad)
-        if self.target_qubit_data_var.qubit in ["q11", "q13"]:
+        # FIXME: Work around to be removed in the next version
+        if self.target_qubit_data_var.qubit in reverse_phase_qubits:
             self.cz_dynamic_target = -self.cz_dynamic_target
 
         # phase 10 correction
@@ -126,7 +128,8 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
         phi_10_rad = (phi_swaped_gate_on - phi_swaped_gate_off).item()
         self.phase_10 = np.rad2deg(phi_10_rad)
         self.cz_dynamic_control = np.rad2deg(phi_10_rad)
-        if self.control_qubit_data_var.qubit in ["q11", "q13"]:
+        # FIXME: Work around to be removed in the next version
+        if self.control_qubit_data_var.qubit in reverse_phase_qubits:
             self.cz_dynamic_control = -self.cz_dynamic_control
 
         analysis_succesful = True

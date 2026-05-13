@@ -112,6 +112,7 @@ class SessionOptions(TypedDict, total=False):
     ignored_nodes: Tuple[NodeEnum, ...]
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
     fixed_duration_couplers: Tuple[str, ...]
+    reverse_phase_qubits: Tuple[str, ...]
 
 
 class SessionContext(BaseModel):
@@ -186,6 +187,8 @@ class SessionContext(BaseModel):
             concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
             to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
         fixed_duration_couplers: the couplers with a fixed duration working points for cz calibration.
+        reverse_phase_qubits: the qubits which have the reverse of the expected phase when attached
+            to a coupler
     """
 
     model_config = ConfigDict(
@@ -217,6 +220,7 @@ class SessionContext(BaseModel):
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
     fixed_duration_couplers: Tuple[str, ...] = ()
+    reverse_phase_qubits: Tuple[str, ...] = ()
     _redis_fields_touched: Dict[str, int] = {}
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
@@ -255,7 +259,13 @@ class SessionContext(BaseModel):
             return ClusterConfig.from_json(value)
         return value
 
-    @field_validator("qubits", "couplers", "fixed_duration_couplers", mode="before")
+    @field_validator(
+        "qubits",
+        "couplers",
+        "fixed_duration_couplers",
+        "reverse_phase_qubits",
+        mode="before",
+    )
     @classmethod
     def cast_comma_separated_to_list(cls, value):
         """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""
