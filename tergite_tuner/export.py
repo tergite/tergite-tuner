@@ -10,168 +10,80 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Export calibrated parameter values from Redis as a BCC calibration seed.
+"""Export calibrated parameter values from Redis as a BCC calibration seed."""
 
-The seed payload mirrors the legacy ``calibration_seed_template.toml``
-shape — a ``calibration_config`` table with ``units`` (static unit
-labels), per-element parameter lists, and an LDA discriminator map —
-but the static parts are now expressed as :class:`pydantic.BaseModel`
-defaults so the package no longer needs to ship a template file.
-"""
-
+import ast
 import json
-from enum import Enum
+import re
 from os import PathLike
-from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union, Unpack
+from typing import (
+    Annotated,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    Unpack,
+)
 
 import numpy as np
 import tomlkit
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
 from tergite_tuner.config.session import SessionContext, SessionOptions
-from tergite_tuner.utils.logging import logger
+from tergite_tuner.storage.redis import QueryOptions
 
-# Frequency offset (Hz) used to convert the coupler ``cz_pulse_frequency``
-# Redis value to its physical value during the BCC export.
+_CalibValueType = TypeVar("_CalibValueType", int, float, str)
+_NodeState = Literal["calibrated", "not_calibrated"]
 _DOWNCONVERT_FREQUENCY = 4.4e9
+_NUMPY_FLOAT_PATTERN = re.compile(r"np\.float\d*")
 
 
-class _DataSource(Enum):
-    REDIS = "REDIS"
-    LITERAL = "LITERAL"
-
-
-# --------------------------------------------------------------------------
-# Pydantic seed model
-# --------------------------------------------------------------------------
-#
-# These models replace the on-disk ``calibration_seed_template.toml``.
-# Each ``_*Units`` model holds the static unit labels for a category of
-# parameters; ``_CalibrationConfig`` aggregates the units alongside the
-# per-element parameter lists; and :class:`CalibrationSeed` is the
-# top-level wrapper exported to BCC.
-
-
-class _QubitUnits(BaseModel):
-    frequency: str = "Hz"
-    pi_pulse_amplitude: str = ""
-    pi_pulse_duration: str = "s"
-    pi_pulse_motzoi: str = ""
-    pulse_sigma: str = ""
-    t1_decoherence: str = "us"
-    t2_decoherence: str = "us"
-    anharmonicity: str = "Hz"
-
-
-class _ReadoutResonatorUnits(BaseModel):
-    acq_delay: str = "s"
-    acq_integration_time: str = "s"
-    frequency: str = "Hz"
-    pulse_delay: str = "s"
-    pulse_duration: str = "s"
-    pulse_amplitude: str = ""
-    pulse_type: str = ""
-
-
-class _CouplerUnits(BaseModel):
-    frequency: str = "Hz"
-    cz_pulse_amplitude: str = ""
-    cz_pulse_dc_bias: str = ""
-    cz_pulse_duration_constant: str = "s"
-    control_rz_lambda: str = "rad"
-    target_rz_lambda: str = "rad"
-    pulse_type: str = ""
-
-
-class _Units(BaseModel):
-    qubit: _QubitUnits = Field(default_factory=_QubitUnits)
-    readout_resonator: _ReadoutResonatorUnits = Field(
-        default_factory=_ReadoutResonatorUnits
-    )
-    coupler: _CouplerUnits = Field(default_factory=_CouplerUnits)
-
-
-class _CalibrationConfig(BaseModel):
-    """Body of a BCC calibration seed."""
-
-    model_config = ConfigDict(extra="allow")
-
-    units: _Units = Field(default_factory=_Units)
-    qubit: List[Dict[str, Any]] = Field(default_factory=list)
-    readout_resonator: List[Dict[str, Any]] = Field(default_factory=list)
-    coupler: List[Dict[str, Any]] = Field(default_factory=list)
-    discriminators: Dict[str, Dict[str, Dict[str, Any]]] = Field(
-        default_factory=lambda: {"lda": {}}
-    )
-
-
-class CalibrationSeed(BaseModel):
-    """Top-level shape of a BCC calibration seed."""
-
-    calibration_config: _CalibrationConfig = Field(default_factory=_CalibrationConfig)
-
-
-# --------------------------------------------------------------------------
-# Redis → seed parameter tables
-# --------------------------------------------------------------------------
-
-
-_qubit_parameters: List[Tuple[str, str, _DataSource, Type]] = [
-    ("frequency", "clock_freqs:f01", _DataSource.REDIS, float),
-    ("pi_pulse_amplitude", "rxy:amp180", _DataSource.REDIS, float),
-    ("pi_pulse_duration", "rxy:duration", _DataSource.REDIS, float),
-    ("pi_pulse_motzoi", "rxy:motzoi", _DataSource.REDIS, float),
-    ("pulse_type", "Gaussian", _DataSource.LITERAL, str),
-    ("pulse_sigma", "rxy:sigma", _DataSource.REDIS, float),
-    ("t1_decoherence", "t1_time", _DataSource.REDIS, float),
-    ("t2_decoherence", "t2_echo_time", _DataSource.REDIS, float),
-]
-
-_readout_resonator_parameters: List[Tuple[str, str, _DataSource, Type]] = [
-    ("acq_delay", "measure:acq_delay", _DataSource.REDIS, float),
-    ("acq_integration_time", "measure:integration_time", _DataSource.REDIS, float),
-    ("frequency", "extended_clock_freqs:readout_2state_opt", _DataSource.REDIS, float),
-    ("pulse_delay", "measure:ro_pulse_delay", _DataSource.REDIS, float),
-    ("pulse_duration", "measure:pulse_duration", _DataSource.REDIS, float),
-    ("pulse_type", "Square", _DataSource.LITERAL, str),
-    ("pulse_amplitude", "measure_2state_opt:pulse_amp", _DataSource.REDIS, float),
-]
-
-_lda_parameters: List[Tuple[str, str, _DataSource, Type]] = [
-    ("coef_0", "lda_coef_0", _DataSource.REDIS, float),
-    ("coef_1", "lda_coef_1", _DataSource.REDIS, float),
-    ("intercept", "lda_intercept", _DataSource.REDIS, float),
-]
-
-_coupler_parameters: List[Tuple[str, str, _DataSource, Type]] = [
-    ("frequency", "cz_pulse_frequency", _DataSource.REDIS, float),
-    ("cz_pulse_amplitude", "cz_pulse_amplitude", _DataSource.REDIS, float),
-    ("cz_pulse_dc_bias", "parking_current", _DataSource.REDIS, float),
-    ("cz_pulse_duration_constant", "cz_pulse_duration", _DataSource.REDIS, float),
-    ("control_rz_lambda", "cz_dynamic_control", _DataSource.REDIS, float),
-    ("target_rz_lambda", "cz_dynamic_target", _DataSource.REDIS, float),
-    ("pulse_type", "wacqt_cz", _DataSource.LITERAL, str),
-]
-
-
-def extract_bcc_params(
-    env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    format: Literal["dict", "json", "toml"] = "dict",
-    output: Optional[Union[str, "PathLike[str]"]] = None,
-    **session_options: Unpack[SessionOptions],
-) -> Any:
-    """Build a BCC calibration seed payload from redis-stored values.
+def read_result(
+    session: SessionContext, session_only: bool = True
+) -> "CalibrationResults":
+    """Retrieves the results after tuneup
 
     Args:
+        session: the session context to use
+        session_only: if True, retrieves results created by current session.
+            Else, all available results will be returned. Default is True.
+
+    Returns:
+        the results in redis for the current session
+    """
+    pks = session.qubits + session.couplers
+    affected_fields = session.redis_fields_touched.keys()
+    query_func = None
+
+    if session_only:
+
+        def query_func(opts: QueryOptions):
+            return any(opts["field"] in k for k in affected_fields)
+
+    data = session.redis_store.find_many(pks=pks, query=query_func)
+    return CalibrationResults.model_validate(data)
+
+
+def generate_calib_seed_file(
+    path: Union[str, "PathLike[str]"] = "calibration.seed.toml",
+    session: Optional[SessionContext] = None,
+    env_file: Optional[Union[str, "PathLike[str]"]] = None,
+    coupler_name_map: Optional[Dict[str, str]] = None,
+    **session_options: Unpack[SessionOptions],
+):
+    """Build a calibration seed payload from redis-stored values.
+
+    Args:
+        path: path to write the seed to. The file extension
+            is ignored — the format follows the ``format`` argument.
+        session: session context to use for session.
         env_file: optional path to a ``.env`` file used to populate the
             internal :class:`SessionContext`.
-        format: ``'dict'`` returns a Python dict, ``'json'`` returns a
-            JSON string, ``'toml'`` returns a TOML string. The result is
-            also written to ``output`` when supplied (in the same form,
-            with the dict variant written as TOML on disk).
-        output: optional path to write the seed to. The file extension
-            is ignored — the format follows the ``format`` argument.
+        coupler_name_map: dict of coupler_name (in redis) -> coupler name (in bcc) mapping
         **session_options: any :class:`SessionContext` field — most
             usefully ``qubits``, ``couplers``, and ``redis_url`` — to
             override values that would otherwise come from
@@ -181,101 +93,341 @@ def extract_bcc_params(
     Returns:
         The payload in the requested format.
     """
-    session = SessionContext.from_env(env_file, **session_options)
-    redis_connection = session.redis
-    qubits = session.qubits
-    couplers = session.couplers
+    if session is None:
+        session = SessionContext.from_env(env_file, **session_options)
 
-    qubit_entries = [
-        _assemble_parameters(_qubit_parameters, q, redis_connection) for q in qubits
-    ]
-    readout_resonator_entries = [
-        _assemble_parameters(_readout_resonator_parameters, q, redis_connection)
-        for q in qubits
-    ]
-    lda_entries = {
-        q: _assemble_parameters(_lda_parameters, q, redis_connection, set_id=False)
-        for q in qubits
+    if coupler_name_map is None:
+        coupler_name_map = {k: k for k in session.couplers}
+
+    results = read_result(session, session_only=False)
+    transmon_data = results.transmons
+    coupler_data = results.couplers
+
+    config_file_data = {
+        "calibration_config": {
+            "units": {
+                "qubit": dict(
+                    frequency="Hz",
+                    t1_decoherence="s",
+                    t2_decoherence="s",
+                    anharmonicity="Hz",
+                    pi_pulse_amplitude="",
+                    pi_pulse_duration="s",
+                    pi_pulse_motzoi="",
+                    pulse_sigma="",
+                ),
+                "readout_resonator": dict(
+                    acq_delay="s",
+                    acq_integration_time="s",
+                    frequency="Hz",
+                    pulse_delay="s",
+                    pulse_duration="s",
+                    pulse_amplitude="",
+                    pulse_type="",
+                ),
+                "coupler": dict(
+                    frequency="Hz",
+                    cz_pulse_amplitude="",
+                    cz_pulse_dc_bias="",
+                    cz_pulse_duration_constant="s",
+                    control_rz_lambda="rad",
+                    target_rz_lambda="rad",
+                    pulse_type="",
+                ),
+            },
+            "qubit": [
+                dict(
+                    id=q,
+                    frequency=item.clock_freqs.f01,
+                    pi_pulse_amplitude=item.rxy.amp180,
+                    pi_pulse_duration=item.rxy.duration,
+                    pi_pulse_motzoi=item.rxy.motzoi,
+                    pulse_type="Gaussian",
+                    pulse_sigma=item.rxy.sigma,
+                    t1_decoherence=item.t1_time,
+                    t2_decoherence=item.t2_echo_time,
+                )
+                for q, item in transmon_data.items()
+            ],
+            "coupler": [
+                dict(
+                    id=coupler_name_map[c],
+                    frequency=_DOWNCONVERT_FREQUENCY - item.cz_pulse_frequency,
+                    cz_pulse_amplitude=item.cz_pulse_amplitude,
+                    cz_pulse_dc_bias=item.parking_current,
+                    cz_pulse_duration_constant=item.cz_pulse_duration,
+                    control_rz_lambda=np.deg2rad(item.cz_dynamic_control),
+                    target_rz_lambda=np.deg2rad(item.cz_dynamic_target),
+                    pulse_type="wacqt_cz",
+                )
+                for c, item in coupler_data.items()
+            ],
+            "readout_resonator": [
+                dict(
+                    id=q,
+                    acq_delay=item.measure.acq_delay,
+                    acq_integration_time=item.measure.integration_time,
+                    frequency=item.extended_clock_freqs.readout_2state_opt,
+                    pulse_delay=item.measure.ro_pulse_delay,
+                    pulse_duration=item.measure.pulse_duration,
+                    pulse_type="Square",
+                    pulse_amplitude=item.measure_2state_opt.pulse_amp,
+                )
+                for q, item in transmon_data.items()
+            ],
+            "discriminators": {
+                "lda": {
+                    q: dict(
+                        coef_0=item.lda_coef_0,
+                        coef_1=item.lda_coef_1,
+                        intercept=item.lda_intercept,
+                    )
+                    for q, item in transmon_data.items()
+                }
+            },
+        }
     }
-    coupler_entries = [
-        _assemble_parameters(
-            _coupler_parameters, c, redis_connection, redis_prefix="couplers"
-        )
-        for c in couplers
-    ]
 
-    seed = CalibrationSeed(
-        calibration_config=_CalibrationConfig(
-            qubit=qubit_entries,
-            readout_resonator=readout_resonator_entries,
-            coupler=coupler_entries,
-            discriminators={"lda": lda_entries},
-        )
-    )
-
-    payload = seed.model_dump()
-
-    if format == "dict":
-        result: Any = payload
-    elif format == "json":
-        result = json.dumps(payload, indent=2)
-    elif format == "toml":
-        result = tomlkit.dumps(payload)
-    else:
-        raise ValueError(
-            f"Invalid format: {format!r}. Must be 'dict', 'json', or 'toml'."
-        )
-
-    if output is not None:
-        output_path = Path(output)
-        if format == "dict":
-            # On-disk artefact stays in the historical TOML form while
-            # the in-memory ``dict`` is returned to the caller.
-            with open(output_path, "w") as f_:
-                f_.write(tomlkit.dumps(payload))
-        else:
-            with open(output_path, "w") as f_:
-                f_.write(result)
-
-    return result
+    with open(path, "w") as file:
+        tomlkit.dump(config_file_data, file)
 
 
-def _assemble_parameters(
-    parameter_map: List[Tuple[str, str, _DataSource, Type]],
-    object_id: str,
-    redis_connection,
-    set_id: bool = True,
-    redis_prefix: str = "transmons",
-) -> Dict[str, Any]:
-    if not set_id:
-        parameterized_return_object: Dict[str, Any] = {}
-    else:
-        parameterized_return_object = {"id": object_id}
+def _validate_numpy_tuple(v: Any) -> Any:
+    """Validates a field of tuples of numpy float64"""
+    if isinstance(v, str):
+        try:
+            v = ast.literal_eval(_NUMPY_FLOAT_PATTERN.sub("", v))
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"Could not parse numpy tuple string: {e}")
 
-    for parameter_ in parameter_map:
-        if parameter_[2] == _DataSource.REDIS:
-            redis_value_ = redis_connection.hget(
-                f"{redis_prefix}:{object_id}", parameter_[1]
-            )
-            parameterized_return_object[parameter_[0]] = parameter_[3](
-                redis_value_ if redis_value_ is not None else 0
-            )
-        if parameter_[2] == _DataSource.LITERAL:
-            parameterized_return_object[parameter_[0]] = parameter_[3](parameter_[1])
+    if isinstance(v, (list, tuple)):
+        return tuple(np.float64(item) for item in v)
+    return v
 
-        # Special case: down-converter correction for the coupler frequency.
-        if parameter_[1] == "cz_pulse_frequency":
-            logger.info(
-                f"Adjusting coupler frequency about {_DOWNCONVERT_FREQUENCY}GHz "
-                f"for {object_id}."
-            )
-            parameterized_return_object[parameter_[0]] = (
-                _DOWNCONVERT_FREQUENCY - parameterized_return_object[parameter_[0]]
-            )
 
-        if "cz_dynamic" in parameter_[1]:
-            parameterized_return_object[parameter_[0]] = np.deg2rad(
-                float(parameterized_return_object[parameter_[0]])
-            )
+# The Annotated Field
+NumpyFloatTuple = Annotated[
+    Tuple[np.float64, np.float64], BeforeValidator(_validate_numpy_tuple)
+]
 
-    return parameterized_return_object
+
+class _RedisDict(BaseModel):
+    """A representation of dictionaries in redis"""
+
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def convert_nans(cls, data: Any) -> Any:
+        """Coverts all 'nan' values to Not set."""
+        if isinstance(data, dict):
+            return {k: v for k, v in data.items() if v != "nan"}
+        return data
+
+
+class CalibrationResults(_RedisDict):
+    """The combined data structure of Bcc params as saved in redis"""
+
+    transmons: Dict[str, "_QubitInRedis"] = {}
+    couplers: Dict[str, "_CouplerInRedis"] = {}
+    cs: Dict[str, "_CsInRedis"] = {}
+
+
+class _QubitInRedis(_RedisDict):
+    """The data structure of qubits as saved in redis"""
+
+    clock_freqs: Optional["_QubitClockFreqsInRedis"] = None
+    rxy: Optional["_QubitRxyInRedis"] = None
+    t1_time: float | None = None
+    t1_time_error: float | None = None
+    t2_echo_time: float | None = None
+    t2_echo_time_error: float | None = None
+    t2_time: float | None = None
+    t2_time_error: float | None = None
+    lda_coef_0: float | None = None
+    lda_coef_1: float | None = None
+    lda_intercept: float | None = None
+    measure: Optional["_QubitMeasureInRedis"] = None
+    measure_1: Optional["_QubitMeasureInRedis"] = None
+    measure_2: Optional["_QubitMeasureInRedis"] = None
+    measure1: Optional["_QubitMeasureInRedis"] = None
+    measure2: Optional["_QubitMeasureInRedis"] = None
+    extended_clock_freqs: Optional["_QubitExtendedClockFreqsInRedis"] = None
+    measure_2state_opt: Optional["_QubitMeasureInRedis"] = None
+    measure_3state_opt: Optional["_QubitMeasureInRedis"] = None
+    omega_20: float | None = None
+    omega_20_error: float | None = None
+    center_0: NumpyFloatTuple | None = Field(None, alias="center|0>")
+    center_1: NumpyFloatTuple | None = Field(None, alias="center|1>")
+    center_2: NumpyFloatTuple | None = Field(None, alias="center|2>")
+    lda_coef_1_error: float | None = None
+    lda_coef_0_error: float | None = None
+    centroid_I: float | None = None
+    centroid_Q: float | None = None
+    centroid_Q_error: float | None = None
+    spec: Optional["_QubitSpecInRedis"] = None
+    resonator_minimum: float | None = None
+    resonator_minimum_error: float | None = None
+    resonator_minimum_1: float | None = None
+    resonator_minimum_1_error: float | None = None
+    r12: Optional["_QubitR12InRedis"] = None
+    inv_cm_opt_error: float | None = None
+    fidelity_error: float | None = None
+    lda_intercept_error: float | None = None
+    omega_01: float | None = None
+    omega_01_error: float | None = None
+    omega_12: float | None = None
+    omega_12_error: float | None = None
+    purity_fidelity: float | None = None
+    inv_cm_opt: float | None = None
+    centroid_I_error: float | None = None
+    attenuation: float | None = None
+    leakage: float | None = None
+    leakage_error: float | None = None
+    Ql: float | None = None
+    Ql_error: float | None = None
+    Ql_1: float | None = None
+    Ql_1_error: float | None = None
+    VNA_f01_frequency: float | None = None
+    VNA_f12_frequency: float | None = None
+    fidelity: float | None = None
+    reset: Optional["_ResetInRedis"] = None
+    readout_matrix: Optional[List[List[float]]] | None = None
+
+
+class _CouplerInRedis(_RedisDict):
+    """The data structure of coupler as saved in redis"""
+
+    cz_pulse_frequency: float | None = None
+    cz_pulse_amplitude: float | None = None
+    parking_current: float | None = None
+    cz_pulse_duration: float | None = None
+    cz_dynamic_control: float | None = None
+    cz_dynamic_target: float | None = None
+    target_local_phase: float | None = None
+    qubit_crossing_points: List[float] | None = None
+    cz_pulse_frequency_error: float | None = None
+    cz_fidelity: float | None = None
+    cz_dynamic_amplitude: float | None = None
+    cz_working_durations_in_ns: List[float] | None = None
+    cz_dynamic_control_error: float | None = None
+    control_local_phase: float | None = None
+    cz_working_frequencies_error: float | None = None
+    spec: Optional["_CouplerSpecInRedis"] = None
+    cz_working_frequencies: List[float] | None = None
+    cz_pulse_duration_error: float | None = None
+    cz_working_durations_in_ns_error: float | None = None
+    reset: Optional["_ResetInRedis"] = None
+    tqg_fidelity: float | None = None
+    cz_dynamic_target_error: float | None = None
+    attenuation: float | None = None
+
+
+class _CsInRedis(_RedisDict):
+    """The data structure of CS (calibration supervisor) as saved in redis"""
+
+    resonator_spectroscopy: _NodeState | None = None
+    qubit_01_spectroscopy: _NodeState | None = None
+    rabi_oscillations: _NodeState | None = None
+    ramsey_correction: _NodeState | None = None
+    motzoi_parameter: _NodeState | None = None
+    n_rabi_oscillations: _NodeState | None = None
+    resonator_spectroscopy_1: _NodeState | None = None
+    qubit_12_spectroscopy: _NodeState | None = None
+    rabi_oscillations_12: _NodeState | None = None
+    ramsey_correction_12: _NodeState | None = None
+    resonator_spectroscopy_2: _NodeState | None = None
+    ro_frequency_three_state_optimization: _NodeState | None = None
+    ro_amplitude_three_state_optimization: _NodeState | None = None
+    qubit_bring_up_spectroscopy: _NodeState | None = None
+    t1: _NodeState | None = None
+    t2: _NodeState | None = None
+    t2_echo: _NodeState | None = None
+    ro_frequency_two_state_optimization: _NodeState | None = None
+    ro_amplitude_two_state_optimization: _NodeState | None = None
+    randomized_benchmarking: _NodeState | None = None
+    purity_benchmarking: _NodeState | None = None
+    punchout: _NodeState | None = None
+
+
+class _QubitClockFreqsInRedis(_RedisDict):
+    """The data structure of qubit:clock_freqs as saved in redis"""
+
+    f01: float | None = None
+    f01_error: float | None = None
+    readout_error: float | None = None
+    readout: float | None = None
+    f12: float | None = None
+    f12_error: float | None = None
+
+
+class _QubitRxyInRedis(_RedisDict):
+    """The data structure of qubit:rxy as saved in redis"""
+
+    amp180: float | None = None
+    amp180_error: float | None = None
+    duration: float | None = None
+    motzoi: float | None = None
+    motzoi_error: float | None = None
+    sigma: float = 0
+
+
+class _QubitMeasureInRedis(_RedisDict):
+    """The data structure of qubit:measure*  as saved in redis"""
+
+    acq_delay: float | None = None
+    integration_time: float | None = None
+    ro_pulse_delay: float = 0
+    pulse_duration: float | None = None
+    pulse_amp: float | None = None
+    pulse_amp_error: float | None = None
+    acq_threshold: float | None = None
+    acq_threshold_error: float | None = None
+    acq_rotation: float | None = None
+    acq_rotation_error: float | None = None
+
+
+class _QubitExtendedClockFreqsInRedis(_RedisDict):
+    """The data structure of qubit:extended_clock_freqs as saved in redis"""
+
+    readout_2state_opt: float | None = None
+    readout_3state_opt: float | None = None
+    readout_2_error: float | None = None
+    readout_1_error: float | None = None
+    readout_1: float | None = None
+    readout_3state_opt_error: float | None = None
+    readout_2: float | None = None
+    readout_2state_opt_error: float | None = None
+
+
+class _QubitSpecInRedis(_RedisDict):
+    """The data structure of qubit:spec as saved in redis"""
+
+    spec_ampl_12_optimal: float | None = None
+    spec_ampl_optimal: float | None = None
+    spec_ampl_optimal_error: float | None = None
+    spec_amp: float | None = None
+    spec_ampl_12_optimal_error: float | None = None
+    spec_duration: float | None = None
+
+
+class _QubitR12InRedis(_RedisDict):
+    """The data structure of qubit:r12 as saved in redis"""
+
+    ef_amp180_error: float | None = None
+    ef_motzoi: float | None = None
+    ef_amp180: float | None = None
+    ef_motzoi_error: float | None = None
+
+
+class _CouplerSpecInRedis(_RedisDict):
+    """The data structure of coupler:spec as saved in redis"""
+
+    spec_amp: float | None = None
+    spec_duration: float | None = None
+
+
+class _ResetInRedis(_RedisDict):
+    """The data structure of coupler:reset as saved in redis"""
+
+    duration: float | None = None

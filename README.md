@@ -180,16 +180,16 @@ The library exposes the following entry points from
 from tergite_tuner import (
     tune_device,
     reanalyse,
-    extract_bcc_params,
+    generate_calib_seed_file,
     run_node,
-    read_session_result,
+    read_result,
 )
 ```
 
 #### Run the full calibration pipeline
 
 ```python
-from tergite_tuner import tune_device, read_session_result
+from tergite_tuner import tune_device, read_result
 from tergite_tuner.lib.nodes import NodeEnum
 
 # Use a .env file as the only source of configuration
@@ -209,7 +209,7 @@ tune_device(session=session, refresh_session=False)
 
 # if you disabled session-refresh, you can read all results on 
 # that session at once
-results = read_session_result(session)
+results = read_result(session)
 ```
 
 `tune_device` constructs a `SessionContext`, walks the dependency
@@ -250,7 +250,7 @@ _, results = tune_device(
 #### Run one node
 
 ```python
-from tergite_tuner import run_node, NodeEnum, read_session_result
+from tergite_tuner import run_node, NodeEnum, read_result
 
 # Use a .env file as the only source of configuration
 session, results = run_node(
@@ -271,7 +271,7 @@ run_node(
 
 # if you disabled session-refresh, you can read all results on 
 # that session at once
-results = read_session_result(session)
+results = read_result(session)
 
 # you could clear up all the data files after the run
 _, results = run_node(
@@ -290,29 +290,21 @@ _, results = reanalyse(
 )
 ```
 
-#### Export a BCC calibration seed
+#### Generate a BCC calibration seed
 
 ```python
-from tergite_tuner import extract_bcc_params
+from tergite_tuner import generate_calib_seed_file, SessionContext
 
-# Reads qubits / couplers / redis_url from the .env file. Returns a
-# dict by default; pass ``format="json"`` or ``format="toml"`` to get
-# a serialised string.
-bcc_params = extract_bcc_params(env_file=".env")
+# Reads qubits / couplers / redis_url from the .env file. 
+# Creates the file as 'calibration.seed.toml' by default
+generate_calib_seed_file(env_file=".env")
 
 # Or override individual SessionContext fields inline:
-bcc_params = extract_bcc_params(
-    qubits=["q00", "q01"],
-    couplers=["q00_q01"],
-    redis_url="redis://127.0.0.1:6379/0",
-)
+generate_calib_seed_file(couplers=["q12_q13", "q56_q67"], qubits=["q12"], path="/path/to/destination/toml/file")
 
-# Or write straight to disk:
-extract_bcc_params(
-    env_file=".env",
-    format="toml",
-    output="calibration_seed.toml",
-)
+# Or pass in a session from somewhere else:
+session = SessionContext()
+generate_calib_seed_file(session)
 ```
 
 ### Samples

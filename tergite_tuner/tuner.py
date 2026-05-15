@@ -21,7 +21,7 @@ import shutil
 from os import PathLike
 from pathlib import Path
 from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Tuple, Union, Unpack
+from typing import FrozenSet, List, Optional, Tuple, TypeVar, Union, Unpack
 
 import networkx as nx
 from qblox_instruments import Cluster
@@ -29,11 +29,13 @@ from qblox_instruments.types import ClusterType
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
+from tergite_tuner import read_result
 from tergite_tuner.config.session import SessionContext, SessionOptions
+from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import create_node_data_path
-from tergite_tuner.storage.redis import QueryOptions, RedisStoreQueryResult
+from tergite_tuner.storage.redis import RedisStoreQueryResult
 from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -44,6 +46,8 @@ from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
 from tergite_tuner.utils.types.enums import DataStatus, MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
+
+T = TypeVar("T")
 
 
 class HardwareManager:
@@ -300,7 +304,7 @@ def run_node(
     refresh_session: bool = True,
     keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> Tuple[SessionContext, RedisStoreQueryResult]:
+) -> Tuple[SessionContext, CalibrationResults]:
     """Run only one node in the calibration sequence
 
     Args:
@@ -323,7 +327,7 @@ def run_node(
         refresh_session=refresh_session,
         keep_data_files=keep_data_files,
     )
-    return session, read_session_result(session)
+    return session, read_result(session)
 
 
 def tune_device(
@@ -332,7 +336,7 @@ def tune_device(
     refresh_session: bool = True,
     keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> Tuple[SessionContext, RedisStoreQueryResult]:
+) -> Tuple[SessionContext, CalibrationResults]:
     """Run the full calibration pipeline up to ``target_node``.
 
     Builds a :class:`SessionContext` from ``env_file`` (and any extra
@@ -354,7 +358,7 @@ def tune_device(
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)
     _tune(session, refresh_session=refresh_session, keep_data_files=keep_data_files)
-    results = read_session_result(session)
+    results = read_result(session)
     return session, results
 
 
@@ -364,7 +368,7 @@ def reanalyse(
     refresh_session: bool = True,
     keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
-) -> Tuple[SessionContext, RedisStoreQueryResult]:
+) -> Tuple[SessionContext, CalibrationResults]:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
 
     The cluster mode is forced to :attr:`MeasurementMode.re_analyse`
@@ -388,29 +392,8 @@ def reanalyse(
     _reanalyse(
         session, refresh_session=refresh_session, keep_data_files=keep_data_files
     )
-    results = read_session_result(session)
+    results = read_result(session)
     return session, results
-
-
-def read_session_result(session: SessionContext) -> RedisStoreQueryResult:
-    """Retrieves the results after tuneup for the given session
-
-    If the session has not been used yet for tuneup,
-    the result will be empty
-
-    Args:
-        session: the session context to use
-
-    Returns:
-        the results in redis for the current session
-    """
-    pks = session.qubits + session.couplers
-    affected_fields = session.redis_fields_touched.keys()
-
-    def query_func(opts: QueryOptions):
-        return any(opts["field"] in k for k in affected_fields)
-
-    return session.redis_store.find_many(pks=pks, query=query_func)
 
 
 def _tune(
