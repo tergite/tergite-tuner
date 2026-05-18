@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Changed
+
+- Removed setting QOI's of nodes to nan and 0 before calibration runs
+
 ## [2026.06.0-rc.1] - 2026-05-15
 
 ### Changed
