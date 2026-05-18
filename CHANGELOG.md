@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Added
+
+- Added the `delete_many()` and `prune_fields()` methods on the `RedisStore`
+
 ### Changed
 
 - Removed setting QOI's of nodes to nan and 0 before calibration runs
