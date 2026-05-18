@@ -108,8 +108,8 @@ def generate_calib_seed_file(
             "units": {
                 "qubit": dict(
                     frequency="Hz",
-                    t1_decoherence="s",
-                    t2_decoherence="s",
+                    t1_decoherence="us",
+                    t2_decoherence="us",
                     anharmonicity="Hz",
                     pi_pulse_amplitude="",
                     pi_pulse_duration="s",
@@ -143,7 +143,7 @@ def generate_calib_seed_file(
                     pi_pulse_duration=item.rxy.duration,
                     pi_pulse_motzoi=item.rxy.motzoi,
                     pulse_type="Gaussian",
-                    pulse_sigma=item.rxy.sigma,
+                    pulse_sigma=item.rxy.sigma or 0,  # not necessary
                     t1_decoherence=item.t1_time,
                     t2_decoherence=item.t2_echo_time,
                 )
@@ -154,7 +154,7 @@ def generate_calib_seed_file(
                     id=coupler_name_map[c],
                     frequency=_DOWNCONVERT_FREQUENCY - item.cz_pulse_frequency,
                     cz_pulse_amplitude=item.cz_pulse_amplitude,
-                    cz_pulse_dc_bias=item.parking_current,
+                    cz_pulse_dc_bias=item.parking_current or 0,  # not necessary
                     cz_pulse_duration_constant=item.cz_pulse_duration,
                     control_rz_lambda=np.deg2rad(item.cz_dynamic_control),
                     target_rz_lambda=np.deg2rad(item.cz_dynamic_target),
@@ -168,7 +168,7 @@ def generate_calib_seed_file(
                     acq_delay=item.measure.acq_delay,
                     acq_integration_time=item.measure.integration_time,
                     frequency=item.extended_clock_freqs.readout_2state_opt,
-                    pulse_delay=item.measure.ro_pulse_delay,
+                    pulse_delay=item.measure.ro_pulse_delay or 0,  # not necessary
                     pulse_duration=item.measure.pulse_duration,
                     pulse_type="Square",
                     pulse_amplitude=item.measure_2state_opt.pulse_amp,

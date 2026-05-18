@@ -17,6 +17,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Fixed
 
+- Fixed value error  Invalid type <class 'NoneType'> in generate_calib_seed_file()
 - Fixed type error RandomizedBenchmarkingNodeAnalysis got two values for session
 
 ## [2026.06.0-rc.1] - 2026-05-15
