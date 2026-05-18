@@ -238,7 +238,7 @@ class RandomizedBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
         self,
         name,
         redis_fields,
-        session_context: Optional["SessionContext"] = None,
+        session: "SessionContext",
         **kwargs,
     ):
-        super().__init__(name, redis_fields, session_context, **kwargs)
+        super().__init__(name, redis_fields, session, **kwargs)

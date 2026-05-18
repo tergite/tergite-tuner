@@ -15,6 +15,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 - Removed setting QOI's of nodes to nan and 0 before calibration runs
 
+### Fixed
+
+- Fixed type error RandomizedBenchmarkingNodeAnalysis got two values for session
+
 ## [2026.06.0-rc.1] - 2026-05-15
 
 ### Changed

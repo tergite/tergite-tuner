@@ -65,7 +65,7 @@ def test_plotting(redis_connection, session_context, node_data_dir):
         analysis = RandomizedBenchmarkingNodeAnalysis(
             name,
             redis_fields=qubit_qois,
-            session_context=session_context,
+            session=session_context,
         )
         analysis.analyze_node(node_data_dir, save_plot=True)
         figure = analysis.fig
