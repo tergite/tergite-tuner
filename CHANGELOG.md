@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.06.0-rc.2] - 2026-05-18
+
 ### Added
 
 - Added the `delete_many()` and `prune_fields()` methods on the `RedisStore`

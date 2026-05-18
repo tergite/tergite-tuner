@@ -89,8 +89,8 @@
         "pi_pulse_duration": "s",
         "pi_pulse_motzoi": "",
         "pulse_sigma": "",
-        "t1_decoherence": "s",
-        "t2_decoherence": "s"
+        "t1_decoherence": "us",
+        "t2_decoherence": "us"
       },
       "readout_resonator": {
         "acq_delay": "s",
