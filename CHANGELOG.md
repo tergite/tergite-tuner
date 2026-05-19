@@ -7,6 +7,12 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.06.0-rc.3] - 2026-05-18
+
+### Added
+
+- Added default parking currents in device_config.example.toml
+
 ## [2026.06.0-rc.2] - 2026-05-18
 
 ### Added
