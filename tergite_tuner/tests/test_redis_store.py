@@ -269,6 +269,92 @@ def test_save_many_handles_multiple_collections(store):
     assert store.read_field("cs", "q01", "resonator_spectroscopy") == "calibrated"
 
 
+def test_delete_many_removes_many_items(store):
+    """delete_many deletes many hashed."""
+    store.save_many(
+        {
+            "transmons": {
+                "q01": {"freq": 4.2e9},
+                "q02": {"freq": 3.9e9},
+                "q03": {"freq": 5.9e9},
+            },
+            "couplers": {"q01_q02": {"cz_freq": 100e6}},
+            "cs": {"q01": {"resonator_spectroscopy": "calibrated"}},
+        }
+    )
+    deleted_transmon_count = store.delete_many("transmons", pks=["q01", "q03", "q12"])
+    deleted_cs_count = store.delete_many("cs", pks=["q01", "q03"])
+    with pytest.raises(KeyError):
+        store.find_one("transmons", "q01")
+    with pytest.raises(KeyError):
+        store.find_one("transmons", "q03")
+    with pytest.raises(KeyError):
+        store.find_one("cs", "q01")
+
+    assert deleted_transmon_count == 2
+    assert deleted_cs_count == 1
+    assert store.find_many(pks=("q01", "q02", "q03", "q01_q02")) == {
+        "transmons": {
+            "q02": {"freq": 3.9e9},
+        },
+        "couplers": {"q01_q02": {"cz_freq": 100e6}},
+    }
+
+
+def test_prune_fields_deletes_fields_from_a_hash(store):
+    """prune_fields deletes fields from a given hash"""
+    store.save_many(
+        {
+            "transmons": {
+                "q01": {
+                    "freq": 4.2e9,
+                    "duration": 3.7e4,
+                    "name": "q01",
+                    "rxy": {"acq_delay": 67e3, "integration_time": 89e-2},
+                },
+                "q02": {"freq": 3.9e9, "duration": 7e4, "name": "q02"},
+                "q03": {"freq": 5.9e9, "duration": 8.3e4, "name": "q03"},
+            },
+            "couplers": {
+                "q01_q02": {"cz_freq": 100e6, "fidelity": 0.9, "name": "q01_q02"}
+            },
+            "cs": {
+                "q01": {
+                    "resonator_spectroscopy": "calibrated",
+                    "benchmarking": "calibrated",
+                }
+            },
+        }
+    )
+    pruned_transmon_count = store.prune_fields(
+        "transmons", pk="q01", field_paths=["rxy:integration_time", "duration"]
+    )
+    pruned_coupler_count = store.prune_fields(
+        "couplers", pk="q01_q02", field_paths=["fidelity"]
+    )
+    pruned_cs_count = store.prune_fields(
+        "cs", pk="q03", field_paths=["resonator_spectroscopy"]
+    )
+
+    assert pruned_transmon_count == 2
+    assert pruned_coupler_count == 1
+    assert pruned_cs_count == 0
+    assert store.find_many(pks=("q01", "q02", "q03", "q01_q02")) == {
+        "transmons": {
+            "q01": {"freq": 4.2e9, "name": "q01", "rxy": {"acq_delay": 67e3}},
+            "q02": {"freq": 3.9e9, "duration": 7e4, "name": "q02"},
+            "q03": {"freq": 5.9e9, "duration": 8.3e4, "name": "q03"},
+        },
+        "couplers": {"q01_q02": {"cz_freq": 100e6, "name": "q01_q02"}},
+        "cs": {
+            "q01": {
+                "resonator_spectroscopy": "calibrated",
+                "benchmarking": "calibrated",
+            }
+        },
+    }
+
+
 def test_find_many_filters_by_query(store):
     """``find_many`` returns only the (collection, pk, field, value) tuples
     for which the query callable returns ``True``."""

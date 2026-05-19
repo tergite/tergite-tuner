@@ -7,6 +7,21 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.06.0-rc.2] - 2026-05-18
+
+### Added
+
+- Added the `delete_many()` and `prune_fields()` methods on the `RedisStore`
+
+### Changed
+
+- Removed setting QOI's of nodes to nan and 0 before calibration runs
+
+### Fixed
+
+- Fixed value error  Invalid type <class 'NoneType'> in generate_calib_seed_file()
+- Fixed type error RandomizedBenchmarkingNodeAnalysis got two values for session
+
 ## [2026.06.0-rc.1] - 2026-05-15
 
 ### Changed

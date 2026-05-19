@@ -87,14 +87,14 @@ class BaseNode(ABC):
 
     @classmethod
     @abstractmethod
-    def persist_qois(cls, session: "SessionContext", node_name: str):
-        """Saves the qois of this node in the store
+    def reset_qois(cls, session: "SessionContext", node_name: str):
+        """Resets the qois of this node in the store
 
         Args:
             session: The session context we are working in
             node_name: The name of the node
         """
-        raise NotImplementedError(f"Persist qois is not implemented for {cls.__name__}")
+        raise NotImplementedError(f"Reset qois is not implemented for {cls.__name__}")
 
     def measure_node(self, cluster_status) -> xarray.Dataset:
         """
@@ -343,8 +343,8 @@ class QubitNode(BaseNode):
         return compiled_schedule
 
     @classmethod
-    def persist_qois(cls, session: "SessionContext", node_name: str):
-        """Saves the qois of this node in the store
+    def reset_qois(cls, session: "SessionContext", node_name: str):
+        """Resets the qois of this node in the store
 
         Args:
             session: The session context we are working in
@@ -358,30 +358,9 @@ class QubitNode(BaseNode):
             logger.warning(f"No qois for node {node_name}")
             return
 
-        zero_based_qois = (
-            "measure_3state_opt:pulse_amp",
-            "measure_2state_opt:pulse_amp",
-            "rxy:motzoi",
-            "r12:ef_motzoi",
-        )
-        new_qubit_data = {k: (0 if k in zero_based_qois else "nan") for k in qubit_qois}
-
-        query_result = redis_store.find_many("transmons", pks=qubits)
-        existing_qubits = query_result.get("transmons", {})
-
         query_result = redis_store.find_many("cs", pks=qubits)
         existing_supervisor_records = query_result.get("cs", {})
 
-        existing_qubits = {k: dict(to_flat_map(v)) for k, v in existing_qubits.items()}
-
-        updated_qubit_data = {
-            q: {
-                k: v
-                for k, v in new_qubit_data.items()
-                if k not in existing_qubits.get(q, {})
-            }
-            for q in qubits
-        }
         updated_supervisor_data = {
             q: {node_name: "not_calibrated"}
             for q in qubits
@@ -390,7 +369,6 @@ class QubitNode(BaseNode):
 
         redis_store.save_many(
             {
-                "transmons": updated_qubit_data,
                 "cs": updated_supervisor_data,
             }
         )
@@ -438,8 +416,8 @@ class CouplerNode(BaseNode):
         return dataset
 
     @classmethod
-    def persist_qois(cls, session: "SessionContext", node_name: str):
-        """Saves the qois of this node in the store
+    def reset_qois(cls, session: "SessionContext", node_name: str):
+        """Resets the qois of this node in the store
 
         Args:
             session: The session context we are working in
@@ -452,25 +430,8 @@ class CouplerNode(BaseNode):
         if coupler_qois is None:
             return
 
-        new_coupler_data = dict.fromkeys(coupler_qois, "nan")
-        query_result = redis_store.find_many("couplers", pks=couplers)
-        existing_couplers = query_result.get("couplers", {})
-
         query_result = redis_store.find_many("cs", pks=couplers)
         existing_supervisor_records = query_result.get("cs", {})
-
-        existing_couplers = {
-            k: dict(to_flat_map(v)) for k, v in existing_couplers.items()
-        }
-
-        updated_coupler_data = {
-            c: {
-                k: v
-                for k, v in new_coupler_data.items()
-                if k not in existing_couplers.get(c, {})
-            }
-            for c in couplers
-        }
 
         updated_supervisor_data = {
             c: {node_name: "not_calibrated"}
@@ -480,7 +441,6 @@ class CouplerNode(BaseNode):
 
         redis_store.save_many(
             {
-                "couplers": updated_coupler_data,
                 "cs": updated_supervisor_data,
             }
         )

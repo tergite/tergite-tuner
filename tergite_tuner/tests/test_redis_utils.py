@@ -104,12 +104,14 @@ def test_persist_qois(redis_connection, session_context):
 
         session_context.qubits = ["q00", "q01"]
         session_context.couplers = ["q00_q01"]
-        node_cls.persist_qois(session_context, node_name=node_name)
+        node_cls.reset_qois(session_context, node_name=node_name)
 
         if hasattr(node_cls, "qubit_qois") and node_cls.qubit_qois is not None:
             for qubit_qoi in node_cls.qubit_qois:
-                assert redis_connection.hexists("transmons:q00", qubit_qoi)
+                assert redis_connection.hget("cs:q00", node_name) == "not_calibrated"
 
         if hasattr(node_cls, "coupler_qois") and node_cls.coupler_qois is not None:
             for coupler_qoi in node_cls.coupler_qois:
-                assert redis_connection.hexists("couplers:q00_q01", coupler_qoi)
+                assert (
+                    redis_connection.hget("cs:q00_q01", node_name) == "not_calibrated"
+                )

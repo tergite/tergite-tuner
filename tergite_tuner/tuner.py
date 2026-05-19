@@ -35,7 +35,6 @@ from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import create_node_data_path
-from tergite_tuner.storage.redis import RedisStoreQueryResult
 from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -196,7 +195,7 @@ class NodeManager:
         node_cls = self.node_cls_map[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
-        node_cls.persist_qois(self.session, node_name=node_name)
+        node_cls.reset_qois(self.session, node_name=node_name)
 
         # Check Redis if node is calibrated
         if ignore_spec:

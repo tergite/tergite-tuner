@@ -85,6 +85,32 @@ redis_call('HSET', type_key, ARGV[1], ARGV[3])
 return 1
 """
 
+_PRUNE_FIELDS_LUA = f"""
+-- v0.0.1
+-- Atomically delete fields and their type labels so the canonical
+-- hash and its sidecar can never get out of sync.
+-- The types are stored in the {_TYPES_COLLECTION} collection under 
+-- the same key but prepended with "{_TYPES_COLLECTION}:"
+--
+-- KEYS[1] = hash_key
+-- ARGV = fields
+
+local redis_call = redis.call
+local unpack = unpack or table.unpack
+
+local hash_key = KEYS[1]
+local type_key = "{_TYPES_COLLECTION}:" .. hash_key
+local field_names = ARGV
+
+if #ARGV == 0 then
+    return 0
+end
+
+local item_count = redis_call('HDEL', hash_key, unpack(field_names))
+redis_call('HDEL', type_key, unpack(field_names))
+return item_count
+"""
+
 _READ_FIELD_LUA = f"""
 -- v0.0.1
 -- Atomically read a field's value and its type label.
@@ -172,6 +198,37 @@ local types = redis_call('HGETALL', type_key)
 return {{data, types}}
 """
 
+_DELETE_HASHES_LUA = f"""
+-- v0.0.1
+-- Bulk delete multiple hashes and their types atomically
+-- The types are stored in the {_TYPES_COLLECTION} collection under 
+-- the same key but prepended with "{_TYPES_COLLECTION}:"
+--
+-- ARGV = hash_keys
+
+local redis_call = redis.call
+local insert = table.insert
+local unpack = unpack or table.unpack
+
+local hash_keys = ARGV
+local hash_count = #ARGV
+local type_keys = {{}}
+
+if hash_count == 0 then
+    return 0
+end
+
+for i = 1, hash_count do
+    local type_key = "{_TYPES_COLLECTION}:" .. hash_keys[i]
+    insert(type_keys, type_key)
+end
+
+local item_count = redis_call('DEL', unpack(hash_keys))
+redis_call('DEL', unpack(type_keys))
+
+return item_count
+"""
+
 
 class QueryOptions(TypedDict, total=False):
     collection: _Collection
@@ -196,9 +253,11 @@ class RedisStore:
     def __init__(self, connection: Redis):
         self._connection = connection
         self._save_field_script = connection.register_script(_SAVE_FIELD_LUA)
+        self._prune_fields_script = connection.register_script(_PRUNE_FIELDS_LUA)
         self._read_field_script = connection.register_script(_READ_FIELD_LUA)
         self._save_hash_script = connection.register_script(_SAVE_HASH_LUA)
         self._read_hash_script = connection.register_script(_READ_HASH_LUA)
+        self._delete_hashes_script = connection.register_script(_DELETE_HASHES_LUA)
 
     def save_field(
         self, collection: _Collection, pk: str, field_path: str, value: _Value
@@ -216,6 +275,26 @@ class RedisStore:
                 self._get_hash_key(collection, pk),
             ],
             args=[field_path, _serialize(value), _get_type_str(value)],
+        )
+
+    def prune_fields(
+        self, collection: _Collection, pk: str, field_paths: Sequence[str]
+    ) -> int:
+        """Delete fields from a Redis hash
+
+        Args:
+            collection: the collection to delete from, options are transmons, couplers, cs.
+            pk: the primary key of the object whose field is to be deleted.
+            field_paths: the colon-separated paths to the value of the fields to be deleted.
+
+        Returns:
+            the number of items deleted.
+        """
+        return self._prune_fields_script(
+            keys=[
+                self._get_hash_key(collection, pk),
+            ],
+            args=list(field_paths),
         )
 
     def read_field(self, collection: _Collection, pk: str, field_path: str) -> _Value:
@@ -331,16 +410,29 @@ class RedisStore:
             pk: the primary key of the object to be read.
 
         Returns:
-            a dictionary of the record of the given ``pk`` or None if it doesn't exist.
+            a dictionary of the record of the given ``pk``.
 
         Raises:
-            KeyError: if key ``pk`` is not in the collection and ignore_missing is False.
+            KeyError: if key ``pk`` is not in the collection.
         """
         hash_key = self._get_hash_key(collection, pk)
         try:
             return self._find_by_hash_key(hash_key)
         except KeyError as e:
             raise KeyError(f"Key {pk} not found in collection {collection}") from e
+
+    def delete_many(self, collection: _Collection, pks: Sequence[str]) -> int:
+        """Deletes objects from Redis collection matching ``pk``'s.
+
+        Args:
+            collection: the collection to delete from, options are transmons, couplers, cs.
+            pks: the primary keys of the objects to be deleted.
+
+        Returns:
+            number of items deleted.
+        """
+        hash_keys = [self._get_hash_key(collection, pk) for pk in pks]
+        return self._delete_hashes_script(args=list(hash_keys))
 
     def _find_by_hash_key(self, hash_key: str) -> Mapping[str, _Value]:
         """Reads the single record whose hash key matches ``hash_key``.
