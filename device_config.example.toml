@@ -228,21 +228,25 @@ target_qubit = "q08"
 cz_pulse_frequency = 631910000.0
 cz_pulse_amplitude = 0.275
 cz_pulse_duration = 4.24e-07
+parking_current = -0.0004951477050781257
 
 [device.coupler.q12_q13]
 cz_pulse_frequency = 772550000.0
 cz_pulse_amplitude = 0.92
 cz_pulse_duration = 2.84e-07
+parking_current = -0.0006101608
 
 [device.coupler.q13_q14]
 cz_pulse_frequency = 719727018.0
 cz_pulse_amplitude = 0.554
 cz_pulse_duration = 1.8e-07
+parking_current = 0.00114288
 
 [device.coupler.q14_q15]
 cz_pulse_frequency = 427126551.0
 cz_pulse_amplitude = 0.39
 cz_pulse_duration = 2.08e-07
+parking_current = 0.001058959
 
 # ...
 
