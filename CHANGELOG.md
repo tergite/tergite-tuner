@@ -7,6 +7,12 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.06.0-rc.4] - 2026-05-20
+
+### Changed
+
+- Allowed passing a `QbloxHardwareCompilationConfig` instance as cluster_config in `SessionContext`
+
 ## [2026.06.0-rc.3] - 2026-05-18
 
 ### Added

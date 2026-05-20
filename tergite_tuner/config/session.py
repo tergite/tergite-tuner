@@ -55,6 +55,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from redis import Redis
 
 from tergite_tuner.config.types import (
@@ -107,7 +108,7 @@ class SessionOptions(TypedDict, total=False):
     device_config: DeviceConfig | Path | str
     node_config: NodeConfig | Path | str
     spi_config: Optional[SpiConfig] | Path | str
-    cluster_config: Optional[ClusterConfig] | Path | str
+    cluster_config: Optional[QbloxHardwareCompilationConfig] | Path | str
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
     ignored_nodes: Tuple[NodeEnum, ...]
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
@@ -215,7 +216,7 @@ class SessionContext(BaseModel):
     device_config: DeviceConfig = Field(default_factory=DeviceConfig)
     node_config: NodeConfig = Field(default_factory=NodeConfig)
     spi_config: Optional[SpiConfig] = None
-    cluster_config: Optional[ClusterConfig] = None
+    cluster_config: Optional[QbloxHardwareCompilationConfig] = None
     node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
