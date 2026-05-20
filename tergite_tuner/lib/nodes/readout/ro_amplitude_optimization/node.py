@@ -74,7 +74,9 @@ class ROAmplitudeTwoStateOptimizationNode(QubitNode):
         }
 
     def punchout_amplitude(self, qubit: str):
-        return float(self.session.redis.hget(f"transmons:{qubit}", "measure:pulse_amp"))
+        return float(
+            self.session.redis_store.read_field("transmons", qubit, "measure:pulse_amp")
+        )
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
@@ -152,7 +154,9 @@ class ROAmplitudeThreeStateOptimizationNode(QubitNode):
         }
 
     def punchout_amplitude(self, qubit: str):
-        return float(self.session.redis.hget(f"transmons:{qubit}", "measure:pulse_amp"))
+        return float(
+            self.session.redis_store.read_field("transmons", qubit, "measure:pulse_amp")
+        )
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()

@@ -24,6 +24,11 @@ if TYPE_CHECKING:
 
 
 def populate_initial_parameters(session: "SessionContext"):
+    """Populates the store with the initial values from the device config
+
+    Args:
+        session: the session context
+    """
     initial_qubit_parameters = session.device_config.qubits
     initial_coupler_parameters = session.device_config.couplers
 
@@ -48,7 +53,13 @@ def populate_node_parameters(
     is_node_calibrated: bool,
     session: "SessionContext",
 ):
-    # Populate the Redis database with node specific parameter values from the toml file
+    """Populate the database with node specific parameter values from the node config
+
+    Args:
+        session: the session context
+        node_name: the name of the node
+        is_node_calibrated: whether the node is calibrated
+    """
     transmon_configuration = session.node_config
     if not node_name in transmon_configuration:
         logger.status(f"{node_name} does not have specific node config")
@@ -63,7 +74,7 @@ def populate_node_parameters(
     all_components_node_conf = data.get("all", {})
     session.redis_store.save_many(
         {
-            "transmons": {k: all_components_node_conf for k in qubits + couplers},
+            "transmons": {k: all_components_node_conf for k in qubits},
             "couplers": {
                 coupler: data[coupler] for coupler in couplers if coupler in data
             },

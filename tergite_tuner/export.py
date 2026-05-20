@@ -13,7 +13,6 @@
 """Export calibrated parameter values from Redis as a BCC calibration seed."""
 
 import ast
-import json
 import re
 from os import PathLike
 from typing import (
