@@ -199,19 +199,20 @@ class NodeManager:
 
         # Check Redis if node is calibrated
         if ignore_spec:
-            status = DataStatus.out_of_spec
+            is_node_calibrated = False
             logger.info(f"Ignoring calibration status for {node_name}")
         else:
-            status = self._check_calibration_status_redis(node)
+            calibration_status = self._check_calibration_status_redis(node)
+            is_node_calibrated = calibration_status == DataStatus.in_spec
 
         populate_node_parameters(
             node_name,
-            is_node_calibrated=status == DataStatus.in_spec,
+            is_node_calibrated=is_node_calibrated,
             session=self.session,
         )
 
         # Log status
-        if status == DataStatus.in_spec:
+        if is_node_calibrated:
             logger.info(f" ✔ Node {node_name} in spec")
         else:
             logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")

@@ -7,6 +7,12 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.06.0-rc.5] - 2026-05-20
+
+### Fixed
+
+- Fixed error in saving coupler params in redis on the populate_node_parameters() function
+
 ## [2026.06.0-rc.4] - 2026-05-20
 
 ### Changed
