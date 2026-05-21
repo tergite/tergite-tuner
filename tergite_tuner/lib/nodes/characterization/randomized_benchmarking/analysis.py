@@ -11,10 +11,9 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
-from matplotlib.axes import Axes
 from scipy.linalg import norm
 from scipy.optimize import minimize
 
