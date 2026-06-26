@@ -18,3 +18,13 @@ import os
 def is_work_in_progress():
     """Checks whether the code is work in progress as set by CODE_STATUS env variable"""
     return os.environ.get("CODE_STATUS", "").upper().strip() == "WIP"
+
+
+def is_headless():
+    """Checks whether the tests are running in a headless (no-display) environment.
+
+    Headless environments (e.g. GitHub Actions CI) cannot render interactive
+    matplotlib figures, so plotting tests that depend on a live display should
+    be skipped via ``@pytest.mark.skipif(is_headless(), ...)``.
+    """
+    return bool(os.environ.get("CI"))

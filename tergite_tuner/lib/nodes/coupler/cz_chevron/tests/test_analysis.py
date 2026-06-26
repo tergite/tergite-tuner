@@ -15,7 +15,7 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCouplerAnalysis
-from tergite_tuner.tests.utils.pytest import is_work_in_progress
+from tergite_tuner.tests.utils.pytest import is_headless, is_work_in_progress
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-export-2025-12-21.json"
@@ -81,6 +81,10 @@ def test_cz_chevron_analysis_bad_data(redis_connection, session_context, node_da
             assert qoi.analysis_successful is False
 
 
+@pytest.mark.skipif(
+    is_headless(),
+    reason="Skipped in headless/CI environment: requires a display for matplotlib FacetGrid",
+)
 def test_plotting(redis_connection, session_context, node_data_dir):
     """
     Test that the plotter produces a faceted figure
