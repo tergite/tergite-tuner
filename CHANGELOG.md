@@ -7,6 +7,36 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.06.0] - 2026-06-26
+
+This is part of the tergite release v2026.06.0.
+
+### Added
+
+- Added the `delete_many()` and `prune_fields()` methods on the `RedisStore`
+- Added default parking currents in device_config.example.toml
+
+### Changed
+
+- [BREAKING] Changed the output of `read_results` to return a stronger-typed `CalibrationResults`
+  pydantic model instance
+- [BREAKING] Renamed `read_session_results` to `read_results`
+- [BREAKING] Renamed `extract_bcc_params` to `generate_calib_seed_file`
+- [BREAKING] Changed `extract_bcc_params` (i.e. `generate_calib_seed_file`) to return no value
+  and only work with writing to a toml file. If one wants the results in dict or json form,
+  they can use the output of `read_results` and call `model_dumps` and `model_dumps_json` on it.
+- Added a `session_only` parameter on `read_results` to allow getting all results in redis regardless
+  of session if `session_only=True`
+- Removed setting QOI's of nodes to nan and 0 before calibration runs
+- Allowed passing a `QbloxHardwareCompilationConfig` instance as cluster_config in `SessionContext`
+
+### Fixed
+
+- Removed the hard-coded fixes for CZ local phases for reverse phase qubits
+- Fixed value error Invalid type <class 'NoneType'> in generate_calib_seed_file()
+- Fixed type error RandomizedBenchmarkingNodeAnalysis got two values for session
+- Fixed error in saving coupler params in redis on the populate_node_parameters() function
+
 ## [2026.06.0-rc.5] - 2026-05-20
 
 ### Fixed
