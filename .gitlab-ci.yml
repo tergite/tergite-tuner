@@ -17,7 +17,7 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PYTHON_VERSION: "3.12"
+  PYTHON_VERSION: "3.13"
   FF_NETWORK_PER_BUILD: 1
 
 test_lint_build:

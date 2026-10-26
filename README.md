@@ -30,7 +30,7 @@ If you are reading this on GitHub, then you are looking at a mirror.
 
 ### Requirements
 
-- Python ≥ 3.12 but < 3.13 (a fresh `conda` or `venv` environment is fine).
+- Python ≥ 3.13 (a fresh `conda` or `venv` environment is fine).
 - A reachable redis server. The default URL is
   `redis://127.0.0.1:6379/0`; override via the `REDIS_URL` env var or
   the `redis_url` keyword argument when calling the public API.

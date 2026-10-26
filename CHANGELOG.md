@@ -12,6 +12,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - [BREAKING] Replaced quantify-scheduler and quantify-core with qblox-scheduler 1.0.0b8 (with qblox-instruments 1.4,
   qcodes 0.62 and pydantic 2.14), so device elements are pydantic models whose parameters are attributes, not calls.
   `cluster_config.json` now takes `"config_type": "QbloxHardwareCompilationConfig"`, though the quantify-scheduler path still loads.
+- [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 
 ## [2026.06.0] - 2026-06-26
 

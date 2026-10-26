@@ -39,7 +39,7 @@ authors = [
 maintainers = [
     { name = "Chalmers Next Labs AB", email = "contact@quantum.chalmersnextlabs.se" }
 ]
-requires-python = ">=3.12, <3.13"
+requires-python = ">=3.13"
 dependencies = [
     "h5py>=3.12.1",
     "numpy>=2.0",
