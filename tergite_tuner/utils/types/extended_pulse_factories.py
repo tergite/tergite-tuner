@@ -20,11 +20,6 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 
-from quantify_core.utilities import deprecated
-from quantify_scheduler.backends.qblox.operations import (
-    pulse_factories as qblox_pulse_factories,
-)
-from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.operations import pulse_library
 
 from tergite_tuner.utils.logging import logger
@@ -124,18 +119,3 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     logger.info(f"{virt_z_parent_qubit_clock=}, {virt_z_parent_qubit_phase=}")
 
     return composite_pulse
-
-
-@deprecated("0.20.0", qblox_pulse_factories.long_square_pulse)
-def long_square_pulse() -> StitchedPulse:
-    """Deprecated long_square_pulse."""
-
-
-@deprecated("0.20.0", qblox_pulse_factories.staircase_pulse)
-def staircase_pulse() -> StitchedPulse:
-    """Deprecated staircase_pulse."""
-
-
-@deprecated("0.20.0", qblox_pulse_factories.long_ramp_pulse)
-def long_ramp_pulse() -> StitchedPulse:
-    """Deprecated long_ramp_pulse."""
