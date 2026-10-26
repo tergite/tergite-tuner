@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Changed
+
+- [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
+
 ## [2026.06.0] - 2026-06-26
 
 This is part of the tergite release v2026.06.0.
