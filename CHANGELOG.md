@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.1] - 2026-10-26
+
 ### Changed
 
 - [BREAKING] Replaced quantify-scheduler and quantify-core with qblox-scheduler 1.0.0b8 (with qblox-instruments 1.4,
