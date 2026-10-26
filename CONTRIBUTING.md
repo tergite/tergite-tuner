@@ -83,7 +83,7 @@ A couple of configuration files are required in one folder whose path you can se
 - [`configuration.meta.toml`](./tergite_tuner/config/templatesconfiguration.meta.toml): 
   It holds metadata about the other files
 - [`configs/cluster_config.json`](./tergite_tuner/config/templates/fc8a/configs/cluster_config.json): 
-  It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
+  It is the [`qblox-scheduler`](https://docs.qblox.com/en/main/) hardware compilation configuration json file
 - [`configs/device_config.toml`](./tergite_tuner/config/templates/fc8a/configs/device_config.toml): 
   It contains details about the quantum chip
 - [`configs/node_config.toml`](./tergite_tuner/config/templates/fc8a/configs/node_config.toml): 

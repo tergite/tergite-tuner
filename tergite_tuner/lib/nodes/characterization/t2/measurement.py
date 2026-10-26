@@ -13,9 +13,9 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import X90, Measure, Reset, X
 
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
@@ -37,7 +37,11 @@ class T2Measurement(BaseMeasurement):
             ref_pt="end",
             rel_time=tau,
         )
-        schedule.add(Measure(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE))
+        schedule.add(
+            Measure(
+                qubit, coords={"acq_index": acq_index}, bin_mode=BinMode.AVERAGE_APPEND
+            )
+        )
         schedule.add(Reset(qubit))
 
     def schedule_function(
@@ -108,7 +112,11 @@ class T2EchoMeasurement(BaseMeasurement):
             ref_pt="end",
             rel_time=tau / 2,
         )
-        schedule.add(Measure(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE))
+        schedule.add(
+            Measure(
+                qubit, coords={"acq_index": acq_index}, bin_mode=BinMode.AVERAGE_APPEND
+            )
+        )
         schedule.add(Reset(qubit))
 
     def schedule_function(

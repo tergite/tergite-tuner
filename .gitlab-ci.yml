@@ -26,7 +26,7 @@ test_lint_build:
   script:
     # The test suite uses fakeredis, so we don't install / run a real
     # redis server here. ``ffmpeg``/``libsm6``/``libxext6`` are kept
-    # because ``quantify-scheduler`` pulls them in transitively for
+    # because ``qblox-scheduler`` pulls them in transitively for
     # plotting backends.
     - apt-get update
     - apt-get install ffmpeg libsm6 libxext6 -y

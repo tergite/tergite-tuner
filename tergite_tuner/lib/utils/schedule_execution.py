@@ -1,6 +1,7 @@
 # This code is part of Tergite
 #
 # (C) Copyright Eleftherios Moschandreou 2024
+# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -14,6 +15,7 @@ import threading
 import time
 from typing import TYPE_CHECKING
 
+import numpy as np
 import tqdm
 import xarray
 
@@ -21,8 +23,8 @@ from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.types.enums import MeasurementMode
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends import SerialCompiler
-    from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
+    from qblox_scheduler.backends import SerialCompiler
+    from qblox_scheduler.instrument_coordinator.instrument_coordinator import (
         CompiledSchedule,
         InstrumentCoordinator,
     )
@@ -57,7 +59,7 @@ def execute_schedule(
     thread_lab.join()
     thread_tqdm.join()
 
-    raw_dataset: xarray.Dataset = lab_ic.retrieve_acquisition()
+    raw_dataset = _flatten_acquisitions(lab_ic.retrieve_acquisition())
     lab_ic.stop()
 
     return raw_dataset
@@ -78,11 +80,26 @@ def display_duration_information(
 
 def get_compiler(prefix: str = "default") -> "SerialCompiler":
     """
-    This is in a function, so, we can have a local import of the quantify module.
+    This is in a function, so, we can have a local import of qblox-scheduler.
 
     Returns:
         SerialCompiler with given prefix name
     """
-    from quantify_scheduler.backends import SerialCompiler
+    from qblox_scheduler.backends import SerialCompiler
 
     return SerialCompiler(name=f"{prefix}_compiler")
+
+
+def _flatten_acquisitions(dataset: xarray.Dataset) -> xarray.Dataset:
+    """Orders each label's values by repetition then acq_index, as quantify-scheduler did.
+
+    qblox-scheduler has no acq_index: the schedules tag each acquisition with an
+    ``acq_index`` coordinate instead, and repetitions come back interleaved with it.
+    """
+    flat = xarray.Dataset()
+    for label in sorted(dataset.data_vars):
+        data = dataset[label]
+        keys = [data[c].values for c in ("acq_index", "repetition") if c in data.coords]
+        values = data.values[np.lexsort(keys)] if keys else data.values
+        flat[label] = xarray.DataArray(values)
+    return flat

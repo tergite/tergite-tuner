@@ -25,11 +25,9 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_dummy_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = MotzoiParameterNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -43,7 +41,6 @@ def test_dummy_generation(session_context):
 
 
 def test_dummy_12_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = MotzoiParameter12Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -57,7 +54,6 @@ def test_dummy_12_generation(session_context):
 
 
 def test_12_pulse_duration(seeded_redis, session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     qubits = ["q13", "q14", "q15"]
     node_12 = MotzoiParameter12Node(qubits, ["q13_q14"], session=session_context)
     samplespace = {  # small samplespace
@@ -71,6 +67,6 @@ def test_12_pulse_duration(seeded_redis, session_context):
     )
     for pulses in schedule.operations.values():
         if pulses["name"] == "DRAGPulse":
-            pulse_duration = pulses["pulse_info"][0]["duration"]
+            pulse_duration = pulses["pulse_info"]["duration"]
 
     assert pytest.approx(pulse_duration) == 5.6e-8

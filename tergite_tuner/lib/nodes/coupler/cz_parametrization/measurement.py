@@ -14,16 +14,15 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import Reset, X
+from qblox_scheduler.operations.pulse_library import (
     IdlePulse,
     SetClockFrequency,
     SoftSquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
@@ -56,7 +55,7 @@ class CZParametrizationMeasurement(BaseMeasurement):
 
             # unpack static parameters
             this_edge = self.couplers[coupler]
-            cz_half_duration = this_edge.cz.half_square_duration()
+            cz_half_duration = this_edge.cz.half_square_duration
 
             cz_schedule.add_resource(
                 ClockResource(
@@ -75,7 +74,7 @@ class CZParametrizationMeasurement(BaseMeasurement):
                 cz_pulse_port = f"{coupler}:fl"
                 cz_schedule.add(
                     SetClockFrequency(
-                        clock=cz_clock, clock_freq_new=self.downconvert - cz_frequency
+                        clock=cz_clock, frequency=self.downconvert - cz_frequency
                     ),
                 )
 
@@ -92,7 +91,7 @@ class CZParametrizationMeasurement(BaseMeasurement):
                     flux_pulse = cz_schedule.add(
                         SoftSquarePulse(
                             duration=cz_half_duration,
-                            amp=cz_amplitude,
+                            amplitude=cz_amplitude,
                             port=cz_pulse_port,
                             clock=cz_clock,
                         ),
@@ -105,7 +104,7 @@ class CZParametrizationMeasurement(BaseMeasurement):
                         cz_schedule.add(
                             Measure_RO_3state_Opt(
                                 this_qubit,
-                                acq_index=this_index,
+                                coords={"acq_index": this_index},
                                 bin_mode=BinMode.APPEND,
                             ),
                             ref_op=flux_pulse,
@@ -119,16 +118,14 @@ class CZParametrizationMeasurement(BaseMeasurement):
         loop_repetitions: int,
         repetitions: int = 1,
     ) -> Schedule:
-        schedule = Schedule("CZ_parametrization", repetitions)
+        schedule = Schedule("CZ_parametrization", repetitions * loop_repetitions)
 
         cz_parametrization = self.cz_parametrization(
             cz_pulse_frequencies, cz_pulse_amplitudes
         )
 
         schedule.add(IdlePulse(8e-9))
-        schedule.add(
-            LoopOperation(body=cz_parametrization, repetitions=loop_repetitions)
-        )
+        schedule.add(cz_parametrization)
         schedule.add(IdlePulse(8e-9))
 
         return schedule

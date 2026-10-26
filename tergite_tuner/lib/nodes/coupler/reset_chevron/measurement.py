@@ -13,11 +13,11 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import IdlePulse, RampPulse
-from quantify_scheduler.resources import ClockResource
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import Measure, Reset, Rxy, X
+from qblox_scheduler.operations.pulse_library import IdlePulse, RampPulse
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
@@ -153,10 +153,10 @@ class ResetChevronDCMeasurement(BaseMeasurement):
             cz_clock = f"{coupler}.cz"
             cz_pulse_port = f"{coupler}:fl"
             # schedule.add(
-            #     SetClockFrequency(clock=cz_clock, clock_freq_new= - cz_frequency + 4.4e9),
+            #     SetClockFrequency(clock=cz_clock, frequency= - cz_frequency + 4.4e9),
             # )
             # schedule.add(
-            #     SetClockFrequency(clock=cz_clock, clock_freq_new=4.4e9),
+            #     SetClockFrequency(clock=cz_clock, frequency=4.4e9),
             # )
 
             # The inner for loop iterates over cz pulse durations
@@ -194,7 +194,7 @@ class ResetChevronDCMeasurement(BaseMeasurement):
                         RampPulse(
                             # offset = -0.4,
                             duration=reset_duration,
-                            amp=-reset_amplitude,
+                            amplitude=-reset_amplitude,
                             offset=reset_amplitude,
                             # amp = 0.,
                             port=cz_pulse_port,
@@ -550,7 +550,9 @@ class ResetChevronDCMeasurement(BaseMeasurement):
                 for this_qubit in qubits:
                     schedule.add(
                         Measure(
-                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
+                            this_qubit,
+                            coords={"acq_index": this_index},
+                            bin_mode=BinMode.AVERAGE_APPEND,
                         ),
                         ref_op=buffer_end,
                         ref_pt="end",

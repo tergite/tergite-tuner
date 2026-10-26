@@ -20,11 +20,10 @@ Module containing a schedule class for randomized benchmarking measurement.
 from typing import Literal
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import Loop
-from quantify_scheduler.operations.gate_library import Reset, Rxy
-from quantify_scheduler.operations.pulse_library import IdlePulse
-from quantify_scheduler.schedules.schedule import Schedule
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import Reset, Rxy
+from qblox_scheduler.operations.pulse_library import IdlePulse
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils import cliffords
@@ -151,7 +150,7 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
 
         shot.add(
             Measure_RO_3state_Opt(
-                this_qubit, acq_index=acq_index, bin_mode=BinMode.APPEND
+                this_qubit, coords={"acq_index": acq_index}, bin_mode=BinMode.APPEND
             ),
         )
 
@@ -165,7 +164,7 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
         interleave_gate: dict[str, str],
         multiplexing: Literal["parallel", "one_by_one"] = "parallel",
     ) -> Schedule:
-        schedule = Schedule("randomized_benchmarking", repetitions=1)
+        schedule = Schedule("randomized_benchmarking", repetitions=loop_repetitions)
 
         rb_shot_schedule = self.rb_shot(
             seeds,
@@ -174,6 +173,6 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
             multiplexing=multiplexing,
         )
 
-        schedule.add(rb_shot_schedule, control_flow=Loop(loop_repetitions))
+        schedule.add(rb_shot_schedule)
         schedule.add(IdlePulse(20e-9))
         return schedule

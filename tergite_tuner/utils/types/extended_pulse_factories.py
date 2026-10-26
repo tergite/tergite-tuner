@@ -1,6 +1,7 @@
 # This code is part of Tergite
 #
 # (C) Copyright Liangyu Chen 2024
+# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -20,9 +21,13 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 
-from quantify_scheduler.operations import pulse_library
+from qblox_scheduler.operations import pulse_library
+from qblox_scheduler.schedules import TimeableSchedule
 
 from tergite_tuner.utils.logging import logger
+
+# DRAGPulse's nr_sigma when it is given no sigma: sigma = duration / (2 * nr_sigma)
+_DRAG_NR_SIGMA = 4
 
 
 def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
@@ -36,7 +41,7 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     virt_z_child_qubit_clock: str,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
     t0: float = 0,
-) -> pulse_library.SoftSquarePulse:
+) -> TimeableSchedule:
     """
     An example composite pulse to implement a CZ gate.
 
@@ -61,7 +66,7 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
         The phase shift in degrees applied to the child qubit.
     virt_z_child_qubit_clock
         The clock of which to shift the phase applied to the child qubit.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+    reference_magnitude : :class:`~qblox_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
     t0
@@ -71,21 +76,8 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     Returns
     -------
     :
-        SquarePulse operation.
+        The CZ pulse and its phase corrections, as a schedule.
     """
-
-    composite_pulse = pulse_library.IdlePulse(duration=4e-9)
-
-    composite_pulse.add_pulse(
-        pulse_library.SoftSquarePulse(
-            amp=square_amp,
-            duration=square_duration,
-            port=square_port,
-            clock=square_clock,
-            t0=t0,
-        )
-    )
-    # )
 
     if virt_z_parent_qubit_phase is float("nan"):
         virt_z_parent_qubit_phase = 0
@@ -93,23 +85,30 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     if virt_z_child_qubit_phase is float("nan"):
         virt_z_child_qubit_phase = 0
 
-    # And at the same time apply clock phase corrections
-    composite_pulse.add_pulse(
+    composite_pulse = TimeableSchedule(composite_soft_square_pulse.__name__)
+    start = composite_pulse.add(pulse_library.IdlePulse(duration=4e-9))
+    # all parts start together, as quantify-scheduler's Operation.add_pulse placed them
+    for part in (
+        pulse_library.SoftSquarePulse(
+            amplitude=square_amp,
+            duration=square_duration,
+            port=square_port,
+            clock=square_clock,
+            t0=t0,
+        ),
         pulse_library.ShiftClockPhase(
             phase_shift=virt_z_parent_qubit_phase,
             clock=virt_z_parent_qubit_clock,
             t0=t0,
-        )
-    )
-    composite_pulse.add_pulse(
+        ),
         pulse_library.ShiftClockPhase(
             phase_shift=virt_z_child_qubit_phase,
             clock=virt_z_child_qubit_clock,
             t0=t0,
-        )
-    )
-
-    composite_pulse.add_pulse(pulse_library.IdlePulse(4e-9))
+        ),
+        pulse_library.IdlePulse(4e-9),
+    ):
+        composite_pulse.add(part, ref_op=start, ref_pt="start")
 
     logger.info(f"{square_amp=}")
     logger.info(f"{square_duration=}")
@@ -119,3 +118,9 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     logger.info(f"{virt_z_parent_qubit_clock=}, {virt_z_parent_qubit_phase=}")
 
     return composite_pulse
+
+
+def motzoi_to_beta(motzoi: float, duration: float) -> float:
+    """DRAG ``beta`` of qblox-scheduler for quantify-scheduler's ``D_amp``, which motzoi is."""
+    # the derivative term scales as D_amp / sigma in quantify, beta / sigma**2 in qblox
+    return motzoi * duration / (2 * _DRAG_NR_SIGMA)

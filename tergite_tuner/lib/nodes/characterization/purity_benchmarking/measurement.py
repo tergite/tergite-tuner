@@ -15,12 +15,13 @@ Module containing a schedule class for purity benchmarking measurement.
 """
 
 import numpy as np
-from quantify_scheduler.operations.gate_library import X90, H, Measure, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.schedules.schedule import Schedule
+from qblox_scheduler import Schedule
+from qblox_scheduler.operations.gate_library import X90, H, Measure, Reset, Rxy, X
+from qblox_scheduler.operations.pulse_library import DRAGPulse
 
 import tergite_tuner.utils.cliffords as cliffords
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -73,11 +74,11 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
 
         for this_qubit, clifford_sequence_lengths in number_of_cliffords.items():
             this_transmon = self.transmons[this_qubit]
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-            mw_ef_motzoi = this_transmon.r12.ef_motzoi()
-            mw_pulse_duration = this_transmon.rxy.duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-            mw_ef_duration = this_transmon.r12.ef_duration()
+            mw_ef_amp180 = this_transmon.r12.ef_amp180
+            mw_ef_motzoi = this_transmon.r12.ef_motzoi
+            mw_pulse_duration = this_transmon.rxy.duration
+            mw_pulse_port = this_transmon.ports.microwave
+            mw_ef_duration = this_transmon.r12.ef_duration
             # Get the total number of Clifford gate decompositions available
             all_cliffords = len(cliffords.XY_decompositions)
             # Use the seed for reproducibility of random sequences
@@ -110,17 +111,17 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
                         schedule.add(H(this_qubit))
                     elif basis == "Y":  # Prepare for Y basis measurement
                         schedule.add(X90(this_qubit))
-                    schedule.add(Measure(this_qubit, acq_index=acq_index))
+                    schedule.add(Measure(this_qubit, coords={"acq_index": acq_index}))
                     schedule.add(Reset(this_qubit))
                     acq_index += 1
 
             # Calibration measurements
             schedule.add(Reset(this_qubit))
-            schedule.add(Measure(this_qubit, acq_index=acq_index))
+            schedule.add(Measure(this_qubit, coords={"acq_index": acq_index}))
             schedule.add(Reset(this_qubit))
 
             schedule.add(X(this_qubit))
-            schedule.add(Measure(this_qubit, acq_index=acq_index + 1))
+            schedule.add(Measure(this_qubit, coords={"acq_index": acq_index + 1}))
             schedule.add(Reset(this_qubit))
 
             # This is not used so it could perhaps be removed.
@@ -129,14 +130,14 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
             schedule.add(
                 DRAGPulse(
                     duration=mw_ef_duration,
-                    G_amp=mw_ef_amp180,
-                    D_amp=mw_ef_motzoi,
+                    amplitude=mw_ef_amp180,
+                    beta=motzoi_to_beta(mw_ef_motzoi, mw_ef_duration),
                     port=mw_pulse_port,
                     clock=f"{this_qubit}.12",
                     phase=0,
                 ),
             )
-            schedule.add(Measure(this_qubit, acq_index=acq_index + 2))
+            schedule.add(Measure(this_qubit, coords={"acq_index": acq_index + 2}))
             schedule.add(Reset(this_qubit))
 
         return schedule

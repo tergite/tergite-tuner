@@ -16,16 +16,15 @@
 from typing import Tuple
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import X90, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import (
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import X90, Reset, Rxy, X
+from qblox_scheduler.operations.pulse_library import (
     IdlePulse,
     ResetClockPhase,
     SoftSquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import LoopOperation
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
@@ -65,7 +64,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
 
             # unpack the static parameters:
             this_edge = self.couplers[this_coupler]
-            cz_amplitude = this_edge.cz.square_amp()
+            cz_amplitude = this_edge.cz.square_amp
             cz_clock = f"{this_coupler}.cz"
             cz_pulse_port = f"{this_coupler}:fl"
 
@@ -80,7 +79,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
             connected_qubits = this_coupler.split("_")
             first_qubit = connected_qubits[0]
             first_transmon = self.transmons[first_qubit]
-            r_xy_duration = first_transmon.rxy.duration()
+            r_xy_duration = first_transmon.rxy.duration
 
             shot.add(
                 Reset(*qubits), ref_op=root
@@ -106,7 +105,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
                     cz = shot.add(
                         SoftSquarePulse(
                             duration=cz_duration,
-                            amp=cz_amplitude,
+                            amplitude=cz_amplitude,
                             port=cz_pulse_port,
                             clock=cz_clock,
                         ),
@@ -124,7 +123,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
                     shot.add(
                         Measure_RO_3state_Opt(
                             control_qubit,
-                            acq_index=this_index,
+                            coords={"acq_index": this_index},
                             bin_mode=BinMode.APPEND,
                         ),
                         ref_op=final,
@@ -132,7 +131,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
                     shot.add(
                         Measure_RO_3state_Opt(
                             target_qubit,
-                            acq_index=this_index,
+                            coords={"acq_index": this_index},
                             bin_mode=BinMode.APPEND,
                         ),
                         ref_op=final,
@@ -152,7 +151,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
         repetitions: int = 1,
     ) -> Schedule:
 
-        schedule = Schedule("cz_calibration", repetitions)
+        schedule = Schedule("cz_calibration", repetitions * loop_repetitions)
 
         cz_phase_shot = self.ro_shot(
             ramsey_phases,
@@ -162,6 +161,6 @@ class CZCalibrationMeasurement(BaseMeasurement):
         )
 
         schedule.add(IdlePulse(16e-9))
-        schedule.add(LoopOperation(body=cz_phase_shot, repetitions=loop_repetitions))
+        schedule.add(cz_phase_shot)
         schedule.add(IdlePulse(16e-9))
         return schedule

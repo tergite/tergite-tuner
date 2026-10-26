@@ -58,7 +58,7 @@ On top of having a `.env` file, more configuration files maybe required.
 (See [`.example.env` file](./.example.env) for more details)
 
 - [`cluster_config.json`](./cluster_config.example.json): 
-  It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
+  It is the [`qblox-scheduler`](https://docs.qblox.com/en/main/) hardware compilation configuration json file
 - [`device_config.toml`](./device_config.example.toml): 
   It contains details about the quantum chip, including initial values of params of the chip.
 - [`node_config.toml`](./node_config.example.toml): 
@@ -111,7 +111,7 @@ _, results = tune_device(
         }
     }),                
     cluster_config=ClusterConfig.model_validate({
-      "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+      "config_type": "QbloxHardwareCompilationConfig",
       "hardware_description": {
         "clusterA": {
           "instrument_type": "Cluster",

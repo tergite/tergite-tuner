@@ -17,11 +17,7 @@ import os
 import numpy
 import pytest
 
-from tergite_tuner.lib.utils.device import (
-    close_device_resources,
-    configure_device,
-    save_serial_device,
-)
+from tergite_tuner.lib.utils.device import configure_device, save_serial_device
 from tergite_tuner.lib.utils.validators import (
     get_batched_dimensions,
     get_number_of_batches,
@@ -33,16 +29,12 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 
 
 def test_create_serial_device(redis_connection, session_context):
     with loaded_redis(redis_connection, redis_mock):
-        # ensure no other transmon objects are instantiated
-        # this is because some other test doesn't close the device properly
-        ExtendedTransmon.close_all()
         device_name = "test_device"
         test_device = configure_device(
             device_name,
@@ -52,26 +44,21 @@ def test_create_serial_device(redis_connection, session_context):
         )
 
         q00 = test_device.get_element("q00")
-        pi_amplitude = q00.rxy.amp180()
+        pi_amplitude = q00.rxy.amp180
         q00_q01 = test_device.get_edge("q00_q01")
-        initial_parking_current = q00_q01.coupler_parameters.parking_current()
-        cz_phase_path = q00_q01.coupler_parameters.phase_path()
+        initial_parking_current = q00_q01.coupler_parameters.parking_current
+        cz_phase_path = q00_q01.coupler_parameters.phase_path
 
-        assert test_device.elements() == DEFAULT_TEST_QUBITS
-        assert test_device.edges() == DEFAULT_TEST_COUPLERS
+        assert list(test_device.elements) == DEFAULT_TEST_QUBITS
+        assert list(test_device.edges) == DEFAULT_TEST_COUPLERS
 
         assert math.isclose(pi_amplitude, 0.7308488204080522)
         assert math.isclose(initial_parking_current, 0.00065)
         assert cz_phase_path == "via_20"
 
-        close_device_resources(test_device)
-
 
 def test_save_serial_device(tmp_path, redis_connection, session_context):
     with loaded_redis(redis_connection, redis_mock):
-        # ensure no other transmon objects are instantiated
-        # this is because some other test doesn't close the device properly
-        ExtendedTransmon.close_all()
         device_name = "test_device"
         test_device = configure_device(
             device_name,
@@ -82,8 +69,6 @@ def test_save_serial_device(tmp_path, redis_connection, session_context):
         save_serial_device(test_device, data_path=tmp_path)
 
     assert os.path.exists(os.path.join(tmp_path, f"{device_name}.json"))
-
-    close_device_resources(test_device)
 
 
 # NOTE: batching is not supported anymore, but maybe useful in the future

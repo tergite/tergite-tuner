@@ -22,7 +22,7 @@ from typing import Annotated, Optional, get_origin
 
 import pytest
 from pydantic import ValidationError
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from qblox_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.config.types import (

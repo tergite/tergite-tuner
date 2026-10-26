@@ -15,7 +15,7 @@ from itertools import product
 
 import numpy
 import pandas
-from quantify_scheduler.instrument_coordinator.utility import xarray
+from qblox_scheduler.instrument_coordinator.utility import xarray
 
 from tergite_tuner.lib.base.measurement import MeasurementType
 from tergite_tuner.utils.measurement import (

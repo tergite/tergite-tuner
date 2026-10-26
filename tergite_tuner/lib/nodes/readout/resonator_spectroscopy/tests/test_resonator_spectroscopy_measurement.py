@@ -21,11 +21,9 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_measurement_0_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_0 = ResonatorSpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -33,7 +31,6 @@ def test_measurement_0_type(session_context):
 
 
 def test_measurement_1_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_1 = ResonatorSpectroscopy1Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -41,7 +38,6 @@ def test_measurement_1_type(session_context):
 
 
 def test_measurement_2_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_2 = ResonatorSpectroscopy2Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -49,7 +45,6 @@ def test_measurement_2_type(session_context):
 
 
 def test_dummy_0_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -63,7 +58,6 @@ def test_dummy_0_generation(session_context):
 
 
 def test_dummy_1_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopy1Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -77,7 +71,6 @@ def test_dummy_1_generation(session_context):
 
 
 def test_dummy_2_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopy2Node(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )

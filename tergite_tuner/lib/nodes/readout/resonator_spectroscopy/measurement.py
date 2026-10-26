@@ -15,18 +15,19 @@ Module containing a schedule class for resonator spectroscopy calibration.
 """
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from qblox_scheduler.operations.gate_library import Reset, X
+from qblox_scheduler.operations.pulse_library import (
     DRAGPulse,
     SetClockFrequency,
     SquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -84,7 +85,7 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
         if qubit_state == 2:
             for this_qubit, this_transmon in self.transmons.items():
                 this_clock = f"{this_qubit}.12"
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
+                mw_frequency_12 = this_transmon.clock_freqs.f12
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_12)
                 )
@@ -95,14 +96,14 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
         for acq_cha, (this_qubit, ro_f_values) in enumerate(ro_frequencies.items()):
             # unpack the static parameters
             this_transmon = self.transmons[this_qubit]
-            ro_pulse_amplitude = this_transmon.measure.pulse_amp()
-            ro_pulse_duration = this_transmon.measure.pulse_duration()
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-            mw_ef_duration = this_transmon.r12.ef_duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-            acquisition_delay = this_transmon.measure.acq_delay()
-            integration_time = this_transmon.measure.integration_time()
-            ro_port = this_transmon.ports.readout()
+            ro_pulse_amplitude = this_transmon.measure.pulse_amp
+            ro_pulse_duration = this_transmon.measure.pulse_duration
+            mw_ef_amp180 = this_transmon.r12.ef_amp180
+            mw_ef_duration = this_transmon.r12.ef_duration
+            mw_pulse_port = this_transmon.ports.microwave
+            acquisition_delay = this_transmon.measure.acq_delay
+            integration_time = this_transmon.measure.integration_time
+            ro_port = this_transmon.ports.readout
 
             # To enforce parallelism we refer to the root relaxation:
             schedule.add(Reset(*qubits), ref_op=root_relaxation)
@@ -113,7 +114,7 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
             # The second for loop iterates over all frequency values in the frequency batch:
             for acq_index, ro_frequency in enumerate(ro_f_values):
                 schedule.add(
-                    SetClockFrequency(clock=this_ro_clock, clock_freq_new=ro_frequency)
+                    SetClockFrequency(clock=this_ro_clock, frequency=ro_frequency)
                 )
 
                 if qubit_state == 0:
@@ -125,8 +126,8 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
                     schedule.add(
                         DRAGPulse(
                             duration=mw_ef_duration,
-                            G_amp=mw_ef_amp180,
-                            D_amp=0,
+                            amplitude=mw_ef_amp180,
+                            beta=motzoi_to_beta(0, mw_ef_duration),
                             port=mw_pulse_port,
                             clock=this_mw_clock,
                             phase=0,
@@ -136,7 +137,7 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
                 ro_pulse = schedule.add(
                     SquarePulse(
                         duration=ro_pulse_duration,
-                        amp=ro_pulse_amplitude,
+                        amplitude=ro_pulse_amplitude,
                         port=ro_port,
                         clock=this_ro_clock,
                     ),
@@ -147,9 +148,9 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
                         duration=integration_time,
                         port=ro_port,
                         clock=this_ro_clock,
-                        acq_index=acq_index,
-                        acq_channel=acq_cha,
-                        bin_mode=BinMode.AVERAGE,
+                        coords={"acq_index": acq_index},
+                        acq_label=acq_cha,
+                        bin_mode=BinMode.AVERAGE_APPEND,
                     ),
                     ref_op=ro_pulse,
                     ref_pt="start",

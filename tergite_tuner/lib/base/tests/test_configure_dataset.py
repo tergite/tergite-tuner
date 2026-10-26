@@ -29,13 +29,11 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 
 
 def test_configure_dataset_qubits(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -56,7 +54,6 @@ def test_configure_dataset_qubits(session_context):
     # check coord properties
     assert configured_ds.coords["ro_frequenciesq00"].attrs["element_type"] == "qubit"
 
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -79,7 +76,6 @@ def test_configure_dataset_qubits(session_context):
 
 
 def test_configure_dataset_couplers(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_0 = QubitSpectroscopyVsCurrentNode(
         DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -104,7 +100,6 @@ def test_configure_dataset_couplers(session_context):
 
 
 def test_configure_dataset_qubits_with_loops(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = RandomizedBenchmarkingNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -134,7 +129,6 @@ def test_configure_dataset_qubits_with_3state_discrimination(
     redis_connection, session_context
 ):
     with loaded_redis(redis_connection, redis_mock):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZParametrizationNode(
             DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
         )
