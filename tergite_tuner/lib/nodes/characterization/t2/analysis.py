@@ -19,9 +19,9 @@ from abc import ABC, abstractmethod
 import lmfit
 import numpy as np
 from matplotlib.axes import Axes
-from quantify_core.analysis.fitting_models import ExpDecayModel, fft_freq_phase_guess
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
+from tergite_tuner.lib.utils.fitting_models import ExpDecayModel, fft_freq_phase_guess
 from tergite_tuner.utils.types.qoi import QOI
 
 
