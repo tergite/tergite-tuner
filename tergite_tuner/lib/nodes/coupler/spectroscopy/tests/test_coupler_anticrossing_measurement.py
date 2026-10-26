@@ -19,11 +19,9 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_measurement_01_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = QubitSpectroscopyVsCurrentNode(
         DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -31,7 +29,6 @@ def test_measurement_01_type(session_context):
 
 
 def test_dummy_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = QubitSpectroscopyVsCurrentNode(
         DEFAULT_TEST_COUPLERS, session=session_context
     )

@@ -26,7 +26,6 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement imp
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _test_data_dir = os.path.join(Path(__file__).parent, "data")
 _REDIS_DATA_FILENAME = "redis-2026-02-10-11-23-12.json"
@@ -35,7 +34,6 @@ _REDIS_DATA_FILENAME = "redis-2026-02-10-11-23-12.json"
 def test_node_creation(redis_connection, session_context, node_data_dir):
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
     with loaded_redis(redis_connection, redis_data_file):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZRBNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
         )
@@ -45,7 +43,6 @@ def test_node_creation(redis_connection, session_context, node_data_dir):
 def test_class_attribute_objects(redis_connection, session_context, node_data_dir):
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
     with loaded_redis(redis_connection, redis_data_file):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZRBNode(
             all_qubits=["q13", "q14"], couplers=["q13_q14"], session=session_context
         )
@@ -57,7 +54,6 @@ def test_class_attribute_objects(redis_connection, session_context, node_data_di
 def test_dummy_generation(redis_connection, session_context, node_data_dir):
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
     with loaded_redis(redis_connection, redis_data_file):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
 
         coupler = "q13_q14"
         couplers = [coupler]

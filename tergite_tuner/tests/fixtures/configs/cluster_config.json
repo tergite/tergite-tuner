@@ -1,5 +1,5 @@
 {
-  "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+  "config_type": "QbloxHardwareCompilationConfig",
   "hardware_description": {
     "clusterA": {
       "instrument_type": "Cluster",

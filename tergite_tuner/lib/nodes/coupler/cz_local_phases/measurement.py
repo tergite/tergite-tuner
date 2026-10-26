@@ -14,12 +14,11 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import X90, Reset, Rxy
-from quantify_scheduler.operations.pulse_library import IdlePulse, SoftSquarePulse
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import LoopOperation
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import X90, Reset, Rxy
+from qblox_scheduler.operations.pulse_library import IdlePulse, SoftSquarePulse
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
@@ -59,9 +58,9 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
 
             # unpack the static parameters:
             this_edge = self.couplers[this_coupler]
-            cz_frequency = this_edge.clock_freqs.cz_freq()
-            cz_amplitude = this_edge.cz.square_amp()
-            cz_duration = this_edge.cz.square_duration()
+            cz_frequency = this_edge.clock_freqs.cz_freq
+            cz_amplitude = this_edge.cz.square_amp
+            cz_duration = this_edge.cz.square_duration
             cz_clock = f"{this_coupler}.cz"
             cz_pulse_port = f"{this_coupler}:fl"
 
@@ -104,7 +103,7 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
                             shot.add(
                                 SoftSquarePulse(
                                     duration=cz_duration,
-                                    amp=cz_amplitude,
+                                    amplitude=cz_amplitude,
                                     port=cz_pulse_port,
                                     clock=cz_clock,
                                 ),
@@ -121,7 +120,7 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
                         shot.add(
                             Measure_RO_3state_Opt(
                                 control_qubit,
-                                acq_index=this_index,
+                                coords={"acq_index": this_index},
                                 bin_mode=BinMode.APPEND,
                             ),
                             ref_op=final,
@@ -129,7 +128,7 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
                         shot.add(
                             Measure_RO_3state_Opt(
                                 target_qubit,
-                                acq_index=this_index,
+                                coords={"acq_index": this_index},
                                 bin_mode=BinMode.APPEND,
                             ),
                             ref_op=final,
@@ -149,7 +148,7 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         repetitions: int = 1,
     ) -> Schedule:
 
-        schedule = Schedule("CZ_local_phases", repetitions)
+        schedule = Schedule("CZ_local_phases", repetitions * loop_repetitions)
 
         local_phase_shot = self.ro_shot(
             local_phases=local_phases,
@@ -159,6 +158,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         )
 
         schedule.add(IdlePulse(16e-9))
-        schedule.add(LoopOperation(body=local_phase_shot, repetitions=loop_repetitions))
+        schedule.add(local_phase_shot)
         schedule.add(IdlePulse(16e-9))
         return schedule

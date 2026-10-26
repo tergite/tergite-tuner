@@ -26,8 +26,8 @@ from typing import FrozenSet, List, Optional, Tuple, TypeVar, Union, Unpack
 import networkx as nx
 from qblox_instruments import Cluster
 from qblox_instruments.types import ClusterType
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from qblox_scheduler.instrument_coordinator import InstrumentCoordinator
+from qblox_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
 from tergite_tuner import read_result
 from tergite_tuner.config.session import SessionContext, SessionOptions

@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import xarray
-from quantify_scheduler.enums import BinMode
+from qblox_scheduler.enums import BinMode
 
 if TYPE_CHECKING:
     from tergite_tuner.lib.base.node import BaseNode
@@ -32,7 +32,7 @@ class BaseMeasurement:
         self.couplers = couplers
         self.qubits = list(self.transmons.keys())
         self.device_configuration = {}
-        self.bin_mode = BinMode.AVERAGE
+        self.bin_mode = BinMode.AVERAGE_APPEND
 
 
 class MeasurementType(ABC):

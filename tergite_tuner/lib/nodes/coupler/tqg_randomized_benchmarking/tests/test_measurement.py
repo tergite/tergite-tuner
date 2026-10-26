@@ -19,13 +19,11 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit
     TwoQubitClifford,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_align_cliffords(redis_connection, session_context, node_data_dir):
     redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
     with loaded_redis(redis_connection, redis_data_file):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q13", "q14"]
         couplers = ["q13_q14"]
         clifford_gate_index = 9799

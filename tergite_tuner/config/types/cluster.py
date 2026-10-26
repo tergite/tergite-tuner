@@ -13,29 +13,26 @@
 """Loader for the ``cluster_config.json`` file.
 
 Validation is delegated to
-:class:`quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`,
+:class:`qblox_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`,
 the canonical pydantic model for the QBlox hardware compilation
-configuration. The quantify-scheduler import is deferred until
-:meth:`ClusterConfig.from_json` is actually called so that simply
-importing this module does not pull in the heavy quantify-scheduler
-dependency tree.
+configuration.
 """
 
 import json
 from os import PathLike
 from typing import Self
 
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from qblox_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 
 
 class ClusterConfig(QbloxHardwareCompilationConfig):
     """Configuration of the qblox cluster
 
     This is a thin wrapper that defers validation to
-    :class:`quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    :class:`qblox_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     Calling :meth:`from_json` returns the validated
     ``QbloxHardwareCompilationConfig`` instance directly so that callers
-    can use the full quantify-scheduler API on the result.
+    can use the full qblox-scheduler API on the result.
     """
 
     @classmethod
@@ -47,8 +44,13 @@ class ClusterConfig(QbloxHardwareCompilationConfig):
 
         Returns:
             the parsed and validated ``QbloxHardwareCompilationConfig``
-            instance from quantify-scheduler
+            instance from qblox-scheduler
         """
         with open(file, "r") as f:
             data = json.load(f)
+
+        name = QbloxHardwareCompilationConfig.__name__
+        # quantify-scheduler took the class's import path, qblox-scheduler its bare name
+        if str(data.get("config_type", "")).endswith(f".{name}"):
+            data["config_type"] = name
         return cls.model_validate(data)

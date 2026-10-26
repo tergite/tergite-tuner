@@ -16,17 +16,17 @@ Module containing a schedule class for two-tone (qubit) spectroscopy calibration
 """
 
 import numpy as np
-from quantify_scheduler.backends.qblox.operations.pulse_factories import (
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import Measure, Reset, X
+from qblox_scheduler.operations.hardware_operations.pulse_factories import (
     long_square_pulse,
 )
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
-from quantify_scheduler.operations.pulse_library import (
+from qblox_scheduler.operations.pulse_library import (
     SetClockFrequency,
     SoftSquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.logging import logger
@@ -97,11 +97,11 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
         for this_qubit, spec_pulse_frequency_values in spec_frequencies.items():
             # unpack the static parameters
             this_transmon = self.transmons[this_qubit]
-            spec_pulse_duration = this_transmon.spec.spec_duration()
-            mw_pulse_port = this_transmon.ports.microwave()
+            spec_pulse_duration = this_transmon.spec.spec_duration
+            mw_pulse_port = this_transmon.ports.microwave
 
             if spec_pulse_amplitudes is None:
-                spec_amplitude = this_transmon.spec.spec_ampl_optimal()
+                spec_amplitude = this_transmon.spec.spec_ampl_optimal
                 logger.info(
                     f"setting optimal spec_amplitude for {this_qubit} {spec_amplitude}"
                 )
@@ -135,9 +135,7 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
             ):
                 # reset the clock frequency for the qubit pulse
                 schedule.add(
-                    SetClockFrequency(
-                        clock=this_clock, clock_freq_new=spec_pulse_frequency
-                    ),
+                    SetClockFrequency(clock=this_clock, frequency=spec_pulse_frequency),
                 )
 
                 # The inner loop, iterates over all spec_amplitudes
@@ -154,7 +152,7 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
                     schedule.add(
                         SpectroscopyPulse(
                             duration=spec_pulse_duration,
-                            amp=spec_pulse_amplitude,
+                            amplitude=spec_pulse_amplitude,
                             port=mw_pulse_port,
                             clock=this_clock,
                         ),
@@ -162,7 +160,9 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
 
                     schedule.add(
                         measure_function(
-                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
+                            this_qubit,
+                            coords={"acq_index": this_index},
+                            bin_mode=BinMode.AVERAGE_APPEND,
                         ),
                     )
 
@@ -200,8 +200,8 @@ class TwoTonesAmplitudeMeasurement(BaseMeasurement):
         ):
             # unpack the static parameters
             this_transmon = self.transmons[this_qubit]
-            spec_pulse_duration = this_transmon.spec.spec_duration()
-            mw_pulse_port = this_transmon.ports.microwave()
+            spec_pulse_duration = this_transmon.spec.spec_duration
+            mw_pulse_port = this_transmon.ports.microwave
 
             # long pulses require more efficient memory management
             if spec_pulse_duration > 6.5e-6:
@@ -224,15 +224,13 @@ class TwoTonesAmplitudeMeasurement(BaseMeasurement):
             ):
                 # reset the clock frequency for the qubit pulse
                 schedule.add(
-                    SetClockFrequency(
-                        clock=this_clock, clock_freq_new=spec_pulse_frequency
-                    ),
+                    SetClockFrequency(clock=this_clock, frequency=spec_pulse_frequency),
                 )
 
                 schedule.add(
                     SpectroscopyPulse(
                         duration=spec_pulse_duration,
-                        amp=spec_pulse_amplitude,
+                        amplitude=spec_pulse_amplitude,
                         port=mw_pulse_port,
                         clock=this_clock,
                     ),
@@ -241,7 +239,7 @@ class TwoTonesAmplitudeMeasurement(BaseMeasurement):
                 schedule.add(
                     Measure(
                         this_qubit,
-                        acq_index=this_index,
+                        coords={"acq_index": this_index},
                     ),
                 )
 

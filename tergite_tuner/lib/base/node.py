@@ -25,11 +25,7 @@ import xarray
 
 from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
 from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
-from tergite_tuner.lib.utils.device import (
-    close_device_resources,
-    configure_device,
-    save_serial_device,
-)
+from tergite_tuner.lib.utils.device import configure_device, save_serial_device
 from tergite_tuner.lib.utils.schedule_execution import execute_schedule, get_compiler
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.utils.dicts import insert_nested_key, to_flat_map
@@ -41,8 +37,8 @@ from tergite_tuner.utils.types.enums import MeasurementMode
 from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-    from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
+    from qblox_scheduler.device_under_test.quantum_device import QuantumDevice
+    from qblox_scheduler.instrument_coordinator.instrument_coordinator import (
         CompiledSchedule,
         InstrumentCoordinator,
     )
@@ -110,8 +106,6 @@ class BaseNode(ABC):
             result_dataset = self.measure_node(measurement_mode)
             save_serial_device(self.device, data_path)
             save_dataset(result_dataset, self.name, data_path)
-        # After the measurement free the device resources
-        close_device_resources(self.device)
         self.post_process(data_path, save_plot)
         logger.info("analysis completed")
 
@@ -320,7 +314,7 @@ class QubitNode(BaseNode):
         )
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
-        import quantify_scheduler.backends.qblox.constants as constants
+        import qblox_scheduler.backends.qblox.constants as constants
 
         constants.GRID_TIME_TOLERANCE_TIME = 5e-2
 
@@ -534,7 +528,7 @@ class CouplerNode(BaseNode):
         return ac_frequency
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
-        import quantify_scheduler.backends.qblox.constants as constants
+        import qblox_scheduler.backends.qblox.constants as constants
 
         constants.GRID_TIME_TOLERANCE_TIME = 5e-2
 

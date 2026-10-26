@@ -14,16 +14,15 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import Reset, X
+from qblox_scheduler.operations.pulse_library import (
     IdlePulse,
     SetClockFrequency,
     SoftSquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
@@ -50,7 +49,7 @@ class CZChevronMeasurement(BaseMeasurement):
 
         root = cz_schedule.add(IdlePulse(4e-9))
         for coupler, edge in self.couplers.items():
-            cz_amplitude = edge.cz.square_amp()
+            cz_amplitude = edge.cz.square_amp
             cz_durations = cz_duration_values[coupler]
             cz_frequency = cz_frequency_values[coupler]
             qubits = coupler.split(sep="_")
@@ -66,7 +65,7 @@ class CZChevronMeasurement(BaseMeasurement):
             cz_schedule.add(
                 SetClockFrequency(
                     clock=cz_clock,
-                    clock_freq_new=-cz_frequency + self.downconvert,
+                    frequency=-cz_frequency + self.downconvert,
                 ),
             )
 
@@ -85,7 +84,7 @@ class CZChevronMeasurement(BaseMeasurement):
                 flux_pulse = cz_schedule.add(
                     SoftSquarePulse(
                         duration=cz_duration,
-                        amp=cz_amplitude,
+                        amplitude=cz_amplitude,
                         port=cz_pulse_port,
                         clock=cz_clock,
                     ),
@@ -97,7 +96,9 @@ class CZChevronMeasurement(BaseMeasurement):
                 for this_qubit in qubits:
                     cz_schedule.add(
                         Measure_RO_3state_Opt(
-                            this_qubit, acq_index=index, bin_mode=BinMode.APPEND
+                            this_qubit,
+                            coords={"acq_index": index},
+                            bin_mode=BinMode.APPEND,
                         ),
                         ref_op=flux_pulse,
                     )
@@ -112,7 +113,7 @@ class CZChevronMeasurement(BaseMeasurement):
         loop_repetitions: int,
         repetitions: int = 1,
     ) -> Schedule:
-        schedule = Schedule("CZ_chevron", repetitions)
+        schedule = Schedule("CZ_chevron", repetitions * loop_repetitions)
 
         cz_chevron_shot = self.cz_chevron(
             cz_duration_values=cz_pulse_durations,
@@ -120,7 +121,7 @@ class CZChevronMeasurement(BaseMeasurement):
         )
 
         schedule.add(IdlePulse(8e-9))
-        schedule.add(LoopOperation(body=cz_chevron_shot, repetitions=loop_repetitions))
+        schedule.add(cz_chevron_shot)
         schedule.add(IdlePulse(8e-9))
 
         return schedule

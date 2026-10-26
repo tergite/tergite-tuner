@@ -57,7 +57,7 @@ email [contact@quantum.chalmersnextlabs.se](mailto://contact@quantum.chalmersnex
 ## How to develop
 
 Make sure you have [conda](https://docs.anaconda.com/free/miniconda/index.html) installed.
-Alternatively, you could also simply have [Python 3.12](https://www.python.org/downloads/) installed.
+Alternatively, you could also simply have [Python 3.13](https://www.python.org/downloads/) installed.
 Clone the repo and enter its root folder:
 
 ```bash
@@ -68,7 +68,7 @@ cd tergite-tuner
 Create the conda environment
 
 ```bash
-conda create -n tac python=3.12 -y
+conda create -n tac python=3.13 -y
 ```
 
 Install dependencies with development and test dependencies
@@ -83,7 +83,7 @@ A couple of configuration files are required in one folder whose path you can se
 - [`configuration.meta.toml`](./tergite_tuner/config/templatesconfiguration.meta.toml): 
   It holds metadata about the other files
 - [`configs/cluster_config.json`](./tergite_tuner/config/templates/fc8a/configs/cluster_config.json): 
-  It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
+  It is the [`qblox-scheduler`](https://docs.qblox.com/en/main/) hardware compilation configuration json file
 - [`configs/device_config.toml`](./tergite_tuner/config/templates/fc8a/configs/device_config.toml): 
   It contains details about the quantum chip
 - [`configs/node_config.toml`](./tergite_tuner/config/templates/fc8a/configs/node_config.toml): 

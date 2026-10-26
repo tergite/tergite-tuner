@@ -17,12 +17,11 @@ Module containing a schedule class for Ramsey calibration. (1D parameter sweep, 
 import itertools
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import Loop
-from quantify_scheduler.operations.gate_library import Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import IdlePulse, ResetClockPhase
-from quantify_scheduler.resources import ClockResource
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.gate_library import Reset, Rxy, X
+from qblox_scheduler.operations.pulse_library import IdlePulse, ResetClockPhase
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.logging import logger
@@ -54,7 +53,7 @@ class ProcessTomographyMeasurement(BaseMeasurement):
         opt_cz_pulse_amplitude: dict[str, float] = None,
     ) -> Schedule:
         name = "process_tomography_ssro"
-        schedule = Schedule(f"{name}")
+        schedule = Schedule(f"{name}", repetitions)
 
         qubit_type_list = ["Control", "Target"]
 
@@ -70,15 +69,15 @@ class ProcessTomographyMeasurement(BaseMeasurement):
 
         # Initialize ClockResource with the first frequency value
         for this_qubit, this_transmon in self.transmons.items():
-            ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt()
+            ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt
             schedule.add_resource(
                 ClockResource(name=f"{this_qubit}.ro_3st_opt", freq=ro_frequency)
             )
-            mw_frequency_01 = this_transmon.clock_freqs.f01()
+            mw_frequency_01 = this_transmon.clock_freqs.f01
             schedule.add_resource(
                 ClockResource(name=f"{this_qubit}.01", freq=mw_frequency_01)
             )
-            mw_frequency_12 = this_transmon.clock_freqs.f12()
+            mw_frequency_12 = this_transmon.clock_freqs.f12
             schedule.add_resource(
                 ClockResource(name=f"{this_qubit}.12", freq=mw_frequency_12)
             )
@@ -215,7 +214,9 @@ class ProcessTomographyMeasurement(BaseMeasurement):
                     this_index = cz_index * number_of_phases + ramsey_index
                     shot.add(
                         Measure_RO_3state_Opt(
-                            this_qubit, acq_index=this_index, bin_mode=BinMode.APPEND
+                            this_qubit,
+                            coords={"acq_index": this_index},
+                            bin_mode=BinMode.APPEND,
                         ),
                         # ref_op=end,
                         # ref_pt="end",
@@ -260,7 +261,9 @@ class ProcessTomographyMeasurement(BaseMeasurement):
                         raise ValueError("State Input Error")
                     shot.add(
                         Measure_RO_3state_Opt(
-                            this_qubit, acq_index=calib_index, bin_mode=BinMode.APPEND
+                            this_qubit,
+                            coords={"acq_index": calib_index},
+                            bin_mode=BinMode.APPEND,
                         ),
                         ref_op=prep,
                         ref_pt="end",
@@ -269,6 +272,6 @@ class ProcessTomographyMeasurement(BaseMeasurement):
         shot.add(IdlePulse(16e-9))
 
         schedule.add(IdlePulse(16e-9))
-        logger.info(schedule.add(shot, control_flow=Loop(repetitions), validate=False))
+        logger.info(schedule.add(shot))
         schedule.add(IdlePulse(16e-9))
         return schedule

@@ -15,12 +15,12 @@ Module containing a schedule class for punchout (readout amplitude) calibration.
 """
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset
-from quantify_scheduler.operations.pulse_library import SetClockFrequency, SquarePulse
-from quantify_scheduler.resources import ClockResource
+from qblox_scheduler import Schedule
+from qblox_scheduler.enums import BinMode
+from qblox_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from qblox_scheduler.operations.gate_library import Reset
+from qblox_scheduler.operations.pulse_library import SetClockFrequency, SquarePulse
+from qblox_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 
@@ -57,10 +57,10 @@ class PunchoutMeasurement(BaseMeasurement):
         ):
             # unpack the static parameters
             this_transmon = self.transmons[this_qubit]
-            ro_pulse_duration = this_transmon.measure.pulse_duration()
-            acquisition_delay = this_transmon.measure.acq_delay()
-            integration_time = this_transmon.measure.integration_time()
-            ro_port = this_transmon.ports.readout()
+            ro_pulse_duration = this_transmon.measure.pulse_duration
+            acquisition_delay = this_transmon.measure.acq_delay
+            integration_time = this_transmon.measure.integration_time
+            ro_port = this_transmon.ports.readout
 
             this_clock = f"{this_qubit}.ro"
 
@@ -79,13 +79,13 @@ class PunchoutMeasurement(BaseMeasurement):
                     this_index = ampl_indx * number_of_freqs + acq_index
 
                     schedule.add(
-                        SetClockFrequency(clock=this_clock, clock_freq_new=ro_freq),
+                        SetClockFrequency(clock=this_clock, frequency=ro_freq),
                     )
 
                     schedule.add(
                         SquarePulse(
                             duration=ro_pulse_duration,
-                            amp=ro_amplitude,
+                            amplitude=ro_amplitude,
                             port=ro_port,
                             clock=this_clock,
                         ),
@@ -97,9 +97,9 @@ class PunchoutMeasurement(BaseMeasurement):
                             duration=integration_time,
                             port=ro_port,
                             clock=this_clock,
-                            acq_index=this_index,
-                            acq_channel=acq_cha,
-                            bin_mode=BinMode.AVERAGE,
+                            coords={"acq_index": this_index},
+                            acq_label=acq_cha,
+                            bin_mode=BinMode.AVERAGE_APPEND,
                         ),
                         ref_pt="start",
                         rel_time=acquisition_delay,
