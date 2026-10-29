@@ -78,7 +78,7 @@ def run_node(node: NodeEnum, session: SessionContext, hardware: Hardware) -> Cal
     return read_result(hardware.store, session)
 ```
 
-**Every commit is verified the same way:** `uv run` the step 1 linters (they also run in CI) and the style-guide test, then `uv run pytest tergite_tuner > "$LOG" 2>&1; echo "exit=$?" >> "$LOG"` against Redis on port 6378. `DESIGN.md` changes in the same commit as any file it names. A commit that fixes a baselined lint or style-guide violation deletes its baseline entry, and no commit adds one.
+**Every commit is verified the same way:** `uv run` the step 1 linters (they also run in CI) and the style-guide test, then `uv run pytest tergite_tuner -n auto > "$LOG" 2>&1; echo "exit=$?" >> "$LOG"`. `DESIGN.md` changes in the same commit as any file it names. A commit that fixes a baselined lint or style-guide violation deletes its baseline entry, and no commit adds one.
 
 **Every step ends with a sign-off.** Its last commit adds `docs/prototypes/<NN>-<step>.md`, a short acceptance script:
 - the dummy tune-up of step 2.1;
@@ -312,6 +312,7 @@ The refactor must lower neither.
    - `pytest-xdist` (`-n auto`), once the tests that share module state (`ExtendedTransmon.close_all()`, the global matplotlib backend) are isolated.
    - A `slow` marker for the compile-everything tests, so the per-commit run can skip them while CI runs all of them.
    - Record the suite's wall time in `dev/perf/baselines/` with the rest, so the refactor does not slow it down.
+   - Built: compiling every outer-sweep point is marked `slow` (`f2734497`), which took the suite without slow tests from about 3 min to 71 s, and pytest-xdist runs it in parallel: 35 s for the fast tests and 1 m 45 s for everything, on 12 cores, against about 8 min serially. The run in parallel surfaced unseeded dummy data, now seeded (`3ca8cbb4`). Fixtures were not session-scoped: no fixture costs more than the tests it would share.
 
 ## Step 4: delete what nothing uses
 
