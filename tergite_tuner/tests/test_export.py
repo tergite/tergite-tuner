@@ -36,7 +36,8 @@ def test_read_results_default(redis_connection):
     """Returns the calibration results saved in the session"""
     touched_fields = (
         # qubits/resonators
-        "resonator_minimum" "spec",
+        "resonator_minimum",
+        "spec",
         "r12",
         "extended_clock_freqs",
         "spec:spec_duration",
@@ -53,7 +54,6 @@ def test_read_results_default(redis_connection):
         "couplers": {
             "q11_q12": {
                 "cz_dynamic_amplitude": 0.24,
-                "cz_dynamic_control": 121.0,
                 "cz_dynamic_control_error": 0.0,
                 "cz_working_durations_in_ns": [
                     352.0,
@@ -67,31 +67,22 @@ def test_read_results_default(redis_connection):
                     320.0,
                     304.0,
                 ],
+                "cz_working_durations_in_ns_error": 0.0,
                 "spec": {"spec_amp": 0.03, "spec_duration": 4e-06},
             }
         },
         "cs": {
             "q11": {
                 "qubit_12_spectroscopy": "calibrated",
-                "resonator_spectroscopy": "calibrated",
                 "resonator_spectroscopy_1": "calibrated",
             },
             "q12": {
                 "qubit_12_spectroscopy": "calibrated",
-                "resonator_spectroscopy": "calibrated",
                 "resonator_spectroscopy_1": "calibrated",
             },
         },
         "transmons": {
             "q11": {
-                "clock_freqs": {
-                    "f01": 4741499559.458488,
-                    "f01_error": 0.0,
-                    "f12": 4488401716.352375,
-                    "f12_error": 0.0,
-                    "readout": 6826375232.52066,
-                    "readout_error": 0.0,
-                },
                 "extended_clock_freqs": {
                     "readout_1": 6826243053.574201,
                     "readout_1_error": 0.0,
@@ -109,6 +100,7 @@ def test_read_results_default(redis_connection):
                     "ef_motzoi_error": 0.0,
                 },
                 "resonator_minimum": 6826355555.555555,
+                "resonator_minimum_error": 0.0,
                 "spec": {
                     "spec_amp": 0.03,
                     "spec_ampl_12_optimal": 0.01,
@@ -119,14 +111,6 @@ def test_read_results_default(redis_connection):
                 },
             },
             "q12": {
-                "clock_freqs": {
-                    "f01": 4266043761.8823304,
-                    "f01_error": 0.0,
-                    "f12": 4110614017.9213386,
-                    "f12_error": 0.0,
-                    "readout": 6411557868.710736,
-                    "readout_error": 0.0,
-                },
                 "extended_clock_freqs": {
                     "readout_1": 6411436935.474931,
                     "readout_1_error": 0.0,
@@ -144,6 +128,7 @@ def test_read_results_default(redis_connection):
                     "ef_motzoi_error": 0.0,
                 },
                 "resonator_minimum": 6411577777.777778,
+                "resonator_minimum_error": 0.0,
                 "spec": {
                     "spec_amp": 0.03,
                     "spec_ampl_12_optimal": 0.01,
@@ -283,3 +268,14 @@ def _insert_nested_key(data: Dict[str, Any], path: List[str], value: Any):
         inner_record = inner_record.setdefault(segment, {})
 
     inner_record[path[-1]] = value
+
+
+def test_read_results_matches_touched_fields_exactly(redis_connection):
+    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
+        redis_connection.hset("transmons:q11", "fidelity", "0.99")
+        session = SessionContext.from_env(qubits=["q11"], couplers=[])
+        session._redis_fields_touched = {"t1_time": 1, "purity_fidelity": 1}
+        result = read_result(session)
+
+    got = result.model_dump(exclude_none=True)["transmons"]["q11"]
+    assert set(got) == {"t1_time", "t1_time_error"}

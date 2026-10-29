@@ -61,7 +61,10 @@ def read_result(
     if session_only:
 
         def query_func(opts: QueryOptions):
-            return any(opts["field"] in k for k in affected_fields)
+            return any(
+                opts["field"] in (k.split(":")[0], k, f"{k}_error")
+                for k in affected_fields
+            )
 
     data = session.redis_store.find_many(pks=pks, query=query_func)
     return CalibrationResults.model_validate(data)

@@ -21,6 +21,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Applied a qubit's own section of the node config (`[node.q01]`) over its `all` section; only `all` reached the qubits before
 - Drove each qubit with its own pulse duration in Rabi oscillations and three-state readout amplitude optimization; every qubit took the last qubit's
 - Used `long_square_pulse` for spectroscopy pulses longer than 6.5 µs in amplitude spectroscopy; such pulses raised `UnboundLocalError`
+- Matched `read_result`'s session fields exactly; it returned fields whose name merely appeared inside a touched one (RB's `fidelity` for `purity_fidelity`) and dropped flat fields' `_error` values
 
 ## [2026.06.0] - 2026-06-26
 
