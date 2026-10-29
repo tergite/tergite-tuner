@@ -58,62 +58,59 @@ class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
             self.fitting_model = model.fit(
                 self.s21_values, params=guess, f=self.frequencies
             )
-            if not self.fitting_model.success:
-                logger.info("Fit was unsuccessful.")
-                logger.info(f"Reason:{self.fitting_model.message}")
-
         except Exception as e:
-            logger.info("Could not fit the resonator data")
-            logger.info(e)
+            logger.info(f"Could not fit the resonator data: {e}")
+            self.fitting_model = None
+            return QOI({}, False)
 
-        finally:
-            # if the return params are not returned the later stages complains
-            # TODO later stages should handle non fitted results
-            fit_result = self.fitting_model
+        if not self.fitting_model.success:
+            logger.info("Fit was unsuccessful.")
+            logger.info(f"Reason:{self.fitting_model.message}")
 
-            fit_fr = fit_result.params["fr"].value
-            self.uncertainty = fit_result.params["fr"].stderr
+        fit_result = self.fitting_model
+        fit_fr = fit_result.params["fr"].value
+        self.uncertainty = fit_result.params["fr"].stderr
 
-            fit_Ql = fit_result.params["Ql"].value
-            fit_Qe = fit_result.params["Qe"].value
-            fit_ph = fit_result.params["theta"].value
+        self.fit_Ql = fit_Ql = fit_result.params["Ql"].value
+        fit_Qe = fit_result.params["Qe"].value
+        fit_ph = fit_result.params["theta"].value
 
-            # analytical expression, probably an interpolation of the fit would be better
-            self.minimum_freq = (
-                fit_fr
-                / (4 * fit_Qe * fit_Ql * np.sin(fit_ph))
-                * (
-                    4 * fit_Qe * fit_Ql * np.sin(fit_ph)
-                    - 2 * fit_Qe * np.cos(fit_ph)
-                    + fit_Ql
-                    + np.sqrt(
-                        4 * fit_Qe**2 - 4 * fit_Qe * fit_Ql * np.cos(fit_ph) + fit_Ql**2
-                    )
+        # analytical expression, probably an interpolation of the fit would be better
+        self.minimum_freq = (
+            fit_fr
+            / (4 * fit_Qe * fit_Ql * np.sin(fit_ph))
+            * (
+                4 * fit_Qe * fit_Ql * np.sin(fit_ph)
+                - 2 * fit_Qe * np.cos(fit_ph)
+                + fit_Ql
+                + np.sqrt(
+                    4 * fit_Qe**2 - 4 * fit_Qe * fit_Ql * np.cos(fit_ph) + fit_Ql**2
                 )
             )
-            # using the min value driectly
-            self.min_freq_data = self.frequencies[np.argmin(np.abs(self.s21_values))]
+        )
+        # using the min value driectly
+        self.min_freq_data = self.frequencies[np.argmin(np.abs(self.s21_values))]
 
-            analysis_successful = True
-            analysis_result = {
-                "clock_freqs:readout": {
-                    "value": self.minimum_freq,
-                    "error": 0,
-                },
-                "Ql": {
-                    "value": fit_Ql,
-                    "error": 0,
-                },
-                "resonator_minimum": {
-                    "value": self.min_freq_data,
-                    "error": 0,
-                },
-            }
-            qoi = QOI(analysis_result, analysis_successful)
-            return qoi
+        analysis_successful = True
+        analysis_result = {
+            "clock_freqs:readout": {
+                "value": self.minimum_freq,
+                "error": 0,
+            },
+            "Ql": {
+                "value": fit_Ql,
+                "error": 0,
+            },
+            "resonator_minimum": {
+                "value": self.min_freq_data,
+                "error": 0,
+            },
+        }
+        qoi = QOI(analysis_result, analysis_successful)
+        return qoi
 
     def plotter(self, ax):
-        if self.fitting_model.success:
+        if self.fitting_model is not None and self.fitting_model.success:
             self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
             ax.axvline(
                 self.minimum_freq,
@@ -133,7 +130,9 @@ class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
 class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
 
     def analyse_qubit(self):
-        super().analyse_qubit()
+        qoi = super().analyse_qubit()
+        if not qoi.analysis_successful:
+            return qoi
         analysis_successful = True
         analysis_result = {
             "extended_clock_freqs:readout_1": {
@@ -141,7 +140,7 @@ class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
                 "error": 0,
             },
             "Ql_1": {
-                "value": self.minimum_freq,
+                "value": self.fit_Ql,
                 "error": 0,
             },
             "resonator_minimum_1": {
@@ -153,6 +152,8 @@ class ResonatorSpectroscopy1QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         return qoi
 
     def plotter(self, ax):
+        if self.fitting_model is None:
+            return super().plotter(ax)
         this_qubit = self.dataset.attrs["qubit"]
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("|S21| (V)")
@@ -171,7 +172,9 @@ class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         self.fit_results = {}
 
     def analyse_qubit(self):
-        super().analyse_qubit()
+        qoi = super().analyse_qubit()
+        if not qoi.analysis_successful:
+            return qoi
         analysis_successful = True
         analysis_result = {
             "extended_clock_freqs:readout_2": {
@@ -183,6 +186,8 @@ class ResonatorSpectroscopy2QubitAnalysis(ResonatorSpectroscopyQubitAnalysis):
         return qoi
 
     def plotter(self, ax):
+        if self.fitting_model is None:
+            return super().plotter(ax)
         this_qubit = self.dataset.attrs["qubit"]
         ax.set_xlabel("Frequency (Hz)")
         ax.set_ylabel("|S21| (V)")

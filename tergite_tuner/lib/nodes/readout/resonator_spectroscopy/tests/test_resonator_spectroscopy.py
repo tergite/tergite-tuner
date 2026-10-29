@@ -16,7 +16,11 @@ from matplotlib import pyplot as plt
 
 from conftest import node_data_dir
 from tergite_tuner.config.session import SessionContext
+from tergite_tuner.lib.nodes.readout.resonator_spectroscopy import (
+    analysis as resonator_analysis,
+)
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
+    ResonatorSpectroscopy1QubitAnalysis,
     ResonatorSpectroscopyQubitAnalysis,
 )
 from tergite_tuner.utils.types.qoi import QOI
@@ -81,3 +85,29 @@ def test_plotting(node_data_dir):
         plt.close(fig)
 
         assert figure_path.exists()
+
+
+def test_resonator_spectroscopy_1_stores_the_fitted_ql(node_data_dir):
+    file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
+    session = SessionContext(data_dir=node_data_dir)
+    with xr.open_dataset(file_path) as dataset:
+        ql = ResonatorSpectroscopyQubitAnalysis("name", [], session=session)
+        ql = ql.process_qubit(dataset, "yq06").analysis_result["Ql"]["value"]
+        analysis = ResonatorSpectroscopy1QubitAnalysis("name", [], session=session)
+        result = analysis.process_qubit(dataset, "yq06").analysis_result
+
+    assert result["Ql_1"]["value"] == pytest.approx(ql)
+
+
+def test_resonator_fit_that_raises_fails_the_analysis(node_data_dir, monkeypatch):
+    def _raise(*args, **kwargs):
+        raise ValueError("fit diverged")
+
+    monkeypatch.setattr(resonator_analysis.model, "fit", _raise)
+    file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
+    session = SessionContext(data_dir=node_data_dir)
+    with xr.open_dataset(file_path) as dataset:
+        analysis = ResonatorSpectroscopyQubitAnalysis("name", [], session=session)
+        qoi = analysis.process_qubit(dataset, "yq06")
+
+    assert not qoi.analysis_successful
