@@ -14,6 +14,7 @@
 # that they have been altered from the originals.
 
 import math
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from os import PathLike
@@ -135,12 +136,14 @@ class BaseNode(ABC):
         schedule_duration = self._calculate_schedule_duration(compiled_schedule)
         print_measurement_info(schedule_duration, measurement)
 
+        start = time.perf_counter()
         raw_dataset = execute_schedule(
             compiled_schedule,
             schedule_duration,
             self.lab_instr_coordinator,
             measurement_mode,
         )
+        logger.info(f"Measured {self.name} in {time.perf_counter() - start:.2f} s")
 
         if measurement_mode == MeasurementMode.dummy:
             raw_dataset = self.generate_dummy_dataset()
@@ -179,7 +182,9 @@ class BaseNode(ABC):
             session=self.session,
             **analysis_kwargs,
         )
+        start = time.perf_counter()
         results = node_analysis.analyze_node(data_path, save_plot)
+        logger.info(f"Analysed {self.name} in {time.perf_counter() - start:.2f} s")
         node_name = self.name
         redis_data = {}
 

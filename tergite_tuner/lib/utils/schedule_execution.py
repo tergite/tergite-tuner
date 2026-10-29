@@ -91,9 +91,11 @@ def compile_schedule(
     default_tolerance = constants.GRID_TIME_TOLERANCE_TIME
     constants.GRID_TIME_TOLERANCE_TIME = GRID_TIME_TOLERANCE_NS
     try:
-        logger.info("Starting Compiling")
-        return SerialCompiler(name=f"{name}_compiler").compile(
+        start = time.perf_counter()
+        compiled_schedule = SerialCompiler(name=f"{name}_compiler").compile(
             schedule=schedule, config=device.generate_compilation_config()
         )
+        logger.info(f"Compiled {name} in {time.perf_counter() - start:.2f} s")
+        return compiled_schedule
     finally:
         constants.GRID_TIME_TOLERANCE_TIME = default_tolerance

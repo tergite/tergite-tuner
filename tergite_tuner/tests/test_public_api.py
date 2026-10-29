@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 """The entry points called the ways the README shows."""
 
+import re
 import shutil
 
 from tergite_tuner import (
@@ -125,3 +126,25 @@ def _get_dummy_session(session: SessionContext, data_dir, **updates) -> SessionC
             **updates,
         }
     )
+
+
+def test_run_node_logs_how_long_each_phase_took(
+    redis_connection, session_context, tmp_path, caplog
+):
+    session = _get_dummy_session(session_context, tmp_path)
+    with loaded_redis(redis_connection, REDIS_VALUES), caplog.at_level("INFO"):
+        ExtendedTransmon.close_all()
+        run_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
+        )
+
+    phases = [
+        record.message.split(" in ")[0]
+        for record in caplog.records
+        if re.search(r" in [0-9.]+ s$", record.message)
+    ]
+    assert phases == [
+        "Compiled resonator_spectroscopy",
+        "Measured resonator_spectroscopy",
+        "Analysed resonator_spectroscopy",
+    ]
