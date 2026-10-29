@@ -17,7 +17,7 @@ stages:
 
 variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
-  UV_LINK_MODE: copy
+  UV_PROJECT_ENVIRONMENT: "$CI_PROJECT_DIR/.venv"
   PYTHON_VERSION: "3.13"
   FF_NETWORK_PER_BUILD: 1
 
@@ -49,6 +49,7 @@ test_lint_build:
         coverage_format: cobertura
         path: coverage.xml
   cache:
-    - key: "default"
-      paths:
-        - .cache/uv
+    key: "uv-cache-$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/uv
+      - .venv
