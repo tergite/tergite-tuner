@@ -72,9 +72,10 @@ class PunchoutQubitAnalysis(BaseQubitAnalysis):
             res_spec_analysis = ResonatorSpectroscopyQubitAnalysis(
                 self.name, "", session=self.session
             )
-            resonator_frequency = res_spec_analysis.process_qubit(
-                ds, self.data_var[1:]
-            ).analysis_result["clock_freqs:readout"]["value"]
+            resonator_qoi = res_spec_analysis.process_qubit(ds, self.data_var[1:])
+            resonator_frequency = resonator_qoi.analysis_result.get(
+                "clock_freqs:readout", {"value": np.nan}
+            )["value"]
 
             self.detected_frequencies.append(resonator_frequency)
             self.resonator_spectroscopy_analyses.append(res_spec_analysis)
@@ -96,7 +97,7 @@ class PunchoutQubitAnalysis(BaseQubitAnalysis):
             self.best_amplitude = amplitude
             self.last_good_freq = resonator_frequency
 
-        analysis_succesful = True
+        analysis_succesful = self.best_amplitude is not None
 
         analysis_result = {
             "measure:pulse_amp": {
@@ -120,23 +121,24 @@ class PunchoutQubitAnalysis(BaseQubitAnalysis):
 
         cax = self.S21[self.data_var].plot(ax=ax, x=self.amplitude_coord)
         ax.scatter(
-            self.detected_frequencies,
             self.amplitudes,
+            self.detected_frequencies,
             c="b",
             label="Fitted resonator freq.",
             marker="o",
         )
-        ax.scatter(
-            self.best_amplitude,
-            self.last_good_freq,
-            c="r",
-            label=f"Amplitude = {self.best_amplitude:.3f}",
-            marker="X",
-            s=200,
-            edgecolors="k",
-            linewidth=1.5,
-            zorder=10,
-        )
+        if self.best_amplitude is not None:
+            ax.scatter(
+                self.best_amplitude,
+                self.last_good_freq,
+                c="r",
+                label=f"Amplitude = {self.best_amplitude:.3f}",
+                marker="X",
+                s=200,
+                edgecolors="k",
+                linewidth=1.5,
+                zorder=10,
+            )
         ax.set_ylabel("Resonator frequency [Hz]")
         ax.set_xlabel("Readout pulse amplitude [V?]")
 

@@ -11,11 +11,15 @@
 # that they have been altered from the originals.
 
 import pytest
+from matplotlib import pyplot as plt
 import xarray as xr
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.nodes.readout.punchout.analysis import PunchoutQubitAnalysis
+from tergite_tuner.lib.nodes.readout.resonator_spectroscopy import (
+    analysis as resonator_analysis,
+)
 
 
 def test_ca_create_punchout_analysis(session_context: SessionContext):
@@ -68,3 +72,62 @@ def _amplitude_for_qubit(ds, qubit, session):
     a = PunchoutQubitAnalysis("name", ["measure:pulse_amp"], session=session)
     qoi = a.process_qubit(ds, qubit)
     return qoi.analysis_result["measure:pulse_amp"]["value"]
+
+
+def test_punchout_fails_when_no_resonator_fit_succeeds(
+    node_data_dir, session_context: SessionContext, monkeypatch
+):
+    def _raise(*args, **kwargs):
+        raise ValueError("fit diverged")
+
+    monkeypatch.setattr(resonator_analysis.model, "fit", _raise)
+    with xr.open_dataset(node_data_dir / "dataset_punchout_0.hdf5") as ds:
+        ds = xr.merge([ds["yq06"]])
+        ds.attrs["qubit"] = "q06"
+        analysis = PunchoutQubitAnalysis(
+            "name", ["measure:pulse_amp"], session=session_context
+        )
+        qoi = analysis.process_qubit(ds, "q06")
+
+    assert not qoi.analysis_successful
+
+
+def test_punchout_plots_resonator_frequencies_against_amplitude(
+    node_data_dir, session_context: SessionContext
+):
+    with xr.open_dataset(node_data_dir / "dataset_punchout_0.hdf5") as ds:
+        ds = xr.merge([ds["yq06"]])
+        ds.attrs["qubit"] = "q06"
+        analysis = PunchoutQubitAnalysis(
+            "name", ["measure:pulse_amp"], session=session_context
+        )
+        analysis.process_qubit(ds, "q06")
+    figure, ax = plt.subplots()
+
+    analysis.plotter(ax)
+
+    fitted_points = ax.collections[1].get_offsets()
+    assert list(fitted_points[:, 0]) == pytest.approx(list(analysis.amplitudes))
+    plt.close(figure)
+
+
+def test_punchout_plots_a_failed_analysis(
+    node_data_dir, session_context: SessionContext, monkeypatch
+):
+    def _raise(*args, **kwargs):
+        raise ValueError("fit diverged")
+
+    monkeypatch.setattr(resonator_analysis.model, "fit", _raise)
+    with xr.open_dataset(node_data_dir / "dataset_punchout_0.hdf5") as ds:
+        ds = xr.merge([ds["yq06"]])
+        ds.attrs["qubit"] = "q06"
+        analysis = PunchoutQubitAnalysis(
+            "name", ["measure:pulse_amp"], session=session_context
+        )
+        analysis.process_qubit(ds, "q06")
+    figure, ax = plt.subplots()
+
+    analysis.plotter(ax)
+
+    assert ax.get_xlabel() == "Readout pulse amplitude [V?]"
+    plt.close(figure)
