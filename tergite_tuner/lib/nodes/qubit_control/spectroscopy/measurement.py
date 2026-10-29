@@ -205,8 +205,7 @@ class TwoTonesAmplitudeMeasurement(BaseMeasurement):
 
             # long pulses require more efficient memory management
             if spec_pulse_duration > 6.5e-6:
-                # SpectroscopyPulse = long_square_pulse
-                pass
+                SpectroscopyPulse = long_square_pulse
             else:
                 SpectroscopyPulse = SoftSquarePulse
 

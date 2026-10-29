@@ -11,6 +11,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
+
+from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
+    RabiOscillationsNode,
+)
+from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
+    TwoTonesAmplitudeMeasurement,
+)
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.node import (
     Qubit01SpectroscopyAmplitudeNode,
     Qubit01SpectroscopyNode,
@@ -88,3 +96,21 @@ def test_dummy_12_generation(session_context):
 
     assert len(data_vars) == len(DEFAULT_TEST_QUBITS)
     assert data_vars[0].size == number_of_frequencies * number_of_amplitudes
+
+
+def test_amplitude_spectroscopy_accepts_long_spectroscopy_pulses(
+    seeded_redis, session_context
+):
+    ExtendedTransmon.close_all()
+    qubits = ["q13", "q14"]
+    device = RabiOscillationsNode(qubits, ["q13_q14"], session=session_context).device
+    transmons = {qubit: device.get_element(qubit) for qubit in qubits}
+    for transmon in transmons.values():
+        transmon.spec.spec_duration(8e-6)
+
+    schedule = TwoTonesAmplitudeMeasurement(transmons).schedule_function(
+        spec_frequencies={q: np.linspace(4.0e9, 4.1e9, 3) for q in qubits},
+        spec_pulse_amplitudes={q: 0.01 for q in qubits},
+    )
+
+    assert schedule.operations

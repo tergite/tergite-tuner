@@ -20,6 +20,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Read only the session's own fields from the environment; `SessionContext.from_env` copied every environment variable, secrets included, into the session
 - Applied a qubit's own section of the node config (`[node.q01]`) over its `all` section; only `all` reached the qubits before
 - Drove each qubit with its own pulse duration in Rabi oscillations and three-state readout amplitude optimization; every qubit took the last qubit's
+- Used `long_square_pulse` for spectroscopy pulses longer than 6.5 µs in amplitude spectroscopy; such pulses raised `UnboundLocalError`
 
 ## [2026.06.0] - 2026-06-26
 
