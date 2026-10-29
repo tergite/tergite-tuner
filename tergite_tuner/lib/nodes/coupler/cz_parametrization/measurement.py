@@ -81,9 +81,9 @@ class CZParametrizationMeasurement(BaseMeasurement):
 
                 for inner_index, cz_amplitude in enumerate(cz_amplitudes):
                     this_index = outer_index * number_of_inners + inner_index
-                    relaxation = cz_schedule.add(Reset(*self.qubits))
+                    relaxation = cz_schedule.add(Reset(*qubits))
 
-                    for this_qubit in self.qubits:
+                    for this_qubit in qubits:
                         operation_11 = cz_schedule.add(X(this_qubit), ref_op=relaxation)
 
                     # TODO: does this do anything?

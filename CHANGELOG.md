@@ -24,6 +24,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Matched `read_result`'s session fields exactly; it returned fields whose name merely appeared inside a touched one (RB's `fidelity` for `purity_fidelity`) and dropped flat fields' `_error` values
 - Stored the fitted `Ql_1` in resonator spectroscopy 1, where a frequency was stored, and failed the analysis when the resonator fit raises instead of crashing with `AttributeError`
 - Failed punchout when no resonator fit succeeds, where it stored `None` as a successful amplitude, and plotted its fitted frequencies against amplitude instead of the swapped axes
+- Reset and excited only each coupler's own qubits in CZ parametrization; with several couplers, every coupler's loop drove all of their qubits
 
 ## [2026.06.0] - 2026-06-26
 
