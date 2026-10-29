@@ -156,6 +156,17 @@ The conventions are tergite-frontend's, so the two read alike. Code reads like a
 12. **Obvious beats clever.** An `if`/`else` that returns each whole literal; no comprehension that assembles operators, no helper that returns two things to be pulled apart.
 13. **A value that is only defined stays where it is used.** A function that only returns a literal makes the reader jump for nothing.
 
+### Lint
+
+`black` formats. `ruff check` lints, with the isort rules (no separate isort); `pylint` checks duplicate code and function size; `vulture` finds unused definitions. Each has a baseline of the findings that predate it in `dev/lint/`:
+
+```bash
+uv run python -m dev.lint.baseline ruff      # or pylint, vulture
+uv run python -m dev.lint.baseline ruff --update
+```
+
+The check fails on a finding the baseline lacks, and on an entry it no longer finds. A commit that fixes a finding runs `--update` and commits the shorter baseline; no commit adds to it.
+
 ### Python style
 
 - **Comments and docstrings earn their place**: the constraint, the gotcha, the why the code cannot say. One line where one line does. Never narrate the history of a fix.

@@ -229,13 +229,13 @@ After this step, CI rejects any commit that makes the code less clean than it is
    - Commit `uv.lock`, and have CI run `uv sync --locked`. A stale lock fails CI.
 3. **Linters, each pinned in the dev group and configured in `pyproject.toml`:**
    - **ruff check**, with `F` (pyflakes), `I` (isort; today's `[tool.isort]` lacks `profile = "black"`, so isort and black rewrite each other's imports), `E`/`W`, `B` (bugbear: mutable defaults, unused loop variables), `UP`, `SIM`, `C4`, `RET`, `ARG` (unused arguments) and `T20` (no `print`). It replaces running pyflakes and isort separately.
-   - **Today's violations** are stamped once with `ruff check --add-noqa`. Each `# noqa` is that tool's baseline, and a commit that fixes one deletes it.
+   - **Today's violations** are each tool's baseline, in `dev/lint/<tool>_baseline.txt`, keyed by file, rule and message rather than line. `python -m dev.lint.baseline <tool>` fails on a finding the baseline lacks and on an entry it no longer finds; `--update` rewrites it after a fix. This replaced stamping 650 `# noqa` comments into the source. Built: 650 ruff, 86 pylint and 55 vulture findings.
    - **Formatting:** **Decide** between `black` (pinned, as tergite-frontend uses it) and `ruff format`, its drop-in. Recommended: `ruff format`, so one tool covers lint and formatting.
    - **pylint**, for what ruff lacks:
      - `duplicate-code` (R0801), the copy-paste this repository is full of, with `min-similarity-lines=8`;
      - the design limits (`too-many-statements=50`, `too-many-branches`, `too-many-locals`).
-     - Its findings are compared with `dev/lint/pylint_baseline.json` by `dev/lint/check_pylint.py`, which fails on any finding not in the baseline.
-   - **vulture**, for dead code, with today's findings in `dev/lint/vulture_whitelist.py` as its baseline. Step 4 empties most of it.
+     - Duplicates are keyed by the modules they span, and the size checks by the function, so editing a function does not churn the baseline.
+   - **vulture**, for dead code: unused classes, functions, methods, properties and imports, outside the tests. Its unused variables are mostly pydantic fields, and ruff covers the real ones. Step 4 empties most of its baseline.
 4. **`tergite_tuner/tests/test_styleguide.py`**, ported from tergite-frontend: the rules a parser can see and the linters cannot. They are checked with `ast` over the package:
    - every file carries the licence header;
    - no banner comments;
