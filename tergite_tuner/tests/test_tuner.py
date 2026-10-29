@@ -10,9 +10,11 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import pytest
 from qblox_instruments import Cluster
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
+from tergite_tuner.exc import ClusterUnreachableError
 from tergite_tuner.tuner import HardwareManager, NodeManager
 from tergite_tuner.utils.types.enums import MeasurementMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -107,3 +109,17 @@ def test_output_attenuation_is_set_to_value_in_device_config(
     assert hw_manager.cluster.module2.out1_att() == 8  # q01:mw
     assert hw_manager.cluster.module3.out0_att() == 12  # q00_q01:fl
     assert hw_manager.cluster.module16.out0_att() == 18  # q00:res, q01:res
+
+
+def test_unreachable_cluster_raises_instead_of_exiting(session_context, monkeypatch):
+    class _RefusingCluster:
+        close_all = staticmethod(lambda: None)
+
+        def __init__(self, *args, **kwargs):
+            raise ConnectionRefusedError()
+
+    monkeypatch.setattr("tergite_tuner.tuner.Cluster", _RefusingCluster)
+    session = session_context.model_copy(update={"cluster_mode": MeasurementMode.real})
+
+    with pytest.raises(ClusterUnreachableError):
+        HardwareManager(session=session)

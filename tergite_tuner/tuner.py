@@ -31,6 +31,7 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 
 from tergite_tuner import read_result
 from tergite_tuner.config.session import SessionContext, SessionOptions
+from tergite_tuner.exc import ClusterUnreachableError
 from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
@@ -85,12 +86,11 @@ class HardwareManager:
             try:
                 # Create a new cluster instance using the specified cluster name and IP address
                 cluster = Cluster(cluster_name, str(self.session.cluster_ip))
-            except ConnectionRefusedError:
-                msg = "Cluster is disconnected. Maybe it has crushed? Try flick it off and on"
-                logger.status("-" * len(msg))
-                logger.status(f"{msg}")
-                logger.status("-" * len(msg))
-                quit()
+            except ConnectionRefusedError as exp:
+                raise ClusterUnreachableError(
+                    f"Cluster at {self.session.cluster_ip} refused the connection; "
+                    "it may have crashed, so try power-cycling it"
+                ) from exp
 
             # don't reset cluster when doing recalibration
             if not self.session.is_recalibration:
