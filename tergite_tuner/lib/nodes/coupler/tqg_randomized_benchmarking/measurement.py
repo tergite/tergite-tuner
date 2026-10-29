@@ -129,6 +129,10 @@ class CZRBMeasurement(BaseMeasurement):
         shot = Schedule("shot")  # Create a single-shot schedule
 
         coupler_names = list(self.couplers.keys())
+        if len(coupler_names) != 1:
+            raise ValueError(
+                f"Two-qubit RB benchmarks one coupler at a time, got {coupler_names}"
+            )
         this_coupler = coupler_names[0]
 
         control_qubit = coupler_dict[this_coupler]["control_qubit"]
@@ -176,9 +180,12 @@ class CZRBMeasurement(BaseMeasurement):
                 schedule.add(gate)
 
         for mode_index, interleave_mode in enumerate(interleaves):
-            if interleave_mode:
+            mode_clifford_id = None
+            if interleave_mode and interleaving_clifford_id is None:
                 # 4368 is the CZ clifford id index
-                interleaving_clifford_id = 4368
+                mode_clifford_id = 4368
+            elif interleave_mode:
+                mode_clifford_id = interleaving_clifford_id
 
             # Loop over random Clifford sequence lengths
             for acq_index, n_cl in enumerate(clifford_sequence_lengths):
@@ -189,7 +196,7 @@ class CZRBMeasurement(BaseMeasurement):
                     number_of_cliffords=n_cl,
                     apply_inverse=apply_inverse_gate,
                     clifford_group=2,
-                    interleaved_clifford_idx=interleaving_clifford_id,
+                    interleaved_clifford_idx=mode_clifford_id,
                     seed=seed,
                 )
 

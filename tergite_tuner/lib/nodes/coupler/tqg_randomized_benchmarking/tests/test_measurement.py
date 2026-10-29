@@ -11,6 +11,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
+import pytest
+
+from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking import (
+    measurement as tqg_measurement,
+)
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
 )
@@ -65,3 +71,63 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
             {"q13_q14": ["CZ"]},
             {"q0": ["mX90", "Y180"], "q1": ["I", "mY90"]},
         ]
+
+
+def _get_rb_measurement(redis_connection, session_context, node_data_dir, couplers):
+    redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
+    with loaded_redis(redis_connection, redis_data_file):
+        ExtendedTransmon.close_all()
+        qubits = sorted({q for coupler in couplers for q in coupler.split("_")})
+        node = CZRBNode(all_qubits=qubits, couplers=couplers, session=session_context)
+        transmons = {qubit: node.device.get_element(qubit) for qubit in qubits}
+        edges = {coupler: node.device.get_edge(coupler) for coupler in couplers}
+    return CZRBMeasurement(transmons=transmons, couplers=edges)
+
+
+def test_only_interleaved_modes_interleave_the_cz(
+    redis_connection, session_context, node_data_dir, monkeypatch
+):
+    coupler = "q13_q14"
+    measurement = _get_rb_measurement(
+        redis_connection, session_context, node_data_dir, [coupler]
+    )
+    interleaved_ids = []
+
+    def _record_sequence(*args, interleaved_clifford_idx=None, **kwargs):
+        interleaved_ids.append(interleaved_clifford_idx)
+        return np.array([0])
+
+    monkeypatch.setattr(
+        tqg_measurement, "randomized_benchmarking_sequence", _record_sequence
+    )
+
+    measurement.ro_shot(
+        seeds={coupler: 1},
+        number_of_cliffords={coupler: np.array([1, 2])},
+        interleave_modes={coupler: np.array([True, False])},
+        apply_inverse_gate=True,
+        coupler_dict={coupler: {"control_qubit": "q13", "target_qubit": "q14"}},
+    )
+
+    assert interleaved_ids == [4368, 4368, None, None]
+
+
+def test_rb_rejects_more_than_one_coupler(
+    redis_connection, session_context, node_data_dir
+):
+    couplers = ["q13_q14", "q15_q16"]
+    measurement = _get_rb_measurement(
+        redis_connection, session_context, node_data_dir, couplers
+    )
+
+    with pytest.raises(ValueError, match="one coupler"):
+        measurement.ro_shot(
+            seeds={c: 1 for c in couplers},
+            number_of_cliffords={c: np.array([1]) for c in couplers},
+            interleave_modes={c: np.array([False]) for c in couplers},
+            apply_inverse_gate=True,
+            coupler_dict={
+                c: dict(zip(("control_qubit", "target_qubit"), c.split("_")))
+                for c in couplers
+            },
+        )
