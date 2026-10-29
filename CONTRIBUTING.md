@@ -56,6 +56,8 @@ email [contact@quantum.chalmersnextlabs.se](mailto://contact@quantum.chalmersnex
 
 ## How to develop
 
+Read [DESIGN.md](./DESIGN.md) first: the architecture, the conventions and where to start for a new node.
+
 Make sure you have [conda](https://docs.anaconda.com/free/miniconda/index.html) installed.
 Alternatively, you could also simply have [Python 3.13](https://www.python.org/downloads/) installed.
 Clone the repo and enter its root folder:
