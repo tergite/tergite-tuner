@@ -1,0 +1,22 @@
+{
+  "q06/is_successful": true,
+  "q06/measure:pulse_amp": 0.01575,
+  "q07/is_successful": true,
+  "q07/measure:pulse_amp": 0.01575,
+  "q08/is_successful": true,
+  "q08/measure:pulse_amp": 0.06,
+  "q09/is_successful": true,
+  "q09/measure:pulse_amp": 0.04525,
+  "q10/is_successful": true,
+  "q10/measure:pulse_amp": 0.04525,
+  "q11/is_successful": true,
+  "q11/measure:pulse_amp": 0.01575,
+  "q12/is_successful": true,
+  "q12/measure:pulse_amp": 0.0305,
+  "q13/is_successful": true,
+  "q13/measure:pulse_amp": 0.06,
+  "q14/is_successful": true,
+  "q14/measure:pulse_amp": 0.0305,
+  "q15/is_successful": true,
+  "q15/measure:pulse_amp": 0.06
+}

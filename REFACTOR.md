@@ -268,6 +268,8 @@ Tests only. After this step, a refactor commit that changes behaviour fails a te
    - For every node with a recorded dataset under `tests/data`, reanalyse it and compare the QOIs with a committed JSON, within a tolerance.
    - For nodes without one, record a dummy dataset with a fixed seed.
    - Steps 6 and 8 must keep every value.
+   - Built as `tests/test_reanalysis_goldens.py`: 19 cases, each a node's own analysis class over one recorded dataset, with that dataset's Redis dump (or the single-run or standard mock) and the analysis keywords its node test passes. Goldens are flattened `element/field` values in `tests/fixtures/goldens/`; numbers compare within 1e-6 relative, the rest exactly, and `UPDATE_GOLDENS=1` rewrites them. Both CZ parametrization datasets are unsuccessful at node level, which the goldens pin as they are.
+   - Left out, eight datasets: purity, Rabi, Rabi 12, qubit 01 and 12 and resonator spectroscopy, whose datasets predate the per-variable `qubit` attribute the node analysis splits on, so a real `reanalyse` of them fails too; the Ramsey standard run, whose device values were not recorded; and the anticrossing without crossings, on `q16_q17`, which the fixture device config lacks. Their single-qubit analyses keep their node tests. Re-recording them in the current format is step 6's first commit, before it changes any analysis.
 3. **Golden schedules.**
    - For each node, compile its schedule against `cluster_config.example.json` with fixed device values.
    - Pin a digest of the compiled program: the sequencer programs, the waveforms and the acquisition metadata.

@@ -1,0 +1,17 @@
+{
+  "q11/fidelity": 0.9995174748124045,
+  "q11/is_successful": true,
+  "q11/leakage": 0.0020703209525949617,
+  "q12/fidelity": 0.9997054662337446,
+  "q12/is_successful": true,
+  "q12/leakage": 0.00397950864985952,
+  "q13/fidelity": 0.9995914901772334,
+  "q13/is_successful": true,
+  "q13/leakage": 0.006898338367585799,
+  "q14/fidelity": 0.9996206550020361,
+  "q14/is_successful": true,
+  "q14/leakage": 0.007154387433797815,
+  "q15/fidelity": 0.9978833721346071,
+  "q15/is_successful": true,
+  "q15/leakage": 0.006431799270060878
+}
