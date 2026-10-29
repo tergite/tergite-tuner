@@ -274,6 +274,7 @@ Tests only. After this step, a refactor commit that changes behaviour fails a te
    - For each node, compile its schedule against `cluster_config.example.json` with fixed device values.
    - Pin a digest of the compiled program: the sequencer programs, the waveforms and the acquisition metadata.
    - Steps 5 and 6 must keep every digest. Step 11 re-baselines them, as qblox-scheduler compiles differently.
+   - Built as `tests/test_schedule_goldens.py`: a SHA-256 of each node's canonicalised `compiled_instructions` (every module's settings, sequencer programs, waveforms and acquisition metadata) on the standard mock device, with outer sweeps at their first point. Floats keep 9 significant digits, below where platforms' maths libraries differ, and waveform names, which are Python hashes seeded per process, give way to a sorted list. It is stable across processes and hash seeds, and a changed pulse phase fails it. 33 nodes; purity benchmarking cannot be built. It takes about 40 s, and `test_precompile.py`, which compiles every outer point, mostly duplicates it: step 3.5 decides whether to keep both.
 4. **Public API.** `tune_device`, `run_node`, `reanalyse`, `read_result` and `generate_calib_seed_file` are each called the ways the README shows, including a custom node class through `node_cls_map`. The seed file is compared with a committed one.
 
 ## Step 3: performance baselines
