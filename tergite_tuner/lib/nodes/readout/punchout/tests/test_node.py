@@ -11,17 +11,21 @@
 # that they have been altered from the originals.
 
 
-import pytest
-
 from tergite_tuner.lib.nodes.readout.punchout.node import PunchoutNode
-from tergite_tuner.tests.utils.fixtures import DEFAULT_TEST_QUBITS
-
-
-@pytest.mark.skip(
-    "Skipping test for PunchoutNode as it requires a full Tergite environment."
+from tergite_tuner.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
 )
-def test_punchout_node_analysis_can_be_initialized():
-    node_analysis = PunchoutNode(DEFAULT_TEST_QUBITS)
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
-    assert node_analysis.name == "name"
-    assert node_analysis.redis_fields == ["measure:pulse_amp"]
+
+def test_punchout_node_can_be_initialized(session_context):
+    ExtendedTransmon.close_all()
+    node = PunchoutNode(
+        all_qubits=DEFAULT_TEST_QUBITS,
+        couplers=DEFAULT_TEST_COUPLERS,
+        session=session_context,
+    )
+
+    assert node.name == "punchout"
+    assert node.redis_fields == ["measure:pulse_amp"]

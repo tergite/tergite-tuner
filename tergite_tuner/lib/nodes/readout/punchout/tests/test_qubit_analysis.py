@@ -33,35 +33,35 @@ def test_amplitude_for_q06(session_context: SessionContext, node_data_dir):
     dataset_path = node_data_dir / "dataset_punchout_0.hdf5"
     with xr.open_dataset(dataset_path) as ds:
         amplitude = _amplitude_for_qubit(ds, "q06", session=session_context)
-        assert amplitude - 0.016 < 0.001
+        assert amplitude == pytest.approx(0.016, abs=0.001)
 
 
 def test_amplitude_for_q07(node_data_dir, session_context: SessionContext):
     dataset_path = node_data_dir / "dataset_punchout_0.hdf5"
     with xr.open_dataset(dataset_path) as ds:
         amplitude = _amplitude_for_qubit(ds, "q07", session=session_context)
-        assert amplitude - 0.016 < 0.001
+        assert amplitude == pytest.approx(0.016, abs=0.001)
 
 
 def test_amplitude_for_q10(node_data_dir, session_context: SessionContext):
     dataset_path = node_data_dir / "dataset_punchout_0.hdf5"
     with xr.open_dataset(dataset_path) as ds:
         amplitude = _amplitude_for_qubit(ds, "q10", session=session_context)
-        assert amplitude - 0.045 < 0.001
+        assert amplitude == pytest.approx(0.045, abs=0.001)
 
 
 def test_amplitude_for_q12(node_data_dir, session_context: SessionContext):
     dataset_path = node_data_dir / "dataset_punchout_0.hdf5"
     with xr.open_dataset(dataset_path) as ds:
         amplitude = _amplitude_for_qubit(ds, "q12", session=session_context)
-        assert amplitude - 0.030 < 0.001
+        assert amplitude == pytest.approx(0.030, abs=0.001)
 
 
 def test_amplitude_for_q15(node_data_dir, session_context: SessionContext):
     dataset_path = node_data_dir / "dataset_punchout_0.hdf5"
     with xr.open_dataset(dataset_path) as ds:
         amplitude = _amplitude_for_qubit(ds, "q15", session=session_context)
-        assert amplitude - 0.06 < 0.001
+        assert amplitude == pytest.approx(0.06, abs=0.001)
 
 
 def _amplitude_for_qubit(ds, qubit, session):

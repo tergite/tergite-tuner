@@ -63,7 +63,7 @@ def test_run_fitting(node_data_dir):
         ), f"Minimum frequency should be between 6 GHz and 8 GHz, got {minimum_freq}"
         assert fit_Ql > 0, f"Fit Ql should be a positive value, got {fit_Ql}"
         assert min_freq_data == pytest.approx(
-            minimum_freq, rel=1e3
+            minimum_freq, rel=1e-4
         ), f"The both frequencies should be close to each other {minimum_freq} {min_freq_data}"
 
 

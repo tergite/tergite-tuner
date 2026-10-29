@@ -95,7 +95,7 @@ def test_dummy_n_rabi_generation(session_context):
     )
 
 
-def test_12_pulse_duration(seeded_redis, session_context):
+def test_n_rabi_12_pulse_duration(seeded_redis, session_context):
     ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     qubits = ["q13", "q14", "q15"]
     node_12 = NRabiOscillations12Node(qubits, ["q13_q14"], session=session_context)
