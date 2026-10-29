@@ -19,7 +19,6 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type
 
-import matplotlib
 import numpy as np
 import xarray
 
@@ -58,10 +57,6 @@ class BaseNode(ABC):
 
     def __init__(self, session: "SessionContext", **node_dictionary):
         self.session = session
-        # The matplotlib backend depends on whether plots should be shown
-        # while the run is in progress. Set this once per node to keep the
-        # behaviour consistent across the run.
-        matplotlib.use("tkagg" if session.save_plot else "agg")
         self.node_dictionary = node_dictionary
         self.lab_instr_coordinator: Optional["InstrumentCoordinator"] = None
         self.spi_manager: Optional[SpiDAC] = None
