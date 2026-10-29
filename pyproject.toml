@@ -119,3 +119,6 @@ ignore-docstrings = true
 ignore_decorators = ["@pytest.fixture", "@*_validator", "@computed_field"]
 # Tests take fixtures by name and never use some of them
 exclude = ["*/tests/*", "conftest.py"]
+
+[tool.pytest.ini_options]
+markers = ["slow: runs the hardware path end to end; deselect with -m 'not slow'"]

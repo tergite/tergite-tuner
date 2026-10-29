@@ -107,6 +107,7 @@ Each can also be passed as an object. The README shows both.
 - Each node's tests live in its `tests/` folder, beside the recorded datasets they analyse (`tests/data/`).
 - Shared helpers live in `tergite_tuner/tests/utils/`, grouped by what they do: `fixtures.py`, `redis.py`, `pytest.py`.
 - `tests/test_precompile.py` compiles every default node against the test cluster config.
+- `tests/test_tune_up.py` runs every default node in dummy mode, end to end, on a calibrated device from `standard_redis_mock.json`. It takes about five minutes, so it is marked `slow`: run `pytest -m 'not slow'` while working, and the whole suite before pushing, as CI does.
 
 A test that changes module state resets it: call `ExtendedTransmon.close_all()` before building a device, and restore a matplotlib backend you change.
 
