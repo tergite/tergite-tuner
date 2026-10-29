@@ -121,4 +121,6 @@ ignore_decorators = ["@pytest.fixture", "@*_validator", "@computed_field"]
 exclude = ["*/tests/*", "conftest.py"]
 
 [tool.pytest.ini_options]
+# dev/perf holds the benchmarks, which dev/perf/record.sh runs
+testpaths = ["tergite_tuner"]
 markers = ["slow: runs the hardware path end to end; deselect with -m 'not slow'"]

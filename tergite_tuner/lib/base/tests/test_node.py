@@ -22,8 +22,8 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
+from tergite_tuner.tests.utils.goldens import get_first_external_point
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.measurement import reduce_samplespace
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
@@ -54,11 +54,7 @@ def test_every_node_has_a_dummy_dataset_it_can_configure(
         node = DEFAULT_NODE_NAME_CLS_MAP[node_name](
             all_qubits=["q00", "q01"], couplers=["q00_q01"], session=session_context
         )
-        if node.external_samplespace:
-            first_point = (0,) * len(node.external_samplespace)
-            node.reduced_external_samplespace = reduce_samplespace(
-                first_point, node.external_samplespace
-            )
+        node.reduced_external_samplespace = get_first_external_point(node)
 
         dataset = node.configure_dataset(node.generate_dummy_dataset())
 

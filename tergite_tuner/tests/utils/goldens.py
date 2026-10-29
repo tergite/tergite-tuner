@@ -168,3 +168,9 @@ def get_first_samplespace(node) -> dict:
     return node.schedule_samplespace | reduce_samplespace(
         first_point, node.outer_schedule_samplespace
     )
+
+
+def get_first_external_point(node) -> dict:
+    """The first point of an external sweep, as the measurement loop sets it before each run."""
+    first_point = (0,) * len(node.external_samplespace)
+    return reduce_samplespace(first_point, node.external_samplespace)
