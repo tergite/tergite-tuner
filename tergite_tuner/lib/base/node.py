@@ -153,9 +153,9 @@ class BaseNode(ABC):
         return result_dataset
 
     def generate_dummy_dataset(self) -> xarray.Dataset:
-        """Random IQ points per qubit, for nodes without a dummy model of their own."""
+        """Random IQ points per qubit, the same every run, for nodes without a dummy model of their own."""
         size = math.prod(samplespace_dimensions(self.schedule_samplespace, self.loops))
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(seed=0)
         return xarray.Dataset(
             {
                 index: xarray.DataArray(
