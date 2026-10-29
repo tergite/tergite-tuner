@@ -202,7 +202,7 @@ After this step, CI rejects any commit that makes the code less clean than it is
    - `pyproject.toml` already declares PEP 735 dependency groups, which uv reads, so the move is small. The remote branch `136-migrate-ci-cd-pipeline-from-pip-to-uv…` has a start.
    - Commit `uv.lock`, and have CI run `uv sync --locked`. A stale lock fails CI.
 3. **Linters, each pinned in the dev group and configured in `pyproject.toml`:**
-   - **ruff check**, with `F` (pyflakes), `I` (isort), `E`/`W`, `B` (bugbear: mutable defaults, unused loop variables), `UP`, `SIM`, `C4`, `RET`, `ARG` (unused arguments) and `T20` (no `print`). It replaces running pyflakes and isort separately.
+   - **ruff check**, with `F` (pyflakes), `I` (isort; today's `[tool.isort]` lacks `profile = "black"`, so isort and black rewrite each other's imports), `E`/`W`, `B` (bugbear: mutable defaults, unused loop variables), `UP`, `SIM`, `C4`, `RET`, `ARG` (unused arguments) and `T20` (no `print`). It replaces running pyflakes and isort separately.
    - **Today's violations** are stamped once with `ruff check --add-noqa`. Each `# noqa` is that tool's baseline, and a commit that fixes one deletes it.
    - **Formatting:** **Decide** between `black` (pinned, as tergite-frontend uses it) and `ruff format`, its drop-in. Recommended: `ruff format`, so one tool covers lint and formatting.
    - **pylint**, for what ruff lacks:
@@ -270,6 +270,12 @@ The refactor must lower neither.
    - `dev/perf/compare.py dev/perf/baselines <dir>` exits 1 when any time, memory, import time or install size is more than 10% worse.
    - The 10% is a starting threshold, tuned once the first runs show how noisy each measure is.
    - CI runs `record.sh` and `compare.py` on one fixed runner. It reports without failing until the noise is known, then fails like any other check.
+5. **A faster test suite.** The suite takes about 2 minutes for 320 tests, and every commit runs it. Investigate, then make one commit per finding:
+   - `pytest --durations=30` shows where the time goes. `test_precompile.py` compiles every node, and quantify-scheduler compilation is the likely cost.
+   - Fixtures rebuilt per test that can be session-scoped: the session context, loaded Redis dumps, compiled devices.
+   - `pytest-xdist` (`-n auto`), once the tests that share module state (`ExtendedTransmon.close_all()`, the global matplotlib backend) are isolated.
+   - A `slow` marker for the compile-everything tests, so the per-commit run can skip them while CI runs all of them.
+   - Record the suite's wall time in `dev/perf/baselines/` with the rest, so the refactor does not slow it down.
 
 ## Step 4: delete what nothing uses
 
