@@ -29,6 +29,8 @@ _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
 _node_names = list(DEFAULT_NODE_NAME_CLS_MAP.keys())
 
 
+# every outer-sweep point: test_schedule_goldens.py compiles the first one on every run
+@pytest.mark.slow
 @pytest.mark.parametrize("node_name", _node_names)
 def test_precompile_all_nodes_without_error(
     node_name, redis_connection, session_context
