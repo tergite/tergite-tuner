@@ -29,7 +29,10 @@ from tergite_tuner.lib.utils.device import (
     configure_device,
     save_serial_device,
 )
-from tergite_tuner.lib.utils.schedule_execution import execute_schedule, get_compiler
+from tergite_tuner.lib.utils.schedule_execution import (
+    compile_schedule,
+    execute_schedule,
+)
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.utils.dicts import insert_nested_key, to_flat_map
 from tergite_tuner.utils.hardware.spi import SpiDAC
@@ -315,10 +318,6 @@ class QubitNode(BaseNode):
         )
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
-        import quantify_scheduler.backends.qblox.constants as constants
-
-        constants.GRID_TIME_TOLERANCE_TIME = 5e-2
-
         transmons_dict = {
             qubit: self.device.get_element(qubit) for qubit in self.all_qubits
         }
@@ -326,16 +325,7 @@ class QubitNode(BaseNode):
         schedule = measurement_class.schedule_function(
             **schedule_samplespace, **self.schedule_keywords
         )
-
-        compiler = get_compiler(prefix=self.name)
-
-        compilation_config = self.device.generate_compilation_config()
-        logger.info("Starting Compiling")
-        compiled_schedule = compiler.compile(
-            schedule=schedule, config=compilation_config
-        )
-
-        return compiled_schedule
+        return compile_schedule(schedule, self.device, name=self.name)
 
     @classmethod
     def reset_qois(cls, session: "SessionContext", node_name: str):
@@ -529,10 +519,6 @@ class CouplerNode(BaseNode):
         return ac_frequency
 
     def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
-        import quantify_scheduler.backends.qblox.constants as constants
-
-        constants.GRID_TIME_TOLERANCE_TIME = 5e-2
-
         transmons_dict = {
             qubit: self.device.get_element(qubit) for qubit in self.all_qubits
         }
@@ -543,16 +529,7 @@ class CouplerNode(BaseNode):
         schedule = measurement_class.schedule_function(
             **schedule_samplespace, **self.schedule_keywords
         )
-
-        compiler = get_compiler(prefix=self.name)
-
-        compilation_config = self.device.generate_compilation_config()
-        logger.info("Starting Compiling")
-        compiled_schedule = compiler.compile(
-            schedule=schedule, config=compilation_config
-        )
-
-        return compiled_schedule
+        return compile_schedule(schedule, self.device, name=self.name)
 
     def __str__(self):
         return f"Node representation for {self.name} on couplers {self.couplers}"
