@@ -29,9 +29,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --locked --all-groups
+      - name: Format
+        run: uv run --locked black --check tergite_tuner dev conftest.py
       - name: Lint
-        if: ${{ vars.SHOULD_LINT == 'true' }}
-        run: uv run --locked black tergite_tuner --check
+        run: |
+          uv run --locked python -m dev.lint.baseline ruff
+          uv run --locked python -m dev.lint.baseline pylint
+          uv run --locked python -m dev.lint.baseline vulture
       - name: Run tests
         run: uv run --locked pytest tergite_tuner
         env:

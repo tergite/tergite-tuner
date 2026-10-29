@@ -112,7 +112,7 @@ A test that changes module state resets it: call `ExtendedTransmon.close_all()` 
 
 ## 7. CI
 
-GitLab CI ([.gitlab-ci.yml](.gitlab-ci.yml)) and GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) run the same job on Python 3.13: `uv sync --locked`, which fails on a stale `uv.lock`, then pytest with coverage and `black --check`. A `v*` tag on GitHub also builds and publishes the package. GitLab is the source of truth; GitHub is a mirror.
+GitLab CI ([.gitlab-ci.yml](.gitlab-ci.yml)) and GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) run the same job on Python 3.13, on every merge request, on `main` and on tags: `uv sync --locked`, which fails on a stale `uv.lock`; `black --check`; the ruff, pylint and vulture baselines; then pytest with coverage, which includes the style-guide test. A `v*` tag on GitHub also builds and publishes the package. GitLab is the source of truth; GitHub is a mirror.
 
 ## 8. Working on this repo
 

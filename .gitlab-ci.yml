@@ -35,8 +35,12 @@ test_lint_build:
     - uv sync --locked --all-groups
     # print the status of the code
     - echo "CODE_STATUS=${CODE_STATUS}"
+    - uv run --locked black --check tergite_tuner dev conftest.py
+    - uv run --locked python -m dev.lint.baseline ruff
+    - uv run --locked python -m dev.lint.baseline pylint
+    - uv run --locked python -m dev.lint.baseline vulture
+    # includes test_styleguide.py
     - uv run --locked pytest tergite_tuner --cov=tergite_tuner --cov-report xml --cov-report term-missing --junitxml=report.xml
-    - uv run --locked black --check tergite_tuner
   coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     reports:
