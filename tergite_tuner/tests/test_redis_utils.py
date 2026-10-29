@@ -11,6 +11,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from tergite_tuner.config.types import NodeConfig
 from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
@@ -115,3 +116,34 @@ def test_persist_qois(redis_connection, session_context):
                 assert (
                     redis_connection.hget("cs:q00_q01", node_name) == "not_calibrated"
                 )
+
+
+def test_node_parameters_of_one_qubit_override_all(redis_connection, session_context):
+    redis_connection.flushall()
+    session = session_context.model_copy(
+        update={
+            "node_config": NodeConfig.model_validate(
+                {
+                    "resonator_spectroscopy": {
+                        "all": {"reset": {"duration": 60e-6}},
+                        "q01": {"reset": {"duration": 90e-6}},
+                    }
+                }
+            )
+        }
+    )
+
+    populate_node_parameters(
+        "resonator_spectroscopy", is_node_calibrated=False, session=session
+    )
+
+    assert float(redis_connection.hget("transmons:q00", "reset:duration")) == 60e-6
+    assert float(redis_connection.hget("transmons:q01", "reset:duration")) == 90e-6
+
+    revert_node_parameters(session, node_name="resonator_spectroscopy")
+
+    initial_duration = session.device_config.qubits["q01"]["reset"]["duration"]
+    assert (
+        float(redis_connection.hget("transmons:q01", "reset:duration"))
+        == initial_duration
+    )

@@ -14,9 +14,10 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import TYPE_CHECKING
+import copy
+from typing import TYPE_CHECKING, Any, Dict
 
-from tergite_tuner.utils.dicts import insert_nested_key
+from tergite_tuner.utils.dicts import insert_nested_key, update_nested
 from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
@@ -71,10 +72,9 @@ def populate_node_parameters(
     couplers = session.couplers
     qubits = session.qubits
 
-    all_components_node_conf = data.get("all", {})
     session.redis_store.save_many(
         {
-            "transmons": {k: all_components_node_conf for k in qubits},
+            "transmons": {q: _get_qubit_node_config(data, q) for q in qubits},
             "couplers": {
                 coupler: data[coupler] for coupler in couplers if coupler in data
             },
@@ -94,11 +94,13 @@ def revert_node_parameters(session: "SessionContext", node_name: str):
         return  # no node specific config found
 
     initial_params = session.device_config.qubits
-    node_specific_dict = node_configuration[node_name].get("all", {})
 
     initial_data = {}
     for qubit in session.qubits:
         qubit_conf = initial_params.get(qubit)
+        node_specific_dict = _get_qubit_node_config(
+            node_configuration[node_name], qubit
+        )
         if qubit_conf:
             try:
                 for node, node_conf in node_specific_dict.items():
@@ -116,3 +118,10 @@ def revert_node_parameters(session: "SessionContext", node_name: str):
                 ) from e
 
     session.redis_store.save_many({"transmons": initial_data})
+
+
+def _get_qubit_node_config(node_section: Dict[str, Any], qubit: str) -> Dict[str, Any]:
+    """The qubit's own section of a node's config, falling back to its 'all' section."""
+    qubit_config = copy.deepcopy(node_section.get(qubit, {}))
+    update_nested(qubit_config, node_section.get("all", {}))
+    return qubit_config
