@@ -129,3 +129,7 @@ build/
 .aider*
 # uv
 .venv/
+
+# written to the working directory by qblox-instruments' dummy cluster
+tmp.hex
+tmp.q1asm
