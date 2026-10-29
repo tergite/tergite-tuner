@@ -55,7 +55,10 @@ def get_ruff_findings() -> list[str]:
 
 
 def get_pylint_findings() -> list[str]:
-    output = _run(["pylint", *PATHS, "--output-format", "json2", "--exit-zero"])
+    """Files go in sorted, as pylint pairs up code duplicated three ways in the order it reads them."""
+    output = _run(
+        ["pylint", *_get_python_files(), "--output-format", "json2", "--exit-zero"]
+    )
     return [_get_pylint_key(item) for item in json.loads(output)["messages"]]
 
 
@@ -89,6 +92,11 @@ def _report(title: str, findings: Counter) -> None:
 
 def _run(command: list[str]) -> str:
     return subprocess.run(command, capture_output=True, text=True, check=False).stdout
+
+
+def _get_python_files() -> list[str]:
+    files = {str(path) for root in PATHS for path in Path(root).rglob("*.py")}
+    return sorted(files | {root for root in PATHS if root.endswith(".py")})
 
 
 def _relative(path: str) -> str:
