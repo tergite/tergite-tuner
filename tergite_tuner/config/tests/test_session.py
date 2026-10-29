@@ -344,3 +344,9 @@ def test_session_options_match_session_context():
                 assert options_type == context_type | Path | str
             else:
                 assert options_type == context_type
+
+
+def test_session_from_env_reads_only_its_own_fields(monkeypatch, clean_environ):
+    monkeypatch.setenv("SOME_API_TOKEN", "secret")
+    session = SessionContext.from_env()
+    assert "some_api_token" not in session.model_dump()

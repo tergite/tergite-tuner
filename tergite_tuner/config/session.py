@@ -410,7 +410,11 @@ class SessionContext(BaseModel):
         Raises:
             FileNotFoundError: if ``file`` is provided but doesn't exist.
         """
-        data = {k.lower(): v for k, v in os.environ.items() if v not in (None, "")}
+        data = {
+            k.lower(): v
+            for k, v in os.environ.items()
+            if k.lower() in cls.model_fields and v not in (None, "")
+        }
 
         try:
             with open(file, "r", encoding="utf-8") as fh:
