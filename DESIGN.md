@@ -114,6 +114,10 @@ Each can also be passed as an object. The README shows both.
 
 A test that changes module state resets it: call `ExtendedTransmon.close_all()` before building a device, and restore a matplotlib backend you change.
 
+### Performance
+
+`dev/perf/record.sh <dir>` records each node's compile, dataset assembly and analysis (time and peak memory, `dev/perf/test_nodes.py`), the dummy run of every node, the fast tests, the import and the install size (`dev/perf/record_runs.py`). `python -m dev.perf.compare dev/perf/baselines/<machine> <dir>` exits 1 when a measure is more than 15% worse than that machine's baseline, past a noise floor. Timings depend on the machine, so each has its own baseline: `macos-arm64` now, `ci` once the CI job's first recording is committed. A refactor step is signed off only when its recording compares clean.
+
 ## 7. CI
 
 GitLab CI ([.gitlab-ci.yml](.gitlab-ci.yml)) and GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) run the same job on Python 3.13, on every merge request, on `main` and on tags: `uv sync --locked`, which fails on a stale `uv.lock`; `black --check`; the ruff, pylint and vulture baselines; then pytest with coverage, which includes the style-guide test. A `v*` tag on GitHub also builds and publishes the package. GitLab is the source of truth; GitHub is a mirror.

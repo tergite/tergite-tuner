@@ -1,0 +1,342 @@
+{
+  "test_analysis[coupler_anticrossing]": {
+    "peak_memory_mb": 11.790754318237305,
+    "seconds": 1.8388674579982762
+  },
+  "test_analysis[cz_calibration]": {
+    "peak_memory_mb": 28.466702461242676,
+    "seconds": 0.6390141669980949
+  },
+  "test_analysis[cz_chevron]": {
+    "peak_memory_mb": 12.32921314239502,
+    "seconds": 0.4958787499999744
+  },
+  "test_analysis[cz_local_phases]": {
+    "peak_memory_mb": 5.404071807861328,
+    "seconds": 0.2215402500005439
+  },
+  "test_analysis[cz_parametrization_0]": {
+    "peak_memory_mb": 33.83519649505615,
+    "seconds": 1.39431925000099
+  },
+  "test_analysis[cz_parametrization_1]": {
+    "peak_memory_mb": 79.40077114105225,
+    "seconds": 3.791156166997098
+  },
+  "test_analysis[cz_rb]": {
+    "peak_memory_mb": 5.941402435302734,
+    "seconds": 0.28334908300166717
+  },
+  "test_analysis[motzoi_12_parameter]": {
+    "peak_memory_mb": 4.461909294128418,
+    "seconds": 0.46317041700240225
+  },
+  "test_analysis[motzoi_parameter]": {
+    "peak_memory_mb": 4.585153579711914,
+    "seconds": 0.4834454160009045
+  },
+  "test_analysis[n_rabi_12_oscillations]": {
+    "peak_memory_mb": 4.319698333740234,
+    "seconds": 0.44099804099823814
+  },
+  "test_analysis[n_rabi_oscillations]": {
+    "peak_memory_mb": 4.187633514404297,
+    "seconds": 0.43420741699810605
+  },
+  "test_analysis[punchout]": {
+    "peak_memory_mb": 76.6972599029541,
+    "seconds": 6.680839166998339
+  },
+  "test_analysis[randomized_benchmarking]": {
+    "peak_memory_mb": 10.1561861038208,
+    "seconds": 0.8380225840010098
+  },
+  "test_analysis[resonator_spectroscopy_vs_current]": {
+    "peak_memory_mb": 13.019750595092773,
+    "seconds": 3.1667182499950286
+  },
+  "test_analysis[ro_amplitude_three_state_optimization]": {
+    "peak_memory_mb": 66.6319637298584,
+    "seconds": 1.2190224160003709
+  },
+  "test_analysis[ro_frequency_three_state_optimization]": {
+    "peak_memory_mb": 2.9949607849121094,
+    "seconds": 0.3819273749977583
+  },
+  "test_analysis[standard_run_qubit_01_spectroscopy]": {
+    "peak_memory_mb": 3.25797176361084,
+    "seconds": 0.41126258300209884
+  },
+  "test_analysis[standard_run_rabi_oscillations]": {
+    "peak_memory_mb": 2.172811508178711,
+    "seconds": 0.35263895800017053
+  },
+  "test_analysis[standard_run_resonator_spectroscopy]": {
+    "peak_memory_mb": 2.8792524337768555,
+    "seconds": 0.4539659579968429
+  },
+  "test_compile[all_xy]": {
+    "peak_memory_mb": 1.0124082565307617,
+    "seconds": 0.022148500000184868
+  },
+  "test_compile[coupler_anticrossing]": {
+    "peak_memory_mb": 3.1956491470336914,
+    "seconds": 0.09930187500140164
+  },
+  "test_compile[cz_calibration]": {
+    "peak_memory_mb": 17.333723068237305,
+    "seconds": 0.43156508300307905
+  },
+  "test_compile[cz_chevron]": {
+    "peak_memory_mb": 2.6393260955810547,
+    "seconds": 0.05718579200038221
+  },
+  "test_compile[cz_local_phases]": {
+    "peak_memory_mb": 35.29012680053711,
+    "seconds": 0.7867795420024777
+  },
+  "test_compile[cz_parametrization]": {
+    "peak_memory_mb": 64.84514713287354,
+    "seconds": 1.6936426669999491
+  },
+  "test_compile[cz_rb]": {
+    "peak_memory_mb": 22.024967193603516,
+    "seconds": 3.790304667003511
+  },
+  "test_compile[motzoi_12_parameter]": {
+    "peak_memory_mb": 9.545563697814941,
+    "seconds": 0.278402666997863
+  },
+  "test_compile[motzoi_parameter]": {
+    "peak_memory_mb": 18.620497703552246,
+    "seconds": 0.6467284169993945
+  },
+  "test_compile[n_rabi_12_oscillations]": {
+    "peak_memory_mb": 7.019430160522461,
+    "seconds": 0.20161116599774687
+  },
+  "test_compile[n_rabi_oscillations]": {
+    "peak_memory_mb": 13.632086753845215,
+    "seconds": 0.4772870829983731
+  },
+  "test_compile[punchout]": {
+    "peak_memory_mb": 18.8559513092041,
+    "seconds": 0.40493912500096485
+  },
+  "test_compile[qubit_01_spectroscopy]": {
+    "peak_memory_mb": 12.762785911560059,
+    "seconds": 0.4371647910011234
+  },
+  "test_compile[qubit_12_spectroscopy]": {
+    "peak_memory_mb": 8.730627059936523,
+    "seconds": 0.33607141700485954
+  },
+  "test_compile[qubit_bring_up_spectroscopy]": {
+    "peak_memory_mb": 33.36029529571533,
+    "seconds": 1.198920167000324
+  },
+  "test_compile[qubit_spectroscopy_vs_current]": {
+    "peak_memory_mb": 3.1952619552612305,
+    "seconds": 0.10346908300562063
+  },
+  "test_compile[rabi_oscillations]": {
+    "peak_memory_mb": 2.409939765930176,
+    "seconds": 0.055905374996655155
+  },
+  "test_compile[rabi_oscillations_12]": {
+    "peak_memory_mb": 2.631591796875,
+    "seconds": 0.060045957994589116
+  },
+  "test_compile[ramsey_correction]": {
+    "peak_memory_mb": 6.596940040588379,
+    "seconds": 0.161177250003675
+  },
+  "test_compile[ramsey_correction_12]": {
+    "peak_memory_mb": 8.80780029296875,
+    "seconds": 0.22705179199692793
+  },
+  "test_compile[randomized_benchmarking]": {
+    "peak_memory_mb": 15.918919563293457,
+    "seconds": 2.667173665999144
+  },
+  "test_compile[resonator_spectroscopy]": {
+    "peak_memory_mb": 3.0215911865234375,
+    "seconds": 0.0536483749965555
+  },
+  "test_compile[resonator_spectroscopy_1]": {
+    "peak_memory_mb": 3.217374801635742,
+    "seconds": 0.07062316699739313
+  },
+  "test_compile[resonator_spectroscopy_2]": {
+    "peak_memory_mb": 3.5893020629882812,
+    "seconds": 0.08296287499979371
+  },
+  "test_compile[resonator_spectroscopy_vs_current]": {
+    "peak_memory_mb": 2.8865461349487305,
+    "seconds": 0.0549474170038593
+  },
+  "test_compile[ro_amplitude_three_state_optimization]": {
+    "peak_memory_mb": 46.74522686004639,
+    "seconds": 0.6421893329970771
+  },
+  "test_compile[ro_amplitude_two_state_optimization]": {
+    "peak_memory_mb": 46.65971660614014,
+    "seconds": 0.6029134589989553
+  },
+  "test_compile[ro_frequency_three_state_optimization]": {
+    "peak_memory_mb": 9.262388229370117,
+    "seconds": 0.19723787499970058
+  },
+  "test_compile[ro_frequency_two_state_optimization]": {
+    "peak_memory_mb": 5.379903793334961,
+    "seconds": 0.11830262500006938
+  },
+  "test_compile[t1]": {
+    "peak_memory_mb": 1.1504278182983398,
+    "seconds": 0.024202999993576668
+  },
+  "test_compile[t2]": {
+    "peak_memory_mb": 1.2499475479125977,
+    "seconds": 0.028993332998652477
+  },
+  "test_compile[t2_echo]": {
+    "peak_memory_mb": 0.9771099090576172,
+    "seconds": 0.023574040998937562
+  },
+  "test_compile[three_state_discrimination]": {
+    "peak_memory_mb": 1.7130851745605469,
+    "seconds": 0.025588541997422
+  },
+  "test_dataset[all_xy]": {
+    "peak_memory_mb": 0.019046783447265625,
+    "seconds": 0.0004825829964829609
+  },
+  "test_dataset[coupler_anticrossing]": {
+    "peak_memory_mb": 0.019794464111328125,
+    "seconds": 0.000510290999955032
+  },
+  "test_dataset[cz_calibration]": {
+    "peak_memory_mb": 0.0407562255859375,
+    "seconds": 0.0008837909990688786
+  },
+  "test_dataset[cz_chevron]": {
+    "peak_memory_mb": 0.0269775390625,
+    "seconds": 0.0007398750021820888
+  },
+  "test_dataset[cz_local_phases]": {
+    "peak_memory_mb": 0.04559326171875,
+    "seconds": 0.0010499579948373139
+  },
+  "test_dataset[cz_parametrization]": {
+    "peak_memory_mb": 0.03213691711425781,
+    "seconds": 0.000928082998143509
+  },
+  "test_dataset[cz_rb]": {
+    "peak_memory_mb": 0.03998374938964844,
+    "seconds": 0.0008766250030021183
+  },
+  "test_dataset[motzoi_12_parameter]": {
+    "peak_memory_mb": 0.024393081665039062,
+    "seconds": 0.000668874999973923
+  },
+  "test_dataset[motzoi_parameter]": {
+    "peak_memory_mb": 0.024377822875976562,
+    "seconds": 0.0006865420000394806
+  },
+  "test_dataset[n_rabi_12_oscillations]": {
+    "peak_memory_mb": 0.024257659912109375,
+    "seconds": 0.0006558749955729581
+  },
+  "test_dataset[n_rabi_oscillations]": {
+    "peak_memory_mb": 0.024257659912109375,
+    "seconds": 0.0006880410001031123
+  },
+  "test_dataset[punchout]": {
+    "peak_memory_mb": 0.025224685668945312,
+    "seconds": 0.0007322079982259311
+  },
+  "test_dataset[qubit_01_spectroscopy]": {
+    "peak_memory_mb": 0.024908065795898438,
+    "seconds": 0.0006806669989600778
+  },
+  "test_dataset[qubit_12_spectroscopy]": {
+    "peak_memory_mb": 0.024877548217773438,
+    "seconds": 0.0006942920008441433
+  },
+  "test_dataset[qubit_bring_up_spectroscopy]": {
+    "peak_memory_mb": 0.03131866455078125,
+    "seconds": 0.0005168749994481914
+  },
+  "test_dataset[qubit_spectroscopy_vs_current]": {
+    "peak_memory_mb": 0.019794464111328125,
+    "seconds": 0.0005075000008218922
+  },
+  "test_dataset[rabi_oscillations]": {
+    "peak_memory_mb": 0.019636154174804688,
+    "seconds": 0.00048466700536664575
+  },
+  "test_dataset[rabi_oscillations_12]": {
+    "peak_memory_mb": 0.019636154174804688,
+    "seconds": 0.0004953329989803024
+  },
+  "test_dataset[ramsey_correction]": {
+    "peak_memory_mb": 0.024168014526367188,
+    "seconds": 0.0006769159954274073
+  },
+  "test_dataset[ramsey_correction_12]": {
+    "peak_memory_mb": 0.024320602416992188,
+    "seconds": 0.0006819999980507419
+  },
+  "test_dataset[randomized_benchmarking]": {
+    "peak_memory_mb": 0.03518104553222656,
+    "seconds": 0.0007054160014376976
+  },
+  "test_dataset[resonator_spectroscopy]": {
+    "peak_memory_mb": 0.0200958251953125,
+    "seconds": 0.0005489579998538829
+  },
+  "test_dataset[resonator_spectroscopy_1]": {
+    "peak_memory_mb": 0.0200958251953125,
+    "seconds": 0.0005193750039325096
+  },
+  "test_dataset[resonator_spectroscopy_2]": {
+    "peak_memory_mb": 0.0200958251953125,
+    "seconds": 0.0004919999992125668
+  },
+  "test_dataset[resonator_spectroscopy_vs_current]": {
+    "peak_memory_mb": 0.0200958251953125,
+    "seconds": 0.0004953329989803024
+  },
+  "test_dataset[ro_amplitude_three_state_optimization]": {
+    "peak_memory_mb": 0.05190467834472656,
+    "seconds": 0.0009045839979080483
+  },
+  "test_dataset[ro_amplitude_two_state_optimization]": {
+    "peak_memory_mb": 0.05212974548339844,
+    "seconds": 0.0009187079995172098
+  },
+  "test_dataset[ro_frequency_three_state_optimization]": {
+    "peak_memory_mb": 0.025129318237304688,
+    "seconds": 0.000658207995002158
+  },
+  "test_dataset[ro_frequency_two_state_optimization]": {
+    "peak_memory_mb": 0.025127410888671875,
+    "seconds": 0.0006707089996780269
+  },
+  "test_dataset[t1]": {
+    "peak_memory_mb": 0.0191497802734375,
+    "seconds": 0.00048470799811184406
+  },
+  "test_dataset[t2]": {
+    "peak_memory_mb": 0.0191497802734375,
+    "seconds": 0.0004989579974790104
+  },
+  "test_dataset[t2_echo]": {
+    "peak_memory_mb": 0.019012451171875,
+    "seconds": 0.00048600000445730984
+  },
+  "test_dataset[three_state_discrimination]": {
+    "peak_memory_mb": 0.05146217346191406,
+    "seconds": 0.000879999999597203
+  }
+}

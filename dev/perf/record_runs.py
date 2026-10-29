@@ -16,7 +16,6 @@ python -m dev.perf.record_runs <runs.json>
 
 import json
 import resource
-import statistics
 import subprocess
 import sys
 import tempfile
@@ -63,7 +62,8 @@ def measure_command(command: list[str]) -> tuple[float, float]:
 
 
 def measure_import_seconds() -> float:
-    return statistics.median(_get_import_seconds() for _ in range(IMPORT_ROUNDS))
+    """The fastest of a few imports, as other load on the machine only ever slows one down."""
+    return min(_get_import_seconds() for _ in range(IMPORT_ROUNDS))
 
 
 def measure_install() -> tuple[float, int]:

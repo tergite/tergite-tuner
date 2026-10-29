@@ -1,0 +1,16 @@
+{
+  "dummy_tune_up": {
+    "peak_memory_mb": 841.28125,
+    "seconds": 285.3833383339952
+  },
+  "fast_test_suite": {
+    "seconds": 180.74831699999777
+  },
+  "import": {
+    "seconds": 5.08
+  },
+  "install": {
+    "packages": 152,
+    "size_mb": 743.4549961090088
+  }
+}
