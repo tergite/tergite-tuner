@@ -12,18 +12,15 @@ uv pip install --python .venv/bin/python -e . --group test --group dev
 
 Expect `375 passed, 5 skipped`. Before step 0 it was `320 passed, 6 skipped`.
 
-## 2. Dummy runs
+## 2. Dummy datasets
 
-With a Redis server running, and `.env` copied from `.example.env` with `CLUSTER_MODE='dummy'`, `SPI_MODE='dummy'`, `QUBITS='q00,q01'` and `COUPLERS='q00_q01'`:
-
-```python
-from tergite_tuner import run_node, NodeEnum
-
-for node in (NodeEnum.PUNCHOUT, NodeEnum.T1, NodeEnum.T2, NodeEnum.N_RABI_12_OSCILLATIONS):
-    run_node(env_file=".env", node=node)
+```bash
+.venv/bin/pytest tergite_tuner/lib/base/tests/test_node.py -q
 ```
 
-Each node runs to its analysis. Before step 0, each raised `AttributeError: ... has no attribute 'generate_dummy_dataset'`. The fits on random data may fail, and that is expected. What should be seen is the analysis logging a failure, not the run crashing.
+Every node in the default map builds a dummy dataset that `configure_dataset` accepts (34 nodes). Before step 0, nine of them raised `AttributeError: ... has no attribute 'generate_dummy_dataset'`.
+
+A standalone `run_node` in dummy mode still needs the device values that earlier nodes write (f01 and others) and qubits that the configs define. So a dummy tune-up of the whole graph is step 2.1's test, not this sign-off.
 
 ## 3. On the testbed
 
