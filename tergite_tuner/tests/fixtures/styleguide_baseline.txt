@@ -180,8 +180,6 @@ confined-import: tergite_tuner/utils/types/extended_transmon.py::import quantify
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.base.node
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.nodes
 import-layering: tergite_tuner/utils/hardware/spi.py::import tergite_tuner.config.session
-license-header: dev/__init__.py
-license-header: dev/lint/__init__.py
 license-header: tergite_tuner/config/__init__.py
 license-header: tergite_tuner/config/tests/__init__.py
 license-header: tergite_tuner/lib/__init__.py
