@@ -92,6 +92,32 @@ Someone with testbed access runs it and gives the go-ahead before the next step.
 
 The only behaviour changes in the plan. Each commit adds a test that fails before the fix, and gets a `Fixed` changelog entry. Where a decision is needed, it is marked **Decide** with a recommendation.
 
+**Outcome.** Every item was checked against the code before it was fixed. Fixed, each with its test:
+- 0.1 `7c747e2d`, 0.2 `609dacb3`, 0.3 `b2c22ac1` (the tolerance is needed: punchout's 264 s schedule builds up 2.3e-3 ns of float error, so it is scoped to the compile, not removed)
+- 0.5 `2558a4b1`, 0.8 `37375889`, 0.11 `5c6c1574`, 0.12 `36cc170a`
+- 0.14 `9538d6b0`, 0.15 `32f66e2c`, 0.16 `83856b2c`, 0.19 `3ca17bfa`
+- 0.22 `fe0d6ec2`, 0.23 `7931a251` (several couplers now raise; benchmarking them in parallel is new work)
+- 0.27 `1daf19d5`
+
+The rest:
+- **Not defects:**
+  - 0.9: the CZ analyses read their keywords from `**kwargs` themselves.
+  - 0.13: T1 and T2 are fitted in µs, so the seed file's unit is right.
+  - 0.17: `inv_cm_opt = 0` is a placeholder for a matrix the export types as a float; the threshold branch is dead but changes nothing.
+  - 0.26: the mutable defaults are only read; ruff's `B006` flags them in step 1.
+- **Moved, as no failing test can show them:**
+  - 0.4 and the dead threshold branch → step 4.2;
+  - 0.10 → step 6.4;
+  - 0.24 and `utils/cliffords.py`'s `UnboundLocalError` → step 8, which deletes both modules;
+  - 0.25 → step 6.1 (`configure_dataset`) and step 9.6 (the CZ fixed-duration match). With zero-padded `qNN` names neither misfires today.
+- **Left for later (decided):** 0.6–0.7. AllXY and Purity stay in the default map; nothing depends on them, so only a run that targets them reaches them, and it fails. Fixing them is step 9.7.
+- **For the testbed, not a blind fix:**
+  - 0.18: qubit spectroscopy's peak check has been overridden to `True` since `fca99544` (2024), and Rabi's fit uncertainty is hard-coded to 0. Re-enabling either changes which values a real run picks.
+  - 0.20: the three suspects (the 1–2 pulse duration, the readout motzoi, the double correction on reanalysis).
+  - 0.21: the CZ phase sign and units.
+  - 0.23's analysis items: plots and the interleaving assumption.
+  - Each needs a recorded dataset or a testbed run that shows the right answer, before its fix.
+
 **Runner and base**
 
 1. `tuner.py:93`: `quit()` when the Cluster refuses the connection kills the host process. Raise `ClusterUnreachableError`.
@@ -293,6 +319,7 @@ No behaviour change; the step 2 tests stay green. Each deletion also removes its
    - `SpiDAC.ramp_current_simultaneusly`, `print_currents` and `close_spi_rack` (`Hardware` closes the rack from step 11.3);
    - the unused enums `DataStatus.bad_data`/`undefined`, `CalibrationResultStatus` and `ApplicationStatus`;
    - `utils/reanalysis.py`, used only by its tests.
+   - `BaseNode.samplespace`, always `{}` (step 0.4), and the branch of `ro_amplitude_optimization/utils.py:62-74` that cannot be taken.
 3. **Dead code inside live functions:**
    - the commented-out blocks;
    - values assigned and then overwritten (`rabi/node.py:51`, `cz_parametrization/node.py:109`, `randomized_benchmarking/node.py:38`, `purity_benchmarking/node.py:35`);
@@ -485,6 +512,8 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 5. **Logging.** `ExtendedLogger` adds its handlers at import time, but a library should only create its logger.
    - Keep `status` as a level.
    - Move `add_console_handler`/`add_file_handler` behind an explicit `setup_logging(stdout_level, file_level, log_dir)`, which the entry points call.
+6. **Match couplers by name.** `cz_calibration/node.py:153` checks `q in coupler` against the fixed-duration couplers; use `coupler in session.fixed_duration_couplers`.
+7. **Fix AllXY and Purity** (step 0.7), with a recorded dataset each, so a run that targets them completes.
 
 ## Step 10: tests in the right place
 
