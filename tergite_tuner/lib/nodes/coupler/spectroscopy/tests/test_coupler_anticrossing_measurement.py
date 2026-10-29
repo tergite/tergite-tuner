@@ -35,7 +35,9 @@ def test_dummy_generation(session_context):
     node = QubitSpectroscopyVsCurrentNode(
         DEFAULT_TEST_COUPLERS, session=session_context
     )
-    node.this_current = 0.0001
+    node.reduced_external_samplespace = {
+        "dc_currents": {coupler: 0.0001 for coupler in node.couplers}
+    }
     dummy_dataset = node.generate_dummy_dataset()
     first_qubit = DEFAULT_TEST_QUBITS[0]
     number_of_frequencies = len(

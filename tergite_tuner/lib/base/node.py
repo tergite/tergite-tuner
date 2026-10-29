@@ -13,6 +13,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import math
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from os import PathLike
@@ -147,6 +148,19 @@ class BaseNode(ABC):
 
         logger.info("Finished measurement")
         return result_dataset
+
+    def generate_dummy_dataset(self) -> xarray.Dataset:
+        """Random IQ points per qubit, for nodes without a dummy model of their own."""
+        size = math.prod(samplespace_dimensions(self.schedule_samplespace, self.loops))
+        rng = np.random.default_rng()
+        return xarray.Dataset(
+            {
+                index: xarray.DataArray(
+                    rng.uniform(-1, 1, size) + 1j * rng.uniform(-1, 1, size)
+                )
+                for index in range(len(self.all_qubits))
+            }
+        )
 
     def _calculate_schedule_duration(
         self, compiled_schedule: "CompiledSchedule"

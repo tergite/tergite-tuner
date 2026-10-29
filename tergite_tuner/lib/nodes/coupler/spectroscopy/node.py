@@ -79,8 +79,6 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
         pass
 
     def pre_measurement_operation(self, reduced_ext_space):
-        first_coupler = self.couplers[0]
-        self.this_current = reduced_ext_space["dc_currents"][first_coupler]
         self.spi_manager.set_dac_current(reduced_ext_space["dc_currents"])
 
     def final_operation(self):
@@ -93,6 +91,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
+        current = self.reduced_external_samplespace["dc_currents"][self.couplers[0]]
         for index, qubit in enumerate(self.all_qubits):
             qubit_freq = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
             epsilon = 3 / 5 * 1e-7  # to avoid divide by zero
@@ -100,9 +99,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
             high_asymptote = 0.001 + epsilon
             shifted_frequency = qubit_freq + 2e6 * np.abs(
                 low_asymptote * high_asymptote
-            ) / (self.this_current - low_asymptote) / (
-                self.this_current - high_asymptote
-            )
+            ) / (current - low_asymptote) / (current - high_asymptote)
             true_params = peak.make_params(
                 amplitude=0.2, center=shifted_frequency, sigma=0.1e6
             )
@@ -167,8 +164,6 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
         pass
 
     def pre_measurement_operation(self, reduced_ext_space):
-        first_coupler = self.couplers[0]
-        self.this_current = reduced_ext_space["dc_currents"][first_coupler]
         self.spi_manager.set_dac_current(reduced_ext_space["dc_currents"])
 
     def final_operation(self):

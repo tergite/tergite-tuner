@@ -83,7 +83,9 @@ def test_configure_dataset_couplers(session_context):
     node_0 = QubitSpectroscopyVsCurrentNode(
         DEFAULT_TEST_COUPLERS, session=session_context
     )
-    node_0.this_current = 5e-6
+    node_0.reduced_external_samplespace = {
+        "dc_currents": {coupler: 5e-6 for coupler in node_0.couplers}
+    }
 
     raw_ds = node_0.generate_dummy_dataset()
 

@@ -16,6 +16,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Raised `ClusterUnreachableError` when the cluster refuses the connection, instead of exiting the calling program
 - Kept the caller's matplotlib backend; every node switched it, to TkAgg when `save_plot` was set, which fails on a headless machine
 - Restored quantify-scheduler's grid-time tolerance after each compile; every compile raised it for the rest of the calling program
+- Gave every node a dummy dataset; dummy mode raised `AttributeError` on punchout, NRabi12, T1, T2, T2 echo, AllXY, purity benchmarking and two spectroscopies
 
 ## [2026.06.0] - 2026-06-26
 
