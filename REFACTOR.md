@@ -250,7 +250,7 @@ After this step, CI rejects any commit that makes the code less clean than it is
    - a service-style `__init__.py` only re-exports, with `__all__`;
    - no test helper outside `tests/utils/`.
 
-   Today's violations go in `tests/styleguide_baseline.txt`. The test fails on a violation not in the baseline, and on a baseline line that no longer occurs, so that the baseline only shrinks.
+   Today's violations go in `tergite_tuner/tests/fixtures/styleguide_baseline.txt`. The test fails on a violation not in the baseline, and on a baseline line that no longer occurs, so that the baseline only shrinks. Built: 866 violations, 427 of them missing type hints, 175 non-verb names and 127 scheduler or Redis imports outside their package; none of host takeover after step 0. `__init__.py` re-exports and test-helper placement were left out: the package has no service facades, and no parser rule tells a shared helper from a test's own.
 5. **CI runs all of it on every merge request, on `main` and on tags, in GitLab and in the GitHub mirror alike:** `uv sync --locked`, the formatter's check, `ruff check`, the pylint and vulture checks, then pytest with coverage (which includes the style-guide test). The `README.md` badge stays on the GitHub workflow.
 6. **`docs/prototypes/`**, with a README saying it holds this refactor's acceptance scripts and is deleted at step 12.
 

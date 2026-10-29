@@ -1,0 +1,867 @@
+# Violations that predate the style-guide test. Delete a line when you fix it; never add one.
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:114
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:154
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:199
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:225
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:237
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:247
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:257
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:225
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:271
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:332
+banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:387
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:144
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:268
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:316
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:319
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py:154
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py:550
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py:553
+banner: tergite_tuner/utils/cliffords.py:19
+banner: tergite_tuner/utils/cliffords.py:23
+banner: tergite_tuner/utils/types/extended_transmon.py:124
+banner: tergite_tuner/utils/types/extended_transmon.py:157
+banner: tergite_tuner/utils/types/extended_transmon.py:192
+banner: tergite_tuner/utils/types/extended_transmon.py:93
+boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
+boolean: tergite_tuner/config/session.py::SessionContext.save_plot
+boolean: tergite_tuner/config/session.py::SessionOptions.ignore_spec
+boolean: tergite_tuner/config/session.py::SessionOptions.save_plot
+boolean: tergite_tuner/export.py::read_result(session_only)
+boolean: tergite_tuner/lib/base/analysis.py::BaseAllCouplersAnalysis.analyze_node(save_plot)
+boolean: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis.analyze_node(save_plot)
+boolean: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.analyze_node(save_plot)
+boolean: tergite_tuner/lib/base/node.py::BaseNode.post_process(save_plot)
+boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot(apply_inverse_gate)
+boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function(apply_inverse_gate)
+boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py::randomized_benchmarking_sequence(apply_inverse)
+boolean: tergite_tuner/storage/redis/store.py::RedisStore.save_many(reset)
+boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(ignore_spec)
+boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(save_plot)
+boolean: tergite_tuner/tuner.py::_reanalyse(keep_data_files)
+boolean: tergite_tuner/tuner.py::_reanalyse(refresh_session)
+boolean: tergite_tuner/tuner.py::_tune(keep_data_files)
+boolean: tergite_tuner/tuner.py::_tune(refresh_session)
+boolean: tergite_tuner/tuner.py::reanalyse(keep_data_files)
+boolean: tergite_tuner/tuner.py::reanalyse(refresh_session)
+boolean: tergite_tuner/tuner.py::run_node(keep_data_files)
+boolean: tergite_tuner/tuner.py::run_node(refresh_session)
+boolean: tergite_tuner/tuner.py::tune_device(keep_data_files)
+boolean: tergite_tuner/tuner.py::tune_device(refresh_session)
+boolean: tergite_tuner/utils/types/extended_transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
+boolean: tergite_tuner/utils/types/qoi.py::QOI.analysis_successful
+confined-import: tergite_tuner/config/session.py::import quantify_scheduler.backends.qblox_backend
+confined-import: tergite_tuner/config/session.py::import redis
+confined-import: tergite_tuner/config/types/cluster.py::import quantify_scheduler.backends.qblox_backend
+confined-import: tergite_tuner/lib/base/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.device_under_test.quantum_device
+confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
+confined-import: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.operations.control_flow_library
+confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::import quantify_scheduler.operations.control_flow_library
+confined-import: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/characterization/t1/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/characterization/t1/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/characterization/t1/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/characterization/t2/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/characterization/t2/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/characterization/t2/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::import quantify_scheduler.operations.control_flow_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.operations.control_flow_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.operations.control_flow_library
+confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::import quantify_scheduler.backends.qblox.operations.pulse_factories
+confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.operations.acquisition_library
+confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.operations.acquisition_library
+confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.operations.acquisition_library
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.operations.acquisition_library
+confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.operations.pulse_library
+confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.resources
+confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.schedules.schedule
+confined-import: tergite_tuner/lib/nodes/schedule_node.py::import quantify_scheduler.instrument_coordinator.utility
+confined-import: tergite_tuner/lib/utils/device.py::import quantify_scheduler.device_under_test.quantum_device
+confined-import: tergite_tuner/lib/utils/device.py::import quantify_scheduler.json_utils
+confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler
+confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.backends
+confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.backends.qblox
+confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.device_under_test.quantum_device
+confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
+confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator
+confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator.components.qblox
+confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.backends.graph_compilation
+confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.device_under_test.edge
+confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.device_under_test.transmon_element
+confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.helpers.validators
+confined-import: tergite_tuner/utils/types/extended_gates.py::import quantify_scheduler.enums
+confined-import: tergite_tuner/utils/types/extended_gates.py::import quantify_scheduler.helpers.validators
+confined-import: tergite_tuner/utils/types/extended_gates.py::import quantify_scheduler.operations.gate_library
+confined-import: tergite_tuner/utils/types/extended_pulse_factories.py::import quantify_scheduler.operations
+confined-import: tergite_tuner/utils/types/extended_transmon.py::import quantify_scheduler.backends.circuit_to_device
+confined-import: tergite_tuner/utils/types/extended_transmon.py::import quantify_scheduler.device_under_test.transmon_element
+import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.base.node
+import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.nodes
+import-layering: tergite_tuner/utils/hardware/spi.py::import tergite_tuner.config.session
+license-header: dev/__init__.py
+license-header: dev/lint/__init__.py
+license-header: tergite_tuner/config/__init__.py
+license-header: tergite_tuner/config/tests/__init__.py
+license-header: tergite_tuner/lib/__init__.py
+license-header: tergite_tuner/lib/base/__init__.py
+license-header: tergite_tuner/lib/base/tests/__init__.py
+license-header: tergite_tuner/lib/base/utils/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/all_xy/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/all_xy/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/process_tomography/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/process_tomography/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/purity_benchmarking/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/t1/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/t1/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/t2/__init__.py
+license-header: tergite_tuner/lib/nodes/characterization/t2/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_calibration/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_calibration/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_chevron/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_chevron/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_local_phases/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_local_phases/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_parametrization/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/cz_parametrization/utils/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/reset_chevron/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/reset_chevron/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/spectroscopy/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/spectroscopy/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/__init__.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_decomposition.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py
+license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py
+license-header: tergite_tuner/lib/nodes/qubit_control/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/spectroscopy/__init__.py
+license-header: tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/punchout/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/punchout/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/tests/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/__init__.py
+license-header: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/__init__.py
+license-header: tergite_tuner/lib/utils/__init__.py
+license-header: tergite_tuner/lib/utils/analysis_models.py
+license-header: tergite_tuner/lib/utils/fitting_models.py
+license-header: tergite_tuner/storage/__init__.py
+license-header: tergite_tuner/storage/redis/__init__.py
+license-header: tergite_tuner/tests/__init__.py
+license-header: tergite_tuner/tests/utils/__init__.py
+license-header: tergite_tuner/utils/__init__.py
+license-header: tergite_tuner/utils/hardware/__init__.py
+license-header: tergite_tuner/utils/types/__init__.py
+private-helper-position: tergite_tuner/config/session.py::SessionContext
+private-helper-position: tergite_tuner/config/session.py::SessionOptions
+private-helper-position: tergite_tuner/export.py::CalibrationResults
+private-helper-position: tergite_tuner/tuner.py::is_safe_path
+private-helper-position: tergite_tuner/utils/hardware/spi.py::OperatingSystem
+private-helper-position: tergite_tuner/utils/hardware/spi.py::SpiDAC
+private-helper-position: tergite_tuner/utils/reanalysis.py::get_day_infos
+private-helper-position: tergite_tuner/utils/reanalysis.py::get_run_infos
+private-helper-position: tergite_tuner/utils/reanalysis.py::search_all_runs_for_measurement
+type-hints: tergite_tuner/config/session.py::SessionContext.cast_bool_fields
+type-hints: tergite_tuner/config/session.py::SessionContext.cast_cluster_mode
+type-hints: tergite_tuner/config/session.py::SessionContext.cast_comma_separated_to_list
+type-hints: tergite_tuner/config/session.py::SessionContext.cast_spi_mode
+type-hints: tergite_tuner/config/session.py::SessionContext.cast_target_node
+type-hints: tergite_tuner/config/session.py::SessionContext.from_env
+type-hints: tergite_tuner/config/session.py::SessionContext.load_cluster_config_file
+type-hints: tergite_tuner/config/session.py::SessionContext.load_device_config_file
+type-hints: tergite_tuner/config/session.py::SessionContext.load_node_config_file
+type-hints: tergite_tuner/config/session.py::SessionContext.load_spi_config_file
+type-hints: tergite_tuner/config/session.py::SessionContext.refresh_redis_fields_log
+type-hints: tergite_tuner/config/session.py::SessionContext.update_redis_fields_log
+type-hints: tergite_tuner/config/types/node.py::NodeConfig.__iter__
+type-hints: tergite_tuner/config/types/spi.py::SpiConfig.__iter__
+type-hints: tergite_tuner/export.py::generate_calib_seed_file
+type-hints: tergite_tuner/export.py::read_result.query_func
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllCouplersAnalysis.__init__
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllCouplersAnalysis._analyze_all_couplers
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllCouplersAnalysis._group_by_coupler
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllCouplersAnalysis.display_and_save_plots
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis.__init__
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis._analyze_all_qubits
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis._fill_plots
+type-hints: tergite_tuner/lib/base/analysis.py::BaseAnalysis.qoi
+type-hints: tergite_tuner/lib/base/analysis.py::BaseCouplerAnalysis.__init__
+type-hints: tergite_tuner/lib/base/analysis.py::BaseCouplerAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/base/analysis.py::BaseCouplerAnalysis.process_coupler
+type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.__init__
+type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis._manage_plots
+type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis._save_other_plots
+type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis._save_plots
+type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.qoi
+type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis._compute_magnitudes
+type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis._set_data_variables
+type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis.plot
+type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis.process_qubit
+type-hints: tergite_tuner/lib/base/measurement.py::BaseMeasurement.__init__
+type-hints: tergite_tuner/lib/base/measurement.py::MeasurementType.measure_node
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.__init__
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.calibrate
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.measure_compiled_schedule
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.measure_node
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.post_process
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.precompile
+type-hints: tergite_tuner/lib/base/node.py::BaseNode.reset_qois
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.__format__
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.__init__
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.__repr__
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.__str__
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.measure_node
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.reset_qois
+type-hints: tergite_tuner/lib/base/node.py::CouplerNode.set_parking_current_from_redis
+type-hints: tergite_tuner/lib/base/node.py::QubitNode.__format__
+type-hints: tergite_tuner/lib/base/node.py::QubitNode.__init__
+type-hints: tergite_tuner/lib/base/node.py::QubitNode.__repr__
+type-hints: tergite_tuner/lib/base/node.py::QubitNode.__str__
+type-hints: tergite_tuner/lib/base/node.py::QubitNode.reset_qois
+type-hints: tergite_tuner/lib/base/utils/analysis_utils.py::filter_ds_by_element
+type-hints: tergite_tuner/lib/base/utils/figure_utils.py::create_figure_with_top_band
+type-hints: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.string_representation
+type-hints: tergite_tuner/lib/nodes/characterization/all_xy/node.py::AllXYNode.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyNodeAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyNodeAnalysis.analyze_node
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.save_plot
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.con
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.m
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::ProcessTomographyMeasurement.schedule_function
+type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/node.py::ProcessTomographySSRONode.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::ExpDecayModel.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::ExpDecayModel.guess
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._fit_data
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._get_magnitudes
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._identify_coords
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._process_and_normalize_data
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::PurityBenchmarkingMeasurement.schedule_function.apply_clifford_sequence
+type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/node.py::PurityBenchmarkingNode.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingNodeAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.con
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.m
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/node.py::RandomizedBenchmarkingNode.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/node.py::RandomizedBenchmarkingNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/characterization/t1/analysis.py::T1QubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t1/analysis.py::T1QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/t1/analysis.py::T1QubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/t1/measurement.py::T1Measurement.single_qubit_T1
+type-hints: tergite_tuner/lib/nodes/characterization/t1/node.py::T1Node.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t1/node.py::T1Node.pre_measurement_operation
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis._get_magnitudes
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis._identify_coords
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis.analyse_t2_times
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis.fit_model
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2EchoQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2EchoQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2EchoQubitAnalysis.fit_model
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2EchoQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.guess
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2QubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2QubitAnalysis.fit_model
+type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.single_qubit_T2_echo
+type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
+type-hints: tergite_tuner/lib/nodes/characterization/t2/node.py::T2EchoNode.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t2/node.py::T2EchoNode.pre_measurement_operation
+type-hints: tergite_tuner/lib/nodes/characterization/t2/node.py::T2Node.__init__
+type-hints: tergite_tuner/lib/nodes/characterization/t2/node.py::T2Node.pre_measurement_operation
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.apply_sine_fit
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.processed_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.ro_shot
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.initial_operation
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_durations_in_ns
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_frequencies
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_points
+type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_points_fixed_duration
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_parabolic_fit
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_sinusoidal_slices_fit
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.processed_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.initial_operation
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.known_cz_frequency
+type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.max_duration
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.processed_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.sinusoidal_fit
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.ro_shot
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/node.py::CZLocalPhasesNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/node.py::CZLocalPhasesNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationAnalysis.calculate_probabilities
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.processed_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.final_operation
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.initial_operation
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.parking_current
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.pre_measurement_operation
+type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/utils/no_valid_combination_exception.py::NoValidCombinationException.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult._
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.get_result
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.set_not_found
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.set_result
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronCouplerAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.errfunc
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.fitfunc
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.generate_local_adiabatic_fc
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.generate_local_adiabatic_pulse
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.local_analytic
+type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/node.py::ResetChevronNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis._find_crossing_currents
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis._get_resonator_crossing_points
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.detect_peaks
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis._find_crossing_currents
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.detect_peaks
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.final_operation
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.initial_operation
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.pre_measurement_operation
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.final_operation
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.initial_operation
+type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.pre_measurement_operation
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.analyze_coupler
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.processed_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.align_cliffords.pad_operations
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot.add_single_qubits_operations_dict
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/node.py::CZRBNode.__init__
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/node.py::CZRBNode.cz_frequency
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/node.py::CZRBNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/node.py::CZRBNode.initial_operation
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.CNOT_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.gate_decomposition
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py::construct_clifford_lookuptable
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py::generate_hash_tables
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford.__repr__
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford.__str__
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford._get_clifford_id
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford.get_inverse
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::SingleQubitClifford._get_clifford_id
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::SingleQubitClifford.gate_decomposition
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_PTM
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.SWAP_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford._get_clifford_id
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.gate_decomposition
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.pauli_transfer_matrix
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_gates
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::get_single_qubit_clifford_hash_table
+type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::get_two_qubit_clifford_hash_table
+type-hints: tergite_tuner/lib/nodes/external_parameter_node.py::ExternalParameterNode.__init__
+type-hints: tergite_tuner/lib/nodes/external_parameter_node.py::ExternalParameterNode.measure_node
+type-hints: tergite_tuner/lib/nodes/external_parameter_node.py::ExternalParameterNode.validate_external_parameter_node
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py::Motzoi01QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py::Motzoi12QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py::MotzoiBaseQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py::MotzoiBaseQubitAnalysis._analyse_motzoi
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py::MotzoiBaseQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py::MotzoiParameter12Node.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py::MotzoiParameter12Node.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py::MotzoiParameterNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py::MotzoiParameterNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::NRabiQubitAnalysis._analyse_n_rabi
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::NRabiQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::NRabiQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::NRabi_12_QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::Rabi12QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::RabiQubitAnalysis._analyse_rabi
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::RabiQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::RabiQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::NRabiOscillations12Node.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::NRabiOscillationsNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::NRabiOscillationsNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::RabiOscillations12Node.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::RabiOscillationsBase.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::RabiOscillationsBase.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py::RabiOscillationsNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetunings01QubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetunings01QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetunings12QubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetunings12QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetuningsBaseQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetuningsBaseQubitAnalysis._analyse_ramsey
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetuningsBaseQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::RamseyFringes12Node.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::RamseyFringesBase.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::RamseyFringesBase.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::RamseyFringesNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopy12MultidimAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis._analyse_spectroscopy
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.has_peak
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.reject_outliers
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis._analyse_spectroscopy
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.has_peak
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.reject_outliers
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesMultidimMeasurement.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/node.py::Qubit01SpectroscopyAmplitudeNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/node.py::Qubit01SpectroscopyNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/node.py::Qubit12SpectroscopyNode.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/node.py::QubitSpectroscopyBase.__init__
+type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/node.py::QubitSpectroscopyBase.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/readout/punchout/analysis.py::PunchoutNodeAnalysis._save_other_plots
+type-hints: tergite_tuner/lib/nodes/readout/punchout/analysis.py::PunchoutQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/readout/punchout/analysis.py::PunchoutQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/punchout/analysis.py::PunchoutQubitAnalysis.plot_spectroscopies
+type-hints: tergite_tuner/lib/nodes/readout/punchout/analysis.py::PunchoutQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/punchout/measurement.py::PunchoutMeasurement.__init__
+type-hints: tergite_tuner/lib/nodes/readout/punchout/node.py::PunchoutNode.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy1QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy1QubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy2QubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy2QubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy2QubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopyQubitAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopyQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopyQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::ResonatorSpectroscopyMeasurement.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopy1Node.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopy2Node.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopyBase.__init__
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopyBase.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopyNode.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.run_initial_fitting
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.classify_iq
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.plot
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.plot_iq_scatter
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.populate_coords
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.primary_plotter
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.run_initial_fitting
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeNodeAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeNodeAnalysis._fill_plots
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeNodeAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeNodeAnalysis._fill_plots
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plot_classified_IQ_points
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.three_state_classification
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.ro_shot
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeThreeStateOptimizationNode.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeThreeStateOptimizationNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeThreeStateOptimizationNode.generate_dummy_dataset.get_shot
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeThreeStateOptimizationNode.punchout_amplitude
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeTwoStateOptimizationNode.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeTwoStateOptimizationNode.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeTwoStateOptimizationNode.generate_dummy_dataset.get_shot
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeTwoStateOptimizationNode.punchout_amplitude
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ThreeStateDiscriminationNode.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ThreeStateDiscriminationNode.optimal_3state_amplitude
+type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py::align_on_y_axis
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::OptimalRO01FrequencyNodeAnalysis.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::OptimalRO01FrequencyNodeAnalysis._fill_plots
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::OptimalRO01FrequencyQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::OptimalRO01FrequencyQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::ROFrequencyThreeStateQubitAnalysis.analyse_qubit
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::ROFrequencyThreeStateQubitAnalysis.plotter
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.measure
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.measure_first_excited
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.measure_second_excited
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py::ROFrequencyOptimizationBase.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py::ROFrequencyOptimizationBase.generate_dummy_dataset
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py::ROFrequencyThreeStateOptimizationNode.__init__
+type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py::ROFrequencyTwoStateOptimizationNode.__init__
+type-hints: tergite_tuner/lib/nodes/schedule_node.py::OuterScheduleNode.__init__
+type-hints: tergite_tuner/lib/nodes/schedule_node.py::OuterScheduleNode.measure_node
+type-hints: tergite_tuner/lib/nodes/schedule_node.py::ScheduleNode.__init__
+type-hints: tergite_tuner/lib/nodes/schedule_node.py::ScheduleNode.measure_node
+type-hints: tergite_tuner/lib/utils/analysis_models.py::CzChevronModel.__init__
+type-hints: tergite_tuner/lib/utils/analysis_models.py::CzChevronModel.guess
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ExpDecayModel.__init__
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ExpDecayModel.guess
+type-hints: tergite_tuner/lib/utils/analysis_models.py::QuadraticModel.__init__
+type-hints: tergite_tuner/lib/utils/analysis_models.py::QuadraticModel.guess
+type-hints: tergite_tuner/lib/utils/analysis_models.py::RabiModel.__init__
+type-hints: tergite_tuner/lib/utils/analysis_models.py::RabiModel.guess
+type-hints: tergite_tuner/lib/utils/analysis_models.py::RamseyModel.__init__
+type-hints: tergite_tuner/lib/utils/analysis_models.py::RamseyModel.guess
+type-hints: tergite_tuner/lib/utils/analysis_models.py::SineOscillatingModel.__init__
+type-hints: tergite_tuner/lib/utils/analysis_models.py::SineOscillatingModel.guess
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.centroid
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_I
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_Q
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_01
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_12
+type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_20
+type-hints: tergite_tuner/lib/utils/analysis_models.py::chevron_func
+type-hints: tergite_tuner/lib/utils/analysis_models.py::parabolic
+type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state
+type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
+type-hints: tergite_tuner/lib/utils/classification_functions.py::calculate_probabilities
+type-hints: tergite_tuner/lib/utils/classification_functions.py::generate_iq_shots
+type-hints: tergite_tuner/lib/utils/device.py::close_device_resources
+type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.__init__
+type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.guess
+type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.__init__
+type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.guess
+type-hints: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
+type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_order.filter_ancestors
+type-hints: tergite_tuner/lib/utils/schedule_execution.py::execute_schedule
+type-hints: tergite_tuner/lib/utils/validators.py::get_number_of_batches
+type-hints: tergite_tuner/lib/utils/validators.py::reduce_batch
+type-hints: tergite_tuner/storage/fs/dataset.py::scrape_and_copy_hdf5_files
+type-hints: tergite_tuner/storage/redis/utils.py::populate_initial_parameters
+type-hints: tergite_tuner/storage/redis/utils.py::populate_node_parameters
+type-hints: tergite_tuner/storage/redis/utils.py::revert_node_parameters
+type-hints: tergite_tuner/tuner.py::HardwareManager.create_spi
+type-hints: tergite_tuner/tuner.py::HardwareManager.get_instrument_coordinator
+type-hints: tergite_tuner/tuner.py::NodeManager.inspect_node
+type-hints: tergite_tuner/tuner.py::_configure_cluster_settings
+type-hints: tergite_tuner/tuner.py::_set_output_attenuations
+type-hints: tergite_tuner/utils/cliffords.py::RXY
+type-hints: tergite_tuner/utils/cliffords.py::from_physical_decomp_to_PTM
+type-hints: tergite_tuner/utils/cliffords.py::reversing_XY_matrix
+type-hints: tergite_tuner/utils/cliffords.py::x_PTM
+type-hints: tergite_tuner/utils/cliffords.py::y_PTM
+type-hints: tergite_tuner/utils/dicts.py::insert_nested_key
+type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.close_spi_rack
+type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.create_spi_dac
+type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.print_currents
+type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.ramp_current_serially
+type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.ramp_current_simultaneusly
+type-hints: tergite_tuner/utils/hardware/spi.py::_find_and_validate_spi_port
+type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.__init__
+type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_console_handler
+type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_file_handler
+type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.log_dir
+type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
+type-hints: tergite_tuner/utils/logging/visuals.py::draw_arrow_chart
+type-hints: tergite_tuner/utils/measurement.py::samplespace_dimensions
+type-hints: tergite_tuner/utils/reanalysis.py::is_day_folder
+type-hints: tergite_tuner/utils/reanalysis.py::is_measurement_folder
+type-hints: tergite_tuner/utils/reanalysis.py::is_run_folder
+type-hints: tergite_tuner/utils/types/extended_coupler_edge.py::ExtendedCompositeSquareEdge.__init__
+type-hints: tergite_tuner/utils/types/extended_transmon.py::ExtendedTransmon.__init__
+verb: tergite_tuner/config/session.py::_default_data_dir
+verb: tergite_tuner/lib/base/analysis.py::BaseAnalysis.plotter
+verb: tergite_tuner/lib/base/analysis.py::BaseAnalysis.qoi
+verb: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.qoi
+verb: tergite_tuner/lib/base/node.py::BaseNode.post_process
+verb: tergite_tuner/lib/base/node.py::CouplerNode.gate_qubit_types_dict
+verb: tergite_tuner/lib/base/node.py::CouplerNode.transition_frequency
+verb: tergite_tuner/lib/base/node.py::qoi_to_redis_record
+verb: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.string_representation
+verb: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::AllXYMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.con
+verb: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.m
+verb: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::ProcessTomographyMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::PurityBenchmarkingMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.con
+verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.m
+verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
+verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.single_qubit_rb_shot
+verb: tergite_tuner/lib/nodes/characterization/t1/analysis.py::T1QubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/t1/measurement.py::T1Measurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/t1/measurement.py::T1Measurement.single_qubit_T1
+verb: tergite_tuner/lib/nodes/characterization/t1/node.py::T1Node.final_operation
+verb: tergite_tuner/lib/nodes/characterization/t1/node.py::T1Node.initial_operation
+verb: tergite_tuner/lib/nodes/characterization/t1/node.py::T1Node.pre_measurement_operation
+verb: tergite_tuner/lib/nodes/characterization/t2/analysis.py::BaseT2QubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2EchoQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/characterization/t2/analysis.py::cos_func
+verb: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.single_qubit_T2_echo
+verb: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.schedule_function
+verb: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
+verb: tergite_tuner/lib/nodes/characterization/t2/node.py::T2EchoNode.final_operation
+verb: tergite_tuner/lib/nodes/characterization/t2/node.py::T2EchoNode.initial_operation
+verb: tergite_tuner/lib/nodes/characterization/t2/node.py::T2EchoNode.pre_measurement_operation
+verb: tergite_tuner/lib/nodes/characterization/t2/node.py::T2Node.final_operation
+verb: tergite_tuner/lib/nodes/characterization/t2/node.py::T2Node.initial_operation
+verb: tergite_tuner/lib/nodes/characterization/t2/node.py::T2Node.pre_measurement_operation
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.ro_shot
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.initial_operation
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_durations_in_ns
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_frequencies
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_points
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_points_fixed_duration
+verb: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::_has_fixed_duration
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::CZChevronMeasurement.cz_chevron
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::CZChevronMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.all_phase_paths
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.initial_operation
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.known_cz_frequency
+verb: tergite_tuner/lib/nodes/coupler/cz_chevron/node.py::CZChevronNode.max_duration
+verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.sinusoidal_fit
+verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.ro_shot
+verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.cz_parametrization
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.all_phase_paths
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.broad_samplespace_around
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.final_operation
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.fine_samplespace_around
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.initial_operation
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.parking_current
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.pre_measurement_operation
+verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.single_point_around
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult._
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.errfunc
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.fitfunc
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.local_analytic
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.final_operation
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.initial_operation
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.pre_measurement_operation
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.final_operation
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.initial_operation
+verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::ResonatorSpectroscopyVsCurrentNode.pre_measurement_operation
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.plotter
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/node.py::CZRBNode.cz_frequency
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/node.py::CZRBNode.initial_operation
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.CNOT_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.CNOT_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.single_qubit_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py::X_theta
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py::Y_theta
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py::randomized_benchmarking_sequence
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.SWAP_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.SWAP_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_gates
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
+verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_gates
+verb: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py::MotzoiBaseQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::MotzoiParameterMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::NRabiQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py::RabiQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::NRabiOscillationsMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::RabiOscillationsMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetuningsBaseQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::RamseyDetuningsMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.has_peak
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.plotter
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.has_peak
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.plotter
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesAmplitudeMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesMultidimMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/node.py::Qubit01SpectroscopyAmplitudeNode.qubit_samples
+verb: tergite_tuner/lib/nodes/readout/punchout/analysis.py::PunchoutQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/punchout/measurement.py::PunchoutMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy1QubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy2QubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopyQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::ResonatorSpectroscopyMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.IQ
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.primary_plotter
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.three_state_classification
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.ro_shot
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.schedule_function
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeThreeStateOptimizationNode.punchout_amplitude
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ROAmplitudeTwoStateOptimizationNode.punchout_amplitude
+verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py::ThreeStateDiscriminationNode.optimal_3state_amplitude
+verb: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::OptimalRO01FrequencyQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py::ROFrequencyThreeStateQubitAnalysis.plotter
+verb: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.schedule_function
+verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.boundary_line
+verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_I
+verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_Q
+verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
+verb: tergite_tuner/lib/utils/analysis_models.py::chevron_func
+verb: tergite_tuner/lib/utils/analysis_models.py::cos_func
+verb: tergite_tuner/lib/utils/analysis_models.py::parabolic
+verb: tergite_tuner/lib/utils/analysis_models.py::sin_func
+verb: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
+verb: tergite_tuner/lib/utils/fitting_models.py::_resonator_phase_guess
+verb: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
+verb: tergite_tuner/lib/utils/fitting_models.py::exp_decay_func
+verb: tergite_tuner/lib/utils/fitting_models.py::fft_freq_phase_guess
+verb: tergite_tuner/lib/utils/fitting_models.py::hanger_func_complex_SI
+verb: tergite_tuner/lib/utils/functions.py::exponential_decay_function
+verb: tergite_tuner/lib/utils/functions.py::isosceles_triangle
+verb: tergite_tuner/lib/utils/graph.py::range_dependencies_in_topological_order
+verb: tergite_tuner/lib/utils/samplespace.py::qubit_samples
+verb: tergite_tuner/lib/utils/samplespace.py::resonator_samples
+verb: tergite_tuner/tuner.py::NodeManager.topo_order
+verb: tergite_tuner/utils/cliffords.py::RXY
+verb: tergite_tuner/utils/cliffords.py::reversing_XY_matrix
+verb: tergite_tuner/utils/cliffords.py::x_PTM
+verb: tergite_tuner/utils/cliffords.py::y_PTM
+verb: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
+verb: tergite_tuner/utils/measurement.py::samplespace_dimensions
+verb: tergite_tuner/utils/types/extended_pulse_factories.py::composite_soft_square_pulse
