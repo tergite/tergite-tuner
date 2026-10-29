@@ -113,3 +113,36 @@ def test_12_pulse_duration(seeded_redis, session_context):
             pulse_duration = pulses["pulse_info"][0]["duration"]
 
     assert pytest.approx(pulse_duration) == 7.6e-8
+
+
+@pytest.mark.parametrize(
+    "node_cls, duration_parameter",
+    [(RabiOscillationsNode, "rxy"), (RabiOscillations12Node, "r12")],
+)
+def test_each_qubit_is_driven_with_its_own_pulse_duration(
+    seeded_redis, session_context, node_cls, duration_parameter
+):
+    ExtendedTransmon.close_all()
+    qubits = ["q13", "q14", "q15"]
+    durations = {"q13": 40e-9, "q14": 60e-9, "q15": 80e-9}
+    node = node_cls(qubits, ["q13_q14"], session=session_context)
+    transmons = {qubit: node.device.get_element(qubit) for qubit in qubits}
+    for qubit, duration in durations.items():
+        submodule = getattr(transmons[qubit], duration_parameter)
+        if duration_parameter == "rxy":
+            submodule.duration(duration)
+        else:
+            submodule.ef_duration(duration)
+
+    schedule = node.measurement_cls(transmons).schedule_function(
+        mw_amplitudes={qubit: np.linspace(0.002, 0.8, 3) for qubit in qubits},
+        **node.schedule_keywords,
+    )
+
+    pulse_durations = {
+        pulse["port"].split(":")[0]: pulse["duration"]
+        for operation in schedule.operations.values()
+        if operation["name"] == "DRAGPulse"
+        for pulse in operation["pulse_info"]
+    }
+    assert pulse_durations == pytest.approx(durations)

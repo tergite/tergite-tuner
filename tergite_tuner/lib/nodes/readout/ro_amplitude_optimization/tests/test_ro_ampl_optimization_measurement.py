@@ -73,3 +73,31 @@ def test_12_pulse_duration(seeded_redis, session_context):
                     break
 
     assert pytest.approx(pulse_duration) == 7.6e-8
+
+
+def test_each_qubit_gets_its_own_12_pulse_duration(seeded_redis, session_context):
+    ExtendedTransmon.close_all()
+    qubits = ["q13", "q14", "q15"]
+    durations = {"q13": 40e-9, "q14": 60e-9, "q15": 80e-9}
+    node = ROAmplitudeThreeStateOptimizationNode(
+        qubits, ["q13_q14"], session=session_context
+    )
+    transmons = {qubit: node.device.get_element(qubit) for qubit in qubits}
+    for qubit, duration in durations.items():
+        transmons[qubit].r12.ef_duration(duration)
+
+    schedule = node.measurement_cls(transmons).schedule_function(
+        qubit_states={qubit: np.array([0, 1, 2], dtype=np.int16) for qubit in qubits},
+        ro_amplitudes={qubit: np.linspace(0.1, 0.3, 3) for qubit in qubits},
+        **node.schedule_keywords,
+    )
+
+    pulse_durations = {
+        pulse["port"].split(":")[0]: pulse["duration"]
+        for operation in schedule.operations.values()
+        if operation["name"] == "LoopOperation"
+        for shot in operation["control_flow_info"]["body"].operations.values()
+        if shot["name"] == "DRAGPulse"
+        for pulse in shot["pulse_info"]
+    }
+    assert pulse_durations == pytest.approx(durations)

@@ -71,7 +71,6 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         if qubit_state == 0:
             for this_qubit, this_transmon in self.transmons.items():
                 mw_frequency_01 = this_transmon.clock_freqs.f01()
-                mw_duration = this_transmon.rxy.duration()
                 this_clock = f"{this_qubit}.01"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_01)
@@ -79,7 +78,6 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         elif qubit_state == 1:
             for this_qubit, this_transmon in self.transmons.items():
                 mw_frequency_12 = this_transmon.clock_freqs.f12()
-                mw_duration = this_transmon.r12.ef_duration()
                 this_clock = f"{this_qubit}.12"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_12)
@@ -97,8 +95,10 @@ class RabiOscillationsMeasurement(BaseMeasurement):
 
             if qubit_state == 0:
                 this_clock = f"{this_qubit}.01"
+                mw_duration = this_transmon.rxy.duration()
             elif qubit_state == 1:
                 this_clock = f"{this_qubit}.12"
+                mw_duration = this_transmon.r12.ef_duration()
             else:
                 raise ValueError(f"Invalid qubit state: {qubit_state}")
 

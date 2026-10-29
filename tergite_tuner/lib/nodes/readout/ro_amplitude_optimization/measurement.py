@@ -56,7 +56,6 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
             elif qubit_state == 2:
                 ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt()
                 mw_frequency_12 = this_transmon.clock_freqs.f12()
-                mw_ef_duration = this_transmon.r12.ef_duration()
                 this_clock = f"{this_qubit}.12"
                 shot.add_resource(ClockResource(name=this_clock, freq=mw_frequency_12))
             else:
@@ -75,6 +74,7 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
             ro_pulse_duration = this_transmon.measure.pulse_duration()
             mw_ef_amp180 = this_transmon.r12.ef_amp180()
             mw_ef_motzoi = this_transmon.r12.ef_motzoi()
+            mw_ef_duration = this_transmon.r12.ef_duration()
             mw_pulse_duration = this_transmon.rxy.duration()
             mw_pulse_port = this_transmon.ports.microwave()
             acquisition_delay = this_transmon.measure.acq_delay()
