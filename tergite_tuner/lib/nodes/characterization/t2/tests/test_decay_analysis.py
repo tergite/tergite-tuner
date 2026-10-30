@@ -45,3 +45,20 @@ def test_the_decay_time_is_the_dummy_qubits(
 
     assert fits["time"].value == pytest.approx(expected_us, rel=0.05)
     assert fits["time"].error == pytest.approx(0, abs=1e-6)
+
+
+def test_t2_fails_its_fits_on_data_without_an_oscillation(session_context):
+    # this draw guesses a frequency of 0, which the model's swap and cz expressions divide by
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    spec = T2_SPECS[NodeEnum.T2]
+    delays = get_sweeps(spec, session)["delays"]["q00"]
+    rng = np.random.default_rng(0)
+    shape = (len(delays), 3)
+    s21 = xr.DataArray(
+        rng.random(shape) + 1j * rng.random(shape),
+        dims=("delaysq00", "repeat"),
+        coords={"delaysq00": delays},
+        attrs={"qubit": "q00"},
+    )
+
+    assert spec.analyse(s21, session) is None

@@ -19,6 +19,7 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import
     CZRBCouplerAnalysis,
 )
 from tergite_tuner.lib.spec import is_failed
+from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.state import loaded_state
 
@@ -66,3 +67,26 @@ def test_plotting(session_context, node_data_dir):
 
             # one axis for the standard exponentials and one for the leakage RB exponentials
             assert len(figure.get_axes()) == 2
+
+
+def test_a_decay_fitted_to_zero_fails_the_fits(
+    session_context, node_data_dir, monkeypatch
+):
+    fit = ExpDecayModel.fit
+
+    def fit_to_zero(self, *args, **kwargs):
+        result = fit(self, *args, **kwargs)
+        result.params["p"].value = 0.0
+        return result
+
+    monkeypatch.setattr(ExpDecayModel, "fit", fit_to_zero)
+    with (
+        loaded_state(session_context, node_data_dir / _STATE_FILENAME),
+        xr.open_dataset(node_data_dir / "dataset_cz_rb.hdf5") as dataset,
+    ):
+        analysis = CZRBCouplerAnalysis(
+            get_coupler_dataset(dataset, "q12_q13", "cz_rb"), session_context
+        )
+        fits = analysis.analyse()
+
+    assert is_failed(fits)

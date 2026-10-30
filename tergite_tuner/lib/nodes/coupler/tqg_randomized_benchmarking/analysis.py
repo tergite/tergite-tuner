@@ -213,17 +213,19 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
 
         L1_standard = (1 - self.standard_lambda_L) * (1 - self.standard_AM)
         L1_interleaved = (1 - self.interleaved_lambda_L) * (1 - self.interleaved_AM)
-        self.one_minus_L1_CZ = (1 - L1_interleaved) / (1 - L1_standard)
-        self.lambda_r_CZ = self.interleaved_lambda_r / self.standard_lambda_r
+        self.one_minus_L1_CZ = _get_ratio(1 - L1_interleaved, 1 - L1_standard)
+        self.lambda_r_CZ = _get_ratio(self.interleaved_lambda_r, self.standard_lambda_r)
 
         # Fidelity based on Nakamura's paper
         self.average_fidelity_nakamura = (
             3 / 4 * self.lambda_r_CZ + self.one_minus_L1_CZ / 4
         )
         # fidelity based on simple exponential fits
-        self.cz_fidelity = 0.25 + 0.75 * self.interleaved_p / self.standard_p
+        self.cz_fidelity = 0.25 + 0.75 * _get_ratio(self.interleaved_p, self.standard_p)
 
-        analysis_succesful = True
+        analysis_succesful = bool(
+            np.isfinite([self.cz_fidelity, self.average_fidelity_nakamura]).all()
+        )
         analysis_result = {
             "cz_fidelity": {
                 "value": self.cz_fidelity,
@@ -372,3 +374,8 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
         )
 
         figures_dictionary[self.coupler] = [fig]
+
+
+def _get_ratio(numerator: float, denominator: float) -> float:
+    """``numerator / denominator``, or NaN for a standard decay fitted to zero."""
+    return numerator / denominator if denominator else np.nan

@@ -23,6 +23,7 @@ from matplotlib.axes import Axes
 
 from tergite_tuner.lib.spec import Fit, Fits, get_coord_name
 from tergite_tuner.lib.utils.fitting_models import fft_freq_phase_guess
+from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -102,10 +103,11 @@ def analyse_decay(
     time_parameter: str,
     repetitions_coord: str,
     guess_variable: str,
-) -> Fits:
+) -> Fits | None:
     """The ``time`` the decay's ``time_parameter`` averages over the repetitions, with their spread as error.
 
-    Delays are in microseconds, and ``|S21|`` in microvolts.
+    Delays are in microseconds, and ``|S21|`` in microvolts. None if a repetition cannot be
+    fitted: an oscillation guessed at 0 Hz divides by zero in the model's expressions.
     """
     delays = s21.coords[get_coord_name("delays", s21.attrs["qubit"])].values * 1e6
     magnitudes = np.abs(s21)
@@ -113,8 +115,16 @@ def analyse_decay(
     results = []
     for index in range(s21.sizes[repetitions_coord]):
         repetition = magnitudes.isel({repetitions_coord: index}).values.flatten() * 1e6
-        guess = model.guess(data=repetition, **{guess_variable: delays})
-        results.append(model.fit(repetition, params=guess, **{fit_variable: delays}))
+        try:
+            guess = model.guess(data=repetition, **{guess_variable: delays})
+            results.append(
+                model.fit(repetition, params=guess, **{fit_variable: delays})
+            )
+        except ZeroDivisionError:
+            logger.warning(
+                f"Repetition {index} of {s21.attrs['qubit']} cannot be fitted"
+            )
+            return None
 
     times = [result.params[time_parameter].value for result in results]
     params = results[-1].params.copy()

@@ -33,6 +33,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Fixed
 
+- Failed the T2 and CZ RB fits on data they cannot fit, where they raised `ZeroDivisionError`: a T2 repetition with no oscillation, a CZ RB standard decay fitted to zero
 - Stored qubit spectroscopy vs current's results and status under its own name; they went under `coupler_anticrossing`, so the node was never in spec
 - Prepared |2> in resonator spectroscopy with the calibrated ef motzoi, as the readout optimizations do; its ef π pulse had none
 - Set qubit 01 spectroscopy's pulse to 3 µs and amplitude 0.03 in `node_config.example.toml`; its five 6 µs amplitudes overflowed the sequencer's waveform memory
