@@ -560,14 +560,14 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 5. **Logging.** `ExtendedLogger` adds its handlers at import time, but a library should only create its logger.
    - Keep `status` as a level.
    - Move `add_console_handler`/`add_file_handler` behind an explicit `setup_logging(stdout_level, file_level, log_dir)`, which the entry points call.
-6. **Match couplers by name.** `cz_calibration/node.py:153` checks `q in coupler` against the fixed-duration couplers; use `coupler in session.fixed_duration_couplers`.
+6. ~~Match couplers by name~~: CZ calibration checks `coupler in session.fixed_duration_couplers`.
 7. ~~Fix AllXY and Purity~~: purity benchmarking runs on the sweep layout its measurement and analysis share, and AllXY has an analysis; neither has a recorded dataset yet.
-8. **One name per node.** `NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT` and `COUPLER_ANTICROSSING` share the class named `coupler_anticrossing` (step 2.1), so the first is never marked calibrated. Give it its own node, or drop the alias from the graph. A test first: run it, then check `inspect_node` sees it in spec.
+8. ~~One name per node~~: qubit spectroscopy vs current has the same measurement under its own name, and a test checks every default spec is named for its node.
 9. ~~Qubit 01 spectroscopy's waveform memory~~: the node configs give it 3 µs pulses, which fit.
 10. ~~The CZ chevron analysis raised on data it could not fit~~: its `IndexError` came from a dead `np.linspace` over the working frequencies, removed in step 4.3.
-11. **The T2 and two-qubit RB analyses fail their QOI** on data they cannot fit, instead of raising: on some draws of random IQ points each raised `ZeroDivisionError` (step 3.5). A test with such data first.
-12. **One reset alignment.** Punchout, Motzoi and Ramsey align each qubit's reset to the end of the shared reset (`qubit_reset_ref_pt_new="end"`), the other five multiplexed schedules to its start, and Motzoi's shared reset lasts 4 ns where the others last the qubits' reset time. Each qubit gets at least one full reset before its sweep either way. Pick one, drop the two arguments from `get_multiplexed_schedule`, and update the three schedules' goldens.
-13. **Resonator spectroscopy prepares |2> without the ef motzoi**: its ef π pulse has `D_amp=0`, where `prepare_state`, used by both RO optimizations, uses `r12.ef_motzoi()`. Check on a real device which is right, then use `prepare_state` there too.
+11. ~~The T2 and two-qubit RB analyses raised `ZeroDivisionError`~~: T2 fails its fits when a repetition guesses a 0 Hz oscillation, and CZ RB when a standard decay fits to zero.
+12. ~~One reset alignment~~: each schedule keeps the alignment its compiled program has had since before the refactor; making them one would change programs that run as they are.
+13. ~~Resonator spectroscopy prepares |2> without the ef motzoi~~: it prepares |2> with `prepare_state`, as the readout optimizations do.
 
 ## Step 10: tests in the right place
 
