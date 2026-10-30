@@ -33,6 +33,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Fixed
 
+- Stored qubit spectroscopy vs current's results and status under its own name; they went under `coupler_anticrossing`, so the node was never in spec
 - Prepared |2> in resonator spectroscopy with the calibrated ef motzoi, as the readout optimizations do; its ef π pulse had none
 - Set qubit 01 spectroscopy's pulse to 3 µs and amplitude 0.03 in `node_config.example.toml`; its five 6 µs amplitudes overflowed the sequencer's waveform memory
 - Ran purity benchmarking, whose schedule raised `TypeError`; its sweep also gave its 128, 256 and 512 lengths up as calibration points, so they were never measured

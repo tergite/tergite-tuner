@@ -57,6 +57,12 @@ def test_plot_elements_saves_the_preview_and_the_full_plot(
     assert (tmp_path / f"{spec.name.value}.png").exists()
 
 
+@pytest.mark.parametrize("node", list(DEFAULT_NODE_SPECS), ids=lambda node: node.value)
+def test_every_default_spec_is_named_for_its_node(node):
+    # a node's statuses are read under its own name and written under its spec's
+    assert DEFAULT_NODE_SPECS[node].name == node
+
+
 def test_a_node_is_in_spec_only_where_it_is_calibrated(session_context):
     qubit, other = session_context.qubits[:2]
     session_context.state.load({"cs": {qubit: {RESONATOR.name.value: "calibrated"}}})

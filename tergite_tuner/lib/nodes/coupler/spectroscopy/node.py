@@ -13,6 +13,7 @@
 # that they have been altered from the originals.
 """Qubit and resonator spectroscopy against each coupler's current: where the coupler crosses them."""
 
+import dataclasses
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
@@ -110,6 +111,8 @@ COUPLER_SPECTROSCOPY_SPECS = {
         save_details=save_coupler_figures,
     ),
     NodeEnum.COUPLER_ANTICROSSING: COUPLER_ANTICROSSING_SPEC,
-    # the same node under another name (REFACTOR.md step 9.8)
-    NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: COUPLER_ANTICROSSING_SPEC,
+    # the same measurement, after resonator spectroscopy vs current in the graph
+    NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: dataclasses.replace(
+        COUPLER_ANTICROSSING_SPEC, name=NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT
+    ),
 }
