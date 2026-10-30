@@ -19,16 +19,18 @@ import numpy as np
 from tergite_tuner.backend import (
     BinMode,
     ClockResource,
-    DRAGPulse,
     ExtendedTransmon,
     Schedule,
     SetClockFrequency,
     SquarePulse,
     SSBIntegrationComplex,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.utils.schedules import add_12_clocks, get_multiplexed_schedule
+from tergite_tuner.lib.utils.schedules import (
+    add_12_clocks,
+    get_multiplexed_schedule,
+    prepare_state,
+)
 
 
 class ResonatorSpectroscopyMeasurement(BaseMeasurement):
@@ -82,19 +84,7 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
                     clock=ro_clock, clock_freq_new=point["ro_frequencies"]
                 )
             )
-            if qubit_state in (1, 2):
-                schedule.add(X(qubit))
-            if qubit_state == 2:
-                schedule.add(
-                    DRAGPulse(
-                        duration=transmon.r12.ef_duration(),
-                        G_amp=transmon.r12.ef_amp180(),
-                        D_amp=0,
-                        port=transmon.ports.microwave(),
-                        clock=f"{qubit}.12",
-                        phase=0,
-                    ),
-                )
+            prepare_state(schedule, transmon, qubit_state)
             ro_pulse = schedule.add(
                 SquarePulse(
                     duration=transmon.measure.pulse_duration(),
