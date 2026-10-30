@@ -12,10 +12,10 @@
 
 """Schema for the ``spi_config.toml`` file."""
 
+import tomllib
 from os import PathLike
 from typing import Dict, Optional
 
-import toml
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
@@ -58,8 +58,8 @@ class SpiConfig(RootModel[Dict[str, _SpiCouplerEntry]]):
         Returns:
             the parsed and validated ``SpiConfig`` instance
         """
-        with open(file, "r", encoding="utf-8") as f:
-            data = toml.load(f)
+        with open(file, "rb") as f:
+            data = tomllib.load(f)
         return cls(data)
 
     def __getitem__(self, key: str) -> _SpiCouplerEntry:

@@ -13,11 +13,11 @@
 """Schema for the ``device_config.toml`` file."""
 
 import copy
+import tomllib
 from os import PathLike
 from types import MappingProxyType
 from typing import Any, Dict, Tuple
 
-import toml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from tergite_tuner.utils.dicts import update_nested
@@ -247,8 +247,8 @@ class DeviceConfigFile(BaseModel):
         Returns:
             the parsed and validated ``DeviceConfigFile`` instance
         """
-        with open(file, "r", encoding="utf-8") as f:
-            data = toml.load(f)
+        with open(file, "rb") as f:
+            data = tomllib.load(f)
         return cls(**data)
 
 

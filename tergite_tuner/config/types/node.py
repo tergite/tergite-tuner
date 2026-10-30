@@ -12,10 +12,10 @@
 
 """Schema for the ``node_config.toml`` file."""
 
+import tomllib
 from os import PathLike
 from typing import Any, Dict
 
-import toml
 from pydantic import Field, RootModel, model_validator
 
 
@@ -58,8 +58,8 @@ class NodeConfig(RootModel[Dict[str, Dict[str, Any]]]):
         Returns:
             the parsed and validated ``NodeConfig`` instance
         """
-        with open(file, "r", encoding="utf-8") as f:
-            data = toml.load(f)
+        with open(file, "rb") as f:
+            data = tomllib.load(f)
         return cls(data)
 
     def __getitem__(self, key: str) -> Dict[str, Any]:

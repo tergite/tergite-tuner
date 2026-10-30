@@ -128,7 +128,6 @@ confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measu
 confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.operations.pulse_library
 confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.resources
 confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.schedules.schedule
-confined-import: tergite_tuner/lib/nodes/schedule_node.py::import quantify_scheduler.instrument_coordinator.utility
 confined-import: tergite_tuner/lib/utils/device.py::import quantify_scheduler.device_under_test.quantum_device
 confined-import: tergite_tuner/lib/utils/device.py::import quantify_scheduler.json_utils
 confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler

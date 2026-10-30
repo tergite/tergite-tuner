@@ -13,10 +13,10 @@
 """Tests for the pydantic schemas defined in ``tergite_tuner.config.files``."""
 
 import json
+import tomllib
 from pathlib import Path
 
 import pytest
-import toml
 from pydantic import ValidationError
 
 from tergite_tuner.config.types import (
@@ -250,5 +250,5 @@ def test_toml_loaders_raise_on_invalid_toml(tmp_path, loader, extension):
     bad = tmp_path / f"bad{extension}"
     bad.write_text("invalid: toml: content")
 
-    with pytest.raises(toml.TomlDecodeError):
+    with pytest.raises(tomllib.TOMLDecodeError):
         loader(bad)

@@ -2826,18 +2826,6 @@ wheels = [
 ]
 
 [[package]]
-name = "requests-mock"
-version = "1.12.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/92/32/587625f91f9a0a3d84688bf9cfc4b2480a7e8ec327cefd0ff2ac891fd2cf/requests-mock-1.12.1.tar.gz", hash = "sha256:e9e12e333b525156e82a3c852f22016b9158220d2f47454de9cae8a77d371401", size = 60901, upload-time = "2024-03-29T03:54:29.446Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/ec/889fbc557727da0c34a33850950310240f2040f3b1955175fdb2b36a8910/requests_mock-1.12.1-py2.py3-none-any.whl", hash = "sha256:b1e37054004cdd5e56c84454cc7df12b25f90f382159087f4b6915aaeef39563", size = 27695, upload-time = "2024-03-29T03:54:27.64Z" },
-]
-
-[[package]]
 name = "rich"
 version = "15.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3139,7 +3127,7 @@ name = "tergite-tuner"
 version = "2026.6.0"
 source = { editable = "." }
 dependencies = [
-    { name = "h5py" },
+    { name = "cf-xarray" },
     { name = "matplotlib" },
     { name = "netcdf4" },
     { name = "networkx" },
@@ -3151,11 +3139,11 @@ dependencies = [
     { name = "qcodes" },
     { name = "quantify-scheduler" },
     { name = "redis" },
-    { name = "requests" },
+    { name = "rich" },
     { name = "scikit-learn" },
     { name = "scipy" },
-    { name = "toml" },
     { name = "tomlkit" },
+    { name = "tqdm" },
     { name = "xarray" },
 ]
 
@@ -3171,12 +3159,11 @@ test = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
-    { name = "requests-mock" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "h5py", specifier = ">=3.12.1" },
+    { name = "cf-xarray", specifier = ">=0.10.0" },
     { name = "matplotlib", specifier = ">=3.9.3" },
     { name = "netcdf4", specifier = "~=1.7.1.post2" },
     { name = "networkx", specifier = "~=3.4.2" },
@@ -3188,11 +3175,11 @@ requires-dist = [
     { name = "qcodes", specifier = "~=0.49.0" },
     { name = "quantify-scheduler", specifier = "~=0.22.2" },
     { name = "redis", specifier = ">=5.0.0" },
-    { name = "requests", specifier = ">=2.32.3" },
+    { name = "rich", specifier = ">=13.0.0" },
     { name = "scikit-learn", specifier = "~=1.5.2" },
     { name = "scipy", specifier = ">=1.14.1" },
-    { name = "toml", specifier = ">=0.10.2" },
     { name = "tomlkit", specifier = ">=0.13.2" },
+    { name = "tqdm", specifier = ">=4.66.0" },
     { name = "xarray", specifier = ">=2024.11.0" },
 ]
 
@@ -3208,7 +3195,6 @@ test = [
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6" },
-    { name = "requests-mock", specifier = ">=1.11.0" },
 ]
 
 [[package]]
@@ -3218,15 +3204,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/00/dc/6c58154c1c65f758ea979e7139cb76993a9cfc662d14e9be3c4a667cfb77/threadpoolctl-3.7.0.tar.gz", hash = "sha256:61348cfb77d53b9242e0017029244b559b810c142ced65b4e21eeca1843959a7", size = 31961, upload-time = "2026-09-15T15:46:20.263Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/43/3f/f88a53f60a472b46f4023f56d204dd7de33d34c5d2acbfa0d70a674e639e/threadpoolctl-3.7.0-py3-none-any.whl", hash = "sha256:cd8b60b5641b45c67bbf73c64c843235fc2d8a480c87389f52f5dbee893b86be", size = 26362, upload-time = "2026-09-15T15:46:19.168Z" },
-]
-
-[[package]]
-name = "toml"
-version = "0.10.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/be/ba/1f744cdc819428fc6b5084ec34d9b30660f6f9daaf70eead706e3203ec3c/toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f", size = 22253, upload-time = "2020-11-01T01:40:22.204Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/6f/7120676b6d73228c96e17f1f794d8ab046fc910d781c8d151120c3f1569e/toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b", size = 16588, upload-time = "2020-11-01T01:40:20.672Z" },
 ]
 
 [[package]]

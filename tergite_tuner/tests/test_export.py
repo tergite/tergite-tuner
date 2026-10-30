@@ -11,11 +11,10 @@
 # that they have been altered from the originals.
 
 import json
+import tomllib
 from contextlib import suppress
 from json import JSONDecodeError
 from typing import Any, Dict, List, Mapping
-
-import toml
 
 from tergite_tuner import SessionContext
 from tergite_tuner.export import (
@@ -170,8 +169,8 @@ def test_generate_calib_seed_file_writes_toml(tmp_path, redis_connection):
             path=output_path, couplers=["q11_q12"], qubits=["q11", "q12"]
         )
 
-    with open(output_path, "r") as f:
-        got = toml.load(f)
+    with open(output_path, "rb") as f:
+        got = tomllib.load(f)
 
     assert got == _CALIB_SEED
 
@@ -182,8 +181,8 @@ def test_generate_calib_seed_file_partial(tmp_path, redis_connection):
     with loaded_redis(redis_connection, _REDIS_DATA_FILE):
         generate_calib_seed_file(path=output_path, couplers=[], qubits=["q12"])
 
-    with open(output_path, "r") as f:
-        got = toml.load(f)
+    with open(output_path, "rb") as f:
+        got = tomllib.load(f)
 
     assert got == {
         "calibration_config": {
@@ -209,8 +208,8 @@ def test_generate_calib_seed_file_coupler_map(tmp_path, redis_connection):
             coupler_name_map={"q11_q12": "u24"},
         )
 
-    with open(output_path, "r") as f:
-        seed = toml.load(f)
+    with open(output_path, "rb") as f:
+        seed = tomllib.load(f)
 
     expected = {
         **_CALIB_CONTENT,
