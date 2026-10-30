@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 from qblox_instruments import Cluster
-from qblox_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 from tergite_tuner.tuner import HardwareManager, NodeManager
 from tergite_tuner.utils.types.enums import MeasurementMode

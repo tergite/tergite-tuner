@@ -17,15 +17,14 @@ Module containing a schedule class for DRAG pulse motzoi parameter calibration.
 """
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.enums import BinMode
-from qblox_scheduler.operations.gate_library import Measure, Reset, X
-from qblox_scheduler.operations.pulse_library import DRAGPulse
-from qblox_scheduler.resources import ClockResource
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_library import DRAGPulse
+from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_gates import Measure_RO1
-from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -77,12 +76,12 @@ class MotzoiParameterMeasurement(BaseMeasurement):
         qubits = self.transmons.keys()
 
         for this_qubit, this_transmon in self.transmons.items():
-            mw_01_frequency = this_transmon.clock_freqs.f01
+            mw_01_frequency = this_transmon.clock_freqs.f01()
             schedule.add_resource(
                 ClockResource(name=f"{this_qubit}.01", freq=mw_01_frequency)
             )
             if qubit_state == 1:
-                mw_12_frequency = this_transmon.clock_freqs.f12
+                mw_12_frequency = this_transmon.clock_freqs.f12()
                 this_clock = f"{this_qubit}.12"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_12_frequency)
@@ -94,9 +93,9 @@ class MotzoiParameterMeasurement(BaseMeasurement):
         # The outer loop, iterates over all qubits
         for this_qubit, X_values in X_repetitions.items():
             this_transmon = self.transmons[this_qubit]
-            mw_amplitude = this_transmon.rxy.amp180
-            mw_pulse_duration = this_transmon.rxy.duration
-            mw_pulse_port = this_transmon.ports.microwave
+            mw_amplitude = this_transmon.rxy.amp180()
+            mw_pulse_duration = this_transmon.rxy.duration()
+            mw_pulse_port = this_transmon.ports.microwave()
 
             this_clock = f"{this_qubit}.01"
 
@@ -104,7 +103,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
             number_of_motzois = len(motzoi_parameter_values)
 
             if qubit_state == 1:
-                mw_amplitude = this_transmon.r12.ef_amp180
+                mw_amplitude = this_transmon.r12.ef_amp180()
                 this_clock = f"{this_qubit}.12"
                 measure_function = Measure_RO1
             elif qubit_state == 0:
@@ -128,8 +127,8 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                         schedule.add(
                             DRAGPulse(
                                 duration=mw_pulse_duration,
-                                amplitude=mw_amplitude,
-                                beta=motzoi_to_beta(mw_motzoi, mw_pulse_duration),
+                                G_amp=mw_amplitude,
+                                D_amp=mw_motzoi,
                                 port=mw_pulse_port,
                                 clock=this_clock,
                                 phase=0,
@@ -139,8 +138,8 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                         schedule.add(
                             DRAGPulse(
                                 duration=mw_pulse_duration,
-                                amplitude=mw_amplitude,
-                                beta=motzoi_to_beta(mw_motzoi, mw_pulse_duration),
+                                G_amp=mw_amplitude,
+                                D_amp=mw_motzoi,
                                 port=mw_pulse_port,
                                 clock=this_clock,
                                 phase=180,
@@ -151,8 +150,8 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                             schedule.add(
                                 DRAGPulse(
                                     duration=mw_pulse_duration,
-                                    amplitude=mw_amplitude,
-                                    beta=motzoi_to_beta(mw_motzoi, mw_pulse_duration),
+                                    G_amp=mw_amplitude,
+                                    D_amp=mw_motzoi,
                                     port=mw_pulse_port,
                                     clock=this_clock,
                                     phase=90,
@@ -162,8 +161,8 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                             schedule.add(
                                 DRAGPulse(
                                     duration=mw_pulse_duration,
-                                    amplitude=mw_amplitude,
-                                    beta=motzoi_to_beta(mw_motzoi, mw_pulse_duration),
+                                    G_amp=mw_amplitude,
+                                    D_amp=mw_motzoi,
                                     port=mw_pulse_port,
                                     clock=this_clock,
                                     phase=270,
@@ -172,9 +171,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
 
                     schedule.add(
                         measure_function(
-                            this_qubit,
-                            coords={"acq_index": this_index},
-                            bin_mode=BinMode.AVERAGE_APPEND,
+                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
                         ),
                     )
 

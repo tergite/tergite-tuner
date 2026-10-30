@@ -15,9 +15,9 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+from quantify_core.analysis import fitting_models as fm
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.lib.utils import fitting_models as fm
 from tergite_tuner.utils.types.qoi import QOI
 
 model = fm.ResonatorModel()

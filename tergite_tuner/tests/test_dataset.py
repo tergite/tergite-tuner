@@ -28,6 +28,7 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
 
@@ -84,6 +85,7 @@ def test_is_measurement_folder():
 
 
 def test_save_dataset(tmp_path, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = ResonatorSpectroscopyNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -104,6 +106,7 @@ def test_save_dataset_with_working_points(tmp_path, redis_connection, session_co
     for nodes like cz calibration where two coords are packed into a Multindex object
     """
     with loaded_redis(redis_connection, _REDIS_FILE) as conn:
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         coupler = "q13_q14"
         couplers = [coupler]
         node = CZCalibrationNode(

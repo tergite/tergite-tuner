@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray
+from quantify_core.analysis import fitting_models as fm
 
 from tergite_tuner.lib.base.node import QubitNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
@@ -26,7 +27,6 @@ from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.measurement import (
     ResonatorSpectroscopyMeasurement,
 )
 from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
-from tergite_tuner.lib.utils import fitting_models as fm
 from tergite_tuner.lib.utils.samplespace import resonator_samples
 
 if TYPE_CHECKING:

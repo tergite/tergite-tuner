@@ -182,45 +182,32 @@ def test_spi_config_default_is_empty():
 
 
 def test_cluster_config_load_example():
-    """The cluster configuration of the example file loads via qblox-scheduler."""
-    pytest.importorskip("qblox_scheduler")
+    """The cluster configuration of the example file loads via quantify-scheduler."""
+    pytest.importorskip("quantify_scheduler")
 
     cluster = ClusterConfig.from_json(_CLUSTER_CONFIG_PATH)
 
-    # ``from_json`` returns the canonical qblox-scheduler model, so a
+    # ``from_json`` returns the canonical quantify-scheduler model, so a
     # few of its fields should be populated
     assert "clusterA" in cluster.hardware_description
     assert cluster.hardware_options is not None
 
-    # The raw json file matches what qblox-scheduler ingests
+    # The raw json file matches what quantify-scheduler ingests
     with open(_CLUSTER_CONFIG_PATH, "r") as f:
         raw = json.load(f)
-    assert raw["config_type"] == "QbloxHardwareCompilationConfig"
-
-
-def test_cluster_config_loads_quantify_scheduler_config_type(tmp_path):
-    pytest.importorskip("qblox_scheduler")
-
-    with open(_CLUSTER_CONFIG_PATH, "r") as f:
-        raw = json.load(f)
-    raw["config_type"] = (
-        "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig"
+    assert (
+        raw["config_type"]
+        == "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig"
     )
-    legacy = tmp_path / "cluster_config.json"
-    legacy.write_text(json.dumps(raw))
-
-    cluster = ClusterConfig.from_json(legacy)
-
-    assert cluster.config_type == "QbloxHardwareCompilationConfig"
 
 
 def test_cluster_config_rejects_invalid_payload(tmp_path):
     """A cluster config with a missing required field must fail validation."""
-    pytest.importorskip("qblox_scheduler")
+    pytest.importorskip("quantify_scheduler")
 
     sample = tmp_path / "cluster_config.json"
     # An empty object is missing the required ``hardware_description`` /
-    # ``hardware_options`` keys, so qblox-scheduler will reject it.
+    # ``hardware_options`` keys, so quantify-scheduler will reject it.
     sample.write_text("{}")
 
     with pytest.raises(ValidationError):
@@ -244,7 +231,7 @@ def test_toml_loaders_raise_for_missing_file(tmp_path, loader):
 
 def test_cluster_loader_raises_for_missing_file(tmp_path):
     """The cluster JSON loader propagates a ``FileNotFoundError`` for a non-existent file."""
-    pytest.importorskip("qblox_scheduler")
+    pytest.importorskip("quantify_scheduler")
 
     missing = tmp_path / "does_not_exist"
     with pytest.raises(FileNotFoundError):

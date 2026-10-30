@@ -19,6 +19,7 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 
@@ -40,6 +41,7 @@ def test_set_parking_current_from_redis_recalibration_on(
     """Set parking currents does nothing if is_recalibration is True."""
     session_context.is_recalibration = True
     with loaded_redis(redis_connection, redis_mock):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZChevronNode(
             couplers=DEFAULT_TEST_COUPLERS,
             qubits=DEFAULT_TEST_QUBITS,
@@ -60,6 +62,7 @@ def test_set_parking_current_from_redis_recalibration_off(
     with loaded_redis(redis_connection, redis_mock):
         # currents are set only when is_recalibration is False
         session_context.is_recalibration = False
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZChevronNode(
             couplers=DEFAULT_TEST_COUPLERS,
             qubits=DEFAULT_TEST_QUBITS,
@@ -80,6 +83,7 @@ def test_set_parking_current_from_redis_recalibration(
     with loaded_redis(redis_connection, redis_mock):
         # currents are set only when is_recalibration is False
         session_context.is_recalibration = True
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node = CZChevronNode(
             couplers=DEFAULT_TEST_COUPLERS,
             qubits=DEFAULT_TEST_QUBITS,

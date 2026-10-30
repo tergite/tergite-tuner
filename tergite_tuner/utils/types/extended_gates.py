@@ -4,7 +4,6 @@
 # (C) Copyright Liangyu Chen 2024
 # (C) Copyright Stefan Hill 2024
 # (C) Copyright Abdullah Al Amin 2026
-# (C) Copyright Chalmers Next Labs 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -15,95 +14,133 @@
 # that they have been altered from the originals.
 
 import math
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
-from qblox_scheduler.enums import BinMode
-from qblox_scheduler.operations.gate_library import Measure, Rxy
-from qblox_scheduler.structure.model import Numbers, Parameter, SchedulerSubmodule
-
-_AcqProtocol = Literal[
-    "SSBIntegrationComplex",
-    "Trace",
-    "TriggerCount",
-    "NumericalWeightedIntegrationComplex",
-    "ThresholdedAcquisition",
-]
+from qcodes.instrument.base import InstrumentBase
+from qcodes.instrument.channel import InstrumentChannel
+from qcodes.instrument.parameter import ManualParameter
+from qcodes.utils import validators
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.validators import Numbers
+from quantify_scheduler.operations.gate_library import Measure, Rxy
 
 
-class ExtendedClocksFrequencies(SchedulerSubmodule):
-    readout_1: float = Parameter(
-        label="Readout frequency when qubit is at |1>",
-        unit="Hz",
-        initial_value=math.nan,
-        vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
-    )
-    readout_2: float = Parameter(
-        label="Readout frequency when qubit is at |2>",
-        unit="Hz",
-        initial_value=math.nan,
-        vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
-    )
-    readout_2state_opt: float = Parameter(
-        label="Optimal Readout frequency for discriminating |0>,|1>",
-        unit="Hz",
-        initial_value=math.nan,
-        vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
-    )
-    readout_3state_opt: float = Parameter(
-        label="Optimal Readout frequency for discriminating |0>,|1>, |2>",
-        unit="Hz",
-        initial_value=math.nan,
-        vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
-    )
+class ExtendedClocksFrequencies(InstrumentChannel):
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.readout_1 = ManualParameter(
+            name="readout_1",
+            instrument=self,
+            label="Readout frequency when qubit is at |1>",
+            unit="Hz",
+            initial_value=kwargs.get("readout_1", math.nan),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+        )
+        self.readout_2 = ManualParameter(
+            name="readout_2",
+            instrument=self,
+            label="Readout frequency when qubit is at |2>",
+            unit="Hz",
+            initial_value=kwargs.get("readout_2", math.nan),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+        )
+        self.readout_2state_opt = ManualParameter(
+            name="readout_2state_opt",
+            instrument=self,
+            label="Optimal Readout frequency for discriminating |0>,|1>",
+            unit="Hz",
+            initial_value=kwargs.get("readout_2state_opt", math.nan),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+        )
+
+        self.readout_3state_opt = ManualParameter(
+            name="readout_3state_opt",
+            instrument=self,
+            label="Optimal Readout frequency for discriminating |0>,|1>, |2>",
+            unit="Hz",
+            initial_value=kwargs.get("readout_3state_opt", math.nan),
+            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+        )
 
 
-class R12(SchedulerSubmodule):
+class R12(InstrumentChannel):
     """
     Submodule containing parameters for performing an R12 operations
     """
 
-    ef_amp180: float = Parameter(
-        label=r"$\pi-pulse amplitude for 12$",
-        initial_value=math.nan,
-        vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
-    )
-    # quantify-scheduler's D_amp of the DRAG pulse; see motzoi_to_beta
-    ef_motzoi: float = Parameter(
-        initial_value=0.0,
-        vals=Numbers(min_value=-1, max_value=1),
-    )
-    ef_duration: float = Parameter(
-        initial_value=20e-9,
-        unit="s",
-        vals=Numbers(min_value=0, max_value=1),
-    )
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+        self.ef_amp180 = ManualParameter(
+            name="ef_amp180",
+            instrument=self,
+            label=r"$\pi-pulse amplitude for 12$",
+            initial_value=kwargs.get("ef_amp180", math.nan),
+            unit="",
+            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
+        )
+        ef_motzoi = kwargs.get("ef_motzoi", 0)
+        if math.isnan(ef_motzoi):
+            ef_motzoi = 0
+
+        self.ef_motzoi = ManualParameter(
+            name="ef_motzoi",
+            instrument=self,
+            initial_value=ef_motzoi,
+            unit="",
+            vals=validators.Numbers(min_value=-1, max_value=1),
+        )
+
+        self.ef_duration = ManualParameter(
+            name="ef_duration",
+            instrument=self,
+            initial_value=kwargs.get("ef_duration", 20e-9),
+            unit="s",
+            vals=validators.Numbers(min_value=0, max_value=1),
+        )
 
 
-class Spec(SchedulerSubmodule):
+class Spec(InstrumentChannel):
     """
     Submodule containing parameters for performing qubit spectroscopy measurements
     """
 
-    spec_amp: float = Parameter(
-        label=r"amplitude for the qubit spectroscopy pulse",
-        initial_value=math.nan,
-        vals=Numbers(min_value=-1, max_value=1, allow_nan=True),
-    )
-    spec_ampl_optimal: float = Parameter(
-        label=r"optimal spectroscopy amplitude to be used in coupler anticrossing",
-        initial_value=math.nan,
-        vals=Numbers(min_value=-1, max_value=1, allow_nan=True),
-    )
-    spec_ampl_12_optimal: float = Parameter(
-        label=r"optimal spectroscopy amplitude to be used in coupler anticrossing",
-        initial_value=math.nan,
-        vals=Numbers(min_value=-1, max_value=1, allow_nan=True),
-    )
-    spec_duration: float = Parameter(
-        initial_value=20e-9,
-        unit="s",
-        vals=Numbers(min_value=0, max_value=1e-3, allow_nan=True),
-    )
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+        self.spec_amp = ManualParameter(
+            name="spec_amp",
+            instrument=self,
+            label=r"amplitude for the qubit spectroscopy pulse",
+            initial_value=kwargs.get("spec_amp", math.nan),
+            unit="",
+            vals=Numbers(min_value=-1, max_value=1, allow_nan=True),
+        )
+
+        self.spec_ampl_optimal = ManualParameter(
+            name="spec_ampl_optimal",
+            instrument=self,
+            label=r"optimal spectroscopy amplitude to be used in coupler anticrossing",
+            initial_value=kwargs.get("spec_ampl_optimal", math.nan),
+            unit="",
+            vals=Numbers(min_value=-1, max_value=1, allow_nan=True),
+        )
+
+        self.spec_ampl_12_optimal = ManualParameter(
+            name="spec_ampl_12_optimal",
+            instrument=self,
+            label=r"optimal spectroscopy amplitude to be used in coupler anticrossing",
+            initial_value=kwargs.get("spec_amp", math.nan),
+            unit="",
+            vals=Numbers(min_value=-1, max_value=1, allow_nan=True),
+        )
+
+        self.spec_duration = ManualParameter(
+            name="spec_duration",
+            instrument=self,
+            initial_value=kwargs.get("spec_duration", 20e-9),
+            unit="s",
+            vals=Numbers(min_value=0, max_value=1e-3, allow_nan=True),
+        )
 
 
 class Rxy_12(Rxy):
@@ -113,52 +150,171 @@ class Rxy_12(Rxy):
 
     def __init__(self, qubit: str, theta: float = 180, phi: float = 0):
         super().__init__(theta=theta, phi=phi, qubit=qubit)
-        self.data["name"] = f"Rxy-12({theta:.8g}, {phi:.8g}, '{qubit}')"
+        self.data["name"] = (f"Rxy-12({theta:.8g}, {phi:.8g}, '{qubit}')",)
         self.data["gate_info"]["unitary"] = None  # this is not a Qubit operation
-        # this key is used in compilation!
-        self.data["gate_info"]["operation_type"] = "r12"
+        self.data["gate_info"][
+            "operation_type"
+        ] = "r12"  # this key is used in compilation!
+
+        self._update()  # Update the Operation's internals
 
     def __str__(self) -> str:
-        qubit = self.data["gate_info"]["device_elements"][0]
+        qubit = self.data["gate_info"]["qubits"][0]
         return f"{self.__class__.__name__}(qubit='{qubit}')"
 
 
 class Measure_RO1(Measure):
-    _operation_type = "measure_1"
-    _tex = r"$\langle0|$"
-
     def __init__(
         self,
         *qubits: str,
-        coords: dict | None = None,
-        acq_protocol: Optional[_AcqProtocol] = None,
+        acq_index: int | None = None,
+        # These are the currently supported acquisition protocols.
+        acq_protocol: Optional[
+            Literal[
+                "SSBIntegrationComplex",
+                "Trace",
+                "TriggerCount",
+                "NumericalWeightedIntegrationComplex",
+                "ThresholdedAcquisition",
+            ]
+        ] = None,
+        bin_mode: BinMode | None = None,
+    ):
+        super().__init__(qubits[0], acq_index=acq_index, bin_mode=bin_mode)
+        plot_func = "quantify_scheduler.calibration_schedules._visualization.circuit_diagram.meter"
+        self.data.update(
+            {
+                "name": f"Measure_RO1 {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": plot_func,
+                    "tex": r"$\langle0|$",
+                    "device_elements": list(qubits),
+                    "acq_index": acq_index,
+                    "acq_protocol": acq_protocol,
+                    "bin_mode": bin_mode,
+                    "operation_type": "measure_1",
+                    "acq_channel_override": None,
+                },
+            }
+        )
+        self._update()
+
+
+class Measure_RO2(Measure):
+    def __init__(
+        self,
+        *qubits: str,
+        acq_index: int | None = None,
+        # These are the currently supported acquisition protocols.
+        acq_protocol: Optional[
+            Literal[
+                "SSBIntegrationComplex",
+                "Trace",
+                "TriggerCount",
+                "NumericalWeightedIntegrationComplex",
+                "ThresholdedAcquisition",
+            ]
+        ] = None,
+        bin_mode: BinMode | None = None,
+    ):
+        super().__init__(qubits[0], acq_index=acq_index, bin_mode=bin_mode)
+        plot_func = "quantify_scheduler.calibration_schedules._visualization.circuit_diagram.meter"
+        self.data.update(
+            {
+                "name": f"Measure_RO2 {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": plot_func,
+                    "tex": r"$\langle0|$",
+                    "device_elements": list(qubits),
+                    "acq_index": acq_index,
+                    "acq_protocol": acq_protocol,
+                    "bin_mode": bin_mode,
+                    "operation_type": "measure_2",
+                    "acq_channel_override": None,
+                },
+            }
+        )
+        self._update()
+
+
+class Measure_RO_3state_Opt(Measure):
+    def __init__(
+        self,
+        *qubits: str,
+        acq_index: int | None = None,
+        # These are the currently supported acquisition protocols.
+        acq_protocol: Optional[
+            Literal[
+                "SSBIntegrationComplex",
+                "Trace",
+                "TriggerCount",
+                "NumericalWeightedIntegrationComplex",
+                "ThresholdedAcquisition",
+            ]
+        ] = None,
         bin_mode: BinMode | None = None,
         feedback_trigger_label: Optional[str] = None,
+        # **kwargs: Any,
     ):
-        super().__init__(
-            qubits[0],
-            coords=coords,
-            acq_protocol=acq_protocol,
-            bin_mode=bin_mode,
-            feedback_trigger_label=feedback_trigger_label,
+        super().__init__(qubits[0], acq_index=acq_index, bin_mode=bin_mode)
+        plot_func = "quantify_scheduler.calibration_schedules._visualization.circuit_diagram.meter"
+        self.data.update(
+            {
+                "name": f"Measure_RO_3state_Opt {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": plot_func,
+                    "tex": r"$\langle opt|$",
+                    "device_elements": list(qubits),
+                    "acq_index": acq_index,
+                    "acq_protocol": acq_protocol,
+                    "bin_mode": bin_mode,
+                    "operation_type": "measure_3state_opt",
+                    "acq_channel_override": None,
+                    "feedback_trigger_label": feedback_trigger_label,
+                },
+            }
         )
-        self.data["name"] = f"{self.__class__.__name__} {', '.join(qubits)}"
-        self.data["gate_info"].update(
-            tex=self._tex,
-            device_elements=list(qubits),
-            operation_type=self._operation_type,
+        self._update()
+
+
+class Measure_RO_2state_Opt(Measure):
+    def __init__(
+        self,
+        *qubits: str,
+        acq_index: int | None = None,
+        acq_protocol: Optional[
+            Literal[
+                "SSBIntegrationComplex",
+                "Trace",
+                "TriggerCount",
+                "NumericalWeightedIntegrationComplex",
+                "ThresholdedAcquisition",
+            ]
+        ] = None,
+        bin_mode: BinMode | None = None,
+        feedback_trigger_label: Optional[str] = None,
+        # **kwargs: Any,
+    ):
+        super().__init__(qubits[0], acq_index=acq_index, bin_mode=bin_mode)
+        plot_func = "quantify_scheduler.calibration_schedules._visualization.circuit_diagram.meter"
+        self.data.update(
+            {
+                "name": f"Measure_RO_2state_Opt {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": plot_func,
+                    "tex": r"$\langle opt|$",
+                    "device_elements": list(qubits),
+                    "acq_index": acq_index,
+                    "acq_protocol": acq_protocol,
+                    "bin_mode": bin_mode,
+                    "operation_type": "measure_2state_opt",
+                    "acq_channel_override": None,
+                    "feedback_trigger_label": feedback_trigger_label,
+                },
+            }
         )
-
-
-class Measure_RO2(Measure_RO1):
-    _operation_type = "measure_2"
-
-
-class Measure_RO_3state_Opt(Measure_RO1):
-    _operation_type = "measure_3state_opt"
-    _tex = r"$\langle opt|$"
-
-
-class Measure_RO_2state_Opt(Measure_RO1):
-    _operation_type = "measure_2state_opt"
-    _tex = r"$\langle opt|$"
+        self._update()

@@ -14,12 +14,12 @@
 import lmfit
 import numpy as np
 from lmfit.model import Model
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-
-from tergite_tuner.lib.utils.fitting_models import (
+from quantify_core.analysis.fitting_models import (
     exp_damp_osc_func,
     fft_freq_phase_guess,
 )
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
 from tergite_tuner.lib.utils.functions import (  # lrb_decay_function,; lrb_exponential_decay_function,
     exponential_decay_function,
 )

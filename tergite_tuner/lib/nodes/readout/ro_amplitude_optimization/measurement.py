@@ -12,19 +12,19 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.enums import BinMode
-from qblox_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from qblox_scheduler.operations.gate_library import Reset, X
-from qblox_scheduler.operations.pulse_library import (
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import Reset, X
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     SquarePulse,
 )
-from qblox_scheduler.resources import ClockResource
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import LoopOperation
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -52,11 +52,11 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
         for this_qubit, this_transmon in self.transmons.items():
             this_ro_clock = f"{this_qubit}." + ro_str
             if qubit_state == 1:
-                ro_frequency = this_transmon.extended_clock_freqs.readout_2state_opt
+                ro_frequency = this_transmon.extended_clock_freqs.readout_2state_opt()
             elif qubit_state == 2:
-                ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt
-                mw_frequency_12 = this_transmon.clock_freqs.f12
-                mw_ef_duration = this_transmon.r12.ef_duration
+                ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt()
+                mw_frequency_12 = this_transmon.clock_freqs.f12()
+                mw_ef_duration = this_transmon.r12.ef_duration()
                 this_clock = f"{this_qubit}.12"
                 shot.add_resource(ClockResource(name=this_clock, freq=mw_frequency_12))
             else:
@@ -72,14 +72,14 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
         ):
             # unpack the static parameters:
             this_transmon = self.transmons[this_qubit]
-            ro_pulse_duration = this_transmon.measure.pulse_duration
-            mw_ef_amp180 = this_transmon.r12.ef_amp180
-            mw_ef_motzoi = this_transmon.r12.ef_motzoi
-            mw_pulse_duration = this_transmon.rxy.duration
-            mw_pulse_port = this_transmon.ports.microwave
-            acquisition_delay = this_transmon.measure.acq_delay
-            integration_time = this_transmon.measure.integration_time
-            ro_port = this_transmon.ports.readout
+            ro_pulse_duration = this_transmon.measure.pulse_duration()
+            mw_ef_amp180 = this_transmon.r12.ef_amp180()
+            mw_ef_motzoi = this_transmon.r12.ef_motzoi()
+            mw_pulse_duration = this_transmon.rxy.duration()
+            mw_pulse_port = this_transmon.ports.microwave()
+            acquisition_delay = this_transmon.measure.acq_delay()
+            integration_time = this_transmon.measure.integration_time()
+            ro_port = this_transmon.ports.readout()
 
             this_ro_clock = f"{this_qubit}." + ro_str
             this_12_clock = f"{this_qubit}.12"
@@ -108,8 +108,8 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
                         prep = shot.add(
                             DRAGPulse(
                                 duration=mw_ef_duration,
-                                amplitude=mw_ef_amp180,
-                                beta=motzoi_to_beta(mw_ef_motzoi, mw_ef_duration),
+                                G_amp=mw_ef_amp180,
+                                D_amp=mw_ef_motzoi,
                                 port=mw_pulse_port,
                                 clock=this_12_clock,
                                 phase=0,
@@ -121,7 +121,7 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
                     ro_pulse = shot.add(
                         SquarePulse(
                             duration=ro_pulse_duration,
-                            amplitude=ro_amplitude,
+                            amp=ro_amplitude,
                             port=ro_port,
                             clock=this_ro_clock,
                         ),
@@ -133,8 +133,8 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
                             duration=integration_time,
                             port=ro_port,
                             clock=this_ro_clock,
-                            coords={"acq_index": this_index},
-                            acq_label=acq_cha,
+                            acq_index=this_index,
+                            acq_channel=acq_cha,
                             bin_mode=BinMode.APPEND,
                         ),
                         ref_op=ro_pulse,
@@ -152,10 +152,10 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
         loop_repetitions: int,
         qubit_state: int = 1,
     ) -> Schedule:
-        schedule = Schedule("RO_amplitude_optimization", repetitions=loop_repetitions)
+        schedule = Schedule("RO_amplitude_optimization", repetitions=1)
         ro_shot_schedule = self.ro_shot(ro_amplitudes, qubit_states, qubit_state)
 
         schedule.add(IdlePulse(8e-9))
-        schedule.add(ro_shot_schedule)
+        schedule.add(LoopOperation(body=ro_shot_schedule, repetitions=loop_repetitions))
         schedule.add(IdlePulse(8e-9))
         return schedule

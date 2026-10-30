@@ -165,8 +165,7 @@ class Qubit01SpectroscopyAmplitudeNode(QubitNode):
         }
 
     def qubit_samples(self, qubit: str) -> np.ndarray:
-        # qblox-scheduler counts 821 over the QRM's 12288 Q1ASM instructions for two qubits
-        qub_spec_samples = 761
+        qub_spec_samples = 821
         sweep_range = 500e6
         VNA_frequency = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
         min_freq = VNA_frequency - sweep_range / 2 + 0 * 50e6
