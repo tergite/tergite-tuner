@@ -17,13 +17,14 @@ import matplotlib.patches as mpatches
 import numpy as np
 import xarray as xr
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
 
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.utils import (
     align_on_y_axis,
 )
 from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ThreeClassBoundary, TwoClassBoundary
+from tergite_tuner.lib.utils.classification_functions import classify_shots
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -75,7 +76,9 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
         array_iq1_fp = xr.DataArray().expand_dims({self.amplitude_coord: []})
         for index, ro_amplitude in enumerate(self.amplitudes):
             iq = self.IQ(index)
-            classified_states = self.lda.fit(iq, states_sent).predict(iq)
+            classified_states, cm_norm, assignment = classify_shots(
+                iq, states_sent, self.lda
+            )
 
             true_positives = states_sent == classified_states
             tp0 = true_positives[states_sent == 0]
@@ -123,8 +126,6 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
                 [IQ1_fp, array_iq1_fp], dim=self.amplitude_coord, join="outer"
             )
 
-            cm_norm = confusion_matrix(states_sent, classified_states, normalize="true")
-            assignment = np.trace(cm_norm) / len(self.unique_qubit_states)
             self.fidelities.append(assignment)
             self.cms.append(cm_norm)
 
@@ -307,11 +308,9 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.lda = LinearDiscriminantAnalysis(solver="svd")
 
         for index, ro_amplitude in enumerate(self.amplitudes):
-            iq = self.IQ(index)
-            classified_states = self.lda.fit(iq, states_sent).predict(iq)
-
-            cm_norm = confusion_matrix(states_sent, classified_states, normalize="true")
-            assignment = np.trace(cm_norm) / len(self.unique_qubit_states)
+            _, cm_norm, assignment = classify_shots(
+                self.IQ(index), states_sent, self.lda
+            )
             self.fidelities.append(assignment)
             self.cms.append(cm_norm)
 

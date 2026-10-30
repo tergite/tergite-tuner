@@ -15,8 +15,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray as xr
+from sklearn.metrics import confusion_matrix
 
 if TYPE_CHECKING:
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
     from tergite_tuner.state import DeviceState
 
 DISCRIMINATOR_FIELDS = ("centroid_I", "centroid_Q", "omega_01", "omega_12", "omega_20")
@@ -161,6 +164,15 @@ def generate_iq_shots(
     iq_points = complex_iq + centroid_i + 1j * centroid_q
 
     return iq_points
+
+
+def classify_shots(
+    iq: np.ndarray, states: np.ndarray, lda: "LinearDiscriminantAnalysis"
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """Each shot's state as ``lda`` fitted to them classifies it, the normalised confusion matrix, and the assignment fidelity, its mean diagonal."""
+    classified = lda.fit(iq, states).predict(iq)
+    matrix = confusion_matrix(states, classified, normalize="true")
+    return classified, matrix, np.trace(matrix) / len(np.unique(states))
 
 
 def _get_discriminator(qubit: str, state: "DeviceState") -> tuple[float, ...]:
