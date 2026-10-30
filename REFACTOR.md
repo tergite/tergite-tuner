@@ -631,8 +631,6 @@ qcodes cannot go while we drive the Cluster through qblox-instruments, which req
 
 ## Step 12: close out
 
-1. Read `DESIGN.md`, `README.md` and `CONTRIBUTING.md` against the tree.
-   - Update the README's custom-node example to `NodeSpec`.
-   - Remove the README TODOs that are done: the dummy whole-run test and a flexible node map.
+1. ~~Read `DESIGN.md`, `README.md` and `CONTRIBUTING.md` against the tree~~: the custom-node example was already a `NodeSpec`; the done TODOs, the Redis mentions and a `run_node` example without its node are gone, and the examples share one session, so each node starts from the last one's results.
 2. Run the step 2.1 dummy tune-up, the step 3 comparison and a full tune-up on real hardware against the merged result. Compare the seed file with one from the baseline tag, made the same day.
 3. Delete `docs/prototypes/`, the step 1 lint baselines that are empty, and this file; the history keeps them.

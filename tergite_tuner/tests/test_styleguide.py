@@ -229,7 +229,6 @@ CONFINED_IMPORTS = {
     "quantify_scheduler": "tergite_tuner/backend/",
     "qblox_scheduler": "tergite_tuner/backend/",
     "qblox_instruments": "tergite_tuner/backend/",
-    "redis": "tergite_tuner/storage/",
 }
 HOST_TAKEOVER_CALLS = frozenset({"quit", "exit", "sys.exit", "matplotlib.use"})
 DEFINITIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
@@ -285,7 +284,7 @@ def test_imports_respect_the_layers():
     _assert_follows("import-layering")
 
 
-def test_scheduler_and_redis_are_imported_in_one_package_each():
+def test_hardware_libraries_are_imported_in_the_backend_only():
     _assert_follows("confined-import")
 
 
@@ -310,7 +309,7 @@ def test_checks_catch_what_they_describe(tmp_path: Path):
     (tmp_path / "tergite_tuner" / "utils").mkdir(parents=True)
     (tmp_path / "tergite_tuner" / "utils" / "sample.py").write_text(
         "import matplotlib\n"
-        "import redis\n"
+        "import qblox_instruments\n"
         "from tergite_tuner.lib.base import node\n"
         "def _get_limit() -> None: ...\n"
         "def job_status(active: bool) -> None:\n"
@@ -333,7 +332,7 @@ def test_checks_catch_what_they_describe(tmp_path: Path):
         "banner: tergite_tuner/utils/sample.py: # ---- jobs ----",
         "license-header: tergite_tuner/utils/sample.py",
         "import-layering: tergite_tuner/utils/sample.py::import tergite_tuner.lib.base",
-        "confined-import: tergite_tuner/utils/sample.py::import redis",
+        "confined-import: tergite_tuner/utils/sample.py::import qblox_instruments",
         "host-takeover: tergite_tuner/utils/sample.py::job_status matplotlib.use",
     }
 

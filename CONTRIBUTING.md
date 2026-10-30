@@ -70,10 +70,8 @@ The configuration files a run needs are described in the [README](./README.md#in
 
 ### Testing
 
-The tests use fakeredis, so no Redis server is needed.
-
 ```bash
-uv run pytest tergite_tuner
+uv run pytest tergite_tuner -n 4
 ```
 
 After changing a dependency in `pyproject.toml`, run `uv lock` and commit `uv.lock` with it; CI installs with `--locked` and fails on a stale lock.
@@ -85,7 +83,7 @@ Each calibration node goes through the following phases in order:
 - compilation
 - execution
 - post-processing
-- redis updating
+- storing its values in the session's device state
 
 ## License
 

@@ -173,6 +173,9 @@ from tergite_tuner import (
     generate_calib_seed_file,
     run_node,
     read_result,
+    NodeEnum,
+    SessionContext,
+    CalibrationResults,
 )
 ```
 
@@ -266,7 +269,11 @@ results = read_result(session)
 
 # you could clear up all the data files after the run
 _, results = run_node(
-    session=session, refresh_session=False, keep_data_files=False)
+    node=NodeEnum.QUBIT_01_SPECTROSCOPY,
+    session=session,
+    refresh_session=False,
+    keep_data_files=False,
+)
 ```
 
 #### Re-run analysis on already-recorded data
@@ -303,8 +310,6 @@ You can find a few examples in the [`./examples`](./examples) folder
 ### ToDo
 
 - [ ] Update export to BCC to be more generic to allow any BaseModel class to be output
-- [ ] Add tests for entire calibration runs, maybe using `mode=dummy`
-- [ ] Add ability to add new nodes in the NodeEnum map or allow a more flexible type in the mapping
 
 ## Contributing to the project
 
