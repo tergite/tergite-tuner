@@ -492,6 +492,14 @@ class NodeSpec:
    - Going: the `redis` and `fakeredis` dependencies, `redis_url`, `storage/redis/`, the `Store` interface, the touched-field log, `populate_*`/`revert_node_parameters`, the raw reads above and the perf suite's store round-trip count. Each with a `Changed` entry.
    - **tergite-backend**, in a worktree on a branch of its own: it passes its latest calibration to the session, reads the results from the session, and no longer needs Redis for the tuner. Its test helper writes into the session's state instead of the `cs:` hashes.
 
+**Built.** Items 1–5 are in, with the session holding the device state and no store. Where it departs from the plan:
+- **A `Store` behind a URL was built, then removed** when the plan dropped the store; it stays in the history (`42de6fa0`), as does the perf suite's round-trip count it was measured with.
+- **A recalibration keeps each node's config overrides** for the nodes after it, as Redis did; otherwise they sit over the state only while the node runs.
+- **`cluster_config` kept its type**, quantify-scheduler's compilation config from `backend/`, which tergite-backend passes as is; a subclass type would reject it.
+- **Options given with a session are set over its values** (`SessionContext.update`), a step 0 bug: they were dropped, so tergite-backend's one-qubit-at-a-time nodes ran every qubit.
+- **The tests' Redis dumps became state JSON**, the records a `DeviceState` takes as is.
+- `reanalyse` no longer takes `keep_data_files`: it writes nothing to delete.
+
 ## Step 8: one Clifford implementation
 
 Today there are two complete implementations of the two-qubit group:
