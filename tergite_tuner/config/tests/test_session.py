@@ -31,15 +31,15 @@ from tergite_tuner.config.types import (
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
+    load_config,
 )
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
+    DEFAULT_NODE_SPECS,
     NodeEnum,
-    Qubit01SpectroscopyAmplitudeNode,
-    ResonatorSpectroscopy1Node,
 )
+from tergite_tuner.tuner import NodeManager
 from tergite_tuner.utils.types.enums import MeasurementMode
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -51,10 +51,10 @@ _NODE_CONFIG_PATH = _PROJECT_ROOT / "node_config.example.toml"
 _SPI_CONFIG_PATH = _PROJECT_ROOT / "spi_config.example.toml"
 _CLUSTER_CONFIG_PATH = _PROJECT_ROOT / "cluster_config.example.json"
 
-_DEVICE_CONFIG = DeviceConfigFile.from_toml(_DEVICE_CONFIG_PATH).device
-_NODE_CONFIG = NodeConfig.from_toml(_NODE_CONFIG_PATH)
-_CLUSTER_CONFIG = ClusterConfig.from_json(_CLUSTER_CONFIG_PATH)
-_SPI_CONFIG = SpiConfig.from_toml(_SPI_CONFIG_PATH)
+_DEVICE_CONFIG = load_config(DeviceConfigFile, _DEVICE_CONFIG_PATH).device
+_NODE_CONFIG = load_config(NodeConfig, _NODE_CONFIG_PATH)
+_CLUSTER_CONFIG = load_config(ClusterConfig, _CLUSTER_CONFIG_PATH)
+_SPI_CONFIG = load_config(SpiConfig, _SPI_CONFIG_PATH)
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ def clean_environ(monkeypatch):
         "FILE_LOG_LEVEL",
         "CLUSTER_IP",
         "SPI_SERIAL_PORT",
-        "REDIS_URL",
+        "SPI_SERIAL_PORT",
         "DATA_DIR",
         "CONFIG_DIR",
         "TARGET_NODE",
@@ -93,7 +93,6 @@ def test_session_loads_example_env(clean_environ):
     assert session.file_log_level == 10
     assert str(session.cluster_ip) == "192.14.2.1"
     assert session.spi_serial_port == "/dev/ttyACM0"
-    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.cluster_timeout == 222
     assert session.is_recalibration is True
 
@@ -103,7 +102,6 @@ def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
     session = SessionContext.from_env(_EXAMPLE_ENV_PATH)
 
     assert session.cluster_mode == MeasurementMode.real
-    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.data_dir == Path("out")
 
 
@@ -112,44 +110,38 @@ def test_session_constructs_with_no_args(clean_environ):
     session = SessionContext()
 
     assert session.stdout_log_level == 25
-    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.is_recalibration is True
 
 
 def test_session_overrides_optional_vars(tmp_path, clean_environ):
     """Explicit values for the optional commented-out vars take precedence."""
     sample = tmp_path / ".env"
-    sample.write_text(
-        f"CLUSTER_MODE='dummy'\n" f"REDIS_URL='redis://127.0.0.1:6378/4'\n"
-    )
+    sample.write_text("CLUSTER_MODE='dummy'\nSPI_SERIAL_PORT='/dev/ttyUSB4'\n")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6378/4"
+    assert session.spi_serial_port == "/dev/ttyUSB4"
     assert session.cluster_mode == MeasurementMode.dummy
 
 
 def test_session_coerces_string_values(tmp_path, clean_environ):
     """Values from the ``.env`` file (always strings) are coerced to the field type."""
     sample = tmp_path / ".env"
-    sample.write_text(
-        "REDIS_URL='redis://127.0.0.1:6380/0'\n" "STDOUT_LOG_LEVEL='30'\n"
-    )
+    sample.write_text("SPI_SERIAL_PORT='/dev/ttyUSB0'\n" "STDOUT_LOG_LEVEL='30'\n")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
+    assert session.spi_serial_port == "/dev/ttyUSB0"
     assert session.stdout_log_level == 30
 
 
-def test_session_rejects_non_integer_port(tmp_path, clean_environ):
-    """Malformed Redis URLs fail validation."""
+def test_session_rejects_an_invalid_cluster_ip(tmp_path, clean_environ):
     sample = tmp_path / ".env"
-    sample.write_text("REDIS_URL='not-a-url'\n")
+    sample.write_text("CLUSTER_IP='not-an-ip'\n")
 
     with pytest.raises(ValidationError) as excinfo:
         SessionContext.from_env(sample)
 
     locs = [err["loc"] for err in excinfo.value.errors()]
-    assert ("redis_url",) in locs
+    assert ("cluster_ip",) in locs
 
 
 def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
@@ -157,29 +149,28 @@ def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
     sample = tmp_path / ".env"
     sample.write_text("STDOUT_LOG_LEVEL='30'\n")  # some value in the file
 
-    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
+    monkeypatch.setenv("SPI_SERIAL_PORT", "/dev/ttyUSB5")
     monkeypatch.setenv("QUBITS", "q00,q01")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"  # from os.environ
+    assert session.spi_serial_port == "/dev/ttyUSB5"  # from os.environ
     assert session.qubits == ["q00", "q01"]  # csv-coerced
 
 
-def test_session_env_file_wins_over_os_environ(tmp_path, monkeypatch, clean_environ):
-    """If the ``.env`` file has a value, ``os.environ`` is ignored for that field."""
+def test_session_os_environ_wins_over_env_file(tmp_path, monkeypatch, clean_environ):
     sample = tmp_path / ".env"
-    sample.write_text("REDIS_URL='redis://127.0.0.1:6380/0'\n")
-    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
+    sample.write_text("SPI_SERIAL_PORT='/dev/ttyUSB0'\n")
+    monkeypatch.setenv("SPI_SERIAL_PORT", "/dev/ttyUSB5")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
+    assert session.spi_serial_port == "/dev/ttyUSB5"
 
 
 def test_session_from_env_without_file(monkeypatch, clean_environ):
     """``from_env(None)`` reads ``os.environ`` and uses class defaults."""
-    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
+    monkeypatch.setenv("SPI_SERIAL_PORT", "/dev/ttyUSB5")
     session = SessionContext.from_env()
-    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"
+    assert session.spi_serial_port == "/dev/ttyUSB5"
 
 
 def test_session_from_env_raises_for_missing_file(tmp_path):
@@ -233,7 +224,7 @@ def test_session_loads_configs_from_file_paths():
 
 @pytest.mark.parametrize(
     "raw_value",
-    ["True", "true", "TRUE", " true ", "1", "yes", "Y", "on", ""],
+    ["True", "true", "TRUE", "1", "yes", "Y", "on", ""],
 )
 def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_value):
     """Truthy ``IS_RECALIBRATION`` values from the env file coerce to ``True``. Default is True also"""
@@ -246,7 +237,7 @@ def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_va
 
 @pytest.mark.parametrize(
     "raw_value",
-    ["False", "false", "FALSE", " false ", "0", "no", "N", "off"],
+    ["False", "false", "FALSE", "0", "no", "N", "off"],
 )
 def test_session_is_recalibration_falsy_strings(tmp_path, clean_environ, raw_value):
     """Falsy ``IS_RECALIBRATION`` values from the env file coerce to ``False``."""
@@ -294,9 +285,9 @@ def test_session_rejects_invalid_is_recalibration(tmp_path, clean_environ):
 
 def test_session_loads_node_vars_from_py_objects():
     """Can load the node vars like node_dag_edges, ignored_nodes etc. from python objects"""
-    node_cls_map = {
-        NodeEnum.CZ_RB: ResonatorSpectroscopy1Node,
-        NodeEnum.CZ_CHEVRON: Qubit01SpectroscopyAmplitudeNode,
+    node_specs = {
+        NodeEnum.CZ_RB: DEFAULT_NODE_SPECS[NodeEnum.T1],
+        NodeEnum.CZ_CHEVRON: DEFAULT_NODE_SPECS[NodeEnum.T2],
     }
     ignored_nodes = (NodeEnum.CZ_RB,)
     node_dag_edges = (
@@ -305,21 +296,22 @@ def test_session_loads_node_vars_from_py_objects():
     )
 
     session = SessionContext(
-        node_cls_map=node_cls_map,
+        node_specs=node_specs,
         ignored_nodes=ignored_nodes,
         node_dag_edges=node_dag_edges,
     )
-    assert session.node_cls_map == node_cls_map
+    assert session.node_specs == node_specs
     assert session.node_dag_edges == node_dag_edges
     assert session.ignored_nodes == ignored_nodes
 
 
-def test_default_session_has_default_node_props():
-    """default session has the default node vars."""
+def test_a_default_session_runs_the_default_graph():
     session = SessionContext()
-    assert session.node_cls_map == DEFAULT_NODE_CLS_MAP
-    assert session.ignored_nodes == DEFAULT_IGNORED_NODES
-    assert session.node_dag_edges == DEFAULT_NODE_DAG_EDGES
+    manager = NodeManager(None, session)
+
+    assert session.node_specs == {}
+    assert manager.ignored_nodes == DEFAULT_IGNORED_NODES
+    assert manager.node_dag_edges == DEFAULT_NODE_DAG_EDGES
 
 
 def test_session_options_match_session_context():
@@ -340,7 +332,14 @@ def test_session_options_match_session_context():
                 NodeConfig,
                 Optional[SpiConfig],
                 Optional[QbloxHardwareCompilationConfig],
+                dict | None,
             ):
                 assert options_type == context_type | Path | str
             else:
                 assert options_type == context_type
+
+
+def test_session_from_env_reads_only_its_own_fields(monkeypatch, clean_environ):
+    monkeypatch.setenv("SOME_API_TOKEN", "secret")
+    session = SessionContext.from_env()
+    assert "some_api_token" not in session.model_dump()

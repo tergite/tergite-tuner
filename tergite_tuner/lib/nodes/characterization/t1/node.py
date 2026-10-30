@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2024
 # (C) Copyright Amr Osman 2024
 # (C) Copyright Michele Faucci Giannelli 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,73 +13,76 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""T1: each qubit's relaxation time, averaged over repetitions."""
 
-from time import sleep
+from collections.abc import Mapping
+from functools import partial
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from tergite_tuner.lib.base.node import QubitNode
-from tergite_tuner.lib.nodes.characterization.t1.analysis import T1NodeAnalysis
+from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.characterization.t1.measurement import T1Measurement
-from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
-from tergite_tuner.utils.logging import logger
+from tergite_tuner.lib.nodes.characterization.t2.analysis import (
+    analyse_decay,
+    plot_decay,
+)
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep, get_waits_between_points
+from tergite_tuner.lib.utils.fitting_models import ExpDecayModel
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
+
+DELAYS = 8e-9 + np.concatenate(
+    [
+        np.arange(0, 4e-6, 1e-6),
+        np.arange(4e-6, 10e-6, 2e-6),
+        np.arange(10e-6, 40e-6, 5e-6),
+        np.arange(40e-6, 100e-6, 10e-6),
+        np.arange(100e-6, 200e-6, 20e-6),
+        np.arange(200e-6, 400e-6, 40e-6),
+    ]
+)
+REPETITIONS = 5
+SECONDS_BETWEEN_REPETITIONS = 1
+DUMMY_T1 = 60e-6
+
+model = ExpDecayModel()
+
+DECAY = {
+    "model": model,
+    "time_parameter": "tau",
+    "repetitions_coord": "T1_repetitions",
+}
 
 
-class T1Node(QubitNode):
-    """
-    Node for T1 measurement and analysis.
-    This node performs T1 measurements on multiple qubits
-    and analyzes the results to extract T1 times.
-    It uses the T1Measurement class for measurement
-    and T1NodeAnalysis for analysis.
-    """
+def get_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    delays: dict[str, np.ndarray],
+    multiplexing: str,
+) -> Schedule:
+    return T1Measurement(transmons).schedule_function(delays, multiplexing)
 
-    name: str = "t1"
-    measurement_cls = T1Measurement
-    analysis_cls = T1NodeAnalysis
-    measurement_type_cls = ExternalParameterNode
-    qubit_qois = ["t1_time"]
 
-    def __init__(self, all_qubits: list[str], **schedule_keywords):
-        super().__init__(all_qubits, **schedule_keywords)
+def get_dummy_s21(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    return 1e-3 * np.exp(-sweeps["delays"] / DUMMY_T1) + 1e-4
 
-        self.schedule_keywords = {
-            "multiplexing": "parallel"
-        }  # 'one_by_one' | 'parallel'
-        number_of_repeated_t1s = 5
-        self.sleep_time = 1
 
-        delays = np.concatenate(
-            [
-                np.arange(0, 4e-6, 1e-6),  # 4
-                np.arange(4e-6, 10e-6, 2e-6),  # 3
-                np.arange(10e-6, 40e-6, 5e-6),  # 6
-                np.arange(40e-6, 100e-6, 10e-6),  # 6
-                np.arange(100e-6, 200e-6, 20e-6),  # 5
-                np.arange(200e-6, 400e-6, 40e-6),  # 5
-            ]
-        )
-
-        self.schedule_samplespace = {
-            "delays": {qubit: 8e-9 + delays for qubit in self.all_qubits}
-        }
-        self.external_samplespace = {
-            "T1_repetitions": {
-                qubit: range(number_of_repeated_t1s) for qubit in self.all_qubits
-            }
-        }
-
-    def initial_operation(self) -> None:
-        pass
-
-    def pre_measurement_operation(self, reduced_ext_space):
-        iteration_dict = reduced_ext_space["T1_repetitions"]
-        # there is some redundancy that all qubits have the same
-        # iteration index, that's why we keep the first value->
-        this_iteration = list(iteration_dict.values())[0]
-        if this_iteration > 0:
-            logger.info(f"sleeping for {self.sleep_time} seconds")
-            sleep(self.sleep_time)
-
-    def final_operation(self) -> None:
-        pass
+T1_SPECS = {
+    NodeEnum.T1: NodeSpec(
+        name=NodeEnum.T1,
+        element="qubit",
+        get_schedule=get_schedule,
+        analyse=partial(analyse_decay, **DECAY, guess_variable="delay"),
+        qois={"time": "t1_time"},
+        sweeps={"delays": get_fixed_sweep(DELAYS)},
+        get_dummy_s21=get_dummy_s21,
+        plot=partial(plot_decay, **DECAY, label="T1", should_show_spread=True),
+        schedule_keywords={"multiplexing": "parallel"},
+        external_sweeps={"T1_repetitions": get_fixed_sweep(np.arange(REPETITIONS))},
+        set_external=get_waits_between_points(SECONDS_BETWEEN_REPETITIONS),
+    )
+}

@@ -11,61 +11,49 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
 import pytest
-import xarray as xr
+from matplotlib import pyplot as plt
 
-from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.analysis import (
-    ROFrequencyThreeStateNodeAnalysis,
-    ROFrequencyThreeStateQubitAnalysis,
+    analyse_ro_frequency,
+    plot_three_state_ro_frequency,
+    plot_two_state_ro_frequency,
 )
+from tergite_tuner.tests.utils.datasets import get_s21
+
+DATASET = "dataset_ro_frequency_three_state_optimization.hdf5"
 
 
-def test_ro_freq_3states(seeded_redis, session_context, node_data_dir):
-    name = "ro_frequency_three_state_optimization"
-    file_path = node_data_dir / f"dataset_{name}.hdf5"
-    with xr.open_dataset(file_path) as full_dataset:
-        qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
+@pytest.mark.parametrize(
+    "qubit, frequency", [("q13", 7181088888.888889), ("q15", 7128822222.222222)]
+)
+def test_three_states_are_furthest_apart_at_the_frequency(
+    node_data_dir, qubit, frequency
+):
+    fits = analyse_ro_frequency(get_s21(node_data_dir / DATASET, qubit), None)
 
-        ds_13 = filter_ds_by_element(full_dataset, "q13")
-        ds_15 = filter_ds_by_element(full_dataset, "q15")
-
-        analysis = ROFrequencyThreeStateQubitAnalysis(
-            name, qubit_qois, session=session_context
-        )
-        analysis.S21 = ds_13.isel(ReIm=0) + 1j * ds_13.isel(ReIm=1)
-        analysis.data_var = "yq13"
-        qoi = analysis.analyse_qubit()
-
-        ro_frequency = qoi.analysis_result["extended_clock_freqs:readout_3state_opt"][
-            "value"
-        ]
-
-        assert qoi.analysis_successful
-        assert pytest.approx(ro_frequency) == 7181088888.888889
-
-        analysis.S21 = ds_15.isel(ReIm=0) + 1j * ds_15.isel(ReIm=1)
-        analysis.data_var = "yq15"
-        qoi = analysis.analyse_qubit()
-
-        ro_frequency = qoi.analysis_result["extended_clock_freqs:readout_3state_opt"][
-            "value"
-        ]
-
-        assert qoi.analysis_successful
-        assert pytest.approx(ro_frequency) == 7128822222.222222
+    assert fits["frequency"].value == pytest.approx(frequency)
 
 
-def test_plotting(seeded_redis, session_context, node_data_dir):
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-    name = "ro_frequency_three_state_optimization"
-    qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
+def test_two_states_are_furthest_apart_at_the_frequency(node_data_dir):
+    s21 = get_s21(node_data_dir / DATASET, "q13").sel(qubit_statesq13=[0, 1])
 
-    analysis = ROFrequencyThreeStateNodeAnalysis(
-        name, qubit_qois, session=session_context
+    fits = analyse_ro_frequency(s21, None)
+
+    distance = np.abs(s21.sel(qubit_statesq13=1) - s21.sel(qubit_statesq13=0))
+    assert fits["frequency"].value == distance.idxmax().item()
+
+
+def test_plots_mark_the_frequency(node_data_dir):
+    s21 = get_s21(node_data_dir / DATASET, "q13")
+    two_state_s21 = s21.sel(qubit_statesq13=[0, 1])
+    figure, axes = plt.subplots(4)
+
+    plot_three_state_ro_frequency(axes[0], s21, analyse_ro_frequency(s21, None), None)
+    plot_two_state_ro_frequency(
+        axes[1:], two_state_s21, analyse_ro_frequency(two_state_s21, None), None
     )
-    analysis.analyze_node(node_data_dir, save_plot=True)
-    number_of_qubits = len(analysis.dataset.attrs["elements"])
-    assert analysis.axs.shape == (1, number_of_qubits)
+
+    assert axes[0].collections and axes[1].collections
+    plt.close(figure)

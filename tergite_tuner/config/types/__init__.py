@@ -14,6 +14,7 @@
 
 from tergite_tuner.config.types.cluster import ClusterConfig
 from tergite_tuner.config.types.device import DeviceConfig, DeviceConfigFile
+from tergite_tuner.config.types.load import load_config
 from tergite_tuner.config.types.node import NodeConfig
 from tergite_tuner.config.types.spi import SpiConfig
 
@@ -23,4 +24,5 @@ __all__ = [
     "DeviceConfigFile",
     "NodeConfig",
     "SpiConfig",
+    "load_config",
 ]

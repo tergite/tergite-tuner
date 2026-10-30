@@ -30,14 +30,7 @@ If you are reading this on GitHub, then you are looking at a mirror.
 
 ### Requirements
 
-- Python ≥ 3.12 but < 3.13 (a fresh `conda` or `venv` environment is fine).
-- A reachable redis server. The default URL is
-  `redis://127.0.0.1:6379/0`; override via the `REDIS_URL` env var or
-  the `redis_url` keyword argument when calling the public API.
-
-```shell
-redis-server
-```
+- Python ≥ 3.13 (a fresh `conda` or `venv` environment is fine).
 
 ### Installation
 
@@ -47,11 +40,16 @@ pip install tergite-tuner
 
 Copy the [example environment file](./.example.env) and edit it as needed.  
 
-The `.env` file controls the cluster IP, redis URL, target node,
+The `.env` file controls the cluster IP, target node,
 qubits/couplers under calibration, and so on.   
 
-Every field on `SessionContext`can be set in the `.env` (in upper case), 
-or passed as a keyword argument to the public API of the entry point functions.  
+Every field on `SessionContext` can be set in the `.env` or as an environment variable
+(in upper case), or passed as a keyword argument to the public API of the entry point functions.
+A keyword argument wins over an environment variable, which wins over the `.env` file.
+
+`IS_RECALIBRATION` and `IGNORE_SPEC` default to `True`: a run recalibrates the nodes,
+whatever their calibration status, without resetting the cluster or setting the couplers'
+currents. Set both to `False` to tune up the device from the device config.
 
 
 On top of having a `.env` file, more configuration files maybe required. 
@@ -130,8 +128,8 @@ _, results = tune_device(
 
 #### Customization of Nodes
 
-It is also possible to pass in your own implementation of the `Nodes` as long as they
-are inherited from the base nodes `BaseNode`, `QubitNode`, `CouplerNode` etc. 
+A node is a `NodeSpec`: its schedule, sweeps, analysis and the device state's fields it sets.
+You can pass in your own specs, to replace a default node or add one, with `node_specs`.
 
 You can also change the order in which the nodes run or even choose to skip some of them
 by supplying your own `ignored_nodes: tuple[NodeEnum, ...] = ...` and 
@@ -139,29 +137,21 @@ by supplying your own `ignored_nodes: tuple[NodeEnum, ...] = ...` and
 
 ```python
 
-from tergite_tuner.lib.base.node import QubitNode, BaseNode, CouplerNode
+import dataclasses
+
 from tergite_tuner import tune_device, NodeEnum
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 
 
-class CustomQubitNode(QubitNode):
-    ...
-
-
-class CustomDeviceNode(BaseNode):
-    def precompile(self, samplespace): ...
-
-    @classmethod
-    def persist_qois(cls, session: "SessionContext", node_name: str): ...
-
-
-class CustomCouplerNode(QubitNode):
+def analyse_my_way(s21, session):
     ...
 
 
 _, results = tune_device(
-    node_cls_map={
-        NodeEnum.QUBIT_01_SPECTROSCOPY: CustomQubitNode,
-        NodeEnum.COUPLER_ANTICROSSING: CustomCouplerNode,
+    node_specs={
+        NodeEnum.QUBIT_01_SPECTROSCOPY: dataclasses.replace(
+            DEFAULT_NODE_SPECS[NodeEnum.QUBIT_01_SPECTROSCOPY], analyse=analyse_my_way
+        ),
     },
     node_dag_edges=(
         (NodeEnum.PUNCHOUT, NodeEnum.TOF,),
@@ -183,6 +173,9 @@ from tergite_tuner import (
     generate_calib_seed_file,
     run_node,
     read_result,
+    NodeEnum,
+    SessionContext,
+    CalibrationResults,
 )
 ```
 
@@ -218,10 +211,10 @@ in spec.
 
 #### Recalibrate the device
 
-First ensure your `device_config.toml` has the latest device values or if you have already run the tuneup using the 
-same redis database, the old values should still be there so have a `device_config.toml` without initial values.  
-Note that this may mean you have two `device_config.toml`'s, one for the first run and the other for subsequent runs.  
-Do the same with `node_config.toml`.  
+A session's device state starts from `device_config.toml`, and nothing carries over from an earlier run
+unless you pass it in: give an earlier calibration's results as `calibration`, as `tune_device` returns them
+or as the `results.json` each run writes in its folder.
+A session keeps its state across the calls you pass it to.
 
 ```python
 from tergite_tuner import tune_device, NodeEnum
@@ -235,7 +228,8 @@ session, results = tune_device(
     target_node=NodeEnum.RABI_OSCILLATIONS,
     qubits=["q00", "q01"],
     couplers=["q00_q01"],
-    is_recalibration=True,
+    is_recalibration=False,
+    ignore_spec=False,
 )
 
 # you can even pass a session from before or construct it yourself with 
@@ -275,7 +269,11 @@ results = read_result(session)
 
 # you could clear up all the data files after the run
 _, results = run_node(
-    session=session, refresh_session=False, keep_data_files=False)
+    node=NodeEnum.QUBIT_01_SPECTROSCOPY,
+    session=session,
+    refresh_session=False,
+    keep_data_files=False,
+)
 ```
 
 #### Re-run analysis on already-recorded data
@@ -286,25 +284,23 @@ from tergite_tuner import reanalyse
 
 _, results = reanalyse(
     env_file=".env",
-    data_dir=Path("path/to/run/folder"),
+    data_dir=Path("out/<run>/<node folder>"),  # the folder holding dataset_<node>.hdf5
 )
 ```
 
 #### Generate a BCC calibration seed
 
 ```python
-from tergite_tuner import generate_calib_seed_file, SessionContext
+from tergite_tuner import generate_calib_seed_file, tune_device
 
-# Reads qubits / couplers / redis_url from the .env file. 
-# Creates the file as 'calibration.seed.toml' by default
-generate_calib_seed_file(env_file=".env")
+# From a session a run calibrated, as 'calibration.seed.toml' by default
+session, _ = tune_device(env_file=".env")
+generate_calib_seed_file(session=session)
 
-# Or override individual SessionContext fields inline:
-generate_calib_seed_file(couplers=["q12_q13", "q56_q67"], qubits=["q12"], path="/path/to/destination/toml/file")
-
-# Or pass in a session from somewhere else:
-session = SessionContext()
-generate_calib_seed_file(session)
+# Or from earlier results, with the qubits and couplers from the .env file
+generate_calib_seed_file(
+    env_file=".env", calibration=results, path="/path/to/destination/toml/file"
+)
 ```
 
 ### Samples
@@ -314,8 +310,6 @@ You can find a few examples in the [`./examples`](./examples) folder
 ### ToDo
 
 - [ ] Update export to BCC to be more generic to allow any BaseModel class to be output
-- [ ] Add tests for entire calibration runs, maybe using `mode=dummy`
-- [ ] Add ability to add new nodes in the NodeEnum map or allow a more flexible type in the mapping
 
 ## Contributing to the project
 

@@ -12,4 +12,7 @@
 
 from tergite_tuner import generate_calib_seed_file
 
-generate_calib_seed_file(env_file=".env", path="calibration_seed.toml")
+# the results.json an earlier run wrote in its folder
+generate_calib_seed_file(
+    env_file=".env", calibration="out/<run>/results.json", path="calibration_seed.toml"
+)

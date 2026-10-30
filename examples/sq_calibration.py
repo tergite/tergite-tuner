@@ -10,96 +10,100 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from tergite_tuner import NodeEnum, run_node
+from tergite_tuner import NodeEnum, SessionContext, run_node
 
-qubits5 = [f"q{i}" for i in range(11, 16)]
+QUBITS = [f"q{i}" for i in range(11, 16)]
+# these run one qubit at a time
+SERIAL_NODES = frozenset({NodeEnum.RAMSEY_CORRECTION_12, NodeEnum.T2, NodeEnum.T2_ECHO})
 
 
-def run_nodes(nodes: list[str], qubits: list[str], is_parallels: list[bool]):
-    assert len(nodes) == len(is_parallels)
-    for node, is_parallel in zip(nodes, is_parallels):
-        if is_parallel:
-            run_node(env_file="./.env", qubits=qubits, couplers=[], node=node)
-        else:
+def run_nodes(session: SessionContext, nodes: list[NodeEnum]) -> None:
+    """Runs each node in ``session``, which carries each node's results to the next."""
+    qubits = list(session.qubits)
+    for node in nodes:
+        if node in SERIAL_NODES:
             for qubit in qubits:
-                run_node(env_file="./.env", qubits=[qubit], couplers=[], node=node)
+                run_node(node, session=session, qubits=[qubit])
+            session.update(qubits=qubits)
+        else:
+            run_node(node, session=session)
 
 
-def _is_parallel(node: str):
-    if "correction_12" in node or "T2" in node:
-        return False
-    else:
-        return True
+def run_full_recalibration(session: SessionContext) -> None:
+    """Every single-qubit node, from the device config's values."""
+    run_nodes(
+        session,
+        [
+            NodeEnum.RESONATOR_SPECTROSCOPY,
+            NodeEnum.QUBIT_01_SPECTROSCOPY,
+            NodeEnum.RABI_OSCILLATIONS,
+            NodeEnum.RAMSEY_CORRECTION,
+            NodeEnum.MOTZOI_PARAMETER,
+            NodeEnum.N_RABI_OSCILLATIONS,
+            NodeEnum.RESONATOR_SPECTROSCOPY_1,
+            NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
+            NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
+            NodeEnum.QUBIT_12_SPECTROSCOPY,
+            NodeEnum.RABI_OSCILLATIONS_12,
+            NodeEnum.RAMSEY_CORRECTION_12,
+            NodeEnum.MOTZOI_12_PARAMETER,
+            NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
+            NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
+            NodeEnum.RANDOMIZED_BENCHMARKING,
+        ],
+    )
 
 
-def run_recalibration_with_empty_redis(qubits: list):
-    nodes = [
-        NodeEnum.RESONATOR_SPECTROSCOPY,
-        NodeEnum.QUBIT_01_SPECTROSCOPY,
-        NodeEnum.RABI_OSCILLATIONS,
-        NodeEnum.RAMSEY_CORRECTION,
-        NodeEnum.MOTZOI_PARAMETER,
-        NodeEnum.N_RABI_OSCILLATIONS,
-        NodeEnum.RESONATOR_SPECTROSCOPY_1,
-        NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
-        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
-        NodeEnum.QUBIT_12_SPECTROSCOPY,
-        NodeEnum.RABI_OSCILLATIONS_12,
-        NodeEnum.RAMSEY_CORRECTION_12,
-        NodeEnum.MOTZOI_12_PARAMETER,
-        NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
-        NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
-        NodeEnum.RANDOMIZED_BENCHMARKING,
-    ]
-
-    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
+def run_two_state_recalibration(session: SessionContext) -> None:
+    run_nodes(
+        session,
+        [
+            NodeEnum.RABI_OSCILLATIONS,
+            NodeEnum.RAMSEY_CORRECTION,
+            NodeEnum.MOTZOI_PARAMETER,
+            NodeEnum.N_RABI_OSCILLATIONS,
+            NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
+            NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
+        ],
+    )
 
 
-def run_two_state_recalibration(qubits: list):
-    nodes = [
-        NodeEnum.RABI_OSCILLATIONS,
-        NodeEnum.RAMSEY_CORRECTION,
-        NodeEnum.MOTZOI_PARAMETER,
-        NodeEnum.N_RABI_OSCILLATIONS,
-        NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
-        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
-    ]
-
-    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
+def run_coherence_time_calibration(session: SessionContext) -> None:
+    run_nodes(session, [NodeEnum.T1, NodeEnum.T2, NodeEnum.T2_ECHO])
 
 
-def run_coherence_time_calibration(qubits: list):
-    nodes = [NodeEnum.T1, NodeEnum.T2, NodeEnum.T2_ECHO]
-    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
+def run_three_state_recalibration(session: SessionContext) -> None:
+    run_nodes(
+        session,
+        [
+            NodeEnum.RABI_OSCILLATIONS_12,
+            NodeEnum.RAMSEY_CORRECTION_12,
+            NodeEnum.MOTZOI_12_PARAMETER,
+            NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
+            NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
+            NodeEnum.RANDOMIZED_BENCHMARKING,
+        ],
+    )
 
 
-def run_three_state_recalibration(qubits: list):
-    nodes = [
-        NodeEnum.RABI_OSCILLATIONS_12,
-        NodeEnum.RAMSEY_CORRECTION_12,
-        NodeEnum.MOTZOI_12_PARAMETER,
-        NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
-        NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
-        NodeEnum.RANDOMIZED_BENCHMARKING,
-    ]
-
-    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
-
-
-def run_fast_recalibration(qubits: list):
-    nodes = [
-        NodeEnum.RABI_OSCILLATIONS,
-        NodeEnum.RAMSEY_CORRECTION,
-        NodeEnum.RAMSEY_CORRECTION_12,
-        NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
-        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
-        NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
-        NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
-        NodeEnum.RANDOMIZED_BENCHMARKING,
-    ]
-
-    run_nodes(nodes, qubits, is_parallels=[_is_parallel(node) for node in nodes])
+def run_fast_recalibration(session: SessionContext) -> None:
+    run_nodes(
+        session,
+        [
+            NodeEnum.RABI_OSCILLATIONS,
+            NodeEnum.RAMSEY_CORRECTION,
+            NodeEnum.RAMSEY_CORRECTION_12,
+            NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
+            NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
+            NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
+            NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
+            NodeEnum.RANDOMIZED_BENCHMARKING,
+        ],
+    )
 
 
 if __name__ == "__main__":
-    run_fast_recalibration(qubits5)
+    # pass an earlier run's results.json as calibration= to start from them
+    run_fast_recalibration(
+        SessionContext.from_env("./.env", qubits=QUBITS, couplers=[])
+    )

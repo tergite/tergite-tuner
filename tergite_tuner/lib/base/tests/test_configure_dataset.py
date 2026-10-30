@@ -11,159 +11,64 @@
 # that they have been altered from the originals.
 
 
-from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
-    RandomizedBenchmarkingNode,
-)
-from tergite_tuner.lib.nodes.coupler.cz_parametrization.node import (
-    CZParametrizationNode,
-)
-from tergite_tuner.lib.nodes.coupler.spectroscopy.node import (
-    QubitSpectroscopyVsCurrentNode,
-)
-from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
-    ResonatorSpectroscopyNode,
-)
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
+from tergite_tuner.lib.run import get_dataset, get_dummy_dataset, get_sweeps
 from tergite_tuner.tests.utils.fixtures import (
-    DEFAULT_TEST_COUPLERS,
-    DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.tests.utils.goldens import get_dataset_builder
+from tergite_tuner.tests.utils.state import loaded_state
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
-redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
+state_file = get_fixture_path("states", "standard_state.json")
 
 
-def test_configure_dataset_qubits(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopyNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+def test_get_dataset_labels_each_qubits_sweep(session_context):
+    spec = DEFAULT_NODE_SPECS[NodeEnum.RESONATOR_SPECTROSCOPY]
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    sweeps = get_sweeps(spec, session)
+
+    dataset = get_dataset(
+        get_dummy_dataset(spec, sweeps, session), sweeps, session.qubits
     )
 
-    raw_ds = node.generate_dummy_dataset()
+    assert dataset.attrs["elements"] == sorted(session.qubits)
+    assert len(dataset.data_vars) == len(session.qubits)
+    assert dataset["yq00"].attrs["qubit"] == "q00"
+    assert dataset["yq00"].shape == sweeps["ro_frequencies"]["q00"].shape
+    assert dataset.coords["ro_frequenciesq00"].attrs["element_type"] == "qubit"
 
-    qubit_set = list(set(DEFAULT_TEST_QUBITS))
-    samplespace_freqs_00 = node.schedule_samplespace["ro_frequencies"]["q00"]
 
-    configured_ds = node.configure_dataset(raw_ds)
+def test_get_dataset_gives_a_coupler_node_a_variable_per_qubit(session_context):
+    with loaded_state(session_context, state_file):
+        dataset = get_dataset_builder("coupler_anticrossing", session_context)()
 
-    # check ds properties
-    assert qubit_set == configured_ds.attrs["elements"]
-    assert len(configured_ds.data_vars) == 2
-    # check data_var properties
-    assert configured_ds["yq00"].attrs["qubit"] == "q00"
-    assert configured_ds["yq00"].values.shape == samplespace_freqs_00.shape
-    # check coord properties
-    assert configured_ds.coords["ro_frequenciesq00"].attrs["element_type"] == "qubit"
+    assert dataset.attrs["elements"] == ["q00_q01"]
+    assert set(dataset.data_vars) == {"yq00", "yq01"}
+    assert dataset["yq00"].attrs["element"] == "q00_q01"
+    assert dataset.coords["spec_frequenciesq00"].attrs["element_type"] == "qubit"
 
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopyNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+
+def test_get_dataset_puts_loops_last(session_context):
+    spec = DEFAULT_NODE_SPECS[NodeEnum.RANDOMIZED_BENCHMARKING]
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    sweeps = get_sweeps(spec, session)
+
+    dataset = get_dataset(
+        get_dummy_dataset(spec, sweeps, session), sweeps, session.qubits, spec.loops
     )
 
-    raw_ds = node.generate_dummy_dataset()
-
-    qubit_set = list(set(DEFAULT_TEST_QUBITS))
-    samplespace_freqs_00 = node.schedule_samplespace["ro_frequencies"]["q00"]
-
-    configured_ds = node.configure_dataset(raw_ds)
-
-    # check ds properties
-    assert qubit_set == configured_ds.attrs["elements"]
-    assert len(configured_ds.data_vars) == 2
-    # check data_var properties
-    assert configured_ds["yq00"].attrs["qubit"] == "q00"
-    assert configured_ds["yq00"].values.shape == samplespace_freqs_00.shape
-    # check coord properties
-    assert configured_ds.coords["ro_frequenciesq00"].attrs["element_type"] == "qubit"
+    cliffords = len(sweeps["number_of_cliffords"]["q00"])
+    assert dataset["yq00"].shape == (cliffords, spec.loops)
+    assert dataset.coords["number_of_cliffordsq00"].attrs["element_type"] == "qubit"
+    assert dataset.coords["loops"].size == spec.loops
 
 
-def test_configure_dataset_couplers(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_0 = QubitSpectroscopyVsCurrentNode(
-        DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    node_0.this_current = 5e-6
+def test_get_dataset_labels_a_couplers_sweeps_by_coupler(session_context):
+    with loaded_state(session_context, state_file):
+        dataset = get_dataset_builder("cz_parametrization", session_context)()
 
-    raw_ds = node_0.generate_dummy_dataset()
-
-    coupler_set = list(set(DEFAULT_TEST_COUPLERS))
-    samplespace_freqs_00 = node_0.schedule_samplespace["spec_frequencies"]["q00"]
-
-    configured_ds = node_0.configure_dataset(raw_ds)
-
-    # check ds properties
-    assert coupler_set == configured_ds.attrs["elements"]
-    assert len(configured_ds.data_vars) == 2 * len(coupler_set)
-    # check data_var properties
-    assert configured_ds["yq00"].attrs["qubit"] == "q00"
-    assert configured_ds["yq00"].attrs["element"] == "q00_q01"
-    assert configured_ds["yq00"].values.shape == samplespace_freqs_00.shape
-    # check coord properties
-    assert configured_ds.coords["spec_frequenciesq00"].attrs["element_type"] == "qubit"
-
-
-def test_configure_dataset_qubits_with_loops(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = RandomizedBenchmarkingNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-
-    raw_ds = node.generate_dummy_dataset()
-
-    qubit_set = list(set(DEFAULT_TEST_QUBITS))
-    samplespace_cliffords_00 = node.schedule_samplespace["number_of_cliffords"]["q00"]
-    number_of_cliffords_00 = len(samplespace_cliffords_00)
-
-    configured_ds = node.configure_dataset(raw_ds)
-
-    # check ds properties
-    assert qubit_set == configured_ds.attrs["elements"]
-    assert len(configured_ds.data_vars) == 2
-    # check data_var properties
-    assert configured_ds["yq00"].attrs["qubit"] == "q00"
-    assert configured_ds["yq00"].values.shape == (number_of_cliffords_00, node.loops)
-    # check coord properties
-    ds_coords = configured_ds.coords
-    assert ds_coords["number_of_cliffordsq00"].attrs["element_type"] == "qubit"
-    assert "loops" in configured_ds.coords
-    assert configured_ds.coords["loops"].size == node.loops
-
-
-def test_configure_dataset_qubits_with_3state_discrimination(
-    redis_connection, session_context
-):
-    with loaded_redis(redis_connection, redis_mock):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-        node = CZParametrizationNode(
-            DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-        )
-        coupler_set = list(set(DEFAULT_TEST_COUPLERS))
-        samplespace_cz_ampls_00_01 = node.schedule_samplespace["cz_pulse_amplitudes"][
-            "q00_q01"
-        ]
-        samplespace_cz_freqs_00_01 = node.schedule_samplespace["cz_pulse_frequencies"][
-            "q00_q01"
-        ]
-        number_of_cz_ampls_00_01 = len(samplespace_cz_ampls_00_01)
-        number_of_cz_freqs_00_01 = len(samplespace_cz_freqs_00_01)
-
-        raw_ds = node.generate_dummy_dataset()
-
-        configured_ds = node.configure_dataset(raw_ds)
-        # check ds properties
-        assert coupler_set == configured_ds.attrs["elements"]
-        assert len(configured_ds.data_vars) == 2 * len(coupler_set)
-        # check data_var properties
-        assert configured_ds["yq00"].attrs["qubit"] == "q00"
-        assert configured_ds["yq00"].attrs["element"] == "q00_q01"
-        assert configured_ds["yq00"].values.shape == (
-            number_of_cz_ampls_00_01,
-            number_of_cz_freqs_00_01,
-            node.loops,
-        )
-        # check coord properties
-        assert (
-            configured_ds.coords["cz_pulse_amplitudesq00_q01"].attrs["element_type"]
-            == "coupler"
-        )
+    assert dataset["yq00"].attrs["element"] == "q00_q01"
+    assert dataset["yq00"].shape == (25, 28, 128)
+    coords = dataset.coords
+    assert coords["cz_pulse_amplitudesq00_q01"].attrs["element_type"] == "coupler"

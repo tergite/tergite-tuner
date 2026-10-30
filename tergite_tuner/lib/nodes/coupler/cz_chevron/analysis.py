@@ -13,35 +13,32 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from dataclasses import dataclass
+
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from scipy.stats import spearmanr
 
-from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
 )
-from tergite_tuner.lib.utils.analysis_models import QuadraticModel, SineOscillatingModel
-from tergite_tuner.utils.types.qoi import QOI
+from tergite_tuner.lib.spec import Fits, get_fits_from_result
+from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
-@dataclass
-class ParabolicFit:
-    selected_cz_frequencies: np.ndarray
-    selected_cz_durations: np.ndarray
+CURVE_POINTS = 200
 
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
+    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
+        super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
-        self.chevron_model = QuadraticModel()
-        self.number_of_working_points: int = kwargs["number_of_working_points"]
 
     def apply_sinusoidal_slices_fit(self, data):
         # durations is the independent variable in the cosine definition
@@ -64,146 +61,48 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         except:
             return np.array([np.nan]), np.array([np.nan])
 
-    def apply_parabolic_fit(
-        self, cz_duration_values, cz_working_frequencies
-    ) -> ParabolicFit:
-        guess_params = self.chevron_model.guess(
-            cz_duration_values, x=cz_working_frequencies
-        )
-        try:
-            self.chevron_fit_result = self.chevron_model.fit(
-                cz_duration_values, params=guess_params, x=cz_working_frequencies
-            )
-            # x0 is the frequency at the parabola vertex
-            x0 = self.chevron_fit_result.params["x0"].value
-
-            # determine wheteher the residuals are randomly distributed
-            # as they should for a good fit
-            residuals = cz_duration_values - self.chevron_fit_result.best_fit
-            distances_from_vertex = np.abs(cz_working_frequencies - x0)
-            correlation = spearmanr(distances_from_vertex, residuals)
-            fit_is_good = correlation.statistic < 0.3
-
-            # if the vertex is contained, return a number of
-            # frequency duration pairs around it
-            vertex_is_contained = (
-                cz_working_frequencies.min() < x0 and x0 < cz_working_frequencies.max()
-            )
-            abs_distances_from_vertex = np.abs(cz_working_frequencies - x0)
-            sorted_distances_from_vertex = np.sort(abs_distances_from_vertex)
-            num_of_working_pairs = self.number_of_working_points
-            distance_threshold = sorted_distances_from_vertex[num_of_working_pairs]
-            selected_cz_frequencies = cz_working_frequencies[
-                abs_distances_from_vertex < distance_threshold
-            ]
-            selected_cz_durations = cz_duration_values[
-                abs_distances_from_vertex < distance_threshold
-            ]
-            int_selected_durations_in_ns = (selected_cz_durations // 1e-9).astype(int)
-            # ensure durations are in multiples of 4ns:
-            selected_cz_durations_in_ns = (int_selected_durations_in_ns // 4) * 4
-            parabolic_fit = ParabolicFit(
-                selected_cz_frequencies, selected_cz_durations_in_ns
-            )
-            return parabolic_fit
-        except:
-            return ParabolicFit(np.nan, np.nan)
-
-    def analyze_coupler(self) -> QOI:
-        """Analyze the chevron pattern measured while sweeping the flux duration and frequency.
-
-        Analyze the chevron pattern measured while sweeping the flux pulse duration (y-axis)
-        and flux pulse frequency (x-axis).
-        The method assigns value to the attributes
-         - self.cz_working_durations_in_ns
-         - self.cz_working_frequencies
-        which correspond to all the (frequency, duration) points where a return to the |11> is observed
-        The working pairs may be unnesasrily mainy, sothe method assigns value also to the attributes
-         - self.selected_cz_durations_in_ns
-         - self.selected_cz_frequencies
-        which are a subset of the wotking points with array size according to self.number_of_working_points
-        """
+    def analyse(self) -> Fits | None:
+        """The (frequency, duration) points where the chevron returns to |11>, as CZ working points."""
         self.calculate_probabilities()
-
         self.fit_plot_durations = np.linspace(
-            self.durations[0], self.durations[-1], 200
-        )  # x-values for plotting
-
-        probabilities = self.probabilities
-        control_state_2 = probabilities.sel({"qubit": self.control_qubit, "state": 2})
-        control_state_1 = probabilities.sel({"qubit": self.control_qubit, "state": 1})
-        control_state_0 = probabilities.sel({"qubit": self.control_qubit, "state": 0})
-        target_state_0 = probabilities.sel({"qubit": self.target_qubit, "state": 0})
-        target_state_1 = probabilities.sel({"qubit": self.target_qubit, "state": 1})
-        target_state_2 = probabilities.sel({"qubit": self.target_qubit, "state": 2})
-
-        if self.phase_path == "via_02":
-            self.control_diffs = control_state_0 - control_state_1  # - control_state_0
-            self.target_diffs = target_state_2 - target_state_1  # - target_state_2
-        elif self.phase_path == "via_20":
-            self.control_diffs = control_state_2 - control_state_1  # - control_state_2
-            self.target_diffs = target_state_0 - target_state_1  # - control_state_0
-        else:
-            raise ValueError(f"Invalid phase path:{self.phase_path}")
-
+            self.durations[0], self.durations[-1], CURVE_POINTS
+        )
+        self.control_diffs, self.target_diffs = get_chevron_leads(
+            self.probabilities.sel({"qubit": self.control_qubit}),
+            self.probabilities.sel({"qubit": self.target_qubit}),
+            self.phase_path,
+        )
         self.combined_data = self.control_diffs + self.target_diffs
 
-        # apply a sinusoidal fit to each verical slice (column of specific frequency)
-        cz_durations, self.fit_plot_probs = xr.apply_ufunc(
+        # a sine fitted to each frequency's column of durations
+        cz_durations, _ = xr.apply_ufunc(
             self.apply_sinusoidal_slices_fit,
             self.combined_data,
             input_core_dims=[[self.durations_coord]],
             output_core_dims=[["cz_pulse_durations"], ["plot_points"]],
             vectorize=True,
         )
-
-        # cleanup entries with nan values from rejected fits:
+        # the rejected fits' columns go
         cz_durations = cz_durations.dropna(dim=self.frequencies_coord)
-        cz_duration_values = cz_durations.values.flatten()
+        self.cz_working_durations_in_ns = get_durations_in_ns(
+            cz_durations.values.flatten()
+        )
+        self.cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
+        # every working point is selected
+        self.selected_frequencies = self.cz_working_frequencies
+        self.selected_durations_in_ns = self.cz_working_durations_in_ns
 
-        integer_gate_durations_in_ns = (cz_duration_values // 1e-9).astype(int)
-        # ensure durations are in multiples of 4ns:
-        cz_working_durations_in_ns = (integer_gate_durations_in_ns // 4) * 4
-        cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
-
-        # # fit the working points to a parabola model to extract the peak of the chevron
-        # parabolic_fit = self.apply_parabolic_fit(
-        #     cz_duration_values, cz_working_frequencies
-        # )
-        # selected_cz_frequencies = parabolic_fit.selected_cz_frequencies
-        # selected_cz_durations_in_ns = parabolic_fit.selected_cz_durations
-
-        selected_cz_frequencies = cz_working_frequencies
-        selected_cz_durations_in_ns = cz_working_durations_in_ns
-
-        self.cz_working_frequencies = cz_working_frequencies
-        self.cz_working_durations_in_ns = cz_working_durations_in_ns
-
-        self.selected_frequencies = selected_cz_frequencies
-        self.selected_durations_in_ns = selected_cz_durations_in_ns
-
-        selected_cz_durations_in_ns = selected_cz_durations_in_ns.tolist()
-        selected_cz_frequencies = selected_cz_frequencies.astype(int).tolist()
-
-        selected_frequencies_str = str(selected_cz_frequencies)
-        selected_cz_durations_in_ns_str = str(selected_cz_durations_in_ns)
-        analysis_succesful = True
         analysis_result = {
             "cz_working_frequencies": {
-                "value": selected_frequencies_str,
+                "value": str(self.selected_frequencies.astype(int).tolist()),
                 "error": 0,
             },
             "cz_working_durations_in_ns": {
-                "value": selected_cz_durations_in_ns_str,
+                "value": str(self.selected_durations_in_ns.tolist()),
                 "error": 0,
             },
         }
-        qoi = QOI(analysis_result, analysis_succesful)
-        return qoi
-
-    @property
-    def processed_dataset(self):
-        return self.probabilities
+        return get_fits_from_result(analysis_result, True)
 
     def plotter(self, figures_dictionary):
 
@@ -213,27 +112,13 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         )
 
         fig = plt.gcf()
-        parabolic_fit_frequencies = np.linspace(
-            self.cz_working_frequencies[0], self.cz_working_frequencies[-1], 100
-        )
-        # parabolic_fit_durations = self.chevron_fit_result.eval(
-        #     self.chevron_fit_result.params, x=parabolic_fit_frequencies
-        # )
-
         # if there are no working points return only the faceting plot
         if self.cz_working_durations_in_ns.size == 0:
             figures_dictionary[self.coupler] = [fig]
             return
 
-        # for every one of the six faceting axes, plot the working points and
-        # their parabolic fit
+        # plot the working points on every one of the six faceting axes
         for ax in fig.axes:
-            # ax.plot(
-            #     parabolic_fit_frequencies,
-            #     parabolic_fit_durations,
-            #     color="grey",
-            #     lw=5,
-            # )
             ax.plot(
                 self.cz_working_frequencies,
                 self.cz_working_durations_in_ns * 1e-9,
@@ -253,5 +138,22 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         figures_dictionary[self.coupler] = [fig]
 
 
-class CZChevronAnalysis(BaseAllCouplersAnalysis):
-    single_coupler_analysis_obj = CZChevronCouplerAnalysis
+def get_chevron_leads(
+    control: xr.DataArray, target: xr.DataArray, phase_path: str
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """Each qubit's population at its end of the phase path, less its |1>: |2> for the control and |0> for the target via 20, the reverse via 02."""
+    ends = {"via_20": (2, 0), "via_02": (0, 2)}
+    if phase_path not in ends:
+        raise ValueError(f"Invalid phase path:{phase_path}")
+    control_end, target_end = ends[phase_path]
+    return (
+        control.sel({"state": control_end}) - control.sel({"state": 1}),
+        target.sel({"state": target_end}) - target.sel({"state": 1}),
+    )
+
+
+def get_durations_in_ns(durations: np.ndarray) -> np.ndarray:
+    """Durations in seconds, rounded down to whole nanoseconds and then to multiples of 4 ns."""
+    # rounded to a millionth of a nanosecond first, so 100e-9 is 100 ns, not 99
+    nanoseconds = np.floor(np.round(durations * 1e9, 6)).astype(int)
+    return (nanoseconds // 4) * 4

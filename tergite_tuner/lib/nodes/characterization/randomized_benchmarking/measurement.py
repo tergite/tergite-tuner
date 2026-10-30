@@ -20,43 +20,31 @@ Module containing a schedule class for randomized benchmarking measurement.
 from typing import Literal
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import Loop
-from quantify_scheduler.operations.gate_library import Reset, Rxy
-from quantify_scheduler.operations.pulse_library import IdlePulse
-from quantify_scheduler.schedules.schedule import Schedule
 
+from tergite_tuner.backend import (
+    BinMode,
+    ExtendedTransmon,
+    IdlePulse,
+    Loop,
+    Measure_RO_3state_Opt,
+    Reset,
+    Rxy,
+    Schedule,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils import cliffords
-from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.lib.utils.cliffords.clifford_group import (
+    INTERLEAVED_CLIFFORDS,
+    get_rxy_angles,
+)
+from tergite_tuner.lib.utils.cliffords.randomized_benchmarking import (
+    randomized_benchmarking_sequence,
+)
 
 
 class RandomizedBenchmarkingMeasurement(BaseMeasurement):
     def __init__(self, transmons: dict[str, ExtendedTransmon]):
         super().__init__(transmons)
         self.transmons = transmons
-
-        """
-        Generate a schedule for performing a randomized benchmarking test using Clifford gates.
-        The goal is to get a measure of the total error of the calibrated qubits.
-
-        Schedule sequence
-            Reset -> Apply Clifford operations-> Apply inverse of all Clifford operations -> Measure
-
-        Parameters
-        ----------
-        repetitions
-            The amount of times the Schedule will be repeated.
-        **number_of_cliffords_operations
-            The number of random Clifford operations applied and then inverted on each qubit state.
-            This parameter is swept over.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
 
     def rb_shot(
         self,
@@ -71,11 +59,6 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
         qubits = list(self.transmons.keys())
 
         root_relaxation = shot.add(Reset(*qubits), label="Start")
-
-        clifford_sequence_lengths = list(number_of_cliffords.values())[0]
-
-        # for single qubits all_cliffords = 24
-        all_cliffords = len(cliffords.XY_decompositions)
 
         # The outer for loop iterates over all qubits:
         for this_qubit, clifford_sequence_lengths in number_of_cliffords.items():
@@ -99,28 +82,22 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
             if interleaving_gate == "Standard":
                 interleaving_clifford_id = None
             else:
-                if interleaving_gate not in cliffords.common_gates_indices:
+                if interleaving_gate not in INTERLEAVED_CLIFFORDS:
                     raise NotImplementedError(
                         f"{interleaving_gate} not currently supported"
                     )
-                interleaving_clifford_id = cliffords.common_gates_indices[
-                    interleaving_gate
-                ]
+                interleaving_clifford_id = INTERLEAVED_CLIFFORDS[interleaving_gate]
 
             # The inner for loop iterates over the random clifford sequence lengths
             for acq_index, this_number_of_cliffords in enumerate(
                 clifford_sequence_lengths
             ):
-                clifford_sequence = rng.integers(
-                    all_cliffords, size=this_number_of_cliffords
-                )  # for example if this_number_of_cliffords=4, a random_sequence could be [5, 14, 19, 23]
-                if interleaving_clifford_id is not None:
-                    interleaved_sequence = np.empty(
-                        clifford_sequence.size * 2, dtype=int
-                    )
-                    interleaved_sequence[0::2] = clifford_sequence
-                    interleaved_sequence[1::2] = interleaving_clifford_id
-                    clifford_sequence = interleaved_sequence
+                # ends with the Clifford that inverts the rest
+                clifford_sequence = randomized_benchmarking_sequence(
+                    this_number_of_cliffords,
+                    interleaved_clifford_idx=interleaving_clifford_id,
+                    seed=rng,
+                )
                 self.single_qubit_rb_shot(
                     shot, clifford_sequence, this_qubit, acq_index
                 )
@@ -135,19 +112,9 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
         acq_index: int,
     ) -> None:
 
-        for sequence_index in clifford_sequence:
-            physical_gates = cliffords.XY_decompositions[sequence_index]
-            for gate_angles in physical_gates.values():
-                theta = gate_angles["theta"]
-                phi = gate_angles["phi"]
+        for clifford_idx in clifford_sequence:
+            for theta, phi in get_rxy_angles(clifford_idx):
                 shot.add(Rxy(qubit=this_qubit, theta=theta, phi=phi))
-
-        _, recovery_XY_operations = cliffords.reversing_XY_matrix(clifford_sequence)
-
-        for gate_angles in recovery_XY_operations.values():
-            theta = gate_angles["theta"]
-            phi = gate_angles["phi"]
-            shot.add(Rxy(qubit=this_qubit, theta=theta, phi=phi))
 
         shot.add(
             Measure_RO_3state_Opt(

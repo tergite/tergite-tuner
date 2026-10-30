@@ -12,44 +12,56 @@
 # that they have been altered from the originals.
 
 
+import numpy as np
 import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBCouplerAnalysis,
+    DecayFits,
+    get_cz_fidelities,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.lib.spec import is_failed
+from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
+from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILENAME = "redis-2026-03-05-10-55-35.json"
+_STATE_FILENAME = "state-2026-03-05-10-55-35.json"
 
 
-def test_cz_rb(redis_connection, session_context, node_data_dir):
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+def test_cz_rb(session_context, node_data_dir):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_rb.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
-            qoi = analysis.process_coupler(dataset, "q12_q13")
+            analysis = CZRBCouplerAnalysis(
+                get_coupler_dataset(dataset, "q12_q13", "cz_rb"),
+                session_context,
+            )
+            qoi = analysis.analyse()
 
-            cz_fidelity = qoi.analysis_result["cz_fidelity"]["value"]
+            cz_fidelity = qoi["cz_fidelity"].value
 
-            assert qoi.analysis_successful
+            assert not is_failed(qoi)
             assert pytest.approx(cz_fidelity) == 0.95848
 
 
-def test_plotting(redis_connection, session_context, node_data_dir):
+def test_plotting(session_context, node_data_dir):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_rb.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
+            analysis = CZRBCouplerAnalysis(
+                get_coupler_dataset(dataset, "q12_q13", "cz_rb"),
+                session_context,
+            )
 
             figures_dictionary = {}
 
-            analysis.process_coupler(dataset, "q12_q13")
+            analysis.analyse()
             analysis.plotter(figures_dictionary)
 
             assert "q12_q13" in figures_dictionary
@@ -58,3 +70,51 @@ def test_plotting(redis_connection, session_context, node_data_dir):
 
             # one axis for the standard exponentials and one for the leakage RB exponentials
             assert len(figure.get_axes()) == 2
+
+
+def test_a_decay_fitted_to_zero_fails_the_fits(
+    session_context, node_data_dir, monkeypatch
+):
+    fit = ExpDecayModel.fit
+
+    def fit_to_zero(self, *args, **kwargs):
+        result = fit(self, *args, **kwargs)
+        result.params["p"].value = 0.0
+        return result
+
+    monkeypatch.setattr(ExpDecayModel, "fit", fit_to_zero)
+    with (
+        loaded_state(session_context, node_data_dir / _STATE_FILENAME),
+        xr.open_dataset(node_data_dir / "dataset_cz_rb.hdf5") as dataset,
+    ):
+        analysis = CZRBCouplerAnalysis(
+            get_coupler_dataset(dataset, "q12_q13", "cz_rb"), session_context
+        )
+        fits = analysis.analyse()
+
+    assert is_failed(fits)
+
+
+def _get_decays(p: float, lambda_L: float, AM: float, lambda_r: float) -> DecayFits:
+    curve = np.zeros(3)
+    return DecayFits(p, lambda_L, AM, lambda_r, curve, curve, curve)
+
+
+def test_an_ideal_cz_has_unit_fidelities():
+    decays = _get_decays(p=0.9, lambda_L=0.99, AM=0.5, lambda_r=0.9)
+
+    assert get_cz_fidelities(decays, decays) == pytest.approx((1.0, 1.0))
+
+
+def test_the_cz_fidelity_follows_the_decay_ratio():
+    standard = _get_decays(p=0.9, lambda_L=1.0, AM=0.5, lambda_r=0.8)
+    interleaved = _get_decays(p=0.45, lambda_L=1.0, AM=0.5, lambda_r=0.4)
+
+    # no leakage: 1 - L1 is 1 in both modes, so Nakamura's is 3/4 * lambda_r ratio + 1/4
+    assert get_cz_fidelities(standard, interleaved) == pytest.approx((0.625, 0.625))
+
+
+def test_without_interleaving_there_is_no_cz_fidelity():
+    decays = _get_decays(p=0.9, lambda_L=0.99, AM=0.5, lambda_r=0.9)
+
+    assert np.isnan(get_cz_fidelities(decays, None)).all()

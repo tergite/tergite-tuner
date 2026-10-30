@@ -11,63 +11,9 @@
 # that they have been altered from the originals.
 
 
-import copy
 from typing import Iterable
 
 import numpy
-
-
-def reduce_samplespace(iteration: tuple, samplespace: dict) -> dict:
-    reduced_samplespace = {}
-    element_values = {}
-
-    # To account for empty samplespaces
-    if not samplespace:
-        return reduced_samplespace
-
-    """
-    example of samplespace:
-    samplespace = {
-        "frequencies": {
-            "q1": np.array([4.0e9, 4.1e9, 4.2e9]),
-            "q2": np.array([4.5e9, 4.6e9, 4.7e9]),
-        },
-        "amplitudes": {
-            "q1": np.array([0.1, 0.2, 0.3, 0.4, 0.5]),
-            "q2": np.array([0.2, 0.3, 0.4, 0.5, 0.6]),
-        },
-    }
-    """
-
-    # e.g. 'frequencies':
-    settable = list(samplespace.keys())[0]
-    # e.g. ('frequencies', 'amplitudes'):
-    settables = samplespace.keys()
-
-    # elements may refer to qubits or couplers
-    elements = samplespace[settable].keys()  # ['q1', 'q2'] in the example
-    for settable_index, settable in enumerate(settables):
-        element_iteration = iteration[settable_index]
-        for element in elements:
-            qubit_specific_values = samplespace[settable][element]
-            current_value = qubit_specific_values[element_iteration]
-            element_values[element] = current_value
-        reduced_samplespace[settable] = copy.deepcopy(element_values)
-
-    """
-    example of reduced_samplespace at the (2,4) iteration:
-    reduced_external_samplespace = {
-        'frequencies': {
-             'q1': np.array(4.2e9),
-             'q2': np.array(4.7e9),
-        },
-        "amplitudes": {
-            "q1": np.array([0.5]),
-            "q2": np.array([0.6]),
-        },
-    }
-    """
-    return reduced_samplespace
 
 
 def samplespace_dimensions(samplespace: dict, loops=None) -> list[int]:

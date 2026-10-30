@@ -12,7 +12,7 @@
 
 """Utility functions for dicts"""
 
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator
 from typing import Mapping
 from typing import Mapping as MappingABC
 from typing import Tuple

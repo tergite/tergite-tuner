@@ -14,17 +14,23 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import X90, Reset, Rxy
-from quantify_scheduler.operations.pulse_library import IdlePulse, SoftSquarePulse
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import LoopOperation
 
+from tergite_tuner.backend import (
+    X90,
+    ExtendedCompositeSquareEdge,
+    ExtendedTransmon,
+    IdlePulse,
+    Reset,
+    Rxy,
+    Schedule,
+    SoftSquarePulse,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.lib.utils.schedules import (
+    add_cz_clock,
+    add_pair_measurement,
+    get_repeated_schedule,
+)
 
 
 class CZLocalPhasesMeasurement(BaseMeasurement):
@@ -36,7 +42,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         super().__init__(transmons)
         self.transmons = transmons
         self.couplers = couplers
-        self.downconvert = 4.4e9
 
     def ro_shot(
         self,
@@ -44,100 +49,65 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         swap: dict[str, np.ndarray],
         cz_gate_modes: dict[str, np.ndarray],
         coupler_dict: dict[str, dict],
-    ):
+    ) -> Schedule:
         shot = Schedule("cz_local_phase_shot", repetitions=1)
-
         qubits = self.transmons.keys()
         root_relaxation = shot.add(IdlePulse(4e-9))
-
-        for this_coupler in self.couplers:
-
-            control_qubit = coupler_dict[this_coupler]["control_qubit"]
-            target_qubit = coupler_dict[this_coupler]["target_qubit"]
-            swap_modes = swap[this_coupler]
-            gate_modes = cz_gate_modes[this_coupler]
-
-            # unpack the static parameters:
-            this_edge = self.couplers[this_coupler]
-            cz_frequency = this_edge.clock_freqs.cz_freq()
-            cz_amplitude = this_edge.cz.square_amp()
-            cz_duration = this_edge.cz.square_duration()
-            cz_clock = f"{this_coupler}.cz"
-            cz_pulse_port = f"{this_coupler}:fl"
-
-            # Initialize the clock at the first frequency value
-            shot.add_resource(
-                ClockResource(
-                    name=cz_clock,
-                    freq=-cz_frequency + self.downconvert,
-                )
-            )
-
-            shot.add(
-                Reset(*qubits), ref_op=root_relaxation
-            )  # To enforce parallelism we refer to the root relaxation
-
-            for outer_index, swap_mode in enumerate(swap_modes):
+        for coupler in self.couplers:
+            control_qubit = coupler_dict[coupler]["control_qubit"]
+            target_qubit = coupler_dict[coupler]["target_qubit"]
+            gate_modes = cz_gate_modes[coupler]
+            add_cz_clock(shot, coupler, self.couplers[coupler].clock_freqs.cz_freq())
+            # To enforce parallelism we refer to the root relaxation
+            shot.add(Reset(*qubits), ref_op=root_relaxation)
+            for outer_index, swap_mode in enumerate(swap[coupler]):
                 if swap_mode:
                     control_qubit, target_qubit = target_qubit, control_qubit
-
-                local_phases_values = local_phases[target_qubit]
-                number_of_inners = len(local_phases_values)
-
-                number_of_intermediates = len(gate_modes)
+                phases = local_phases[target_qubit]
                 for intermediate_index, gate_mode in enumerate(gate_modes):
-
-                    for inner_index, local_phase in enumerate(local_phases_values):
-                        starting_op = shot.add(IdlePulse(4e-9))
-
-                        this_index = (
-                            outer_index * (number_of_intermediates * number_of_inners)
-                            + intermediate_index * number_of_inners
-                            + inner_index
+                    for inner_index, local_phase in enumerate(phases):
+                        self._add_point(
+                            shot,
+                            coupler,
+                            (control_qubit, target_qubit),
+                            (gate_mode, local_phase),
+                            (outer_index * len(gate_modes) + intermediate_index)
+                            * len(phases)
+                            + inner_index,
                         )
-
-                        shot.add(X90(target_qubit), ref_op=starting_op)
-
-                        shot.add(IdlePulse(4e-9))
-
-                        if gate_mode:
-                            shot.add(
-                                SoftSquarePulse(
-                                    duration=cz_duration,
-                                    amp=cz_amplitude,
-                                    port=cz_pulse_port,
-                                    clock=cz_clock,
-                                ),
-                            )
-                        else:
-                            shot.add(IdlePulse(cz_duration))
-
-                        shot.add(IdlePulse(4e-9))
-
-                        final = shot.add(
-                            Rxy(theta=90, phi=local_phase, qubit=target_qubit)
-                        )
-
-                        shot.add(
-                            Measure_RO_3state_Opt(
-                                control_qubit,
-                                acq_index=this_index,
-                                bin_mode=BinMode.APPEND,
-                            ),
-                            ref_op=final,
-                        )
-                        shot.add(
-                            Measure_RO_3state_Opt(
-                                target_qubit,
-                                acq_index=this_index,
-                                bin_mode=BinMode.APPEND,
-                            ),
-                            ref_op=final,
-                        )
-
-                        shot.add(Reset(control_qubit, target_qubit))
-
         return shot
+
+    def _add_point(
+        self,
+        shot: Schedule,
+        coupler: str,
+        pair: tuple[str, str],
+        point: tuple[bool, float],
+        acq_index: int,
+    ) -> None:
+        """A Ramsey on the target around ``coupler``'s CZ pulse, or an idle as long if the gate is off."""
+        control_qubit, target_qubit = pair
+        is_gate_on, local_phase = point
+        edge = self.couplers[coupler]
+        cz_duration = edge.cz.square_duration()
+        start = shot.add(IdlePulse(4e-9))
+        shot.add(X90(target_qubit), ref_op=start)
+        shot.add(IdlePulse(4e-9))
+        if is_gate_on:
+            shot.add(
+                SoftSquarePulse(
+                    duration=cz_duration,
+                    amp=edge.cz.square_amp(),
+                    port=f"{coupler}:fl",
+                    clock=f"{coupler}.cz",
+                ),
+            )
+        else:
+            shot.add(IdlePulse(cz_duration))
+        shot.add(IdlePulse(4e-9))
+        final = shot.add(Rxy(theta=90, phi=local_phase, qubit=target_qubit))
+        add_pair_measurement(shot, pair, acq_index, final)
+        shot.add(Reset(control_qubit, target_qubit))
 
     def schedule_function(
         self,
@@ -149,8 +119,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         repetitions: int = 1,
     ) -> Schedule:
 
-        schedule = Schedule("CZ_local_phases", repetitions)
-
         local_phase_shot = self.ro_shot(
             local_phases=local_phases,
             swap=swap,
@@ -158,7 +126,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
             coupler_dict=coupler_dict,
         )
 
-        schedule.add(IdlePulse(16e-9))
-        schedule.add(LoopOperation(body=local_phase_shot, repetitions=loop_repetitions))
-        schedule.add(IdlePulse(16e-9))
-        return schedule
+        return get_repeated_schedule(
+            "CZ_local_phases", local_phase_shot, loop_repetitions, 16e-9, repetitions
+        )

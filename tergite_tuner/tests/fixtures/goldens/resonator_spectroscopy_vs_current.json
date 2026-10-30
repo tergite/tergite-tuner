@@ -1,0 +1,16 @@
+{
+  "q06_q07/control_resonator_crossing_points/0": -0.00042499999999999976,
+  "q06_q07/control_resonator_crossing_points/1": 0.0006750000000000008,
+  "q06_q07/is_successful": true,
+  "q06_q07/target_resonator_crossing_points/0": -0.0002499999999999997,
+  "q06_q07/target_resonator_crossing_points/1": 0.0005250000000000006,
+  "q08_q09/control_resonator_crossing_points/0": -0.0007999999999999999,
+  "q08_q09/control_resonator_crossing_points/1": 0.0007500000000000008,
+  "q08_q09/is_successful": true,
+  "q12_q13/control_resonator_crossing_points/0": -0.00042499999999999976,
+  "q12_q13/control_resonator_crossing_points/1": 0.0008250000000000008,
+  "q12_q13/is_successful": true,
+  "q14_q15/is_successful": true,
+  "q14_q15/target_resonator_crossing_points/0": -0.0002499999999999997,
+  "q14_q15/target_resonator_crossing_points/1": 0.0009250000000000008
+}

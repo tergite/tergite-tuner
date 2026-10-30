@@ -14,62 +14,37 @@
 import numpy as np
 import pytest
 
+from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.node import (
-    ROAmplitudeThreeStateOptimizationNode,
+    RO_AMPLITUDE_SPECS,
 )
-from tergite_tuner.tests.utils.fixtures import (
-    DEFAULT_TEST_COUPLERS,
-    DEFAULT_TEST_QUBITS,
-)
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
-def test_dummy_generation(redis_connection, session_context):
-    for qubit in DEFAULT_TEST_QUBITS:
-        redis_connection.hset(f"transmons:{qubit}", "measure:pulse_amp", "0.05")
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_3 = ROAmplitudeThreeStateOptimizationNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    dummy_dataset = node_3.generate_dummy_dataset()
-    first_qubit = DEFAULT_TEST_QUBITS[0]
-    number_of_ampls = len(node_3.schedule_samplespace["ro_amplitudes"][first_qubit])
-    number_of_states = len(node_3.schedule_samplespace["qubit_states"][first_qubit])
-
-    assert len(dummy_dataset.data_vars) == len(DEFAULT_TEST_QUBITS)
-    assert (
-        dummy_dataset.data_vars[0].size
-        == number_of_ampls * number_of_states * node_3.loops
-    )
-
-
-def test_12_pulse_duration(seeded_redis, session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+@pytest.mark.usefixtures("seeded_state")
+def test_each_qubit_gets_its_own_12_pulse_duration(session_context):
+    ExtendedTransmon.close_all()
     qubits = ["q13", "q14", "q15"]
-    node_12 = ROAmplitudeThreeStateOptimizationNode(
-        qubits, ["q13_q14"], session=session_context
-    )
-    # samplespace = {
-    #     "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
-    # }
-    samplespace = {  # small samplespace
-        "qubit_states": {
-            qubit: np.array([0, 1, 2], dtype=np.int16) for qubit in qubits
-        },
-        "ro_amplitudes": {qubit: np.linspace(0.1, 0.3, 3) for qubit in qubits},
-    }
-    transmons_dict = {qubit: node_12.device.get_element(qubit) for qubit in qubits}
-    measurement_class = node_12.measurement_cls(transmons_dict)
-    schedule = measurement_class.schedule_function(
-        **samplespace, **node_12.schedule_keywords
-    )
-    pulse_duration = None
-    for pulses in schedule.operations.values():
-        if pulses["name"] == "LoopOperation":
-            shot_schedule = pulses["control_flow_info"]["body"]
-            for shot in shot_schedule.operations.values():
-                if shot["name"] == "DRAGPulse":
-                    pulse_duration = shot["pulse_info"][0]["duration"]
-                    break
+    durations = {"q13": 40e-9, "q14": 60e-9, "q15": 80e-9}
+    device = configure_device("ro", qubits, ["q13_q14"], session_context)
+    transmons = {qubit: device.get_element(qubit) for qubit in qubits}
+    for qubit, duration in durations.items():
+        transmons[qubit].r12.ef_duration(duration)
+    spec = RO_AMPLITUDE_SPECS[NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION]
 
-    assert pytest.approx(pulse_duration) == 7.6e-8
+    schedule = spec.get_schedule(
+        transmons,
+        qubit_states={qubit: np.array([0, 1, 2], dtype=np.int16) for qubit in qubits},
+        ro_amplitudes={qubit: np.linspace(0.1, 0.3, 3) for qubit in qubits},
+        loop_repetitions=spec.loops,
+    )
+
+    pulse_durations = {
+        pulse["port"].split(":")[0]: pulse["duration"]
+        for operation in schedule.operations.values()
+        if operation["name"] == "LoopOperation"
+        for shot in operation["control_flow_info"]["body"].operations.values()
+        if shot["name"] == "DRAGPulse"
+        for pulse in shot["pulse_info"]
+    }
+    assert pulse_durations == pytest.approx(durations)

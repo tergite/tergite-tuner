@@ -56,60 +56,25 @@ email [contact@quantum.chalmersnextlabs.se](mailto://contact@quantum.chalmersnex
 
 ## How to develop
 
-Make sure you have [conda](https://docs.anaconda.com/free/miniconda/index.html) installed.
-Alternatively, you could also simply have [Python 3.12](https://www.python.org/downloads/) installed.
-Clone the repo and enter its root folder:
+Read [DESIGN.md](./DESIGN.md) first: the architecture, the conventions and where to start for a new node.
+
+Install [uv](https://docs.astral.sh/uv/), then clone the repo and install it with its development and test dependencies, exactly as `uv.lock` pins them:
 
 ```bash
 git clone git@github.com:tergite/tergite-tuner.git
 cd tergite-tuner
+uv sync --all-groups
 ```
 
-Create the conda environment
-
-```bash
-conda create -n tac python=3.12 -y
-```
-
-Install dependencies with development and test dependencies
-
-```bash
-conda activate tac
-pip install -e ".[test,dev]"
-```
-
-A couple of configuration files are required in one folder whose path you can set via the `CONFIG_DIR` env var. (See [`.example.env` file](./.example.env) for more details)
-
-- [`configuration.meta.toml`](./tergite_tuner/config/templatesconfiguration.meta.toml): 
-  It holds metadata about the other files
-- [`configs/cluster_config.json`](./tergite_tuner/config/templates/fc8a/configs/cluster_config.json): 
-  It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
-- [`configs/device_config.toml`](./tergite_tuner/config/templates/fc8a/configs/device_config.toml): 
-  It contains details about the quantum chip
-- [`configs/node_config.toml`](./tergite_tuner/config/templates/fc8a/configs/node_config.toml): 
-  It contains details about the calibration nodes to run
-- [`configs/spi_config.toml`](./tergite_tuner/config/templates/fc8a/configs/spi_config.toml): 
-  It contains details about the SPI instrument for driving the couplers
-
+The configuration files a run needs are described in the [README](./README.md#installation), with an example of each at the repository root.
 
 ### Testing
 
-Tests require a redis instance running on port 6378.
-
 ```bash
-redis-server --port 6378 {--daemonize yes}
+uv run pytest tergite_tuner -n 4
 ```
 
-Optionally, add `--daemonize yes` to run the redis instance in the background.
-If it does not run on your user, try running it again with `sudo` rights.
-
-Run the pytests for the whole application.
-
-```bash
-pytest tergite_tuner
-```
-
-You can find more information about unit tests in the documentation.
+After changing a dependency in `pyproject.toml`, run `uv lock` and commit `uv.lock` with it; CI installs with `--locked` and fails on a stale lock.
 
 ### Calibration Pipeline
 
@@ -118,7 +83,7 @@ Each calibration node goes through the following phases in order:
 - compilation
 - execution
 - post-processing
-- redis updating
+- storing its values in the session's device state
 
 ## License
 

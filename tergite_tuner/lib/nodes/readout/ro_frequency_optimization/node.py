@@ -3,6 +3,7 @@
 # (C) Copyright Eleftherios Moschandreou 2023, 2024
 # (C) Copyright Liangyu Chen 2023, 2024
 # (C) Copyright Michele Faucci Giannelli 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -11,129 +12,86 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Readout frequency optimization for two and for three states."""
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray
-from quantify_core.analysis import fitting_models as fm
 
-from tergite_tuner.lib.base.node import QubitNode
+from tergite_tuner.backend import ExtendedTransmon, Schedule
+from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
+    get_dummy_s21 as get_dummy_resonator,
+)
 from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.analysis import (
-    OptimalRO01FrequencyNodeAnalysis,
-    ROFrequencyThreeStateNodeAnalysis,
+    analyse_ro_frequency,
+    plot_three_state_ro_frequency,
+    plot_two_state_ro_frequency,
 )
 from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.measurement import (
     ROFrequencyOptimizationMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
 from tergite_tuner.lib.utils.samplespace import resonator_samples
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
-resonator = fm.ResonatorModel()
+
+def get_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    ro_opt_frequencies: dict[str, np.ndarray],
+    qubit_states: dict[str, np.ndarray],
+) -> Schedule:
+    return ROFrequencyOptimizationMeasurement(transmons).schedule_function(
+        ro_opt_frequencies, qubit_states
+    )
 
 
-class ROFrequencyOptimizationBase(QubitNode):
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(all_qubits, couplers, session, **schedule_keywords)
-
-    def generate_dummy_dataset(self, noise=False):
-        dataset = xarray.Dataset()
-        frequency_shift = 0.5e6
-
-        for index, qubit in enumerate(self.all_qubits):
-            vna_ro_freq = self.session.device_config.resonators[qubit]["VNA_frequency"]
-            qubit_states = self.schedule_samplespace["qubit_states"][qubit]
-            data_array = np.array([])
-            for qubit_state in qubit_states:
-                ro_freq = vna_ro_freq - frequency_shift * qubit_state
-                true_params = resonator.make_params(
-                    fr=ro_freq,
-                    Ql=15000,
-                    Qe=20000,
-                    A=0.01,
-                    theta=0.5,
-                    phi_v=0,
-                    phi_0=0,
-                )
-                samples = resonator_samples(qubit, self.session)
-                number_of_samples = len(samples)
-                frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
-                true_s21 = resonator.eval(params=true_params, f=frequncies)
-                np.random.seed(123)
-                noise_scale = 0.02
-                noise_s21 = noise_scale * (
-                    np.random.randn(number_of_samples)
-                    + 1j * np.random.randn(number_of_samples)
-                )
-                measured_s21 = true_s21
-                if noise:
-                    measured_s21 += noise_s21
-                data_array = np.concatenate((data_array, measured_s21))
-
-            dataset[index] = xarray.DataArray(data_array)
-        return dataset
+def get_dummy_s21(
+    qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
+) -> np.ndarray:
+    """The resonator with the qubit in each state, as resonator spectroscopy's dummy shifts it."""
+    frequencies = {"ro_frequencies": sweeps["ro_opt_frequencies"]}
+    return np.stack(
+        [
+            get_dummy_resonator(qubit, frequencies, session, state=int(state))
+            for state in sweeps["qubit_states"]
+        ],
+        axis=1,
+    )
 
 
-class ROFrequencyTwoStateOptimizationNode(ROFrequencyOptimizationBase):
-    name: str = "ro_frequency_two_state_optimization"
-    measurement_cls = ROFrequencyOptimizationMeasurement
-    analysis_cls = OptimalRO01FrequencyNodeAnalysis
-    measurement_type_cls = ScheduleNode
-
-    qubit_qois = ["extended_clock_freqs:readout_2state_opt"]
-
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(all_qubits, couplers, session, **schedule_keywords)
-
-        self.schedule_samplespace = {
-            "ro_opt_frequencies": {
-                qubit: resonator_samples(qubit, self.session)
-                for qubit in self.all_qubits
-            },
-            "qubit_states": {
-                qubit: np.array([0, 1], dtype=np.int8) for qubit in self.all_qubits
-            },
-        }
-
-
-class ROFrequencyThreeStateOptimizationNode(ROFrequencyOptimizationBase):
-    name: str = "ro_frequency_three_state_optimization"
-    measurement_cls = ROFrequencyOptimizationMeasurement
-    analysis_cls = ROFrequencyThreeStateNodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = ["extended_clock_freqs:readout_3state_opt"]
-
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(all_qubits, couplers, session, **schedule_keywords)
-        self.all_qubits = all_qubits
-
-        self.schedule_samplespace = {
-            "ro_opt_frequencies": {
-                qubit: resonator_samples(qubit, self.session)
-                for qubit in self.all_qubits
-            },
-            "qubit_states": {
-                qubit: np.array([0, 1, 2], dtype=np.int8) for qubit in self.all_qubits
-            },
-        }
+RO_FREQUENCY_SPECS = {
+    name: NodeSpec(
+        name=name,
+        element="qubit",
+        get_schedule=get_schedule,
+        analyse=analyse_ro_frequency,
+        qois={"frequency": field},
+        sweeps={
+            "ro_opt_frequencies": resonator_samples,
+            "qubit_states": get_fixed_sweep(np.arange(states, dtype=np.int8)),
+        },
+        get_dummy_s21=get_dummy_s21,
+        plot=plot,
+        plot_rows=rows,
+    )
+    for name, field, states, plot, rows in (
+        (
+            NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION,
+            "extended_clock_freqs:readout_2state_opt",
+            2,
+            plot_two_state_ro_frequency,
+            3,
+        ),
+        (
+            NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
+            "extended_clock_freqs:readout_3state_opt",
+            3,
+            plot_three_state_ro_frequency,
+            1,
+        ),
+    )
+}

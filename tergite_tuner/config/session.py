@@ -19,61 +19,60 @@ run: environment-driven settings (formerly the ``.env`` file), and the
 per-run state that used to live on a bespoke object (target node, qubit
 list, mode, etc.).
 
-Build a :class:`SessionContext` directly with kwargs, or via the
-:meth:`SessionContext.from_env` factory which merges values read from a
-``.env`` file with the matching ``os.environ`` entries.
+Build a :class:`SessionContext` with kwargs, which it fills from the
+environment, or with :meth:`SessionContext.from_env`, which also reads a
+``.env`` file.
 """
 
-import os
-import os.path
+import copy
+import json
 from datetime import datetime
 from functools import cached_property
 from ipaddress import IPv4Address
 from os import PathLike
 from pathlib import Path
 from typing import (
+    Annotated,
     Any,
-    Dict,
     List,
     Mapping,
     Optional,
     Self,
     Tuple,
-    Type,
     TypedDict,
     Union,
 )
 
-from dotenv import dotenv_values
 from pydantic import (
     BaseModel,
-    ConfigDict,
     Field,
     PrivateAttr,
-    RedisDsn,
+    ValidationInfo,
     computed_field,
     field_validator,
     model_validator,
 )
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
-from redis import Redis
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from tergite_tuner.backend import QbloxHardwareCompilationConfig
 from tergite_tuner.config.types import (
     ClusterConfig,
     DeviceConfig,
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
+    load_config,
 )
-from tergite_tuner.lib.base.node import BaseNode
-from tergite_tuner.lib.nodes import (
-    DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_CLS_MAP,
-    DEFAULT_NODE_DAG_EDGES,
-)
-from tergite_tuner.storage.redis import RedisStore
+from tergite_tuner.state import DeviceState
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
+
+_CONFIG_FILE_MODELS = {
+    "device_config": DeviceConfigFile,
+    "node_config": NodeConfig,
+    "spi_config": SpiConfig,
+    "cluster_config": ClusterConfig,
+}
 
 
 def _default_data_dir() -> Path:
@@ -100,7 +99,7 @@ class SessionOptions(TypedDict, total=False):
     stdout_log_level: int
     file_log_level: int
     spi_serial_port: str
-    redis_url: RedisDsn
+    calibration: dict | None | Path | str
     is_recalibration: bool
     ignore_spec: bool
     save_plot: bool
@@ -109,36 +108,28 @@ class SessionOptions(TypedDict, total=False):
     node_config: NodeConfig | Path | str
     spi_config: Optional[SpiConfig] | Path | str
     cluster_config: Optional[QbloxHardwareCompilationConfig] | Path | str
-    node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
-    ignored_nodes: Tuple[NodeEnum, ...]
-    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
+    node_specs: Mapping[NodeEnum, Any]
+    ignored_nodes: Tuple[NodeEnum, ...] | None
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] | None
     fixed_duration_couplers: Tuple[str, ...]
     reverse_phase_qubits: Tuple[str, ...]
 
 
-class SessionContext(BaseModel):
+class SessionContext(BaseSettings):
     """Context for the current calibration run.
 
-    The model unifies what was previously split between the ``.env``
-    file and a bespoke per-run object. Field names are the lower-case
-    versions of the corresponding ``.env`` variable names.
-
-    Build directly from kwargs or use :meth:`from_env` to load from a
-    ``.env`` file (with ``os.environ`` as a fallback).
+    Each field is read, in this order, from the keyword arguments, the environment
+    variable of its upper-case name, the ``.env`` file given to :meth:`from_env`, and
+    its default. Enums are read by name from the environment and the ``.env`` file,
+    and lists as comma-separated values.
 
     Attributes:
-        _redis: an active Redis client used by
-            the calibration. ``None`` until injected at the start of a
-            run. Carried on the session so it can flow alongside the
-            rest of the run state.
         cluster_ip: IP address of the Qblox cluster being used.
         target_node: the calibration node on which to stop. Stored as a
             :class:`NodeEnum`; the lower-case string form is exposed via
             :attr:`target_node_name`.
-        qubits: list of qubit names to calibrate. Accepts a
-            comma-separated string from env vars (``QUBITS='q00,q01'``).
-        couplers: list of coupler names to calibrate. Accepts a
-            comma-separated string from env vars.
+        qubits: list of qubit names to calibrate, e.g. ``QUBITS='q00,q01'``.
+        couplers: list of coupler names to calibrate.
         name: human-readable name for the run; defaults to the target
             node name in lower case.
         data_dir: path where the data files are stored. default: 'out' in the working directory.
@@ -154,8 +145,9 @@ class SessionContext(BaseModel):
         file_log_level: file logger level. Defaults to ``10`` so that
             all debug information is captured in log files.
         spi_serial_port: serial port on which the SPI rack is connected.
-        redis_url: the URL to the redis server that is to be used effectively
-            as RAM for this calibration.
+        calibration: the results of an earlier calibration, which the device state
+            starts from over the device config: as ``read_result`` returns them, or the
+            ``results.json`` a run wrote.
         id: stable identifier of this session, derived from the
             timestamp.
         cluster_config: config that QBlox needs to compile schedules on the
@@ -180,26 +172,29 @@ class SessionContext(BaseModel):
         save_plot: save the analysis plot (True) or not (False).
         node_dag_edges: the directed edges of the calibration Directed Acyclic Graph (DAG)
             with edges of format ``(parent, child)`` where ``child`` depends on ``parent``.
-            Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`
+            ``None`` means :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`.
         ignored_nodes: the nodes that should not be included in the final DAG
-            even if there are nodes that depend on them. Defaults to
-            :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`
-        node_cls_map: the mapping from :class:`NodeEnum` to its
-            concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
-            to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
+            even if there are nodes that depend on them. ``None`` means
+            :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`.
+        node_specs: nodes to run in place of the defaults in
+            :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, or in addition to them.
+            A node replaced here must keep its node's name.
         fixed_duration_couplers: the couplers with a fixed duration working points for cz calibration.
         reverse_phase_qubits: the qubits which have the reverse of the expected phase when attached
             to a coupler
     """
 
-    model_config = ConfigDict(
-        extra="allow", populate_by_name=True, arbitrary_types_allowed=True
+    model_config = SettingsConfigDict(
+        extra="ignore",
+        arbitrary_types_allowed=True,
+        env_ignore_empty=True,
+        env_parse_enums=True,
     )
 
     cluster_ip: Optional[IPv4Address] = None
     target_node: Optional[NodeEnum] = None
-    qubits: List[str] = []
-    couplers: List[str] = []
+    qubits: Annotated[List[str], NoDecode] = []
+    couplers: Annotated[List[str], NoDecode] = []
     name: Optional[str] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
@@ -208,57 +203,38 @@ class SessionContext(BaseModel):
     stdout_log_level: int = 25
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
-    redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
     is_recalibration: bool = True
     ignore_spec: bool = True
     save_plot: bool = False
     data_dir: Path = Field(default_factory=_default_data_dir)
-    device_config: DeviceConfig = Field(default_factory=DeviceConfig)
-    node_config: NodeConfig = Field(default_factory=NodeConfig)
-    spi_config: Optional[SpiConfig] = None
-    cluster_config: Optional[QbloxHardwareCompilationConfig] = None
-    node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
-    ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
-    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
-    fixed_duration_couplers: Tuple[str, ...] = ()
-    reverse_phase_qubits: Tuple[str, ...] = ()
-    _redis_fields_touched: Dict[str, int] = {}
+    # NoDecode: a file path, not JSON
+    device_config: Annotated[DeviceConfig, NoDecode] = Field(
+        default_factory=DeviceConfig
+    )
+    node_config: Annotated[NodeConfig, NoDecode] = Field(default_factory=NodeConfig)
+    spi_config: Annotated[Optional[SpiConfig], NoDecode] = None
+    cluster_config: Annotated[Optional[QbloxHardwareCompilationConfig], NoDecode] = None
+    # NodeSpecs, which config/ cannot import from lib/
+    node_specs: Mapping[NodeEnum, Any] = {}
+    ignored_nodes: Tuple[NodeEnum, ...] | None = None
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] | None = None
+    fixed_duration_couplers: Annotated[Tuple[str, ...], NoDecode] = ()
+    reverse_phase_qubits: Annotated[Tuple[str, ...], NoDecode] = ()
+    calibration: Annotated[dict | None, NoDecode] = None
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
-    _redis: Optional[Redis] = PrivateAttr(default=None)
-    _redis_store: RedisStore = PrivateAttr(default=None)
+    _state: DeviceState | None = PrivateAttr(default=None)
 
-    @field_validator("device_config", mode="before")
+    @field_validator(
+        "device_config", "node_config", "spi_config", "cluster_config", mode="before"
+    )
     @classmethod
-    def load_device_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to DeviceConfig."""
-        if isinstance(value, (str, Path)):
-            return DeviceConfigFile.from_toml(value).device
-        return value
-
-    @field_validator("node_config", mode="before")
-    @classmethod
-    def load_node_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to NodeConfig."""
-        if isinstance(value, (str, Path)):
-            return NodeConfig.from_toml(value)
-        return value
-
-    @field_validator("spi_config", mode="before")
-    @classmethod
-    def load_spi_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to SpiConfig."""
-        if isinstance(value, (str, Path)):
-            return SpiConfig.from_toml(value)
-        return value
-
-    @field_validator("cluster_config", mode="before")
-    @classmethod
-    def load_cluster_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to ClusterConfig."""
-        if isinstance(value, (str, Path)):
-            return ClusterConfig.from_json(value)
-        return value
+    def load_config_files(cls, value: Any, info: ValidationInfo) -> Any:
+        """Loads a config given as a file path."""
+        if not isinstance(value, (str, Path)):
+            return value
+        config = load_config(_CONFIG_FILE_MODELS[info.field_name], value)
+        return config.device if isinstance(config, DeviceConfigFile) else config
 
     @field_validator(
         "qubits",
@@ -268,15 +244,20 @@ class SessionContext(BaseModel):
         mode="before",
     )
     @classmethod
-    def cast_comma_separated_to_list(cls, value):
-        """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""
-        if value is None or isinstance(value, list):
-            return value
+    def split_comma_separated(cls, value: Any) -> Any:
+        """Splits a comma-separated string, as the environment gives lists."""
         if isinstance(value, str):
-            stripped = value.strip()
-            if not stripped:
-                return []
-            return [item.strip() for item in stripped.split(",") if item.strip()]
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
+
+    @field_validator("calibration", mode="before")
+    @classmethod
+    def load_calibration(cls, value: Any) -> Any:
+        """Reads results given as a JSON file or as ``CalibrationResults``."""
+        if isinstance(value, (str, Path)):
+            return json.loads(Path(value).read_text())
+        if isinstance(value, BaseModel):
+            return value.model_dump(exclude_none=True)
         return value
 
     @field_validator("target_node", mode="before")
@@ -292,42 +273,6 @@ class SessionContext(BaseModel):
             return NodeEnum(value.lower())
         return value
 
-    @field_validator("cluster_mode", mode="before")
-    @classmethod
-    def cast_cluster_mode(cls, value):
-        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``,
-        ``'re_analyse'``) as well as raw int / :class:`MeasurementMode` values."""
-        if value is None or isinstance(value, MeasurementMode):
-            return value
-        if isinstance(value, str):
-            return MeasurementMode[value.strip()]
-        return value
-
-    @field_validator("spi_mode", mode="before")
-    @classmethod
-    def cast_spi_mode(cls, value):
-        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``
-        as well as raw int / :class:`SPIMode` values."""
-        if value is None or isinstance(value, SPIMode):
-            return value
-        if isinstance(value, str):
-            return SPIMode[value.strip()]
-        return value
-
-    @field_validator("is_recalibration", "ignore_spec", mode="before")
-    @classmethod
-    def cast_bool_fields(cls, value):
-        """Accept common string representations (e.g. ``'true'``, ``'false'``,
-        ``'1'``, ``'0'``) as well as raw bool values from ``os.environ``."""
-        if isinstance(value, str):
-            normalised = value.strip().lower()
-            if normalised in ("true", "1", "yes", "y", "on"):
-                return True
-            if normalised in ("false", "0", "no", "n", "off", ""):
-                return False
-            raise ValueError(f"Cannot cast {value!r} to bool.")
-        return bool(value)
-
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
         """Derive cross-field defaults: name"""
@@ -342,7 +287,7 @@ class SessionContext(BaseModel):
         return f"{self._timestamp.strftime('%Y-%m-%d--%H-%M-%S')}--tac-run-id"
 
     @computed_field
-    @cached_property
+    @property
     def target_node_name(self) -> Optional[str]:
         """Name of the target node (or ``None`` if unset)."""
         if self.target_node is None:
@@ -350,80 +295,70 @@ class SessionContext(BaseModel):
         return self.target_node.value
 
     @property
-    def redis(self) -> Redis:
-        """The redis connection where data is being saved"""
-        if self._redis is None:
-            self._redis = Redis.from_url(str(self.redis_url), decode_responses=True)
-        return self._redis
+    def state(self) -> DeviceState:
+        """The run's device state: the device config's qubits and couplers, with ``calibration`` over them."""
+        if self._state is None:
+            self._state = DeviceState(self._get_config_records())
+            self._state.load(self.calibration or {})
+        return self._state
 
-    @property
-    def redis_store(self) -> RedisStore:
-        """The redis store instance that handles data persistence"""
-        if self._redis_store is None:
-            self._redis_store = RedisStore(self.redis)
-        return self._redis_store
+    @state.setter
+    def state(self, state: DeviceState) -> None:
+        self._state = state
 
-    @computed_field
-    @property
-    def redis_fields_touched(self) -> Dict[str, int]:
-        """The redis fields that might have been touched by the calibration"""
-        return self._redis_fields_touched
+    def __copy__(self) -> Self:
+        session = super().__copy__()
+        # a copy gets its own state, as model_copy shares private attributes
+        session._state = copy.deepcopy(self._state)
+        return session
 
-    def update_redis_fields_log(self, node: BaseNode):
-        """Updates the redis fields that might have been touched
+    def update(self, **options: Any) -> None:
+        """Sets ``options`` over this session's values, validated, as ``dict.update`` does.
 
-        Args:
-            node: the current node running
+        The state stays, and gains the device config's values of qubits and couplers it did not have.
         """
-        for field in node.redis_fields:
-            old_count = self._redis_fields_touched.setdefault(field, 0)
-            self._redis_fields_touched[field] = old_count + 1
-
-    def refresh_redis_fields_log(self):
-        """Refreshes the log that tracks the fields that have been touched in the session"""
-        self._redis_fields_touched.clear()
+        validated = self.model_validate({**dict(self), **options})
+        for name in options:
+            setattr(self, name, getattr(validated, name))
+        if self._state is not None:
+            self._state.load(
+                {
+                    collection: {
+                        element: record
+                        for element, record in records.items()
+                        if not self._state.get_record(collection, element)
+                    }
+                    for collection, records in self._get_config_records().items()
+                }
+            )
 
     @classmethod
     def from_env(
         cls,
         file: Optional[Union[str, "PathLike[str]"]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "SessionContext":
-        """Build a :class:`SessionContext` from a ``.env`` file and ``os.environ``.
-
-        Resolution order, per field:
-          1. The matching ``KEY`` in the ``.env`` file at ``file`` (if
-             ``file`` is provided and the file exists).
-          2. ``os.environ[<FIELD_NAME_UPPER>]`` if present and non-empty.
-          3. The :class:`SessionContext` field default.
-
-        Args:
-            file: path to a ``.env`` file. When ``None`` (or the path
-                does not exist), only ``os.environ`` and the class
-                defaults are used.
-            kwargs: extra attributes to set on this instance.
-                These override any that are set in the environment already or on the env file
-
-        Returns:
-            A validated :class:`SessionContext`.
+        """A session from ``kwargs``, the environment and the ``.env`` file at ``file``, in that order.
 
         Raises:
-            FileNotFoundError: if ``file`` is provided but doesn't exist.
+            FileNotFoundError: if ``file`` is given but does not exist.
         """
-        data = {k.lower(): v for k, v in os.environ.items() if v not in (None, "")}
+        if file is not None and not Path(file).exists():
+            raise FileNotFoundError(f"No .env file at {file}")
+        return cls(_env_file=file, **kwargs)
 
-        try:
-            with open(file, "r", encoding="utf-8") as fh:
-                data.update(
-                    {
-                        k.lower(): v
-                        for k, v in dotenv_values(stream=fh).items()
-                        if v not in (None, "")
-                    }
-                )
-        except TypeError:
-            pass
-
-        # update with kwargs
-        data.update(kwargs)
-        return cls.model_validate(data)
+    def _get_config_records(self) -> dict[str, dict[str, Any]]:
+        """The device config's values of the session's qubits and couplers."""
+        config = self.device_config
+        return {
+            "transmons": {
+                qubit: config.qubits[qubit]
+                for qubit in self.qubits
+                if qubit in config.qubits
+            },
+            "couplers": {
+                coupler: config.couplers[coupler]
+                for coupler in self.couplers
+                if coupler in config.couplers
+            },
+        }

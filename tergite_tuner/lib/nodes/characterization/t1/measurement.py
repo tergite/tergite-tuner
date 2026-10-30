@@ -17,12 +17,9 @@ Module containing a schedule class for T1 and T2 coherence time measurement.
 """
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
 
+from tergite_tuner.backend import BinMode, ExtendedTransmon, Measure, Reset, Schedule, X
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class T1Measurement(BaseMeasurement):

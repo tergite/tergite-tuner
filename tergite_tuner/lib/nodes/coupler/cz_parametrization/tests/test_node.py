@@ -14,148 +14,63 @@
 
 import pytest
 
-from tergite_tuner.lib.base.node import CouplerNode
-from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationAnalysis,
-)
-from tergite_tuner.lib.nodes.coupler.cz_parametrization.measurement import (
-    CZParametrizationMeasurement,
-)
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.node import (
-    CZParametrizationNode,
+    CZ_PARAMETRIZATION_SPECS,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
-from tergite_tuner.tests.utils.fixtures import (
-    DEFAULT_TEST_COUPLERS,
-    DEFAULT_TEST_QUBITS,
-)
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.lib.run import get_external_sweeps, get_sweeps, validate_couplers
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+SPEC = CZ_PARAMETRIZATION_SPECS[NodeEnum.CZ_PARAMETRIZATION]
+COUPLER = "q14_q15"
 
 
-def test_cannot_create_correct_type(redis_connection, session_context):
-    """
-    raise error if parking current does not exist on redis
-    """
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    coupler = "q14_q15"
-    if redis_connection.hexists(f"couplers:{coupler}", "initial_parking_current"):
-        redis_connection.hdel(f"couplers:{coupler}", "initial_parking_current")
+@pytest.fixture
+def coupler_session(session_context):
+    session_context.state.load(
+        {
+            "couplers": {
+                COUPLER: {
+                    "initial_parking_current": 100e-6,
+                    "cz_phase_path": "via_20",
+                    "control_qubit": "q15",
+                    "target_qubit": "q14",
+                }
+            },
+            "transmons": {
+                "q14": {"clock_freqs:f01": 4.2e6, "clock_freqs:f12": 4.0e6},
+                "q15": {"clock_freqs:f01": 5.2e6, "clock_freqs:f12": 5.0e6},
+            },
+        }
+    )
+    return session_context.model_copy(
+        update={"couplers": [COUPLER], "user_samplespace": {}}
+    )
+
+
+def test_a_missing_parking_current_raises(coupler_session):
+    coupler_session.state.load(
+        {"couplers": {COUPLER: {"initial_parking_current": None}}}
+    )
 
     with pytest.raises(TypeError):
-        CZParametrizationNode(
-            all_qubits=["q14", "q15"],
-            couplers=["q14_q15"],
-            session=session_context,
-        )
+        get_external_sweeps(SPEC, coupler_session)
 
 
-def test_can_create_correct_type(redis_connection, session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    coupler = "q14_q15"
-    redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
-    redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
-    redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q15")
-    redis_connection.hset(f"couplers:{coupler}", "target_qubit", "q14")
-    redis_connection.hset(f"transmons:{'q14'}", "clock_freqs:f01", "4.2e6")
-    redis_connection.hset(f"transmons:{'q14'}", "clock_freqs:f12", "4.0e6")
-    redis_connection.hset(f"transmons:{'q15'}", "clock_freqs:f01", "5.2e6")
-    redis_connection.hset(f"transmons:{'q15'}", "clock_freqs:f12", "5.0e6")
-    node = CZParametrizationNode(
-        all_qubits=["q14", "q15"],
-        couplers=[coupler],
-        session=session_context,
-    )
-    assert isinstance(node, CouplerNode)
+def test_the_current_is_the_initial_parking_current(coupler_session):
+    assert get_external_sweeps(SPEC, coupler_session)["dc_currents"][COUPLER] == [
+        pytest.approx(100e-6)
+    ]
 
 
-def test_validation_return_error_with_same_qubit_coupler(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
+def test_frequencies_sweep_around_the_cz_transition(coupler_session):
+    frequencies = get_sweeps(SPEC, coupler_session)["cz_pulse_frequencies"][COUPLER]
+
+    # via_20: the target's f01 less the control's f12, rounded down to 10 kHz
+    assert frequencies[0] == pytest.approx(0.8e6 - 10e6)
+    assert frequencies[-1] == pytest.approx(0.8e6 + 4e6)
+
+
+@pytest.mark.parametrize("couplers", [["q14_q14"], ["q14_q15", "q15_q16"]])
+def test_couplers_sharing_a_qubit_are_refused(couplers):
     with pytest.raises(ValueError):
-        CZParametrizationNode(
-            all_qubits=["q14", "q15"],
-            couplers=["q14_q14"],
-            session=session_context,
-        )
-
-
-@pytest.mark.skip
-def test_validation_return_error_with_qubits_not_matching_couplers(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    with pytest.raises(ValueError):
-        CZParametrizationNode(
-            all_qubits=["q14", "q16"],
-            couplers=["q14_q15"],
-            session=session_context,
-        )
-
-
-def test_measurement_class_type(redis_connection, session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    coupler = "q14_q15"
-    redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
-    redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q15")
-    redis_connection.hset(f"couplers:{coupler}", "target_qubit", "q14")
-    redis_connection.hset(f"transmons:q14", "clock_freqs:f01", "5.2e6")
-    redis_connection.hset(f"transmons:q14", "clock_freqs:f12", "5.0e6")
-    redis_connection.hset(f"transmons:q15", "clock_freqs:f01", "4.2e6")
-    redis_connection.hset(f"transmons:q15", "clock_freqs:f12", "4.0e6")
-    redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
-    c = CZParametrizationNode(
-        all_qubits=["q14", "q15"],
-        couplers=[coupler],
-        session=session_context,
-    )
-    assert isinstance(c.measurement_cls, type(CZParametrizationMeasurement))
-    assert isinstance(c.analysis_cls, type(CZParametrizationAnalysis))
-    assert issubclass(c.measurement_type_cls, ExternalParameterNode)
-
-
-def test_dummy_generation(redis_connection, session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    for coupler in DEFAULT_TEST_COUPLERS:
-        c_qubit, t_qubit = coupler.split("_")
-        redis_connection.hset(
-            f"couplers:{coupler}", "initial_parking_current", "100e-6"
-        )
-        redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
-        redis_connection.hset(f"couplers:{coupler}", "control_qubit", c_qubit)
-        redis_connection.hset(f"couplers:{coupler}", "target_qubit", t_qubit)
-
-    for qubit in DEFAULT_TEST_QUBITS[::2]:
-        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f01", "4.2e6")
-        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f12", "4.0e6")
-        redis_connection.hset(f"transmons:{qubit}", "centroid_I", "0")
-        redis_connection.hset(f"transmons:{qubit}", "centroid_Q", "0")
-        redis_connection.hset(f"transmons:{qubit}", "omega_01", "60")
-        redis_connection.hset(f"transmons:{qubit}", "omega_12", "180")
-        redis_connection.hset(f"transmons:{qubit}", "omega_20", "270")
-    for qubit in DEFAULT_TEST_QUBITS[1::2]:
-        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f01", "5.2e6")
-        redis_connection.hset(f"transmons:{qubit}", "clock_freqs:f12", "5.0e6")
-        redis_connection.hset(f"transmons:{qubit}", "centroid_I", "0")
-        redis_connection.hset(f"transmons:{qubit}", "centroid_Q", "0")
-        redis_connection.hset(f"transmons:{qubit}", "omega_01", "60")
-        redis_connection.hset(f"transmons:{qubit}", "omega_12", "180")
-        redis_connection.hset(f"transmons:{qubit}", "omega_20", "270")
-
-    node = CZParametrizationNode(
-        all_qubits=DEFAULT_TEST_QUBITS,
-        couplers=DEFAULT_TEST_COUPLERS,
-        session=session_context,
-    )
-    dummy_dataset = node.generate_dummy_dataset()
-    first_coupler = DEFAULT_TEST_COUPLERS[0]
-
-    number_of_frequencies = len(
-        node.schedule_samplespace["cz_pulse_frequencies"][first_coupler]
-    )
-    number_of_amplitudes = len(
-        node.schedule_samplespace["cz_pulse_amplitudes"][first_coupler]
-    )
-
-    data_vars = dummy_dataset.data_vars
-
-    assert len(data_vars) == 2 * len(DEFAULT_TEST_COUPLERS)
-    assert (
-        data_vars[0].size == number_of_frequencies * number_of_amplitudes * node.loops
-    )
+        validate_couplers(couplers)

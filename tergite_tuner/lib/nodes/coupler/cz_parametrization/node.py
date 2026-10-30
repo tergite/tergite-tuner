@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2023, 2024
 # (C) Copyright Amr Osman, 2024
 # (C) Chalmers Next Labs 2025
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,170 +13,101 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""CZ parametrization: the CZ pulse's frequency and amplitude, and the coupler's parking current."""
 
-from typing import TYPE_CHECKING, Literal
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import xarray as xr
 from scipy.stats import multivariate_normal
 
-from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationNodeAnalysis,
+    CZParametrizationCouplerAnalysis,
 )
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.measurement import (
     CZParametrizationMeasurement,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
+from tergite_tuner.lib.nodes.coupler.utils import (
+    get_coupler_value,
+    get_phase_path,
+    get_transition_frequency,
+    set_dc_currents,
+)
+from tergite_tuner.lib.spec import (
+    NodeSpec,
+    get_class_schedule,
+    get_coupler_analyser,
+    get_fixed_sweep,
+    save_coupler_figures,
+)
 from tergite_tuner.lib.utils.classification_functions import generate_iq_shots
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
+LOOPS = 128
+AMPLITUDES = np.linspace(0.50, 0.95, 25)
 
-class CZParametrizationNode(CouplerNode):
-    name: str = "cz_parametrization"
-    measurement_cls = CZParametrizationMeasurement
-    analysis_cls = CZParametrizationNodeAnalysis
-    measurement_type_cls = ExternalParameterNode
-    coupler_qois = ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"]
 
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-    ):
-        super().__init__(couplers, session)
-        self.couplers = couplers
+def get_frequencies(coupler: str, session: "SessionContext") -> np.ndarray:
+    """28 frequencies from 10 MHz below to 4 MHz above the coupler's CZ transition."""
+    return np.linspace(-10e6, 4e6, 28) + get_transition_frequency(coupler, session)
 
-        self.coupled_qubits = self.get_coupled_qubits()
-        self.all_qubits = self.coupled_qubits
-        self.validate()
 
-        self.schedule_keywords["loop_repetitions"] = 128
-        self.loops = self.schedule_keywords["loop_repetitions"]
-        self.ramp_back_to_zero = False
-        phase_paths = self.all_phase_paths()
-        self.analysis_keywords = {
-            coupler: {"phase_path": phase_paths[coupler]} for coupler in self.couplers
-        }
+def get_parking_current(coupler: str, session: "SessionContext") -> np.ndarray:
+    return np.array(
+        [float(get_coupler_value(coupler, "initial_parking_current", session))]
+    )
 
-        self.external_samplespace = {
-            "dc_currents": {
-                coupler: self.single_point_around(self.parking_current(coupler))
-                for coupler in self.couplers
-            },
-        }
-        self.schedule_samplespace = {
-            "cz_pulse_amplitudes": {
-                coupler: np.linspace(0.50, 0.95, 25) for coupler in self.couplers
-            },
-            "cz_pulse_frequencies": {
-                coupler: np.linspace(-10e6, 4e6, 28)
-                + self.transition_frequency(coupler, phase_path=phase_paths[coupler])
-                for coupler in self.couplers
-            },
-        }
 
-    def single_point_around(self, central_value: float) -> np.ndarray:
-        return np.array([central_value])
+def get_analysis_keywords(coupler: str, session: "SessionContext") -> dict[str, Any]:
+    return {"phase_path": get_phase_path(coupler, session)}
 
-    def fine_samplespace_around(self, central_value: float) -> np.ndarray:
-        return np.arange(central_value - 5e-6, central_value + 4.5e-6, 2e-6)
 
-    def broad_samplespace_around(self, central_value: float) -> np.ndarray:
-        return np.arange(central_value - 50e-6, central_value + 45e-6, 8e-6)
+def get_dummy_s21(
+    qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
+) -> np.ndarray:
+    """Shots whose probabilities make a blob over amplitude and frequency, a peak for one qubit and a dip for the other."""
+    amplitudes, frequencies = (
+        sweeps["cz_pulse_amplitudes"],
+        sweeps["cz_pulse_frequencies"],
+    )
+    distribution = multivariate_normal(cov=np.eye(2), mean=np.zeros(2))
+    x, y = np.meshgrid(
+        np.linspace(-3, 3, num=len(frequencies)),
+        np.linspace(-3, 3, num=len(amplitudes)),
+    )
+    peaks = distribution.pdf(np.dstack((x, y)))
+    peaks /= peaks.max()
+    zeros = np.zeros_like(peaks)
+    is_first = any(coupler.split("_")[0] == qubit for coupler in session.couplers)
+    probabilities = [peaks, 1 - peaks, zeros] if is_first else [zeros, 1 - peaks, peaks]
+    return np.ravel(
+        generate_iq_shots(np.array(probabilities), qubit, LOOPS, session.state)
+    )
 
-    def parking_current(self, coupler: str):
-        return float(
-            self.session.redis.hget(f"couplers:{coupler}", "initial_parking_current")
-        )
 
-    def all_phase_paths(self) -> dict[str, Literal["via_02", "via_20"]]:
-        phase_paths = {}
-        for coupler in self.couplers:
-            path = self.session.redis.hget(f"couplers:{coupler}", "cz_phase_path")
-            phase_paths[coupler] = path
-        return phase_paths
-
-    def initial_operation(self):
-        pass
-
-    def pre_measurement_operation(self, reduced_ext_space: dict[str, dict]):
-        iteration_dict = reduced_ext_space["dc_currents"]
-        # there is some redundancy tha all qubits have the same
-        # iteration index, that's why we keep the first value->
-        this_iteration_value = list(iteration_dict.values())[0]
-        dac_values = {}
-        for coupler in self.couplers:
-            this_iteration_value = iteration_dict[coupler]
-            dac_values[coupler] = this_iteration_value
-        # don't set DAC currents if we are just recalibrating
-        if not self.session.is_recalibration:
-            self.spi_manager.set_dac_current(dac_values)
-
-    def final_operation(self):
-        """
-        bring the current back to zero
-        """
-        if self.ramp_back_to_zero:
-            dac_values = {}
-            for coupler in self.couplers:
-                dac_values[coupler] = 0
-            # don't set DAC currents if we are just recalibrating
-            if not self.session.is_recalibration:
-                self.spi_manager.set_dac_current(dac_values)
-
-    def generate_dummy_dataset(self):
-        dataset = xr.Dataset()
-        for index, coupler in enumerate(self.couplers):
-            q1, q2 = coupler.split("_")
-            amplitudes = self.schedule_samplespace["cz_pulse_amplitudes"][coupler]
-            frequencies = self.schedule_samplespace["cz_pulse_frequencies"][coupler]
-            number_of_amplitudes = len(amplitudes)
-            number_of_frequencies = len(frequencies)
-
-            # a simple 2d gaussian
-            cov = np.array([[1, 0], [0, 1]])
-            distr = multivariate_normal(cov=cov, mean=np.array([0, 0]))
-
-            # Create a coordinate grid
-            sigma_1, sigma_2 = cov[0, 0], cov[1, 1]
-            x = np.linspace(-3 * sigma_1, 3 * sigma_1, num=number_of_frequencies)
-            y = np.linspace(-3 * sigma_2, 3 * sigma_2, num=number_of_amplitudes)
-            X, Y = np.meshgrid(x, y)
-
-            # Generating the density function
-            # for each point in the meshgrid
-            pdf = np.zeros(X.shape)
-            for i in range(X.shape[0]):
-                for j in range(X.shape[1]):
-                    pdf[i, j] = distr.pdf([X[i, j], Y[i, j]])
-
-            # normalize
-            pdf /= pdf.max()
-
-            # emulate blobs
-            peaks = pdf
-            dips = 1 - pdf
-            zeros = np.zeros((number_of_amplitudes, number_of_frequencies))
-
-            complex_points_q1 = generate_iq_shots(
-                np.array([peaks, dips, zeros]),
-                q1,
-                self.loops,
-                self.session.redis,
-            )
-            complex_points_q2 = generate_iq_shots(
-                np.array([zeros, dips, peaks]),
-                q2,
-                self.loops,
-                self.session.redis,
-            )
-            data_array_q1 = xr.DataArray(complex_points_q1)
-            data_array_q2 = xr.DataArray(complex_points_q2)
-
-            dataset[2 * index] = data_array_q1
-            dataset[2 * index + 1] = data_array_q2
-        return dataset
+CZ_PARAMETRIZATION_SPECS = {
+    NodeEnum.CZ_PARAMETRIZATION: NodeSpec(
+        name=NodeEnum.CZ_PARAMETRIZATION,
+        element="coupler",
+        get_schedule=get_class_schedule(CZParametrizationMeasurement),
+        analyse=get_coupler_analyser(CZParametrizationCouplerAnalysis),
+        get_analysis_keywords=get_analysis_keywords,
+        qois={
+            "cz_pulse_frequency": "cz_pulse_frequency",
+            "cz_pulse_amplitude": "cz_pulse_amplitude",
+            "parking_current": "parking_current",
+        },
+        sweeps={
+            "cz_pulse_amplitudes": get_fixed_sweep(AMPLITUDES),
+            "cz_pulse_frequencies": get_frequencies,
+        },
+        get_dummy_s21=get_dummy_s21,
+        loops=LOOPS,
+        external_sweeps={"dc_currents": get_parking_current},
+        set_external=set_dc_currents,
+        save_details=save_coupler_figures,
+    )
+}

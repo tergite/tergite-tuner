@@ -23,8 +23,6 @@ def draw_arrow_chart(header: str, node_list: list[str]):
         header: Headline description
         node_list: Node sequence to print
 
-    Returns:
-
     """
     if len(node_list) == 0:
         logger.status("Node sequence for the graph is empty.")

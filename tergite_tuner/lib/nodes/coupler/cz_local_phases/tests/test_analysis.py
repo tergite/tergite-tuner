@@ -11,55 +11,51 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
+import pytest
 import xarray as xr
 
-from conftest import node_data_dir
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesCouplerAnalysis,
+    get_gate_phase,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.lib.spec import is_failed
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
+from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILENAME = "redis-coupler-run-2026-02.json"
+_STATE_FILENAME = "state-coupler-run-2026-02.json"
 
 
-def test_cz_local_phases(redis_connection, session_context, node_data_dir):
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+def test_cz_local_phases(session_context, node_data_dir):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_local_phases.hdf5"
         with xr.open_dataset(file_path) as dataset:
             analysis = CZLocalPhasesCouplerAnalysis(
-                "cz_calibration",
-                ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+                get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
                 session_context,
             )
-            qoi = analysis.process_coupler(dataset, "q13_q14")
+            qoi = analysis.analyse()
 
-            cz_dynamic_control = qoi.analysis_result["cz_dynamic_control"]["value"]
-            cz_dynamic_target = qoi.analysis_result["cz_dynamic_target"]["value"]
-
-            assert qoi.analysis_successful
-            # assert pytest.approx(control_local_phase) == -135.2184
-            # assert pytest.approx(target_local_phase) == 73.0427
+            assert not is_failed(qoi)
 
 
-def test_plotting(redis_connection, session_context, node_data_dir):
+def test_plotting(session_context, node_data_dir):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_local_phases.hdf5"
         with xr.open_dataset(file_path) as dataset:
-
             analysis = CZLocalPhasesCouplerAnalysis(
-                "cz_calibration",
-                ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+                get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
                 session_context,
             )
 
             figures_dictionary = {}
 
-            analysis.process_coupler(dataset, "q13_q14")
+            analysis.analyse()
             analysis.plotter(figures_dictionary)
 
             assert "q13_q14" in figures_dictionary
@@ -67,3 +63,11 @@ def test_plotting(redis_connection, session_context, node_data_dir):
             figure = figures_dictionary["q13_q14"][0]
 
             assert len(figure.get_axes()) == 4
+
+
+def test_the_gate_phase_is_the_phase_with_the_gate_less_without():
+    phis = xr.DataArray(
+        [np.pi / 2, np.pi / 6], coords={"gate": [True, False]}, dims="gate"
+    )
+
+    assert get_gate_phase(phis, "gate") == pytest.approx(60.0)

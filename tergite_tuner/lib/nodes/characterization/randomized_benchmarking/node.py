@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2024
 # (C) Copyright Amr Osman 2024
 # (C) Copyright Michele Faucci Giannelli 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,62 +13,72 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Single-qubit randomized benchmarking, standard and interleaved."""
+
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray
 
-from tergite_tuner.lib.base.node import QubitNode
+from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis import (
-    RandomizedBenchmarkingNodeAnalysis,
+    RandomizedBenchmarkingQubitAnalysis,
 )
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.measurement import (
     RandomizedBenchmarkingMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
+from tergite_tuner.lib.spec import (
+    NodeSpec,
+    get_class_analyser,
+    get_fixed_sweep,
+    plot_class_analysis,
+)
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
+
+SEEDS = 6
+CLIFFORDS = np.array([0, 8, 32, 512, 1200])
+# "Standard" runs without an interleaved gate, which can be X, Y, X90 or Y90
+INTERLEAVE_GATES = np.array(["Standard", "Y90"])
+LOOPS = 500
 
 
-class RandomizedBenchmarkingNode(QubitNode):
-    name: str = "randomized_benchmarking"
-    measurement_cls = RandomizedBenchmarkingMeasurement
-    analysis_cls = RandomizedBenchmarkingNodeAnalysis
-    measurement_type_cls = OuterScheduleNode
-    qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
+def get_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    number_of_cliffords: dict[str, np.ndarray],
+    seeds: dict[str, int],
+    interleave_gate: dict[str, str],
+    loop_repetitions: int,
+    multiplexing: str,
+) -> Schedule:
+    return RandomizedBenchmarkingMeasurement(transmons).schedule_function(
+        seeds, number_of_cliffords, loop_repetitions, interleave_gate, multiplexing
+    )
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.schedule_keywords = schedule_keywords
-        self.schedule_keywords = {}
-        self.loops = 500
-        self.schedule_keywords["loop_repetitions"] = self.loops
-        self.schedule_keywords["multiplexing"] = "parallel"  # 'one_by_one' | 'parallel'
 
-        self.RB_REPEATS = 6
-        self.outer_schedule_samplespace = {
-            "seeds": {
-                qubit: np.arange(self.RB_REPEATS, dtype=np.int32)
-                for qubit in self.all_qubits
-            },
-            # available gates for interleaving: 'Standard' -> no interleave
-            # 'X', 'Y', 'X90', 'Y90'
-            "interleave_gate": {
-                qubit: np.array(["Standard", "Y90"]) for qubit in self.all_qubits
-            },
-        }
+def get_dummy_s21(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    return np.random.default_rng(0).random((len(sweeps["number_of_cliffords"]), LOOPS))
 
-        self.schedule_samplespace = {
-            "number_of_cliffords": {
-                qubit: np.array([0, 8, 32, 512, 1200]) for qubit in self.all_qubits
-            },
-        }
 
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-        for index, qubit in enumerate(self.all_qubits):
-            samples = self.schedule_samplespace["number_of_cliffords"][qubit]
-            number_of_samples = len(samples) * self.loops
-            noise_scale = 0.005 * index
-            np.random.seed(123)
-            measured_s21 = np.random.rand(number_of_samples)
-            data_array = xarray.DataArray(measured_s21)
-            dataset[index] = data_array
-        return dataset
+RANDOMIZED_BENCHMARKING_SPECS = {
+    NodeEnum.RANDOMIZED_BENCHMARKING: NodeSpec(
+        name=NodeEnum.RANDOMIZED_BENCHMARKING,
+        element="qubit",
+        get_schedule=get_schedule,
+        analyse=get_class_analyser(RandomizedBenchmarkingQubitAnalysis),
+        qois={"fidelity": "fidelity", "leakage": "leakage"},
+        sweeps={"number_of_cliffords": get_fixed_sweep(CLIFFORDS)},
+        get_dummy_s21=get_dummy_s21,
+        plot=plot_class_analysis,
+        schedule_keywords={"multiplexing": "parallel"},
+        loops=LOOPS,
+        outer_sweeps={
+            "seeds": get_fixed_sweep(np.arange(SEEDS, dtype=np.int32)),
+            "interleave_gate": get_fixed_sweep(INTERLEAVE_GATES),
+        },
+    )
+}

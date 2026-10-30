@@ -2,6 +2,7 @@
 #
 # (C) Copyright Eleftherios Moschandreou 2023, 2025
 # (C) Copyright Michele Faucci Giannelli 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -10,71 +11,34 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Finds the motzoi whose DRAG pulses leave the least phase error after many repetitions."""
 
-from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.utils.types.qoi import QOI
+from typing import TYPE_CHECKING
+
+import numpy as np
+import xarray as xr
+from matplotlib.axes import Axes
+
+from tergite_tuner.lib.spec import Fit, Fits, get_coord_name
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
-class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-        self.fit_results = {}
-        self.optimal_motzoi = None
+def analyse_motzoi(s21: xr.DataArray, _session: "SessionContext") -> Fits:
+    """``motzoi``: the one with the least ``|S21|`` summed over all repetitions."""
+    sums = np.abs(s21).sum(get_coord_name("X_repetitions", s21.attrs["qubit"]))
+    return {"motzoi": Fit(sums.idxmin().item())}
 
-    def _analyse_motzoi(self):
-        """
-        Analyze the magnitudes to determine the optimal Motzoi parameter.
-        """
 
-        for coord in self.magnitudes.coords:
-            coord = str(coord)
-            if "motzois" in coord:
-                self.motzois_coord = coord
-            elif "repetitions" in coord:
-                self.x_repetitions_coord = coord
-
-        sums = self.magnitudes.sum(self.x_repetitions_coord)
-
-        self.optimal_motzoi = sums.idxmin()[self.data_var].item()
-
-    def plotter(self, axis):
-        datarray = self.magnitudes[self.data_var]
-        datarray.plot(ax=axis, x=f"mw_motzois{self.qubit}", cmap="RdBu_r")
-
-        # Mark the optimal motzoi on the plot
-        label = f"Optimal Motzoi: {self.optimal_motzoi:.3f}"
-        styles = dict(c="k", lw=4, linestyle="--", label=label)
-        axis.axvline(self.optimal_motzoi, **styles)
+def plot_motzoi(
+    axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    x = get_coord_name("mw_motzois", s21.attrs["qubit"])
+    np.abs(s21).plot(ax=axis, x=x, cmap="RdBu_r")
+    if "motzoi" in fits:
+        motzoi = fits["motzoi"].value
+        axis.axvline(
+            motzoi, c="k", lw=4, linestyle="--", label=f"Optimal Motzoi: {motzoi:.3f}"
+        )
         axis.legend()
-
-
-class Motzoi01QubitAnalysis(MotzoiBaseQubitAnalysis):
-    def analyse_qubit(self):
-        self._analyse_motzoi()
-
-        analysis_successful = True
-        analysis_result = {"rxy:motzoi": {"value": self.optimal_motzoi, "error": 0}}
-
-        qoi = QOI(analysis_result, analysis_successful)
-
-        return qoi
-
-
-class Motzoi12QubitAnalysis(MotzoiBaseQubitAnalysis):
-    def analyse_qubit(self):
-        self._analyse_motzoi()
-
-        analysis_successful = True
-        analysis_result = {"r12:ef_motzoi": {"value": self.optimal_motzoi, "error": 0}}
-
-        qoi = QOI(analysis_result, analysis_successful)
-
-        return qoi
-
-
-class Motzoi01NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = Motzoi01QubitAnalysis
-
-
-class Motzoi12NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = Motzoi12QubitAnalysis

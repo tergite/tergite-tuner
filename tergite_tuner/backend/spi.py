@@ -1,0 +1,225 @@
+# This code is part of Tergite
+#
+# (C) Copyright Tong Liu 2024
+# (C) Copyright Liangyu Chen 2024
+# (C) Copyright Eleftherios Moschandreou 2024, 2025
+# (C) Copyright Adilet Tuleuov 2025
+# (C) Copyright Chalmers Next Labs 2025
+# (C) Copyright Michele Faucci Giannelli 2025
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+import time
+from enum import Enum
+from pathlib import Path
+from sys import platform
+from typing import TYPE_CHECKING
+
+from qblox_instruments import SpiRack
+from qcodes import validators
+from rich.progress import Progress
+
+from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
+
+
+def _find_and_validate_spi_port(spi_serial_port: str):
+    """
+    Check whether the SPI port given in the .env file exists
+
+    Args:
+        spi_serial_port: serial port specified in the session config.
+
+    Returns:
+        SPI port as string e.g. /dev/ttyACM0
+
+    """
+
+    # We validate on unix based systems whether the port is actually taken
+    current_os = _get_os()
+    if current_os == OperatingSystem.LINUX or current_os == OperatingSystem.MAC:
+
+        # Path to serial devices
+        path = Path("/dev/")
+
+        # Iterate over all devices and return if the address defined in the .env file is found
+        for file in path.iterdir():
+            if str(file.absolute()) == spi_serial_port:
+                return spi_serial_port
+
+    # For Windows and any other system, we assume that the user knows that the port exists
+    else:
+        return spi_serial_port
+
+    # For the default base case, return None
+    logger.warning(
+        "Couldn't find the serial port of the SPI rack. "
+        "Please check the connection or update the value for SPI_SERIAL_PORT in the .env file."
+    )
+    return None
+
+
+class SpiDAC:
+    def __init__(
+        self,
+        couplers: list[str],
+        session: "SessionContext",
+        name: str = "no_spi_name_defined",
+    ):
+        self.session = session
+        self.port = _find_and_validate_spi_port(session.spi_serial_port)
+        self.is_dummy = (
+            session.spi_mode == SPIMode.dummy
+            or session.cluster_mode == MeasurementMode.dummy
+            or session.cluster_mode == MeasurementMode.re_analyse
+        )
+        if self.is_dummy:
+            self.port = "dummy_port"
+
+        if self.port is not None:
+            self.spi = SpiRack(name, self.port, is_dummy=self.is_dummy)
+        else:
+            raise ValueError("No serial port for the SPI")
+
+        self.dacs_dictionary = {}
+        for coupler in couplers:
+            self.dacs_dictionary[coupler] = self.create_spi_dac(coupler)
+
+    def create_spi_dac(self, coupler: str):
+        spi_entry = self.session.spi_config.root[coupler]
+        spi_mod_number = spi_entry.spi_module_number
+        dac_name = spi_entry.dac_name
+
+        spi_mod_name = f"module{spi_mod_number}"
+
+        if self.is_dummy:
+            return f"Dummy_DAC_for_{spi_mod_name}_{dac_name}"
+
+        dc_current_step = 1e-6
+
+        if spi_mod_name not in self.spi.instrument_modules:
+            self.spi.add_spi_module(spi_mod_number, "S4g")
+        this_dac = self.spi.instrument_modules[spi_mod_name].instrument_modules[
+            dac_name
+        ]
+
+        # WARNING: this command is bugged on the SPI firmware. When a DAC in operated
+        # WARNING: for the first time, it sets the current to the minimum -0.25mA, which causes
+        # WARNING: significant and dangerous heating. Follow the group instructions when you
+        # WARNING: want to operate a DAC for the first time, or after a restart of the SPI rack.
+        this_dac.span("range_min_bi")
+
+        this_dac.current.vals = validators.Numbers(min_value=-3.1e-3, max_value=3.1e-3)
+
+        this_dac.ramping_enabled(True)
+        this_dac.ramp_rate(40e-6)
+        this_dac.ramp_max_step(dc_current_step)
+        return this_dac
+
+    def set_dacs_zero(self) -> None:
+        self.spi.set_dacs_zero()
+        return
+
+    def set_initial_parking_currents(self, couplers: list[str]) -> None:
+        parking_currents = {}
+        for coupler in couplers:
+            parking_current = self.session.state.read(
+                "couplers", coupler, "initial_parking_current"
+            )
+            if parking_current is None:
+                message = (
+                    f"{coupler} has no initial parking current. If you intend to operate "
+                    "at zero DC current, set a zero value at your device_config.toml"
+                )
+                logger.warning(message)
+                raise ValueError(message)
+            parking_currents[coupler] = float(parking_current)
+
+        self.set_dac_current(parking_currents)
+        return
+
+    def set_dac_current(self, dac_values: dict[str, float]) -> None:
+        if self.is_dummy:
+            logger.info(
+                f"Dummy DAC to current {dac_values}. NO REAL CURRENT is generated"
+            )
+            return
+        self.ramp_current_serially(dac_values)
+
+    def ramp_current_serially(self, dac_values: dict[str, float]):
+        for coupler, target_current in dac_values.items():
+            dac = self.dacs_dictionary[coupler]
+            initial_current = dac.current() * 1000  # Convert to mA
+            target_mA = target_current * 1000  # Convert to mA
+            total_range = abs(target_mA - initial_current)  # Compute range for progress
+            if total_range == 0:
+                continue  # Already at target, no need to ramp
+
+            dac.current(target_current)
+
+            with Progress() as progress:
+                task = progress.add_task(
+                    "[yellow]Ramping current...", total=total_range
+                )
+
+                while dac.is_ramping():
+                    try:
+                        current_mA = dac.current() * 1000  # Get current in mA
+                        progress.update(
+                            task,
+                            completed=abs(current_mA - initial_current),
+                            description=f"[cyan] Coupler {coupler}: current is {current_mA:.4f} with target {target_mA:.4f} mA",
+                        )
+
+                        if (
+                            abs(current_mA - target_mA) < 0.005
+                        ):  # Stop when close enough
+                            break
+
+                        time.sleep(0.5)  # Simulate delay
+
+                    except ValueError as e:
+                        progress.stop()
+                        logger.error(f"Error reading DAC current: {e}")
+                        break
+
+        logger.info("Ramping finished")
+
+    def close_spi_rack(self):
+        self.spi.close()
+        logger.info("Closing SPI rack")
+
+
+class OperatingSystem(Enum):
+    LINUX = "LINUX"
+    MAC = "MAC"
+    WINDOWS = "WINDOWS"
+    UNDEFINED = "UNDEFINED"
+
+
+def _get_os() -> "OperatingSystem":
+    # Safe way to retrieve a string about the operating system
+    platform_str: str
+    if isinstance(platform, str):
+        platform_str = platform.lower()
+    else:
+        platform_str = platform.system().lower()
+
+    # Return as enum
+    if platform_str == "linux":
+        return OperatingSystem.LINUX
+    elif platform_str == "darwin":
+        return OperatingSystem.MAC
+    elif "win" in platform_str:
+        return OperatingSystem.WINDOWS
+    else:
+        return OperatingSystem.UNDEFINED

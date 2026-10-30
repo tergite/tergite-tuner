@@ -14,18 +14,21 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
-    DRAGPulse,
+
+from tergite_tuner.backend import (
+    ClockResource,
+    ExtendedTransmon,
+    Reset,
+    Schedule,
     SetClockFrequency,
     SquarePulse,
+    SSBIntegrationComplex,
 )
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule
-
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.lib.utils.schedules import add_12_clocks, prepare_state
+
+# the readout clock for two- and three-state discrimination
+READOUT_CLOCKS = {2: "ro_2st_opt", 3: "ro_3st_opt"}
 
 
 class ROFrequencyOptimizationMeasurement(BaseMeasurement):
@@ -66,31 +69,15 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
     def measure_first_excited(
         self, schedule: Schedule, transmon: ExtendedTransmon, acq_index: int
     ):
-        this_qubit = transmon.name
-        schedule.add(X(this_qubit))
+        prepare_state(schedule, transmon, 1)
         self.measure(schedule, transmon, acq_index)
 
     def measure_second_excited(
         self, schedule: Schedule, transmon: ExtendedTransmon, acq_index: int
     ):
-        # repeat for when the qubit is at |2>
-        this_qubit = transmon.name
-        schedule.add(X(this_qubit))
-        this_mw_clock = f"{this_qubit}.12"
-
-        schedule.add(
-            DRAGPulse(
-                duration=transmon.r12.ef_duration(),
-                G_amp=transmon.r12.ef_amp180(),
-                D_amp=transmon.r12.ef_motzoi(),
-                port=transmon.ports.microwave(),
-                clock=this_mw_clock,
-                phase=0,
-            ),
-        )
+        prepare_state(schedule, transmon, 2)
         self.measure(schedule, transmon, acq_index)
-
-        schedule.add(Reset(this_qubit))
+        schedule.add(Reset(transmon.name))
 
     def schedule_function(
         self,
@@ -99,64 +86,37 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
         repetitions: int = 1024,
     ) -> Schedule:
         schedule = Schedule("ro_frequency_optimization", repetitions)
-
-        qubits = self.transmons.keys()
-        if len(qubit_states[list(qubits)[0]]) == 2:
-            self.ro_str = "ro_2st_opt"
-        elif len(qubit_states[list(qubits)[0]]) == 3:
-            self.ro_str = "ro_3st_opt"
-        else:
+        qubits = list(self.transmons)
+        number_of_states = len(qubit_states[qubits[0]])
+        if number_of_states not in READOUT_CLOCKS:
             raise ValueError("invalid number of states")
-
-        # Initialize ClockResource with the first frequency value
-        for this_qubit, ro_array_val in ro_opt_frequencies.items():
-            this_ro_clock = f"{this_qubit}." + self.ro_str
+        self.ro_str = READOUT_CLOCKS[number_of_states]
+        for qubit, frequencies in ro_opt_frequencies.items():
             schedule.add_resource(
-                ClockResource(name=this_ro_clock, freq=ro_array_val[0])
+                ClockResource(name=f"{qubit}.{self.ro_str}", freq=frequencies[0])
             )
+        if number_of_states == 3:
+            add_12_clocks(schedule, self.transmons)
 
-        if len(qubit_states[list(qubits)[0]]) == 3:
-            for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                this_clock = f"{this_qubit}.12"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_12)
-                )
-
+        measurements = {
+            0: self.measure,
+            1: self.measure_first_excited,
+            2: self.measure_second_excited,
+        }
         root_relaxation = schedule.add(Reset(*qubits), label="Reset")
-
-        # The first for loop iterates over all qubits:
-        for this_qubit, ro_f_values in ro_opt_frequencies.items():
-
-            this_transmon = self.transmons[this_qubit]
-
-            schedule.add(
-                Reset(*qubits), ref_op=root_relaxation
-            )  # To enforce parallelism we refer to the root relaxation
-
-            this_ro_clock = f"{this_qubit}." + self.ro_str
-
-            this_qubit_states = qubit_states[this_qubit]
-
-            number_of_frequencies = len(ro_f_values)
-
-            for acq_index, ro_frequency in enumerate(ro_f_values):
+        for qubit, frequencies in ro_opt_frequencies.items():
+            # To enforce parallelism we refer to the root relaxation
+            schedule.add(Reset(*qubits), ref_op=root_relaxation)
+            for acq_index, frequency in enumerate(frequencies):
                 schedule.add(
-                    SetClockFrequency(clock=this_ro_clock, clock_freq_new=ro_frequency),
+                    SetClockFrequency(
+                        clock=f"{qubit}.{self.ro_str}", clock_freq_new=frequency
+                    ),
                 )
-
-                # The third for loop iterates over all qubit states
-                for qubit_state in this_qubit_states:
-                    if qubit_state == 0:
-                        this_index = acq_index
-                        self.measure(schedule, this_transmon, this_index)
-                    # repeat for when the qubit is at |1>
-                    elif qubit_state == 1:
-                        this_index = acq_index + number_of_frequencies
-                        self.measure_first_excited(schedule, this_transmon, this_index)
-                    # repeat for when the qubit is at |2>
-                    elif qubit_state == 2:
-                        this_index = acq_index + 2 * number_of_frequencies
-                        self.measure_second_excited(schedule, this_transmon, this_index)
-
+                for state in qubit_states[qubit]:
+                    measurements[state](
+                        schedule,
+                        self.transmons[qubit],
+                        acq_index + int(state) * len(frequencies),
+                    )
         return schedule

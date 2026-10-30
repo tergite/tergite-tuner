@@ -13,13 +13,12 @@
 
 import lmfit
 import numpy as np
-from lmfit.model import Model
-from quantify_core.analysis.fitting_models import (
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+from tergite_tuner.lib.utils.fitting_models import (
     exp_damp_osc_func,
     fft_freq_phase_guess,
 )
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-
 from tergite_tuner.lib.utils.functions import (  # lrb_decay_function,; lrb_exponential_decay_function,
     exponential_decay_function,
 )
@@ -281,19 +280,15 @@ class ExpDecayModel(lmfit.model.Model):
         self.set_param_hint("p", vary=True, min=0)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
+        """Guesses ``A`` and ``B`` unless ``amplitude`` and ``offset`` are given; needs ``m``."""
         m = kws.get("m", None)
 
         if m is None:
             return None
 
-        amplitude_guess = 1 / 2
-        self.set_param_hint("A", value=amplitude_guess)
-
-        offset_guess = data[-1]
-        self.set_param_hint("B", value=offset_guess)
-
-        p_guess = 0.95
-        self.set_param_hint("p", value=p_guess)
+        self.set_param_hint("A", value=kws.pop("amplitude", 1 / 2))
+        self.set_param_hint("B", value=kws.pop("offset", data[-1]))
+        self.set_param_hint("p", value=0.95)
 
         params = self.make_params()
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
@@ -333,72 +328,9 @@ class SineOscillatingModel(lmfit.model.Model):
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
-def chevron_func(x, x0, amplitude, curvature, offset):
-    return -np.sqrt(amplitude * (x - x0) ** 2 + curvature) + offset
-
-
-# def chevron_func(x, x0, amplitude, offset):
-#     return -amplitude * np.sqrt((x - x0) ** 2) + offset
-
-
-class CzChevronModel(lmfit.model.Model):
-    def __init__(self, *args, **kwargs):
-        # pass in the defining equation so the user doesn't have to later.
-        super().__init__(chevron_func, *args, **kwargs)
-
-    def guess(self, data, **kws) -> lmfit.parameter.Parameters:
-
-        amp_guess = 1e6
-        offs_guess = np.max(data)
-        curvature_guess = 1
-
-        self.set_param_hint("curvature", value=curvature_guess, min=0)
-        self.set_param_hint("offset", value=offs_guess, min=0)
-        self.set_param_hint("amplitude", value=amp_guess, min=0)
-
-        params = self.make_params()
-        return lmfit.models.update_param_vals(params, self.prefix, **kws)
-
-
-def parabolic(x, x0=0, a=0.0, c=0.0):
-    """Return a parabolic function.
-
-    parabolic(x, x0, a, c) = a * (x-x0)**2  + c
-
-    """
-    return a * (x - x0) ** 2 + c
-
-
-class QuadraticModel(Model):
-    """A quadratic model, with three Parameters: `x0`, `a`, and `c`.
-
-    Defined as:
-
-    .. math::
-
-        f(x; x0, a, c) =  a * (x-x0)**2  + c
-
-    """
-
-    def __init__(self, independent_vars=["x"], prefix="", nan_policy="raise", **kwargs):
-        kwargs.update(
-            {
-                "prefix": prefix,
-                "nan_policy": nan_policy,
-                "independent_vars": independent_vars,
-            }
-        )
-        super().__init__(parabolic, **kwargs)
-
-    def guess(self, data, x, **kwargs):
-        """Estimate initial model parameter values from data."""
-        c_guess = np.max(data)
-        index_max_duration = np.argmax(data)
-        freq_at_max_duration = x[index_max_duration]
-
-        # guess a: assume that a x-x0 = 2MHz -> y-y0 = - 12ns
-        a_guess = -12e-9 / (2e6) ** 2
-
-        pars = self.make_params(x0=freq_at_max_duration, a=a_guess, c=c_guess)
-        self.set_param_hint("x0", min=x.min(), max=x.max())
-        return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)
+def fit_sine_phase(
+    model: lmfit.Model, data: np.ndarray, x: np.ndarray, plot_x: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """The phase ``model`` fits to ``data`` over ``x``, and its fit over ``plot_x``, as ``xr.apply_ufunc`` takes them."""
+    fit = model.fit(data, params=model.guess(data, x=x), x=x)
+    return np.array([fit.values["phase"]]), np.array([model.eval(fit.params, x=plot_x)])

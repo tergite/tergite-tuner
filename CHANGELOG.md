@@ -7,6 +7,57 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Added
+
+- Analysed AllXY: each pulse pair's |1> population against the ideal gates', with their mean deviation stored as `all_xy_error`; the node raised `NotImplementedError`
+- Logged how long each node's compile, measurement and analysis take, so a run's log shows where its time went
+- Wrote each run's results to `results.json` in its folder, which a later session takes as its `calibration`, unless `keep_data_files=False`
+
+### Changed
+
+- [BREAKING] Back on quantify-scheduler 0.22 and qblox-instruments 0.14, which tergite-backend pins; 2026.10.0rc1 had moved to qblox-scheduler 1.0.0b8 and qblox-instruments 1.4, so a Cluster updated for it needs firmware that qblox-instruments 0.14 supports
+- Removed `NodeEnum.PROCESS_TOMOGRAPHY_SSRO`, whose node could not run and was left out of the node map, with the unused reset chevron node
+- Read the TOML config files with Python's `tomllib`; a malformed one raises `tomllib.TOMLDecodeError` where it raised `toml.TomlDecodeError`, and `toml`, `h5py` and `requests` are no longer direct dependencies
+- Moved the transmon, coupler edge, extended gates and device helpers from `tergite_tuner.utils.types.extended_*` and `tergite_tuner.lib.utils.device` to `tergite_tuner.backend`
+- Waited for a schedule's estimated duration plus `cluster_timeout` before raising, instead of a fixed hour, and dropped the progress bar, which only slept for the estimate
+- Replaced `tergite_tuner.tuner.HardwareManager` and the nodes' `lab_instr_coordinator` and `spi_manager` with `tergite_tuner.backend.Hardware`, which a node reaches as `node.hardware`
+- Gave the dummy cluster the modules in the cluster config's `hardware_description`; it had 15 QCM-RF and 2 QRM-RF modules whatever the config said
+- [BREAKING] Defined each node as a `NodeSpec` in `tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, replacing the node classes, `BaseNode`, `QubitNode`, `CouplerNode`, the analysis base classes and `DEFAULT_NODE_CLS_MAP`; custom nodes go in the session's `node_specs`, which replaces `node_cls_map`
+- Skipped the pause between T1 and T2 repetitions on a dummy cluster
+- [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
+- [BREAKING] Loaded every config file with `tergite_tuner.config.types.load_config(model, path)`, replacing `from_toml` and `from_json`; `NodeConfig` and `SpiConfig` are read through `.root`, as they no longer index like dicts
+- [BREAKING] Wrote each run's node folders, or a recalibration's files, into a folder of the run's own in `data_dir`, which `keep_data_files=False` deletes; it deleted all of `data_dir`, and `reanalyse` deleted the dataset it re-analysed, so `reanalyse` no longer takes `keep_data_files`
+- [BREAKING] Read the session with pydantic-settings, so an environment variable now wins over the `.env` file, as in Docker, and `SessionContext(...)` reads the environment too; `pydantic-settings` replaces `python-dotenv` as a dependency
+- [BREAKING] Kept the device's values and calibration statuses in the session, which starts from the device config with an earlier run's results, passed as `calibration`, over it; every run wrote the device config over Redis, so only values the config lacked carried over. `redis_url`, `RedisStore` and the `redis` dependency are gone
+- Marked a node `not_calibrated` on an element its analysis failed on, where it kept the element's earlier status
+- Defaulted `SessionContext.ignored_nodes` and `node_dag_edges` to `None`, which the run reads as the default graph's
+
+### Fixed
+
+- Rounded CZ chevron's working durations down to 4 ns from whole nanoseconds; floating-point division turned an exact 100 ns into 99, and so 96
+- Logged each run to the console at `STDOUT_LOG_LEVEL` and to `tergite_tuner.log` in its folder at `FILE_LOG_LEVEL`; both settings were ignored and the tuner set up no logging, and importing it made `ExtendedLogger` the class of every logger made after
+- Failed the T2 and CZ RB fits on data they cannot fit, where they raised `ZeroDivisionError`: a T2 repetition with no oscillation, a CZ RB standard decay fitted to zero
+- Stored qubit spectroscopy vs current's results and status under its own name; they went under `coupler_anticrossing`, so the node was never in spec
+- Prepared |2> in resonator spectroscopy with the calibrated ef motzoi, as the readout optimizations do; its ef π pulse had none
+- Set qubit 01 spectroscopy's pulse to 3 µs and amplitude 0.03 in `node_config.example.toml`; its five 6 µs amplitudes overflowed the sequencer's waveform memory
+- Ran purity benchmarking, whose schedule raised `TypeError`; its sweep also gave its 128, 256 and 512 lengths up as calibration points, so they were never measured
+- Applied the session options of `run_node`, `tune_device`, `reanalyse` and `generate_calib_seed_file` to a session passed in, setting them over its values; they were ignored, so tergite-backend's one-qubit-at-a-time recalibration ran every qubit
+- Raised `ClusterUnreachableError` when the cluster refuses the connection, instead of exiting the calling program
+- Kept the caller's matplotlib backend; every node switched it, to TkAgg when `save_plot` was set, which fails on a headless machine
+- Restored quantify-scheduler's grid-time tolerance after each compile; every compile raised it for the rest of the calling program
+- Gave every node a dummy dataset; dummy mode raised `AttributeError` on punchout, NRabi12, T1, T2, T2 echo, AllXY, purity benchmarking and two spectroscopies
+- Read only the session's own fields from the environment; `SessionContext.from_env` copied every environment variable, secrets included, into the session
+- Applied a qubit's own section of the node config (`[node.q01]`) over its `all` section; only `all` reached the qubits before
+- Drove each qubit with its own pulse duration in Rabi oscillations and three-state readout amplitude optimization; every qubit took the last qubit's
+- Used `long_square_pulse` for spectroscopy pulses longer than 6.5 µs in amplitude spectroscopy; such pulses raised `UnboundLocalError`
+- Matched `read_result`'s session fields exactly; it returned fields whose name merely appeared inside a touched one (RB's `fidelity` for `purity_fidelity`) and dropped flat fields' `_error` values
+- Raised the instruments' errors while running a schedule, which a background thread swallowed, so a measurement that failed to start went on to analyse whatever acquisitions the instrument held
+- Stored the fitted `Ql_1` in resonator spectroscopy 1, where a frequency was stored, and failed the analysis when the resonator fit raises instead of crashing with `AttributeError`
+- Failed punchout when no resonator fit succeeds, where it stored `None` as a successful amplitude, and plotted its fitted frequencies against amplitude instead of the swapped axes
+- Reset and excited only each coupler's own qubits in CZ parametrization; with several couplers, every coupler's loop drove all of their qubits
+- Interleaved the CZ only in two-qubit RB's interleaved mode, where the order of `interleave_modes` decided it, and raised `ValueError` for more than one coupler instead of silently benchmarking only the first
+- Shifted no phase for a CZ's uncalibrated (NaN) phase correction; the check for it never matched, so the CZ shifted the qubit's clock by NaN
+
 ## [2026.06.0] - 2026-06-26
 
 This is part of the tergite release v2026.06.0.

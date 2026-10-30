@@ -10,12 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import json
-from contextlib import suppress
-from json import JSONDecodeError
-from typing import Any, Dict, List, Mapping
-
-import toml
+import tomllib
 
 from tergite_tuner import SessionContext
 from tergite_tuner.export import (
@@ -24,19 +19,20 @@ from tergite_tuner.export import (
     read_result,
 )
 from tergite_tuner.tests.utils.fixtures import get_fixture_path, load_fixture
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILE = get_fixture_path("redis", "export_bcc_script.json")
-_REDIS_DATA = load_fixture("redis/export_bcc_script.json")
+_STATE_FILE = get_fixture_path("states", "export_bcc_script.json")
+_STATE = load_fixture("states/export_bcc_script.json")
 _CALIB_SEED = load_fixture("data/calib.seed.json")
 _CALIB_CONTENT = _CALIB_SEED["calibration_config"]
 
 
-def test_read_results_default(redis_connection):
+def test_read_results_default():
     """Returns the calibration results saved in the session"""
     touched_fields = (
         # qubits/resonators
-        "resonator_minimum" "spec",
+        "resonator_minimum",
+        "spec",
         "r12",
         "extended_clock_freqs",
         "spec:spec_duration",
@@ -53,7 +49,6 @@ def test_read_results_default(redis_connection):
         "couplers": {
             "q11_q12": {
                 "cz_dynamic_amplitude": 0.24,
-                "cz_dynamic_control": 121.0,
                 "cz_dynamic_control_error": 0.0,
                 "cz_working_durations_in_ns": [
                     352.0,
@@ -67,31 +62,22 @@ def test_read_results_default(redis_connection):
                     320.0,
                     304.0,
                 ],
+                "cz_working_durations_in_ns_error": 0.0,
                 "spec": {"spec_amp": 0.03, "spec_duration": 4e-06},
             }
         },
         "cs": {
             "q11": {
                 "qubit_12_spectroscopy": "calibrated",
-                "resonator_spectroscopy": "calibrated",
                 "resonator_spectroscopy_1": "calibrated",
             },
             "q12": {
                 "qubit_12_spectroscopy": "calibrated",
-                "resonator_spectroscopy": "calibrated",
                 "resonator_spectroscopy_1": "calibrated",
             },
         },
         "transmons": {
             "q11": {
-                "clock_freqs": {
-                    "f01": 4741499559.458488,
-                    "f01_error": 0.0,
-                    "f12": 4488401716.352375,
-                    "f12_error": 0.0,
-                    "readout": 6826375232.52066,
-                    "readout_error": 0.0,
-                },
                 "extended_clock_freqs": {
                     "readout_1": 6826243053.574201,
                     "readout_1_error": 0.0,
@@ -109,6 +95,7 @@ def test_read_results_default(redis_connection):
                     "ef_motzoi_error": 0.0,
                 },
                 "resonator_minimum": 6826355555.555555,
+                "resonator_minimum_error": 0.0,
                 "spec": {
                     "spec_amp": 0.03,
                     "spec_ampl_12_optimal": 0.01,
@@ -119,14 +106,6 @@ def test_read_results_default(redis_connection):
                 },
             },
             "q12": {
-                "clock_freqs": {
-                    "f01": 4266043761.8823304,
-                    "f01_error": 0.0,
-                    "f12": 4110614017.9213386,
-                    "f12_error": 0.0,
-                    "readout": 6411557868.710736,
-                    "readout_error": 0.0,
-                },
                 "extended_clock_freqs": {
                     "readout_1": 6411436935.474931,
                     "readout_1_error": 0.0,
@@ -144,6 +123,7 @@ def test_read_results_default(redis_connection):
                     "ef_motzoi_error": 0.0,
                 },
                 "resonator_minimum": 6411577777.777778,
+                "resonator_minimum_error": 0.0,
                 "spec": {
                     "spec_amp": 0.03,
                     "spec_ampl_12_optimal": 0.01,
@@ -155,50 +135,49 @@ def test_read_results_default(redis_connection):
             },
         },
     }
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
-        session._redis_fields_touched = {k: 1 for k in touched_fields}
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _STATE_FILE) as state:
+        state.written_paths.update(touched_fields)
         result = read_result(session)
 
     got = result.model_dump(exclude_none=True)
     assert got == expected_result
 
 
-def test_read_results_session_only_false(redis_connection):
-    """Returns all the calibration results in redis when session_only=False"""
-    expected_result_dict = _redis_to_nested_dict(_REDIS_DATA)
-    expected_result = CalibrationResults.model_validate(expected_result_dict)
+def test_read_results_session_only_false():
+    """Returns all the session's results when session_only=False"""
+    expected_result = CalibrationResults.model_validate(_STATE)
 
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _STATE_FILE):
         result = read_result(session, session_only=False)
 
     assert result == expected_result
 
 
-def test_generate_calib_seed_file_writes_toml(tmp_path, redis_connection):
+def test_generate_calib_seed_file_writes_toml(tmp_path):
     """``path=...`` writes the same payload to disk in TOML form."""
     output_path = tmp_path / "calibration_seed.toml"
 
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        generate_calib_seed_file(
-            path=output_path, couplers=["q11_q12"], qubits=["q11", "q12"]
-        )
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _STATE_FILE):
+        generate_calib_seed_file(path=output_path, session=session)
 
-    with open(output_path, "r") as f:
-        got = toml.load(f)
+    with open(output_path, "rb") as f:
+        got = tomllib.load(f)
 
     assert got == _CALIB_SEED
 
 
-def test_generate_calib_seed_file_partial(tmp_path, redis_connection):
+def test_generate_calib_seed_file_partial(tmp_path):
     """When no couplers are requested the coupler list is empty."""
     output_path = tmp_path / "calibration_seed.toml"
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        generate_calib_seed_file(path=output_path, couplers=[], qubits=["q12"])
+    session = SessionContext.from_env(qubits=["q12"], couplers=[])
+    with loaded_state(session, _STATE_FILE):
+        generate_calib_seed_file(path=output_path, session=session)
 
-    with open(output_path, "r") as f:
-        got = toml.load(f)
+    with open(output_path, "rb") as f:
+        got = tomllib.load(f)
 
     assert got == {
         "calibration_config": {
@@ -213,19 +192,17 @@ def test_generate_calib_seed_file_partial(tmp_path, redis_connection):
     }
 
 
-def test_generate_calib_seed_file_coupler_map(tmp_path, redis_connection):
+def test_generate_calib_seed_file_coupler_map(tmp_path):
     """When coupler_name_map is passed, coupler names are changed."""
     output_path = tmp_path / "calibration_seed.toml"
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _STATE_FILE):
         generate_calib_seed_file(
-            path=output_path,
-            couplers=["q11_q12"],
-            qubits=["q11", "q12"],
-            coupler_name_map={"q11_q12": "u24"},
+            path=output_path, session=session, coupler_name_map={"q11_q12": "u24"}
         )
 
-    with open(output_path, "r") as f:
-        seed = toml.load(f)
+    with open(output_path, "rb") as f:
+        seed = tomllib.load(f)
 
     expected = {
         **_CALIB_CONTENT,
@@ -235,51 +212,12 @@ def test_generate_calib_seed_file_coupler_map(tmp_path, redis_connection):
     assert seed["calibration_config"] == expected
 
 
-def _redis_to_nested_dict(raw_data: Mapping[str, Any], level=0) -> Dict[str, Any]:
-    """Converts the raw data in redis to a nested dict
+def test_read_results_matches_touched_fields_exactly():
+    session = SessionContext.from_env(qubits=["q11"], couplers=[])
+    with loaded_state(session, _STATE_FILE) as state:
+        state.load({"transmons": {"q11": {"fidelity": 0.99}}})
+        state.written_paths.update({"t1_time", "purity_fidelity"})
+        result = read_result(session)
 
-    Keys that have ':' are converted into nested dicts
-
-    Args:
-        raw_data: the data that as got from redis in form {key: {type: ...: value: ...}}
-        level: the level of the nested dict
-
-    Returns:
-        The dict nested
-    """
-    result = {}
-
-    for key, value in raw_data.items():
-        if level == 0:
-            # redis data has format: {key: {type: ...: value: ...}}
-            value = value["value"]
-
-        # ignore 'nan'
-        if value == "nan":
-            continue
-
-        if isinstance(value, Mapping):
-            value = _redis_to_nested_dict(value, level + 1)
-        elif isinstance(value, str):
-            with suppress(JSONDecodeError):
-                value = json.loads(value)
-
-        path = key.split(":")
-        _insert_nested_key(result, path, value)
-
-    return result
-
-
-def _insert_nested_key(data: Dict[str, Any], path: List[str], value: Any):
-    """Inserts inplace a given value at the given nested path in the data object
-
-    Args:
-        data: the dictionary to insert into
-        path: the path to the field, as a tuple of path segments.
-        value: the value to be inserted.
-    """
-    inner_record = data
-    for segment in path[:-1]:
-        inner_record = inner_record.setdefault(segment, {})
-
-    inner_record[path[-1]] = value
+    got = result.model_dump(exclude_none=True)["transmons"]["q11"]
+    assert set(got) == {"t1_time", "t1_time_error"}

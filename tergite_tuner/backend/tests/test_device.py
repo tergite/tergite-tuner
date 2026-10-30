@@ -1,0 +1,81 @@
+# This code is part of Tergite
+#
+# (C) Copyright Eleftherios Moschandreou 2024, 2026
+# (C) Chalmers Next Labs AB 2025
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+import math
+import os
+
+from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend.device import (
+    close_device_resources,
+    configure_device,
+    save_serial_device,
+)
+from tergite_tuner.tests.utils.fixtures import (
+    DEFAULT_TEST_COUPLERS,
+    DEFAULT_TEST_QUBITS,
+    get_fixture_path,
+)
+from tergite_tuner.tests.utils.state import loaded_state
+
+state_file = get_fixture_path("states", "standard_state.json")
+
+
+def test_create_serial_device(session_context):
+    with loaded_state(session_context, state_file):
+        # ensure no other transmon objects are instantiated
+        # this is because some other test doesn't close the device properly
+        ExtendedTransmon.close_all()
+        device_name = "test_device"
+        test_device = configure_device(
+            device_name,
+            qubits=DEFAULT_TEST_QUBITS,
+            couplers=DEFAULT_TEST_COUPLERS,
+            session=session_context,
+        )
+
+        q00 = test_device.get_element("q00")
+        pi_amplitude = q00.rxy.amp180()
+        q00_q01 = test_device.get_edge("q00_q01")
+        initial_parking_current = q00_q01.coupler_parameters.parking_current()
+        cz_phase_path = q00_q01.coupler_parameters.phase_path()
+
+        assert test_device.elements() == DEFAULT_TEST_QUBITS
+        assert test_device.edges() == DEFAULT_TEST_COUPLERS
+
+        assert math.isclose(pi_amplitude, 0.7308488204080522)
+        assert math.isclose(initial_parking_current, 0.00065)
+        assert cz_phase_path == "via_20"
+
+        close_device_resources(test_device)
+
+
+def test_save_serial_device(tmp_path, session_context):
+    with loaded_state(session_context, state_file):
+        # ensure no other transmon objects are instantiated
+        # this is because some other test doesn't close the device properly
+        ExtendedTransmon.close_all()
+        device_name = "test_device"
+        test_device = configure_device(
+            device_name,
+            qubits=DEFAULT_TEST_QUBITS,
+            couplers=DEFAULT_TEST_COUPLERS,
+            session=session_context,
+        )
+        save_serial_device(test_device, data_path=tmp_path)
+
+    assert os.path.exists(os.path.join(tmp_path, f"{device_name}.json"))
+
+    close_device_resources(test_device)
+
+
+# NOTE: batching is not supported anymore, but maybe useful in the future

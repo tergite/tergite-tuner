@@ -12,20 +12,20 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
-    DRAGPulse,
-    IdlePulse,
-    SquarePulse,
-)
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import LoopOperation
 
+from tergite_tuner.backend import (
+    BinMode,
+    ClockResource,
+    ExtendedTransmon,
+    IdlePulse,
+    LoopOperation,
+    Reset,
+    Schedule,
+    SquarePulse,
+    SSBIntegrationComplex,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.lib.utils.schedules import add_12_clocks, prepare_state
 
 
 class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
@@ -39,111 +39,85 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
         ro_amplitudes: dict[str, np.ndarray],
         qubit_states: dict[str, np.ndarray],
         qubit_state: int = 1,
-    ):
+    ) -> Schedule:
         shot = Schedule("ro_amplitude_optimization_shots", repetitions=1)
-
+        clock_suffix = self._add_clocks(shot, qubit_state)
         qubits = self.transmons.keys()
-
-        # Initialize ClockResource with the first frequency value
-        ro_str = "ro_2st_opt"
-        if qubit_state == 2:
-            ro_str = "ro_3st_opt"
-
-        for this_qubit, this_transmon in self.transmons.items():
-            this_ro_clock = f"{this_qubit}." + ro_str
-            if qubit_state == 1:
-                ro_frequency = this_transmon.extended_clock_freqs.readout_2state_opt()
-            elif qubit_state == 2:
-                ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt()
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                mw_ef_duration = this_transmon.r12.ef_duration()
-                this_clock = f"{this_qubit}.12"
-                shot.add_resource(ClockResource(name=this_clock, freq=mw_frequency_12))
-            else:
-                raise ValueError(f"Invalid state {qubit_state}")
-
-            shot.add_resource(ClockResource(name=this_ro_clock, freq=ro_frequency))
-
-        # The outer for-loop iterates over all qubits:
         root_relaxation = shot.add(Reset(*qubits), label="Reset")
-
-        for acq_cha, (this_qubit, ro_amplitude_values) in enumerate(
-            ro_amplitudes.items()
-        ):
-            # unpack the static parameters:
-            this_transmon = self.transmons[this_qubit]
-            ro_pulse_duration = this_transmon.measure.pulse_duration()
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-            mw_ef_motzoi = this_transmon.r12.ef_motzoi()
-            mw_pulse_duration = this_transmon.rxy.duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-            acquisition_delay = this_transmon.measure.acq_delay()
-            integration_time = this_transmon.measure.integration_time()
-            ro_port = this_transmon.ports.readout()
-
-            this_ro_clock = f"{this_qubit}." + ro_str
-            this_12_clock = f"{this_qubit}.12"
-
-            qubit_levels = qubit_states[this_qubit]
-            number_of_levels = len(qubit_levels)
-
+        for acq_channel, (qubit, amplitudes) in enumerate(ro_amplitudes.items()):
             # To enforce parallelism we refer to the root relaxation
             shot.add(Reset(*qubits), ref_op=root_relaxation)
-
-            # The intermediate for-loop iterates over all ro_amplitudes:
-            for ampl_indx, ro_amplitude in enumerate(ro_amplitude_values):
-                # The inner for-loop iterates over all qubit levels:
-                for level_index, state_level in enumerate(qubit_levels):
-                    this_index = ampl_indx * number_of_levels + level_index
-
-                    if state_level == 0:
-                        prep = shot.add(IdlePulse(mw_pulse_duration))
-
-                    elif state_level == 1:
-                        prep = shot.add(X(this_qubit))
-
-                    elif state_level == 2:
-                        shot.add(X(this_qubit))
-
-                        prep = shot.add(
-                            DRAGPulse(
-                                duration=mw_ef_duration,
-                                G_amp=mw_ef_amp180,
-                                D_amp=mw_ef_motzoi,
-                                port=mw_pulse_port,
-                                clock=this_12_clock,
-                                phase=0,
-                            ),
-                        )
-                    else:
-                        raise ValueError("State Input Error")
-
-                    ro_pulse = shot.add(
-                        SquarePulse(
-                            duration=ro_pulse_duration,
-                            amp=ro_amplitude,
-                            port=ro_port,
-                            clock=this_ro_clock,
-                        ),
-                        ref_op=prep,
+            levels = qubit_states[qubit]
+            for amplitude_index, amplitude in enumerate(amplitudes):
+                for level_index, level in enumerate(levels):
+                    self._add_readout(
+                        shot,
+                        self.transmons[qubit],
+                        level,
+                        amplitude,
+                        f"{qubit}.{clock_suffix}",
+                        (amplitude_index * len(levels) + level_index, acq_channel),
                     )
-
-                    shot.add(
-                        SSBIntegrationComplex(
-                            duration=integration_time,
-                            port=ro_port,
-                            clock=this_ro_clock,
-                            acq_index=this_index,
-                            acq_channel=acq_cha,
-                            bin_mode=BinMode.APPEND,
-                        ),
-                        ref_op=ro_pulse,
-                        ref_pt="start",
-                        rel_time=acquisition_delay,
-                    )
-
-                    shot.add(Reset(this_qubit))
+                    shot.add(Reset(qubit))
         return shot
+
+    def _add_clocks(self, shot: Schedule, qubit_state: int) -> str:
+        """Adds each qubit's optimal readout clock for 2 or 3 states and returns the clocks' suffix."""
+        if qubit_state not in (1, 2):
+            raise ValueError(f"Invalid state {qubit_state}")
+        suffix = "ro_2st_opt" if qubit_state == 1 else "ro_3st_opt"
+        for qubit, transmon in self.transmons.items():
+            clocks = transmon.extended_clock_freqs
+            frequency = (
+                clocks.readout_2state_opt()
+                if qubit_state == 1
+                else clocks.readout_3state_opt()
+            )
+            shot.add_resource(ClockResource(name=f"{qubit}.{suffix}", freq=frequency))
+        if qubit_state == 2:
+            add_12_clocks(shot, self.transmons)
+        return suffix
+
+    def _add_readout(
+        self,
+        shot: Schedule,
+        transmon: ExtendedTransmon,
+        level: int,
+        amplitude: float,
+        clock: str,
+        acquisition: tuple[int, int],
+    ) -> None:
+        """Prepares ``level`` and reads it out at ``amplitude`` into ``acquisition``'s index and channel."""
+        if level == 0:
+            preparation = shot.add(IdlePulse(transmon.rxy.duration()))
+        elif level in (1, 2):
+            preparation = prepare_state(shot, transmon, level)
+        else:
+            raise ValueError("State Input Error")
+        acq_index, acq_channel = acquisition
+        port = transmon.ports.readout()
+        ro_pulse = shot.add(
+            SquarePulse(
+                duration=transmon.measure.pulse_duration(),
+                amp=amplitude,
+                port=port,
+                clock=clock,
+            ),
+            ref_op=preparation,
+        )
+        shot.add(
+            SSBIntegrationComplex(
+                duration=transmon.measure.integration_time(),
+                port=port,
+                clock=clock,
+                acq_index=acq_index,
+                acq_channel=acq_channel,
+                bin_mode=BinMode.APPEND,
+            ),
+            ref_op=ro_pulse,
+            ref_pt="start",
+            rel_time=transmon.measure.acq_delay(),
+        )
 
     def schedule_function(
         self,

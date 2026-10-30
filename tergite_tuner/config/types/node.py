@@ -12,10 +12,8 @@
 
 """Schema for the ``node_config.toml`` file."""
 
-from os import PathLike
 from typing import Any, Dict
 
-import toml
 from pydantic import Field, RootModel, model_validator
 
 
@@ -47,26 +45,3 @@ class NodeConfig(RootModel[Dict[str, Dict[str, Any]]]):
                     f"{type(node_section).__name__}"
                 )
         return self
-
-    @classmethod
-    def from_toml(cls, file: "PathLike[str]") -> "NodeConfig":
-        """Loads the node configuration from a TOML file.
-
-        Args:
-            file: path to the ``node_config.toml`` file
-
-        Returns:
-            the parsed and validated ``NodeConfig`` instance
-        """
-        with open(file, "r", encoding="utf-8") as f:
-            data = toml.load(f)
-        return cls(data)
-
-    def __getitem__(self, key: str) -> Dict[str, Any]:
-        return self.root[key]
-
-    def __contains__(self, key: object) -> bool:
-        return key in self.root
-
-    def __iter__(self):
-        return iter(self.root)

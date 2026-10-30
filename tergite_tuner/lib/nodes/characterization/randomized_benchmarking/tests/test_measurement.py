@@ -11,44 +11,35 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
 
 import numpy as np
-import pytest
 
+from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.measurement import (
     RandomizedBenchmarkingMeasurement,
 )
-from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
-    RandomizedBenchmarkingNode,
-)
-from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
+_STATE_FILENAME = "state-2026-03-10-21-33-32.json"
 
 
-def test_align_cliffords(redis_connection, session_context, node_data_dir):
+def test_align_cliffords(session_context, node_data_dir):
     """
     Test whether the one_by_one or parallel schedule_keyword is
     correctly applied. Node that it would be safer to test compiled
     schedule durations, but this would require a mocj hardware config
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q11", "q12", "q13", "q14", "q15"]
         couplers = ["q14_q15"]
 
-        node = RandomizedBenchmarkingNode(
-            all_qubits=qubits, couplers=couplers, session=session_context
-        )
-        transmons_dict = {qubit: node.device.get_element(qubit) for qubit in qubits}
-        edges_dict = {coupler: node.device.get_edge(coupler) for coupler in couplers}
+        device = configure_device("rb", qubits, couplers, session_context)
+        transmons_dict = {qubit: device.get_element(qubit) for qubit in qubits}
         measurement_class = RandomizedBenchmarkingMeasurement(transmons=transmons_dict)
 
-        node.schedule_keywords["loop_repetitions"] = 2
+        schedule_keywords = {"loop_repetitions": 2}
         samplespace = {  # small samplespace
             "number_of_cliffords": {qubit: np.array([0, 8, 16]) for qubit in qubits},
         }
@@ -58,9 +49,9 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
         }
 
         # Test parallel
-        node.schedule_keywords["multiplexing"] = "parallel"
+        schedule_keywords["multiplexing"] = "parallel"
         schedule = measurement_class.schedule_function(
-            **samplespace, **outer_samplespace, **node.schedule_keywords
+            **samplespace, **outer_samplespace, **schedule_keywords
         )
 
         for op_id, operation in schedule.data["operation_dict"].items():
@@ -73,9 +64,9 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
             assert f"root_{qubit}" in shot.schedulables
 
         # Test one by one
-        node.schedule_keywords["multiplexing"] = "one_by_one"
+        schedule_keywords["multiplexing"] = "one_by_one"
         schedule = measurement_class.schedule_function(
-            **samplespace, **outer_samplespace, **node.schedule_keywords
+            **samplespace, **outer_samplespace, **schedule_keywords
         )
 
         for op_id, operation in schedule.data["operation_dict"].items():

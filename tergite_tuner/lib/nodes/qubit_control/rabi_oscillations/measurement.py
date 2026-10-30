@@ -15,14 +15,21 @@
 
 
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
-from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.resources import ClockResource
 
+from tergite_tuner.backend import (
+    ClockResource,
+    DRAGPulse,
+    ExtendedTransmon,
+    Schedule,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_gates import Measure_RO1
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.lib.utils.schedules import (
+    add_12_clocks,
+    get_drive_clock,
+    get_measure_operation,
+    get_multiplexed_schedule,
+    prepare_state,
+)
 
 
 class RabiOscillationsMeasurement(BaseMeasurement):
@@ -36,97 +43,43 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         repetitions: int = 1024,
         qubit_state: int = 0,
     ) -> Schedule:
-        """
-        Generate a schedule for performing a Rabi oscillation measurement on multiple qubits using a Gaussian pulse.
+        """Drives each qubit with a DRAG pulse at each of its mw_amplitudes, then measures it."""
+        measure = get_measure_operation(qubit_state)
 
-        Schedule sequence
-            Reset -> Gaussian pulse -> Measure
-        Parameters
-
-        ----------
-        mw_amplitudes
-            Array of the sweeping amplitudes of the Rabi pulse for each qubit.
-        repetitions
-            The amount of times the Schedule will be repeated.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
-        if qubit_state == 0:
-            schedule_title = "rabi_01_oscillations"
-            measure_function = Measure
-        elif qubit_state == 1:
-            schedule_title = "rabi_12_oscillations"
-            measure_function = Measure_RO1
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-        schedule = Schedule(schedule_title, repetitions)
-
-        qubits = self.transmons.keys()
-
-        # we must first add the clocks
-        if qubit_state == 0:
-            for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_01 = this_transmon.clock_freqs.f01()
-                mw_duration = this_transmon.rxy.duration()
-                this_clock = f"{this_qubit}.01"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_01)
-                )
-        elif qubit_state == 1:
-            for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                mw_duration = this_transmon.r12.ef_duration()
-                this_clock = f"{this_qubit}.12"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_12)
-                )
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-        # This is the common reference operation so the qubits can be operated in parallel
-        root_relaxation = schedule.add(Reset(*qubits), label="Reset")
-
-        for this_qubit, mw_amp_array_val in mw_amplitudes.items():
-            # unpack the static parameters
-            this_transmon = self.transmons[this_qubit]
-            mw_pulse_port = this_transmon.ports.microwave()
-
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            transmon = self.transmons[qubit]
             if qubit_state == 0:
-                this_clock = f"{this_qubit}.01"
-            elif qubit_state == 1:
-                this_clock = f"{this_qubit}.12"
+                duration = transmon.rxy.duration()
             else:
-                raise ValueError(f"Invalid qubit state: {qubit_state}")
-
+                duration = transmon.r12.ef_duration()
+            prepare_state(schedule, transmon, qubit_state)
             schedule.add(
-                Reset(*qubits), ref_op=root_relaxation
-            )  # To enforce parallelism we refer to the root relaxation
+                DRAGPulse(
+                    duration=duration,
+                    G_amp=point["mw_amplitudes"],
+                    D_amp=0,
+                    port=transmon.ports.microwave(),
+                    clock=get_drive_clock(qubit, qubit_state),
+                    phase=0,
+                ),
+            )
+            schedule.add(measure(qubit, acq_index=acq_index))
 
-            # The second for loop iterates over all amplitude values in the amplitudes batch:
-            for acq_index, mw_amplitude in enumerate(mw_amp_array_val):
-                if qubit_state == 1:
-                    schedule.add(X(this_qubit))
-                schedule.add(
-                    DRAGPulse(
-                        duration=mw_duration,
-                        G_amp=mw_amplitude,
-                        D_amp=0,
-                        port=mw_pulse_port,
-                        clock=this_clock,
-                        phase=0,
-                    ),
-                )
-
-                schedule.add(
-                    measure_function(this_qubit, acq_index=acq_index),
-                )
-
-                schedule.add(Reset(this_qubit))
-
+        schedule = get_multiplexed_schedule(
+            f"rabi_{qubit_state}{qubit_state + 1}_oscillations",
+            self.transmons,
+            {"mw_amplitudes": mw_amplitudes},
+            add_point,
+            repetitions,
+        )
+        if qubit_state == 0:
+            for qubit, transmon in self.transmons.items():
+                frequency = transmon.clock_freqs.f01()
+                schedule.add_resource(ClockResource(name=f"{qubit}.01", freq=frequency))
+        else:
+            add_12_clocks(schedule, self.transmons)
         return schedule
 
 
@@ -142,105 +95,44 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
         repetitions: int = 1024,
         qubit_state: int = 0,
     ) -> Schedule:
-        """
+        """Applies X_repetitions DRAG pulses at each of the mw_amplitudes_sweep, then measures."""
+        measure = get_measure_operation(qubit_state)
 
-        Schedule sequence
-            Reset -> DRAG pulse x N times-> Measure
-        Step 2 and 3 are repeated X_repetition amount of times
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            transmon = self.transmons[qubit]
+            if qubit_state == 0:
+                duration = transmon.rxy.duration()
+                amplitude = transmon.rxy.amp180()
+                motzoi = transmon.rxy.motzoi()
+            else:
+                duration = transmon.r12.ef_duration()
+                amplitude = transmon.r12.ef_amp180()
+                motzoi = transmon.r12.ef_motzoi()
+            prepare_state(schedule, transmon, qubit_state)
+            pulse = DRAGPulse(
+                duration=duration,
+                G_amp=amplitude + point["mw_amplitudes_sweep"],
+                D_amp=motzoi,
+                port=transmon.ports.microwave(),
+                clock=get_drive_clock(qubit, qubit_state),
+                phase=0,
+            )
+            for _ in range(2 * point["X_repetitions"]):
+                schedule.add(pulse)
+            schedule.add(measure(qubit, acq_index=acq_index))
 
-        Parameters
-        ----------
-        mw_amplitudes
-        X_repetition: The amount of times that the DRAG pulse and inverse DRAG pulse are applied
-           mw_amplitude: Amplitude of the DRAG pulse for each qubit.
-        repetitions
-            The amount of times the Schedule will be repeated.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
-        if qubit_state == 0:
-            schedule_title = "n_rabi_oscillations"
-            measure_function = Measure
-        elif qubit_state == 1:
-            schedule_title = "n_rabi_12_oscillations"
-            measure_function = Measure_RO1
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
-        schedule = Schedule(schedule_title, repetitions)
-
-        qubits = self.transmons.keys()
-
+        schedule = get_multiplexed_schedule(
+            "n_rabi_oscillations" if qubit_state == 0 else "n_rabi_12_oscillations",
+            self.transmons,
+            {
+                "mw_amplitudes_sweep": mw_amplitudes_sweep,
+                "X_repetitions": X_repetitions,
+            },
+            add_point,
+            repetitions,
+        )
         if qubit_state == 1:
-            for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                this_clock = f"{this_qubit}.12"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_12)
-                )
-
-        # This is the common reference operation so the qubits can be operated in parallel
-        root_relaxation = schedule.add(Reset(*qubits), label="Reset")
-
-        # The outer loop, iterates over all qubits
-        for this_qubit, X_values in X_repetitions.items():
-            this_transmon = self.transmons[this_qubit]
-            mw_pulse_duration = this_transmon.rxy.duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-            mw_amplitude = this_transmon.rxy.amp180()
-            mw_motzoi = this_transmon.rxy.motzoi()
-            this_clock = f"{this_qubit}.01"
-
-            if qubit_state == 1:
-                mw_pulse_duration = this_transmon.r12.ef_duration()
-                mw_amplitude = this_transmon.r12.ef_amp180()
-                mw_motzoi = this_transmon.r12.ef_motzoi()
-                this_clock = f"{this_qubit}.12"
-
-            mw_amplitudes_corrections = mw_amplitudes_sweep[this_qubit]
-            number_of_corrections = len(mw_amplitudes_corrections)
-
-            schedule.add(
-                Reset(*qubits), ref_op=root_relaxation
-            )  # To enforce parallelism we refer to the root relaxation
-
-            # The intermediate loop iterates over all amplitude values:
-            for x_index, this_x in enumerate(X_values):
-                # The inner for loop iterates over all frequency values in the frequency batch:
-                for mw_amplitude_index, mw_amplitude_correction in enumerate(
-                    mw_amplitudes_corrections
-                ):
-                    this_index = x_index * number_of_corrections + mw_amplitude_index
-                    if qubit_state == 1:
-                        schedule.add(X(this_qubit))
-                    for _ in range(this_x):
-                        schedule.add(
-                            DRAGPulse(
-                                duration=mw_pulse_duration,
-                                G_amp=mw_amplitude + mw_amplitude_correction,
-                                D_amp=mw_motzoi,
-                                port=mw_pulse_port,
-                                clock=this_clock,
-                                phase=0,
-                            ),
-                        )
-                        schedule.add(
-                            DRAGPulse(
-                                duration=mw_pulse_duration,
-                                G_amp=mw_amplitude + mw_amplitude_correction,
-                                D_amp=mw_motzoi,
-                                port=mw_pulse_port,
-                                clock=this_clock,
-                                phase=0,
-                            ),
-                        )
-
-                    schedule.add(
-                        measure_function(this_qubit, acq_index=this_index),
-                    )
-
-                    schedule.add(Reset(this_qubit))
-
+            add_12_clocks(schedule, self.transmons)
         return schedule

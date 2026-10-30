@@ -13,62 +13,56 @@
 
 import pytest
 import xarray as xr
+from matplotlib import pyplot as plt
 
-from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis import (
-    RandomizedBenchmarkingNodeAnalysis,
     RandomizedBenchmarkingQubitAnalysis,
+    get_rb_fidelity,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.lib.run import get_element_s21s
+from tergite_tuner.lib.spec import plot_class_analysis
+from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
-
-
-def test_randomized_benchmarking_analysis(
-    redis_connection, session_context, node_data_dir
-):
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
-        file_path = node_data_dir / "dataset_randomized_benchmarking.hdf5"
-        with xr.open_dataset(file_path) as dataset:
-
-            qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
-            analysis = RandomizedBenchmarkingQubitAnalysis(
-                "randomized_benchmarking", qubit_qois, session_context
-            )
-            ds_11 = filter_ds_by_element(dataset, "q11")
-            ds_15 = filter_ds_by_element(dataset, "q15")
-            qoi_11 = analysis.process_qubit(ds_11, "q11")
-            qoi_15 = analysis.process_qubit(ds_15, "q15")
-
-            standard_fidelity_11 = qoi_11.analysis_result["fidelity"]["value"]
-            standard_leakage_11 = qoi_11.analysis_result["leakage"]["value"]
-            standard_fidelity_15 = qoi_15.analysis_result["fidelity"]["value"]
-            standard_leakage_15 = qoi_15.analysis_result["leakage"]["value"]
-
-            assert qoi_11.analysis_successful
-            assert qoi_15.analysis_successful
-            assert pytest.approx(standard_fidelity_11) == 0.99951747
-            assert pytest.approx(standard_leakage_11) == 0.00207032
-            assert pytest.approx(standard_fidelity_15) == 0.99788337
-            assert pytest.approx(standard_leakage_15) == 0.0064318
+_STATE_FILENAME = "state-2026-03-10-21-33-32.json"
 
 
-def test_plotting(redis_connection, session_context, node_data_dir):
-    """
-    Test that the plotter produces a figure with the right number of axes
-    """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
-        qubit_qois = ["fidelity", "fidelity_error", "leakage", "leakage_error"]
-        name = "randomized_benchmarking"
-        analysis = RandomizedBenchmarkingNodeAnalysis(
-            name,
-            redis_fields=qubit_qois,
-            session=session_context,
-        )
-        analysis.analyze_node(node_data_dir, save_plot=True)
-        figure = analysis.fig
+def _get_fits(node_data_dir, session_context) -> dict:
+    with xr.open_dataset(
+        node_data_dir / "dataset_randomized_benchmarking.hdf5"
+    ) as data:
+        s21s = get_element_s21s(data.load())
+    return {
+        qubit: RandomizedBenchmarkingQubitAnalysis(
+            s21s[qubit], session_context
+        ).analyse()
+        for qubit in ("q11", "q15")
+    }
 
-        # TODO: this will change when the top band is removed
-        assert len(figure.get_axes()) == 8
+
+def test_randomized_benchmarking_analysis(session_context, node_data_dir):
+    with loaded_state(session_context, node_data_dir / _STATE_FILENAME):
+        fits = _get_fits(node_data_dir, session_context)
+
+    assert fits["q11"]["fidelity"].value == pytest.approx(0.99951747)
+    assert fits["q11"]["leakage"].value == pytest.approx(0.00207032)
+    assert fits["q15"]["fidelity"].value == pytest.approx(0.99788337)
+    assert fits["q15"]["leakage"].value == pytest.approx(0.0064318)
+
+
+def test_plotting(session_context, node_data_dir):
+    with loaded_state(session_context, node_data_dir / _STATE_FILENAME):
+        fits = _get_fits(node_data_dir, session_context)["q11"]
+    figure, axis = plt.subplots()
+
+    plot_class_analysis(axis, None, fits, session_context)
+
+    assert axis.get_xlabel() == "number of cliffords"
+    plt.close(figure)
+
+
+def test_the_fidelity_is_the_standard_decay_without_interleaving():
+    assert get_rb_fidelity(0.99, None) == 0.99
+
+
+def test_the_interleaved_fidelity_follows_the_decays_ratio():
+    assert get_rb_fidelity(0.98, 0.96) == pytest.approx(1 - 0.5 * (1 - 0.96 / 0.98))

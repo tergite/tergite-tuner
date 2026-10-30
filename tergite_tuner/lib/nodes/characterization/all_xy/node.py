@@ -1,6 +1,7 @@
 # This code is part of Tergite
 #
 # (C) Copyright Eleftherios Moschandreou 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -9,27 +10,53 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""AllXY, which has no analysis yet (REFACTOR.md step 9.7)."""
+
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from tergite_tuner.lib.base.node import QubitNode
-from tergite_tuner.lib.nodes.characterization.all_xy.analysis import AllXYAnalysis
+from tergite_tuner.backend import ExtendedTransmon, Schedule
+from tergite_tuner.lib.nodes.characterization.all_xy.analysis import (
+    IDEAL_POPULATIONS,
+    analyse_all_xy,
+    plot_all_xy,
+)
 from tergite_tuner.lib.nodes.characterization.all_xy.measurement import AllXYMeasurement
-from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
-class AllXYNode(QubitNode):
-    name: str = "all_xy"
-    measurement_cls = AllXYMeasurement
-    analysis_cls = AllXYAnalysis
-    measurement_type_cls = OuterScheduleNode
+DUMMY_ERROR = 0.01
 
-    def __init__(self, all_qubits: list[str], **schedule_keywords):
-        super().__init__(all_qubits, **schedule_keywords)
-        self.all_qubits = all_qubits
-        self.redis_field = ["error_syndromes"]
-        self.backup = False
-        # TODO properly set the dimensions
-        self.schedule_samplespace = {
-            "XY_index": {qubit: np.array(range(23)) for qubit in self.all_qubits}
-        }
+
+def get_schedule(
+    transmons: Mapping[str, ExtendedTransmon], XY_index: dict[str, np.ndarray]
+) -> Schedule:
+    return AllXYMeasurement(transmons).schedule_function(XY_index)
+
+
+def get_dummy_s21(
+    _qubit: str, _sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    """The ideal populations off by ``DUMMY_ERROR``, then the |0> and |1> calibration points."""
+    populations = IDEAL_POPULATIONS + DUMMY_ERROR
+    return np.concatenate([populations, [0.0, 1.0]]).astype(complex)
+
+
+ALL_XY_SPECS = {
+    NodeEnum.ALL_XY: NodeSpec(
+        name=NodeEnum.ALL_XY,
+        element="qubit",
+        get_schedule=get_schedule,
+        analyse=analyse_all_xy,
+        qois={"error": "all_xy_error"},
+        sweeps={"XY_index": get_fixed_sweep(np.arange(23))},
+        get_dummy_s21=get_dummy_s21,
+        plot=plot_all_xy,
+    )
+}

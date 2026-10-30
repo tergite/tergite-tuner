@@ -13,20 +13,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os.path
-import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
 from uuid import uuid4
 
 import cf_xarray as cf
 import xarray
 
 from tergite_tuner.utils.logging import logger
-
-if TYPE_CHECKING:
-    from tergite_tuner.config.session import SessionContext
 
 
 def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
@@ -35,51 +29,22 @@ def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
     return ds
 
 
-def create_node_data_path(session_config: "SessionContext", node_name: str) -> Path:
-    """
-    Create the folder where measurement results, plots and logs specific to the node are stored.
-
-    Args:
-        session_config: the configuration for the current session
-        node_name: to create a data path for.
-
-    Returns:
-        Path to the measurement log folder as Path.
-
-    """
-    now_ = datetime.now()
-    measurement_id = (
-        f"{now_.strftime('%Y%m%d-%H%M%S-%f')[:19]}-{str(uuid4())[:6]}-{node_name}"
-    )
-    data_path = Path(os.path.join(session_config.data_dir, measurement_id))
-    return data_path
+def get_unique_data_path(parent: Path, name: str) -> Path:
+    """A new folder's path in ``parent``, named for the time, a random id and ``name``; not created."""
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:19]
+    return Path(parent) / f"{timestamp}-{str(uuid4())[:6]}-{name}"
 
 
-def scrape_and_copy_hdf5_files(
-    scrape_directory: Union[Path, str], target_directory: Union[Path, str]
-):
-    """
-    Find all measurement result files and copy them to the target directory.
-
-    Args:
-        scrape_directory: Folder with measurement result files.
-        target_directory: Target directory to copy files to.
-    """
-
-    # Find all data files
-    directory = Path(scrape_directory)
-    hdf5_files = list(directory.rglob("*.h5")) + list(directory.rglob("*.hdf5"))
-
-    # Ensure the target directory exists
-    os.makedirs(target_directory, exist_ok=True)
-
-    # Iterate over files and copy to the new folder
-    # Does not preserve any subfolder structures from the scrape directory
-    for file in hdf5_files:
-        destination_path = os.path.join(target_directory, file.name)
-        shutil.copy2(file, destination_path)
-
-    logger.info(f"Copied {len(hdf5_files)} files to {target_directory}.")
+def load_dataset(node_name: str, data_path: Path) -> xarray.Dataset:
+    """The dataset ``save_dataset`` saved for ``node_name`` in ``data_path``."""
+    dataset_path = Path(data_path) / f"dataset_{node_name}.hdf5"
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+    logger.info(f"Open dataset {dataset_path}")
+    dataset = xarray.open_dataset(dataset_path)
+    if "working_points" in dataset.coords:
+        dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
+    return dataset
 
 
 def save_dataset(

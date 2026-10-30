@@ -1,0 +1,8 @@
+{
+  "q06/clock_freqs:f01": 4632000000.0,
+  "q06/is_successful": true,
+  "q06/spec:spec_ampl_optimal": 0.001,
+  "q07/clock_freqs:f01": 5068000000.0,
+  "q07/is_successful": true,
+  "q07/spec:spec_ampl_optimal": 0.00625
+}

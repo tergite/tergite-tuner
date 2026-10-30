@@ -14,70 +14,53 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
+from matplotlib.figure import Figure
+
+SUBPLOT_SIZE = 5
+# wider subplots for few columns, so the band's text fits
+SUBPLOT_SIZES = {1: 16, 2: 8, 3: 5.5}
+LOGO_SIZE = 0.8
+BAND_HEIGHT = 0.8
 
 
-def create_figure_with_top_band(nrows, ncols) -> tuple:
-    """
-    Create a figure with a top band for metadata and a grid of subplots.
-    Args:
-        nrows (int): Number of rows in the subplot grid.
-        ncols (int): Number of columns in the subplot grid.
-    Returns:
-        fig (matplotlib.figure.Figure): The created figure.
-        axs (numpy.ndarray): 2D array of Axes objects for the subplots.
-    """
-    # These values are fixed to ensure uniformity in the plots across the application.
-    subplot_size = 5
-    logo_size = 0.8
-    band_height_inch = 0.8
-    # This will fine tune the figure size based on the number of columns so that the writing no top fits
-    if ncols == 1:
-        subplot_size = 16
-    elif ncols == 2:
-        subplot_size = 8
-    elif ncols == 3:
-        subplot_size = 5.5
-
-    fig_width = ncols * subplot_size
-    subplot_area_height = nrows * subplot_size
-    fig_height = band_height_inch + subplot_area_height
-
-    fig = plt.figure(figsize=(fig_width, fig_height))
-
-    # Outer GridSpec: 1 row for top band + 1 row for the subplot area
+def create_figure_with_top_band(nrows: int, ncols: int) -> tuple[Figure, np.ndarray]:
+    """A figure with a blank band on top for metadata, over an ``nrows`` by ``ncols`` grid of axes."""
+    subplot_size = SUBPLOT_SIZES.get(ncols, SUBPLOT_SIZE)
+    width = ncols * subplot_size
+    plots_height = nrows * subplot_size
+    figure = plt.figure(figsize=(width, BAND_HEIGHT + plots_height))
     outer = gridspec.GridSpec(
-        2, 1, height_ratios=[band_height_inch, subplot_area_height], figure=fig
+        2, 1, height_ratios=[BAND_HEIGHT, plots_height], figure=figure
     )
-
-    # Subplots (nrows x ncols) — this is the only one with spacing!
-    plot_gs = gridspec.GridSpecFromSubplotSpec(
+    plot_grid = gridspec.GridSpecFromSubplotSpec(
         nrows, ncols, subplot_spec=outer[1], hspace=0.3, wspace=0.35
     )
-
-    axs = np.array(
-        [[fig.add_subplot(plot_gs[i, j]) for j in range(ncols)] for i in range(nrows)]
+    axes = np.array(
+        [
+            [figure.add_subplot(plot_grid[row, column]) for column in range(ncols)]
+            for row in range(nrows)
+        ]
     )
+    _add_band(figure, outer[0], width)
+    return figure, axes
 
-    center_width_inch = fig_width - 2 * logo_size
-    left_frac = logo_size / fig_width
-    center_frac = center_width_inch / fig_width
-    right_frac = logo_size / fig_width
 
-    band_gs = gridspec.GridSpecFromSubplotSpec(
+def _add_band(figure: Figure, spec: gridspec.SubplotSpec, width: float) -> None:
+    """Three blank axes across ``spec``: a logo's width at each end and the rest between."""
+    band = gridspec.GridSpecFromSubplotSpec(
         1,
         3,
-        subplot_spec=outer[0],
+        subplot_spec=spec,
         wspace=0,
-        width_ratios=[left_frac, center_frac, right_frac],
+        width_ratios=[
+            LOGO_SIZE / width,
+            (width - 2 * LOGO_SIZE) / width,
+            LOGO_SIZE / width,
+        ],
     )
-    ax_left = fig.add_subplot(band_gs[0])
-    ax_center = fig.add_subplot(band_gs[1])
-    ax_right = fig.add_subplot(band_gs[2])
-
-    for ax in (ax_left, ax_center, ax_right):
-        ax.set_xticks([])
-        ax.set_yticks([])
-        for spine in ax.spines.values():
+    for index in range(3):
+        axis = figure.add_subplot(band[index])
+        axis.set_xticks([])
+        axis.set_yticks([])
+        for spine in axis.spines.values():
             spine.set_visible(False)
-
-    return fig, axs

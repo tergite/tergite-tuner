@@ -10,52 +10,40 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from itertools import product
 
 import pytest
+from quantify_scheduler.backends.qblox import constants as qblox_constants
 
-from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
-from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
+from tergite_tuner.backend import ExtendedTransmon, configure_device
+from tergite_tuner.lib import run
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.measurement import (
-    reduce_samplespace,
-    samplespace_dimensions,
-)
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
+from tergite_tuner.tests.utils.goldens import get_compiler
+from tergite_tuner.tests.utils.state import loaded_state
 
-_redis_values = get_fixture_path("redis", "standard_redis_mock.json")
-_node_names = list(DEFAULT_NODE_NAME_CLS_MAP.keys())
+_state_file = get_fixture_path("states", "standard_state.json")
+_OUTER_NODES = [node for node, spec in DEFAULT_NODE_SPECS.items() if spec.outer_sweeps]
 
 
-@pytest.mark.parametrize("node_name", _node_names)
-def test_precompile_all_nodes_without_error(
-    node_name, redis_connection, session_context
-):
-    with loaded_redis(redis_connection, _redis_values):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-        node_cls = DEFAULT_NODE_NAME_CLS_MAP[node_name]
-        node = node_cls(
-            all_qubits=["q00", "q01"],
-            couplers=["q00_q01"],
-            session=session_context,
+# every outer-sweep point: test_schedule_goldens.py compiles the first one on every run
+@pytest.mark.slow
+@pytest.mark.parametrize("node", _OUTER_NODES, ids=lambda node: node.value)
+def test_every_outer_point_compiles(node, session_context):
+    spec = DEFAULT_NODE_SPECS[node]
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    with loaded_state(session, _state_file):
+        ExtendedTransmon.close_all()
+        device = configure_device(
+            node.value, run.get_qubits(spec, session), session.couplers, session
         )
+        sweeps = run.get_sweeps(spec, session)
+        for point in run.get_points(run.get_outer_sweeps(spec, session)):
+            run.compile_node(spec, device, sweeps | point, session)
 
-        if node_name == "purity_benchmarking":
-            pytest.skip(
-                "We skip purity_benchmarking for now, because it needs some refactoring."
-            )
 
-        if issubclass(node.measurement_type_cls, OuterScheduleNode):
-            # The assembly of samplespaces is taken from the OuterScheduleNode
-            outer_dimensions = samplespace_dimensions(node.outer_schedule_samplespace)
-            iterations = product(*(range(n) for n in outer_dimensions))
-            for this_iteration in iterations:
-                reduced_outer_samplespace = reduce_samplespace(
-                    this_iteration, node.outer_schedule_samplespace
-                )
-                samplespace = node.schedule_samplespace | reduced_outer_samplespace
-                node.precompile(samplespace)
+def test_precompile_restores_the_grid_time_tolerance(session_context):
+    default_tolerance = qblox_constants.GRID_TIME_TOLERANCE_TIME
+    with loaded_state(session_context, _state_file):
+        get_compiler("punchout", session_context)()
 
-        else:
-            node.precompile(node.schedule_samplespace)
+    assert qblox_constants.GRID_TIME_TOLERANCE_TIME == default_tolerance

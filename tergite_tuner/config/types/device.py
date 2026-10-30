@@ -13,11 +13,9 @@
 """Schema for the ``device_config.toml`` file."""
 
 import copy
-from os import PathLike
 from types import MappingProxyType
 from typing import Any, Dict, Tuple
 
-import toml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from tergite_tuner.utils.dicts import update_nested
@@ -236,20 +234,6 @@ class DeviceConfigFile(BaseModel):
 
     device: DeviceConfig = Field(default_factory=DeviceConfig)
     layout: DeviceLayout = Field(default_factory=DeviceLayout)
-
-    @classmethod
-    def from_toml(cls, file: PathLike[str]) -> "DeviceConfigFile":
-        """Loads the device configuration from a TOML file.
-
-        Args:
-            file: path to the ``device_config.toml`` file
-
-        Returns:
-            the parsed and validated ``DeviceConfigFile`` instance
-        """
-        with open(file, "r", encoding="utf-8") as f:
-            data = toml.load(f)
-        return cls(**data)
 
 
 def _apply_all_defaults(
