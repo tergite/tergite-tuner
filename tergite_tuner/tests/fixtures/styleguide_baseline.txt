@@ -133,7 +133,6 @@ type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.p
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plot_classified_IQ_points
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.ro_shot
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py::align_on_y_axis
 type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.measure
 type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.measure_first_excited
