@@ -51,7 +51,7 @@ FIXED_DURATION_WIDTH, FIXED_DURATION_POINTS = 0.2e6, 20
 
 def get_working_points(coupler: str, session: "SessionContext") -> np.ndarray:
     """The (frequency, duration) pairs CZ chevron found, or, on a fixed-duration coupler, frequencies around the stored one."""
-    if any(qubit in coupler for qubit in session.fixed_duration_couplers):
+    if coupler in session.fixed_duration_couplers:
         duration = float(get_coupler_value(coupler, "cz_pulse_duration", session))
         frequency = float(get_coupler_value(coupler, "cz_pulse_frequency", session))
         frequencies = np.linspace(
