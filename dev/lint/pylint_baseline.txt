@@ -19,8 +19,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-man
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-many-locals CZRBCouplerAnalysis.plotter
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-many-statements CZRBCouplerAnalysis.analyse
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: too-many-locals CZRBMeasurement.ro_shot
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot
@@ -28,3 +26,5 @@ tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py: too-many-loc
 tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py: too-many-locals ROFrequencyOptimizationMeasurement.schedule_function
 tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary.__init__
 tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots
+tergite_tuner/lib/utils/cliffords/clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
+tergite_tuner/lib/utils/cliffords/clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates

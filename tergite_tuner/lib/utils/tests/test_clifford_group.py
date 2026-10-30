@@ -7,7 +7,7 @@
 import numpy as np
 import pytest
 
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group import (
+from tergite_tuner.lib.utils.cliffords.clifford_group import (
     SingleQubitClifford,
     TwoQubitClifford,
 )

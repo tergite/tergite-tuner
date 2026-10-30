@@ -1,10 +1,11 @@
 # Violations that predate the style-guide test. Delete a line when you fix it; never add one.
+banner: tergite_tuner/backend/transmon.py: ############################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ############################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ########################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ##################################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#
 banner: tergite_tuner/utils/cliffords.py: # ******************************************************
-banner: tergite_tuner/backend/transmon.py: ############################
+boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
 boolean: tergite_tuner/config/session.py::SessionContext.save_plot
 boolean: tergite_tuner/config/session.py::SessionOptions.ignore_spec
@@ -12,7 +13,7 @@ boolean: tergite_tuner/config/session.py::SessionOptions.save_plot
 boolean: tergite_tuner/export.py::read_result(session_only)
 boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot(apply_inverse_gate)
 boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function(apply_inverse_gate)
-boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py::randomized_benchmarking_sequence(apply_inverse)
+boolean: tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py::randomized_benchmarking_sequence(apply_inverse)
 boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(ignore_spec)
 boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(save_plot)
 boolean: tergite_tuner/tuner.py::_reanalyse(refresh_session)
@@ -23,7 +24,6 @@ boolean: tergite_tuner/tuner.py::run_node(keep_data_files)
 boolean: tergite_tuner/tuner.py::run_node(refresh_session)
 boolean: tergite_tuner/tuner.py::tune_device(keep_data_files)
 boolean: tergite_tuner/tuner.py::tune_device(refresh_session)
-boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 license-header: tergite_tuner/config/__init__.py
 license-header: tergite_tuner/config/tests/__init__.py
 license-header: tergite_tuner/lib/__init__.py
@@ -54,12 +54,6 @@ license-header: tergite_tuner/lib/nodes/coupler/spectroscopy/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/spectroscopy/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/__init__.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/__init__.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py
 license-header: tergite_tuner/lib/nodes/qubit_control/__init__.py
 license-header: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/__init__.py
 license-header: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/__init__.py
@@ -80,16 +74,28 @@ license-header: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/__init
 license-header: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/__init__.py
 license-header: tergite_tuner/lib/utils/__init__.py
 license-header: tergite_tuner/lib/utils/analysis_models.py
+license-header: tergite_tuner/lib/utils/cliffords/clifford_group.py
+license-header: tergite_tuner/lib/utils/cliffords/pauli_transfer_matrices.py
+license-header: tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py
 license-header: tergite_tuner/lib/utils/fitting_models.py
+license-header: tergite_tuner/lib/utils/tests/test_clifford_group.py
+license-header: tergite_tuner/lib/utils/tests/test_randomized_benchmarking.py
 license-header: tergite_tuner/tests/__init__.py
 license-header: tergite_tuner/tests/utils/__init__.py
 license-header: tergite_tuner/utils/__init__.py
 license-header: tergite_tuner/utils/types/__init__.py
+private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
+private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
 private-helper-position: tergite_tuner/config/session.py::SessionContext
 private-helper-position: tergite_tuner/config/session.py::SessionOptions
 private-helper-position: tergite_tuner/export.py::CalibrationResults
-private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
-private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
+type-hints: tergite_tuner/backend/device.py::close_device_resources
+type-hints: tergite_tuner/backend/edge.py::ExtendedCompositeSquareEdge.__init__
+type-hints: tergite_tuner/backend/spi.py::SpiDAC.close_spi_rack
+type-hints: tergite_tuner/backend/spi.py::SpiDAC.create_spi_dac
+type-hints: tergite_tuner/backend/spi.py::SpiDAC.ramp_current_serially
+type-hints: tergite_tuner/backend/spi.py::_find_and_validate_spi_port
+type-hints: tergite_tuner/backend/transmon.py::ExtendedTransmon.__init__
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_target_node
 type-hints: tergite_tuner/export.py::generate_calib_seed_file
 type-hints: tergite_tuner/lib/base/measurement.py::BaseMeasurement.__init__
@@ -129,10 +135,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.align_cliffords.pad_operations
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot.add_single_qubits_operations_dict
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.CNOT_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.gate_decomposition
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesMultidimMeasurement.__init__
@@ -169,7 +171,10 @@ type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_20
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
 type-hints: tergite_tuner/lib/utils/classification_functions.py::calculate_probabilities
-type-hints: tergite_tuner/backend/device.py::close_device_resources
+type-hints: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.CNOT_like_gates
+type-hints: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.SWAP_like_gates
+type-hints: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.gate_decomposition
+type-hints: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.__init__
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.guess
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.__init__
@@ -183,10 +188,6 @@ type-hints: tergite_tuner/utils/cliffords.py::reversing_XY_matrix
 type-hints: tergite_tuner/utils/cliffords.py::x_PTM
 type-hints: tergite_tuner/utils/cliffords.py::y_PTM
 type-hints: tergite_tuner/utils/dicts.py::insert_nested_key
-type-hints: tergite_tuner/backend/spi.py::SpiDAC.close_spi_rack
-type-hints: tergite_tuner/backend/spi.py::SpiDAC.create_spi_dac
-type-hints: tergite_tuner/backend/spi.py::SpiDAC.ramp_current_serially
-type-hints: tergite_tuner/backend/spi.py::_find_and_validate_spi_port
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.__init__
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_console_handler
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_file_handler
@@ -194,8 +195,7 @@ type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.log_dir
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 type-hints: tergite_tuner/utils/logging/visuals.py::draw_arrow_chart
 type-hints: tergite_tuner/utils/measurement.py::samplespace_dimensions
-type-hints: tergite_tuner/backend/edge.py::ExtendedCompositeSquareEdge.__init__
-type-hints: tergite_tuner/backend/transmon.py::ExtendedTransmon.__init__
+verb: tergite_tuner/backend/pulse_factories.py::composite_soft_square_pulse
 verb: tergite_tuner/config/session.py::_default_data_dir
 verb: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::AllXYMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
@@ -230,17 +230,6 @@ verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::C
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.CNOT_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.CNOT_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.single_qubit_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py::X_theta
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py::Y_theta
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py::randomized_benchmarking_sequence
 verb: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::MotzoiParameterMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::NRabiOscillationsMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::RabiOscillationsMeasurement.schedule_function
@@ -264,6 +253,17 @@ verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
 verb: tergite_tuner/lib/utils/analysis_models.py::cos_func
 verb: tergite_tuner/lib/utils/analysis_models.py::sin_func
 verb: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.CNOT_like_PTM
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.CNOT_like_gates
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.SWAP_like_PTM
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.SWAP_like_gates
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
+verb: tergite_tuner/lib/utils/cliffords/clifford_group.py::TwoQubitClifford.single_qubit_like_gates
+verb: tergite_tuner/lib/utils/cliffords/pauli_transfer_matrices.py::X_theta
+verb: tergite_tuner/lib/utils/cliffords/pauli_transfer_matrices.py::Y_theta
+verb: tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py::randomized_benchmarking_sequence
 verb: tergite_tuner/lib/utils/fitting_models.py::_resonator_phase_guess
 verb: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
 verb: tergite_tuner/lib/utils/fitting_models.py::exp_decay_func
@@ -280,4 +280,3 @@ verb: tergite_tuner/utils/cliffords.py::x_PTM
 verb: tergite_tuner/utils/cliffords.py::y_PTM
 verb: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 verb: tergite_tuner/utils/measurement.py::samplespace_dimensions
-verb: tergite_tuner/backend/pulse_factories.py::composite_soft_square_pulse

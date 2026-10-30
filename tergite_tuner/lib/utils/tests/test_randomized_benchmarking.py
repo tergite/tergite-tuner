@@ -6,17 +6,17 @@
 import numpy as np
 import pytest
 
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group import (
+from tergite_tuner.lib.utils.cliffords.clifford_group import (
     SingleQubitClifford,
     TwoQubitClifford,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.pauli_transfer_matrices import (
+from tergite_tuner.lib.utils.cliffords.pauli_transfer_matrices import (
     CZ,
     I,
     X_theta,
     Y_theta,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (
+from tergite_tuner.lib.utils.cliffords.randomized_benchmarking import (
     calculate_net_clifford,
     randomized_benchmarking_sequence,
 )

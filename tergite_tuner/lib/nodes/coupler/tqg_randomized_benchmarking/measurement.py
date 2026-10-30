@@ -34,10 +34,10 @@ from tergite_tuner.backend import (
     Y,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group import (
+from tergite_tuner.lib.utils.cliffords.clifford_group import (
     TwoQubitClifford,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (
+from tergite_tuner.lib.utils.cliffords.randomized_benchmarking import (
     randomized_benchmarking_sequence,
 )
 from tergite_tuner.lib.utils.schedules import (

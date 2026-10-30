@@ -145,43 +145,10 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: ARG0
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: B007 Loop control variable `qubit` not used within loop body
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: UP045 Use `X | None` for type annotations
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_measurement.py: ARG001 Unused function argument: `args`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_measurement.py: ARG001 Unused function argument: `kwargs`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_measurement.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py: ARG001 Unused function argument: `interleaved_clifford_idx`
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py: RET507 Unnecessary `elif` after `continue` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gate_decomp` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `pauli_transfer_matrix` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP035 `typing.List` is deprecated, use `list` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py: E741 Ambiguous variable name: `I`
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py: RET504 Unnecessary assignment to `X` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py: RET504 Unnecessary assignment to `Y` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP006 Use `type` instead of `Type` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP006 Use `type` instead of `Type` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP035 `typing.Type` is deprecated, use `type` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP045 Use `X | None` for type annotations
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py: ARG002 Unused method argument: `args`
@@ -198,6 +165,32 @@ tergite_tuner/lib/utils/classification_functions.py: C416 Unnecessary dict compr
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `assigned_states` before `return` statement
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `iq_points` before `return` statement
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `state_probabilities` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gate_decomp` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `pauli_transfer_matrix` before `return` statement
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `dict` instead of `Dict` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `list` instead of `List` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `tuple` instead of `Tuple` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `tuple` instead of `Tuple` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP006 Use `tuple` instead of `Tuple` for type annotation
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP035 `typing.Dict` is deprecated, use `dict` instead
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP035 `typing.List` is deprecated, use `list` instead
+tergite_tuner/lib/utils/cliffords/clifford_group.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
+tergite_tuner/lib/utils/cliffords/pauli_transfer_matrices.py: E741 Ambiguous variable name: `I`
+tergite_tuner/lib/utils/cliffords/pauli_transfer_matrices.py: RET504 Unnecessary assignment to `X` before `return` statement
+tergite_tuner/lib/utils/cliffords/pauli_transfer_matrices.py: RET504 Unnecessary assignment to `Y` before `return` statement
+tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py: UP006 Use `type` instead of `Type` for type annotation
+tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py: UP006 Use `type` instead of `Type` for type annotation
+tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py: UP035 `typing.Type` is deprecated, use `type` instead
+tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py: UP045 Use `X | None` for type annotations
+tergite_tuner/lib/utils/cliffords/randomized_benchmarking.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/utils/fitting_models.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/utils/fitting_models.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/utils/fitting_models.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
@@ -206,8 +199,15 @@ tergite_tuner/lib/utils/graph.py: UP006 Use `list` instead of `List` for type an
 tergite_tuner/lib/utils/graph.py: UP035 Import from `collections.abc` instead: `Iterable`
 tergite_tuner/lib/utils/graph.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/lib/utils/graph.py: UP047 Generic function `get_dependencies_in_topological_order` should use type parameters
+tergite_tuner/lib/utils/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
+tergite_tuner/lib/utils/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
+tergite_tuner/lib/utils/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
+tergite_tuner/lib/utils/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
+tergite_tuner/lib/utils/tests/test_clifford_group.py: ARG001 Unused function argument: `cleared_clifford_caches`
 tergite_tuner/lib/utils/tests/test_graph.py: UP006 Use `set` instead of `Set` for type annotation
 tergite_tuner/lib/utils/tests/test_graph.py: UP035 `typing.Set` is deprecated, use `set` instead
+tergite_tuner/lib/utils/tests/test_randomized_benchmarking.py: ARG001 Unused function argument: `interleaved_clifford_idx`
+tergite_tuner/lib/utils/tests/test_randomized_benchmarking.py: RET507 Unnecessary `elif` after `continue` statement
 tergite_tuner/storage/fs/dataset.py: RET504 Unnecessary assignment to `ds` before `return` statement
 tergite_tuner/tests/test_precompile.py: SIM300 Yoda condition detected
 tergite_tuner/tests/utils/fixtures.py: RET505 Unnecessary `elif` after `return` statement
