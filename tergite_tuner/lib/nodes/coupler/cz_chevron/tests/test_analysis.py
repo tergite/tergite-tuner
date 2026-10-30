@@ -11,10 +11,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
 import pytest
 import xarray as xr
 
-from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCouplerAnalysis
+from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import (
+    CZChevronCouplerAnalysis,
+    get_chevron_leads,
+    get_durations_in_ns,
+)
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.pytest import is_headless, is_work_in_progress
@@ -106,3 +111,20 @@ def test_plotting(session_context, node_data_dir):
 
             # the faceted graph has 7 axis: 6 for the probabilty heatmaps and one for the colorbar
             assert len(faceted_graph_fig.get_axes()) == 7
+
+
+def test_durations_round_down_to_four_nanoseconds():
+    durations = np.array([95.9e-9, 101.5e-9, 103.99e-9])
+
+    assert get_durations_in_ns(durations).tolist() == [92, 100, 100]
+
+
+def test_each_qubit_leads_from_its_1_to_its_end_of_the_phase_path():
+    states = {"state": [0, 1, 2]}
+    control = xr.DataArray([0.1, 0.2, 0.7], coords=states, dims="state")
+    target = xr.DataArray([0.6, 0.3, 0.1], coords=states, dims="state")
+
+    control_lead, target_lead = get_chevron_leads(control, target, "via_20")
+
+    assert control_lead.item() == pytest.approx(0.7 - 0.2)
+    assert target_lead.item() == pytest.approx(0.6 - 0.3)

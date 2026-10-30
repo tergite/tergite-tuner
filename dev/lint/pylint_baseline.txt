@@ -5,7 +5,6 @@ tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py: too
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py: too-many-locals RandomizedBenchmarkingMeasurement.rb_shot
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: too-many-locals test_align_cliffords
 tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: too-many-locals CZCalibrationMeasurement.ro_shot
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: too-many-locals CZChevronCouplerAnalysis.analyse
 tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py: too-many-locals CZChevronMeasurement.cz_chevron
 tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py: too-many-locals CZLocalPhasesMeasurement.ro_shot
 tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py: too-many-locals CZParametrizationMeasurement.cz_parametrization

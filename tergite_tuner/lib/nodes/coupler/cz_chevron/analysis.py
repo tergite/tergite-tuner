@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
+CURVE_POINTS = 200
+
+
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
@@ -59,45 +62,19 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             return np.array([np.nan]), np.array([np.nan])
 
     def analyse(self) -> Fits | None:
-        """Analyze the chevron pattern measured while sweeping the flux duration and frequency.
-
-        Analyze the chevron pattern measured while sweeping the flux pulse duration (y-axis)
-        and flux pulse frequency (x-axis).
-        The method assigns value to the attributes
-         - self.cz_working_durations_in_ns
-         - self.cz_working_frequencies
-        which correspond to all the (frequency, duration) points where a return to the |11> is observed
-        The working pairs may be unnesasrily mainy, sothe method assigns value also to the attributes
-         - self.selected_cz_durations_in_ns
-         - self.selected_cz_frequencies
-        which are a subset of the wotking points with array size according to self.number_of_working_points
-        """
+        """The (frequency, duration) points where the chevron returns to |11>, as CZ working points."""
         self.calculate_probabilities()
-
         self.fit_plot_durations = np.linspace(
-            self.durations[0], self.durations[-1], 200
-        )  # x-values for plotting
-
-        probabilities = self.probabilities
-        control_state_2 = probabilities.sel({"qubit": self.control_qubit, "state": 2})
-        control_state_1 = probabilities.sel({"qubit": self.control_qubit, "state": 1})
-        control_state_0 = probabilities.sel({"qubit": self.control_qubit, "state": 0})
-        target_state_0 = probabilities.sel({"qubit": self.target_qubit, "state": 0})
-        target_state_1 = probabilities.sel({"qubit": self.target_qubit, "state": 1})
-        target_state_2 = probabilities.sel({"qubit": self.target_qubit, "state": 2})
-
-        if self.phase_path == "via_02":
-            self.control_diffs = control_state_0 - control_state_1  # - control_state_0
-            self.target_diffs = target_state_2 - target_state_1  # - target_state_2
-        elif self.phase_path == "via_20":
-            self.control_diffs = control_state_2 - control_state_1  # - control_state_2
-            self.target_diffs = target_state_0 - target_state_1  # - control_state_0
-        else:
-            raise ValueError(f"Invalid phase path:{self.phase_path}")
-
+            self.durations[0], self.durations[-1], CURVE_POINTS
+        )
+        self.control_diffs, self.target_diffs = get_chevron_leads(
+            self.probabilities.sel({"qubit": self.control_qubit}),
+            self.probabilities.sel({"qubit": self.target_qubit}),
+            self.phase_path,
+        )
         self.combined_data = self.control_diffs + self.target_diffs
 
-        # apply a sinusoidal fit to each verical slice (column of specific frequency)
+        # a sine fitted to each frequency's column of durations
         cz_durations, _ = xr.apply_ufunc(
             self.apply_sinusoidal_slices_fit,
             self.combined_data,
@@ -105,42 +82,27 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             output_core_dims=[["cz_pulse_durations"], ["plot_points"]],
             vectorize=True,
         )
-
-        # cleanup entries with nan values from rejected fits:
+        # the rejected fits' columns go
         cz_durations = cz_durations.dropna(dim=self.frequencies_coord)
-        cz_duration_values = cz_durations.values.flatten()
+        self.cz_working_durations_in_ns = get_durations_in_ns(
+            cz_durations.values.flatten()
+        )
+        self.cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
+        # every working point is selected
+        self.selected_frequencies = self.cz_working_frequencies
+        self.selected_durations_in_ns = self.cz_working_durations_in_ns
 
-        integer_gate_durations_in_ns = (cz_duration_values // 1e-9).astype(int)
-        # ensure durations are in multiples of 4ns:
-        cz_working_durations_in_ns = (integer_gate_durations_in_ns // 4) * 4
-        cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
-
-        selected_cz_frequencies = cz_working_frequencies
-        selected_cz_durations_in_ns = cz_working_durations_in_ns
-
-        self.cz_working_frequencies = cz_working_frequencies
-        self.cz_working_durations_in_ns = cz_working_durations_in_ns
-
-        self.selected_frequencies = selected_cz_frequencies
-        self.selected_durations_in_ns = selected_cz_durations_in_ns
-
-        selected_cz_durations_in_ns = selected_cz_durations_in_ns.tolist()
-        selected_cz_frequencies = selected_cz_frequencies.astype(int).tolist()
-
-        selected_frequencies_str = str(selected_cz_frequencies)
-        selected_cz_durations_in_ns_str = str(selected_cz_durations_in_ns)
-        analysis_succesful = True
         analysis_result = {
             "cz_working_frequencies": {
-                "value": selected_frequencies_str,
+                "value": str(self.selected_frequencies.astype(int).tolist()),
                 "error": 0,
             },
             "cz_working_durations_in_ns": {
-                "value": selected_cz_durations_in_ns_str,
+                "value": str(self.selected_durations_in_ns.tolist()),
                 "error": 0,
             },
         }
-        return get_fits_from_result(analysis_result, analysis_succesful)
+        return get_fits_from_result(analysis_result, True)
 
     def plotter(self, figures_dictionary):
 
@@ -174,3 +136,22 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             )
 
         figures_dictionary[self.coupler] = [fig]
+
+
+def get_chevron_leads(
+    control: xr.DataArray, target: xr.DataArray, phase_path: str
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """Each qubit's population at its end of the phase path, less its |1>: |2> for the control and |0> for the target via 20, the reverse via 02."""
+    ends = {"via_20": (2, 0), "via_02": (0, 2)}
+    if phase_path not in ends:
+        raise ValueError(f"Invalid phase path:{phase_path}")
+    control_end, target_end = ends[phase_path]
+    return (
+        control.sel({"state": control_end}) - control.sel({"state": 1}),
+        target.sel({"state": target_end}) - target.sel({"state": 1}),
+    )
+
+
+def get_durations_in_ns(durations: np.ndarray) -> np.ndarray:
+    """Durations in seconds, rounded down to whole nanoseconds and then to multiples of 4 ns."""
+    return ((durations // 1e-9).astype(int) // 4) * 4
