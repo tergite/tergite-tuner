@@ -61,6 +61,7 @@ VERBS = frozenset(
         "connect",
         "construct",
         "convert",
+        "copy",
         "count",
         "create",
         "decode",
