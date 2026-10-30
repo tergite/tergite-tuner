@@ -14,26 +14,26 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+import xarray as xr
 
-from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
+from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
-from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
-class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
+class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
     """
     Analysis that fits an exponential decay function to randomized benchmarking data.
     """
 
-    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
+    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
+        super().__init__(s21, session)
         self.fit_results = {}
 
-    def analyse_qubit(self):
+    def analyse(self) -> Fits:
 
         model = ExpDecayModel()
 
@@ -125,8 +125,6 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
             )
             self.interleaved_p_value = fit_result.params["p"].value
 
-        analysis_successful = True
-
         if self.interleaved_gate is None:
             self.fidelity = self.standard_p_value
         else:
@@ -134,20 +132,11 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
                 1 - self.interleaved_p_value / self.standard_p_value
             )
 
-        analysis_result = {
-            "fidelity": {
-                "value": self.fidelity,
-                "error": np.nan,
-            },
-            "leakage": {
-                "value": self.leakage,
-                "error": np.nan,
-            },
+        return {
+            "fidelity": Fit(self.fidelity, np.nan),
+            "leakage": Fit(self.leakage, np.nan),
+            "analysis": Fit(self),
         }
-
-        qoi = QOI(analysis_result, analysis_successful)
-
-        return qoi
 
     def plotter(self, ax):
         standard_probabilities = self.state_probabilities.sel(
@@ -194,16 +183,3 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         ax.tick_params(axis="both", which="major", labelsize=14)
         ax.set_title("")
         ax.grid()
-
-
-class RandomizedBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = RandomizedBenchmarkingQubitAnalysis
-
-    def __init__(
-        self,
-        name,
-        redis_fields,
-        session: "SessionContext",
-        **kwargs,
-    ):
-        super().__init__(name, redis_fields, session, **kwargs)

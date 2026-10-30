@@ -9,9 +9,7 @@ tergite_tuner/lib/base/node.py: too-many-locals BaseNode.configure_dataset
 tergite_tuner/lib/base/utils/figure_utils.py: too-many-locals create_figure_with_top_band
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: too-many-locals PurityBenchmarkingQubitAnalysis._process_and_normalize_data
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py: too-many-locals PurityBenchmarkingMeasurement.schedule_function
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: too-many-locals RandomizedBenchmarkingQubitAnalysis.analyse_qubit
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py: too-many-locals RandomizedBenchmarkingMeasurement.rb_shot
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_analysis.py: too-many-locals test_randomized_benchmarking_analysis
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: too-many-locals test_align_cliffords
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: too-many-locals CZCalibrationCouplerAnalysis.plotter
 tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: too-many-locals CZCalibrationMeasurement.ro_shot

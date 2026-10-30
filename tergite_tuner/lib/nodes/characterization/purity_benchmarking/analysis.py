@@ -15,14 +15,19 @@
 Module containing classes that model, fit and plot data from the purity benchmarking experiment.
 """
 
+from typing import TYPE_CHECKING
+
 import lmfit
 import numpy as np
+import xarray as xr
 from matplotlib.axes import Axes
 
-from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
+from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
 from tergite_tuner.lib.utils.functions import exponential_decay_function
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.types.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
 class ExpDecayModel(lmfit.model.Model):
@@ -60,16 +65,16 @@ class ExpDecayModel(lmfit.model.Model):
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
-class PurityBenchmarkingQubitAnalysis(BaseQubitAnalysis):
+class PurityBenchmarkingQubitAnalysis(ElementAnalysis):
     """
     Analysis that fits an exponential decay function to purity benchmarking data.
     """
 
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
+    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
+        super().__init__(s21, session)
         self.fit_results = {}
 
-    def analyse_qubit(self):
+    def analyse(self) -> Fits:
         # Identify and store relevant coordinates and initialize data storage
         self.number_cliffords_coord, self.seed_coord = self._identify_coords()
         self.number_of_repetitions = self.dataset.sizes[self.seed_coord]
@@ -90,18 +95,7 @@ class PurityBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         self._process_and_normalize_data()
         self._fit_data()
 
-        analysis_successful = True
-
-        analysis_result = {
-            "purity_fidelity": {
-                "value": self.fidelity,
-                "error": np.nan,
-            }
-        }
-
-        qoi = QOI(analysis_result, analysis_successful)
-
-        return qoi
+        return {"purity_fidelity": Fit(self.fidelity, np.nan), "analysis": Fit(self)}
 
     def _identify_coords(self):
         """
@@ -217,7 +211,3 @@ class PurityBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         ax.set_ylabel("Purity")
         ax.set_xlabel("Number of Cliffords")
         ax.grid()
-
-
-class PurityBenchmarkingNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = PurityBenchmarkingQubitAnalysis

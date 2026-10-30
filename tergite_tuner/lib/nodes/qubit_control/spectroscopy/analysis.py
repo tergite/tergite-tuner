@@ -23,12 +23,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 import xarray as xr
 from matplotlib.axes import Axes
-from scipy import signal
 
-from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.spec import Fit, Fits, get_coord_name
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -75,105 +72,16 @@ class QubitSpectroscopyMaxThresholdQubitAnalysis:
         return self.freq
 
 
-class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
+def analyse_qubit_spectroscopy(
+    s21: xr.DataArray, _session: "SessionContext", amplitude_coord: str | None = None
+) -> Fits:
+    """The ``frequency`` and spectroscopy ``amplitude`` of the strongest peak over all amplitudes.
+
+    The amplitudes are the qubit's own sweep, unless ``amplitude_coord`` names an outer one.
     """
-    Analysis that fits a Lorentzian function to qubit spectroscopy data.
-    The resulting fit can be analyzed to determine if a peak was found or not.
-    """
-
-    def _analyse_spectroscopy(self):
-        for coord in self.dataset[self.data_var].coords:
-            if "frequencies" in coord:
-                self.frequency_coords = coord
-                self.frequencies = self.dataset.coords[coord].values
-            elif "amplitudes" in coord:
-                self.amplitudes = self.dataset.coords[coord].values
-
-        self.spec_ampl = 0
-        self.qubit_ampl = 0
-        self.qubit_freq = 0
-        if hasattr(self, "amplitudes"):
-            for i, a in enumerate(self.amplitudes):
-                if isinstance(self.magnitudes, xr.Dataset):
-                    data_var_name = list(self.S21.data_vars.keys())[
-                        0
-                    ]  # Adjust if specific variable name is known
-                    s21_dataarray = self.magnitudes[data_var_name]
-                else:
-                    raise TypeError("Expected self.S21 to be an xarray.DataArray")
-                s21_values = s21_dataarray.values
-
-                these_magnitudes = s21_values[i]
-                if not self.has_peak(these_magnitudes):
-                    continue
-
-                qubit_freq = self.frequencies[these_magnitudes.argmax()]
-                qubit_ampl = these_magnitudes.max()
-                if qubit_ampl > self.qubit_ampl:
-                    self.qubit_ampl = qubit_ampl
-                    self.qubit_freq = qubit_freq
-                    self.spec_ampl = a
-
-        else:
-            if self.has_peak(self.magnitudes):
-                self.qubit_freq = self.frequencies[self.magnitudes.argmax()]
-
-    def analyse_qubit(self):
-        self._analyse_spectroscopy()
-        analysis_successful = True
-        analysis_result = {
-            "clock_freqs:f01": {
-                "value": self.qubit_freq,
-                "error": 0,
-            },
-            "spec:spec_ampl_optimal": {
-                "value": self.spec_ampl,
-                "error": 0,
-            },
-        }
-        qoi = QOI(analysis_result, analysis_successful)
-        return qoi
-
-    def reject_outliers(self, x, m=3.0):
-        # Filters out datapoints in x that deviate too far from the median
-        d = np.abs(x - np.median(x))
-        mdev = np.median(d)
-        s = d / mdev if mdev else np.zeros(len(d))
-        return x[s < m]
-
-    def has_peak(
-        self,
-        x,
-        prom_coef: float = 7,
-        wid_coef: float = 2.4,
-        outlier_median: float = 3.0,
-    ):
-        # Determines if the data contains one distinct peak or only noise
-        x_filtered = self.reject_outliers(x, outlier_median)
-        self.filtered_std = np.std(x_filtered)
-        peaks, properties = signal.find_peaks(
-            x, prominence=self.filtered_std * prom_coef, width=wid_coef
-        )
-        self.hasPeak = peaks.size > 0
-        self.hasPeak = True
-        return self.hasPeak
-
-    def plotter(self, ax):
-        self.magnitudes[self.data_var].plot(
-            ax=ax, x=self.frequency_coords
-        )  # Here, `self.frequency_coords` is the coordinate name
-        ax.scatter(self.qubit_freq, self.spec_ampl, s=52, c="red")
-
-
-class QubitSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = QubitSpectroscopyMultidimAnalysis
-
-
-def analyse_qubit_spectroscopy(s21: xr.DataArray, _session: "SessionContext") -> Fits:
-    """The ``frequency`` and spectroscopy ``amplitude`` of the strongest peak over all amplitudes."""
     qubit = s21.attrs["qubit"]
     frequency_coord = get_coord_name("spec_frequencies", qubit)
-    amplitude_coord = get_coord_name("spec_pulse_amplitudes", qubit)
+    amplitude_coord = amplitude_coord or get_coord_name("spec_pulse_amplitudes", qubit)
     magnitudes = np.abs(s21).transpose(amplitude_coord, frequency_coord)
     strongest = int(magnitudes.max(frequency_coord).argmax())
     peak = int(magnitudes.isel({amplitude_coord: strongest}).argmax())

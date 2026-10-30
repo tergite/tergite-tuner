@@ -162,7 +162,7 @@ def get_compiler(
         samplespace = get_first_samplespace(node)
         return lambda: node.precompile(samplespace)
     device = configure_device(node_name, TEST_QUBITS, TEST_COUPLERS, session)
-    sweeps = _get_default_sweeps(spec, session)
+    sweeps = _get_first_point_sweeps(spec, session)
     return lambda: run.compile_node(spec, device, sweeps)
 
 
@@ -178,7 +178,9 @@ def get_dataset_builder(
         raw_dataset = node.generate_dummy_dataset()
         return lambda: node.configure_dataset(raw_dataset)
     sweeps = _get_default_sweeps(spec, session)
-    raw_dataset = run.get_dummy_dataset(spec, sweeps, session)
+    raw_dataset = run.get_dummy_dataset(
+        spec, _get_first_point_sweeps(spec, session), session
+    )
     return lambda: run.get_dataset(raw_dataset, sweeps, TEST_QUBITS, spec.loops)
 
 
@@ -282,3 +284,10 @@ def _to_qoi(spec: NodeSpec, fits: Fits | None) -> QOI:
         if name in spec.qois
     }
     return QOI(results, True)
+
+
+def _get_first_point_sweeps(spec: NodeSpec, session: "SessionContext") -> run.Sweeps:
+    """The schedule's own sweeps, plus the first point of its outer sweeps."""
+    default_session = session.model_copy(update={"user_samplespace": {}})
+    outer_sweeps = run.get_outer_sweeps(spec, default_session)
+    return _get_default_sweeps(spec, session) | run.get_points(outer_sweeps)[0]

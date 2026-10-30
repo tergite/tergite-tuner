@@ -99,28 +99,39 @@ def measure(
     device: QuantumDevice,
     session: "SessionContext",
 ) -> xr.Dataset:
-    """The node's dataset: its schedule run on ``hardware`` once per external point, or dummy data in dummy mode."""
+    """The node's dataset: its schedule run on ``hardware``, or dummy data in dummy mode.
+
+    The schedule runs once per point of its outer and external sweeps, compiled again
+    for each outer point, and each run's dataset gains a dimension per such setting.
+    """
     sweeps = get_sweeps(spec, session)
-    compiled_schedule = compile_node(spec, device, sweeps)
-    qubits = list(device.elements())
-    points = get_external_points(get_external_sweeps(spec, session))
+    external_points = get_points(get_external_sweeps(spec, session))
+    compiled_schedule = None
     dataset = xr.Dataset()
-    for index, point in enumerate(points):
+    runs = [
+        (outer, external)
+        for outer in get_points(get_outer_sweeps(spec, session))
+        for external in external_points
+    ]
+    for index, (outer_point, external_point) in enumerate(runs):
+        point_sweeps = sweeps | outer_point
+        if compiled_schedule is None or spec.outer_sweeps:
+            compiled_schedule = compile_node(spec, device, point_sweeps)
         if spec.set_external is not None:
-            spec.set_external(hardware, point, index)
+            spec.set_external(hardware, external_point, index % len(external_points))
         point_dataset = _run_once(
             spec,
             hardware,
             compiled_schedule,
+            point_sweeps,
             sweeps,
             session,
-            qubits,
-            (index, len(points)),
+            list(device.elements()),
+            (index, len(runs)),
         )
-        for setting, values in point.items():
-            # the external values are the same for every element
-            value = next(iter(values.values()))
-            point_dataset = point_dataset.expand_dims({setting: np.array([value])})
+        point_dataset = _add_point_dimensions(
+            point_dataset, outer_point | external_point
+        )
         dataset = xr.merge(
             [point_dataset, dataset], join="outer", compat="no_conflicts"
         )
@@ -130,20 +141,21 @@ def measure(
     return dataset
 
 
+def get_outer_sweeps(spec: NodeSpec, session: "SessionContext") -> Sweeps:
+    return _get_sweeps(spec.outer_sweeps, spec, session)
+
+
 def get_external_sweeps(spec: NodeSpec, session: "SessionContext") -> Sweeps:
     return _get_sweeps(spec.external_sweeps, spec, session)
 
 
-def get_external_points(external_sweeps: Sweeps) -> list[dict[str, dict[str, Any]]]:
-    """Each point of the external sweeps, as each setting's value per element; one empty point without any."""
-    names = list(external_sweeps)
-    counts = [len(next(iter(external_sweeps[name].values()))) for name in names]
+def get_points(sweeps: Sweeps) -> list[dict[str, dict[str, Any]]]:
+    """Each point of ``sweeps``, as each setting's value per element; one empty point without any."""
+    names = list(sweeps)
+    counts = [len(next(iter(sweeps[name].values()))) for name in names]
     return [
         {
-            name: {
-                element: values[index]
-                for element, values in external_sweeps[name].items()
-            }
+            name: {element: values[index] for element, values in sweeps[name].items()}
             for name, index in zip(names, indices, strict=True)
         }
         for indices in itertools.product(*(range(count) for count in counts))
@@ -339,7 +351,12 @@ def _get_sweeps(
         for setting, get_values in sweep_fns.items()
     }
     user_samplespace = session.user_samplespace.get(spec.name.value, {})
-    unknown = user_samplespace.keys() - spec.sweeps.keys() - spec.external_sweeps.keys()
+    unknown = (
+        user_samplespace.keys()
+        - spec.sweeps.keys()
+        - spec.outer_sweeps.keys()
+        - spec.external_sweeps.keys()
+    )
     if unknown:
         raise KeyError(f"{unknown} not in any samplespace")
     sweeps.update({k: v for k, v in user_samplespace.items() if k in sweep_fns})
@@ -350,6 +367,7 @@ def _run_once(
     spec: NodeSpec,
     hardware: Hardware,
     compiled_schedule: CompiledSchedule,
+    point_sweeps: Sweeps,
     sweeps: Sweeps,
     session: "SessionContext",
     qubits: list[str],
@@ -365,5 +383,16 @@ def _run_once(
     )
     logger.info(f"Measured {spec.name.value} in {time.perf_counter() - start:.2f} s")
     if session.cluster_mode == MeasurementMode.dummy:
-        raw_dataset = get_dummy_dataset(spec, sweeps, session)
+        raw_dataset = get_dummy_dataset(spec, point_sweeps, session)
     return get_dataset(raw_dataset, sweeps, qubits, spec.loops)
+
+
+def _add_point_dimensions(
+    dataset: xr.Dataset, point: Mapping[str, Mapping[str, Any]]
+) -> xr.Dataset:
+    """``dataset`` with a dimension per setting of ``point``, which is the same for every element."""
+    for setting, values in point.items():
+        dataset = dataset.expand_dims(
+            {setting: np.array([next(iter(values.values()))])}
+        )
+    return dataset

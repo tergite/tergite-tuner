@@ -14,12 +14,9 @@
 
 import numpy as np
 
-from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.measurement import (
     RandomizedBenchmarkingMeasurement,
-)
-from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
-    RandomizedBenchmarkingNode,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
 
@@ -38,13 +35,11 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
         qubits = ["q11", "q12", "q13", "q14", "q15"]
         couplers = ["q14_q15"]
 
-        node = RandomizedBenchmarkingNode(
-            all_qubits=qubits, couplers=couplers, session=session_context
-        )
-        transmons_dict = {qubit: node.device.get_element(qubit) for qubit in qubits}
+        device = configure_device("rb", qubits, couplers, session_context)
+        transmons_dict = {qubit: device.get_element(qubit) for qubit in qubits}
         measurement_class = RandomizedBenchmarkingMeasurement(transmons=transmons_dict)
 
-        node.schedule_keywords["loop_repetitions"] = 2
+        schedule_keywords = {"loop_repetitions": 2}
         samplespace = {  # small samplespace
             "number_of_cliffords": {qubit: np.array([0, 8, 16]) for qubit in qubits},
         }
@@ -54,9 +49,9 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
         }
 
         # Test parallel
-        node.schedule_keywords["multiplexing"] = "parallel"
+        schedule_keywords["multiplexing"] = "parallel"
         schedule = measurement_class.schedule_function(
-            **samplespace, **outer_samplespace, **node.schedule_keywords
+            **samplespace, **outer_samplespace, **schedule_keywords
         )
 
         for op_id, operation in schedule.data["operation_dict"].items():
@@ -69,9 +64,9 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
             assert f"root_{qubit}" in shot.schedulables
 
         # Test one by one
-        node.schedule_keywords["multiplexing"] = "one_by_one"
+        schedule_keywords["multiplexing"] = "one_by_one"
         schedule = measurement_class.schedule_function(
-            **samplespace, **outer_samplespace, **node.schedule_keywords
+            **samplespace, **outer_samplespace, **schedule_keywords
         )
 
         for op_id, operation in schedule.data["operation_dict"].items():

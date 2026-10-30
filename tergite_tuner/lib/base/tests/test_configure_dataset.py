@@ -13,9 +13,6 @@
 
 from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
-from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
-    RandomizedBenchmarkingNode,
-)
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.node import (
     CZParametrizationNode,
 )
@@ -77,31 +74,19 @@ def test_configure_dataset_couplers(session_context):
     assert configured_ds.coords["spec_frequenciesq00"].attrs["element_type"] == "qubit"
 
 
-def test_configure_dataset_qubits_with_loops(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = RandomizedBenchmarkingNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
+def test_get_dataset_puts_loops_last(session_context):
+    spec = DEFAULT_NODE_SPECS[NodeEnum.RANDOMIZED_BENCHMARKING]
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    sweeps = get_sweeps(spec, session)
+
+    dataset = get_dataset(
+        get_dummy_dataset(spec, sweeps, session), sweeps, session.qubits, spec.loops
     )
 
-    raw_ds = node.generate_dummy_dataset()
-
-    qubit_set = list(set(DEFAULT_TEST_QUBITS))
-    samplespace_cliffords_00 = node.schedule_samplespace["number_of_cliffords"]["q00"]
-    number_of_cliffords_00 = len(samplespace_cliffords_00)
-
-    configured_ds = node.configure_dataset(raw_ds)
-
-    # check ds properties
-    assert qubit_set == configured_ds.attrs["elements"]
-    assert len(configured_ds.data_vars) == 2
-    # check data_var properties
-    assert configured_ds["yq00"].attrs["qubit"] == "q00"
-    assert configured_ds["yq00"].values.shape == (number_of_cliffords_00, node.loops)
-    # check coord properties
-    ds_coords = configured_ds.coords
-    assert ds_coords["number_of_cliffordsq00"].attrs["element_type"] == "qubit"
-    assert "loops" in configured_ds.coords
-    assert configured_ds.coords["loops"].size == node.loops
+    cliffords = len(sweeps["number_of_cliffords"]["q00"])
+    assert dataset["yq00"].shape == (cliffords, spec.loops)
+    assert dataset.coords["number_of_cliffordsq00"].attrs["element_type"] == "qubit"
+    assert dataset.coords["loops"].size == spec.loops
 
 
 def test_configure_dataset_qubits_with_3state_discrimination(

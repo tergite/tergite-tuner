@@ -17,7 +17,7 @@ import collections
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 import cf_xarray as cf
 
@@ -25,10 +25,6 @@ import cf_xarray as cf
 import numpy as np
 import xarray as xr
 
-from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
-from tergite_tuner.lib.base.utils.figure_utils import (
-    create_figure_with_top_band,
-)
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.types.qoi import QOI
 
@@ -103,101 +99,6 @@ class BaseNodeAnalysis(ABC):
         if "working_points" in dataset.coords:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
         return dataset
-
-    def _manage_plots(self, column_grid: int, plots_per_qubit: int):
-        n_vars = len(self.data_vars)
-        nrows = int(np.ceil(n_vars / column_grid)) * plots_per_qubit
-        ncols = min(column_grid, n_vars)
-
-        fig, axs = create_figure_with_top_band(nrows, ncols)
-        return fig, axs
-
-    def _save_plots(self):
-        preview_path = self.data_path / f"{self.name}_preview.png"
-        full_path = self.data_path / f"{self.name}.png"
-        logger.info("Saving Plots")
-        self.fig.savefig(preview_path, bbox_inches="tight", dpi=100)
-        self.fig.savefig(full_path, bbox_inches="tight", dpi=400)
-        logger.info(f"Plots saved to {preview_path} and {full_path}")
-
-    def _save_other_plots(self):
-        pass
-
-
-class BaseAllQubitsAnalysis(BaseNodeAnalysis, ABC):
-    """
-    Base class for the analysis of all qubits in a node
-    """
-
-    single_qubit_analysis_cls: Type["BaseQubitAnalysis"]
-
-    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-        self.dataset = xr.Dataset()
-        self.data_vars = None
-        self.coords = None
-        self.column_grid, self.plots_per_qubit = 5, 1
-        self.qubit_analyses: List[BaseQubitAnalysis] = []
-
-    def analyze_node(
-        self, data_path: Path, save_plot: bool = False
-    ) -> dict[str, "QOI"]:
-        """
-        Analyze the node and save the results to redis.
-        Args:
-            data_path: Path to the dataset
-            save_plot: Whether to save the plot
-
-        Returns:
-            analysis_results: Dictionary with the analysis results for each qubit
-        """
-
-        self.data_path = Path(data_path)
-        self.dataset = self.open_dataset()
-        self.coords = self.dataset.coords
-        self.data_vars = self.dataset.data_vars
-
-        analysis_results = self._analyze_all_qubits()
-
-        if save_plot:
-            self.fig, self.axs = self._manage_plots(
-                self.column_grid, self.plots_per_qubit
-            )
-            self._fill_plots()
-            self._save_plots()
-            self._save_other_plots()
-
-        return analysis_results
-
-    def _analyze_all_qubits(self):
-        analysis_results = {}
-        qubits = self.dataset.elements
-        if isinstance(qubits, list):
-            qubits.sort(
-                key=lambda x: int(x[1:])
-            )  # TODO: move this to configure_dataset
-        else:
-            qubits = [qubits]
-        for this_qubit in qubits:
-            # TODO: this object is created for every single qubit
-            qubit_analysis: BaseQubitAnalysis = self.single_qubit_analysis_cls(
-                self.name,
-                self.redis_fields,
-                self.session,
-            )
-            partial_ds = filter_ds_by_element(self.dataset, this_qubit)
-            analysis_results[this_qubit] = qubit_analysis.process_qubit(
-                partial_ds, this_qubit
-            )
-            self.qubit_analyses.append(qubit_analysis)
-
-        return analysis_results
-
-    def _fill_plots(self):
-        for index, analysis in enumerate(self.qubit_analyses):
-            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-            analysis.plot(primary_axis)
 
 
 class BaseQubitAnalysis(BaseAnalysis, ABC):

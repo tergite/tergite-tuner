@@ -22,21 +22,15 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.utils import (
     align_on_y_axis,
 )
-from tergite_tuner.lib.spec import Fit, Fits
+from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ThreeClassBoundary, TwoClassBoundary
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
-class OptimalROAmplitudeQubitAnalysis:
+class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
     """Classifies a qubit's readout shots at each amplitude; ``analyse`` gives the best amplitude's."""
-
-    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
-        self.qubit = s21.attrs["qubit"]
-        self.data_var = f"y{self.qubit}"
-        self.S21 = s21.to_dataset(name=self.data_var)
-        self.session = session
 
     def populate_coords(self):
         for coord in self.S21.coords:

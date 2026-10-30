@@ -32,12 +32,14 @@ This module exposes:
 from typing import Mapping, Tuple, Type
 
 from tergite_tuner.lib.base.node import BaseNode
-from tergite_tuner.lib.nodes.characterization.all_xy.node import AllXYNode
+from tergite_tuner.lib.nodes.characterization.all_xy.node import (
+    ALL_XY_SPECS,
+)
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.node import (
-    PurityBenchmarkingNode,
+    PURITY_BENCHMARKING_SPECS,
 )
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
-    RandomizedBenchmarkingNode,
+    RANDOMIZED_BENCHMARKING_SPECS,
 )
 from tergite_tuner.lib.nodes.characterization.t1.node import (
     T1_SPECS,
@@ -68,7 +70,6 @@ from tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node import (
 )
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.node import (
     QUBIT_SPECTROSCOPY_SPECS,
-    Qubit01SpectroscopyAmplitudeNode,
 )
 from tergite_tuner.lib.nodes.readout.punchout.node import (
     PUNCHOUT_SPECS,
@@ -98,16 +99,15 @@ DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
     **RO_AMPLITUDE_SPECS,
     **T1_SPECS,
     **T2_SPECS,
+    **ALL_XY_SPECS,
+    **RANDOMIZED_BENCHMARKING_SPECS,
+    **PURITY_BENCHMARKING_SPECS,
 }
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: ResonatorSpectroscopyVsCurrentNode,
     NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
     NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
-    NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
-    NodeEnum.ALL_XY: AllXYNode,
-    NodeEnum.RANDOMIZED_BENCHMARKING: RandomizedBenchmarkingNode,
-    NodeEnum.PURITY_BENCHMARKING: PurityBenchmarkingNode,
     NodeEnum.CZ_PARAMETRIZATION: CZParametrizationNode,
     NodeEnum.CZ_CHEVRON: CZChevronNode,
     NodeEnum.CZ_CALIBRATION: CZCalibrationNode,

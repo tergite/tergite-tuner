@@ -61,6 +61,8 @@ class NodeSpec:
             the dataset.
         plot_rows: how many axes ``plot`` draws on per element.
         save_details: saves an element's own figures in the node's data folder.
+        outer_sweeps: settings of a schedule too large for one run, compiled and run
+            once per point; the dataset gains a dimension per setting.
         external_sweeps: settings outside the schedule, such as a coupler's current,
             each value of which takes a run of the schedule; the dataset gains a
             dimension per setting.
@@ -83,11 +85,42 @@ class NodeSpec:
     save_details: (
         Callable[[xr.DataArray, Fits, Path, "SessionContext"], None] | None
     ) = None
+    outer_sweeps: Mapping[str, SweepFn] = field(default_factory=dict)
     external_sweeps: Mapping[str, SweepFn] = field(default_factory=dict)
     set_external: (
         Callable[["Hardware", Mapping[str, Mapping[str, Any]], int], None] | None
     ) = None
     reset_external: Callable[["Hardware"], None] | None = None
+
+
+class ElementAnalysis:
+    """Base of the analyses that keep state between fitting and plotting one element."""
+
+    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
+        self.qubit = s21.attrs["qubit"]
+        self.data_var = f"y{self.qubit}"
+        self.S21 = s21.to_dataset(name=self.data_var)
+        self.dataset = self.S21
+        self.magnitudes = np.abs(self.S21)
+        self.session = session
+
+    def analyse(self) -> Fits | None:
+        raise NotImplementedError
+
+
+def get_class_analyser(
+    analysis_cls: type[ElementAnalysis],
+) -> Callable[[xr.DataArray, "SessionContext"], Fits | None]:
+    """An ``analyse`` that builds an ``analysis_cls`` for the element and runs it."""
+    return lambda s21, session: analysis_cls(s21, session).analyse()
+
+
+def plot_class_analysis(
+    axis: Any, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    """A ``plot`` for the analysis object an ``ElementAnalysis`` puts in its fits."""
+    if fits:
+        fits["analysis"].value.plotter(axis)
 
 
 def get_fixed_sweep(values: np.ndarray) -> SweepFn:

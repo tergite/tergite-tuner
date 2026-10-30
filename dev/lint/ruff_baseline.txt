@@ -133,12 +133,8 @@ tergite_tuner/export.py: UP045 Use `X | None` for type annotations
 tergite_tuner/export.py: UP045 Use `X | None` for type annotations
 tergite_tuner/export.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/analysis.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/lib/base/analysis.py: B027 `BaseNodeAnalysis._save_other_plots` is an empty method in an abstract base class, but has no abstract decorator
 tergite_tuner/lib/base/analysis.py: SIM102 Use a single `if` statement instead of nested `if` statements
-tergite_tuner/lib/base/analysis.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/lib/base/analysis.py: UP006 Use `type` instead of `Type` for type annotation
-tergite_tuner/lib/base/analysis.py: UP006 Use `type` instead of `Type` for type annotation
-tergite_tuner/lib/base/analysis.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/lib/base/analysis.py: UP035 `typing.Type` is deprecated, use `type` instead
 tergite_tuner/lib/base/analysis.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/analysis.py: UP045 Use `X | None` for type annotations
@@ -171,14 +167,12 @@ tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Tuple` is deprecated, use `tu
 tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Type` is deprecated, use `type` instead
 tergite_tuner/lib/nodes/characterization/all_xy/measurement.py: ARG002 Unused method argument: `XY_index`
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: C416 Unnecessary list comprehension (rewrite using `list()`)
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: E713 Test for membership should be `not in`
 tergite_tuner/lib/nodes/characterization/t2/analysis.py: SIM910 Use `kws.get("x")` instead of `kws.get("x", None)`
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: B905 `zip()` without an explicit `strict=` parameter
@@ -282,7 +276,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clif
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_parameter_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_rabi_oscillations_measurement.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead

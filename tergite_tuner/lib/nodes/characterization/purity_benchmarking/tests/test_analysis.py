@@ -21,6 +21,7 @@ from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.analysis import (
     PurityBenchmarkingQubitAnalysis,
 )
+from tergite_tuner.tests.utils.datasets import get_s21
 
 _HDF_FILENAME = "dataset_purity_benchmarking_0.hdf5"
 
@@ -29,9 +30,9 @@ def test_initialization(node_data_dir):
     file_path = node_data_dir / _HDF_FILENAME
     with xr.open_dataset(file_path) as dataset:
         analysis = PurityBenchmarkingQubitAnalysis(
-            "name", ["purity_fidelity"], session=SessionContext()
+            get_s21(file_path, "q06"), SessionContext()
         )
-        analysis.process_qubit(dataset, "yq06")
+        analysis.analyse()
         # Check that the analysis object has the expected attributes
         assert hasattr(analysis, "purity_results_dict")
         assert hasattr(analysis, "normalized_data_dict")
@@ -41,11 +42,11 @@ def test_initialization(node_data_dir):
 
 def test_run_fitting(node_data_dir):
     file_path = node_data_dir / _HDF_FILENAME
-    with xr.open_dataset(file_path) as dataset:
+    with xr.open_dataset(file_path):
         analysis = PurityBenchmarkingQubitAnalysis(
-            "name", ["purity_fidelity"], session=SessionContext()
+            get_s21(file_path, "q06"), SessionContext()
         )
-        analysis.process_qubit(dataset, "yq06")
+        analysis.analyse()
         # Verify the average purity result is within the expected range
 
         assert 0.7 < np.average(list(analysis.purity_results_dict.values())) < 0.8
@@ -54,9 +55,7 @@ def test_run_fitting(node_data_dir):
         analysis.number_of_cliffords = analysis.number_of_cliffords[:5]
         for key in analysis.purity_results_dict.keys():
             analysis.purity_results_dict[key] = analysis.purity_results_dict[key][:5]
-        qoi = analysis.analyse_qubit()
-
-        fidelity = qoi.analysis_result["purity_fidelity"]["value"]
+        fidelity = analysis.analyse()["purity_fidelity"].value
 
         # Verify that the fitting results are valid
         assert isinstance(fidelity, float)
@@ -67,18 +66,18 @@ def test_run_fitting(node_data_dir):
 
 def test_plotter(node_data_dir):
     file_path = node_data_dir / _HDF_FILENAME
-    with xr.open_dataset(file_path) as dataset:
+    with xr.open_dataset(file_path):
         analysis = PurityBenchmarkingQubitAnalysis(
-            "name", ["purity_fidelity"], session=SessionContext()
+            get_s21(file_path, "q06"), SessionContext()
         )
-        analysis.process_qubit(dataset, "yq14")
+        analysis.analyse()
 
         # Trim the dataset to only 5 Cliffords before plotting, same reason as above
         analysis.number_of_cliffords = analysis.number_of_cliffords[:5]
         for key in analysis.purity_results_dict.keys():
             analysis.purity_results_dict[key] = analysis.purity_results_dict[key][:5]
 
-        analysis.analyse_qubit()
+        analysis.analyse()
         fig = Figure()
         ax = fig.subplots()
         analysis.plotter(ax)
