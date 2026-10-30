@@ -17,19 +17,20 @@ import numpy as np
 
 from tergite_tuner.backend import (
     X90,
-    BinMode,
-    ClockResource,
     ExtendedCompositeSquareEdge,
     ExtendedTransmon,
     IdlePulse,
-    LoopOperation,
-    Measure_RO_3state_Opt,
     Reset,
     Rxy,
     Schedule,
     SoftSquarePulse,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import (
+    add_cz_clock,
+    add_pair_measurement,
+    get_repeated_schedule,
+)
 
 
 class CZLocalPhasesMeasurement(BaseMeasurement):
@@ -41,7 +42,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         super().__init__(transmons)
         self.transmons = transmons
         self.couplers = couplers
-        self.downconvert = 4.4e9
 
     def ro_shot(
         self,
@@ -70,13 +70,7 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
             cz_clock = f"{this_coupler}.cz"
             cz_pulse_port = f"{this_coupler}:fl"
 
-            # Initialize the clock at the first frequency value
-            shot.add_resource(
-                ClockResource(
-                    name=cz_clock,
-                    freq=-cz_frequency + self.downconvert,
-                )
-            )
+            add_cz_clock(shot, this_coupler, cz_frequency)
 
             shot.add(
                 Reset(*qubits), ref_op=root_relaxation
@@ -123,21 +117,8 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
                             Rxy(theta=90, phi=local_phase, qubit=target_qubit)
                         )
 
-                        shot.add(
-                            Measure_RO_3state_Opt(
-                                control_qubit,
-                                acq_index=this_index,
-                                bin_mode=BinMode.APPEND,
-                            ),
-                            ref_op=final,
-                        )
-                        shot.add(
-                            Measure_RO_3state_Opt(
-                                target_qubit,
-                                acq_index=this_index,
-                                bin_mode=BinMode.APPEND,
-                            ),
-                            ref_op=final,
+                        add_pair_measurement(
+                            shot, (control_qubit, target_qubit), this_index, final
                         )
 
                         shot.add(Reset(control_qubit, target_qubit))
@@ -154,8 +135,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         repetitions: int = 1,
     ) -> Schedule:
 
-        schedule = Schedule("CZ_local_phases", repetitions)
-
         local_phase_shot = self.ro_shot(
             local_phases=local_phases,
             swap=swap,
@@ -163,7 +142,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
             coupler_dict=coupler_dict,
         )
 
-        schedule.add(IdlePulse(16e-9))
-        schedule.add(LoopOperation(body=local_phase_shot, repetitions=loop_repetitions))
-        schedule.add(IdlePulse(16e-9))
-        return schedule
+        return get_repeated_schedule(
+            "CZ_local_phases", local_phase_shot, loop_repetitions, 16e-9, repetitions
+        )

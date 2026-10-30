@@ -12,20 +12,26 @@
 """Building blocks the measurements' schedules share."""
 
 import itertools
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from typing import Any, Literal
 
 from tergite_tuner.backend import (
+    BinMode,
     ClockResource,
     DRAGPulse,
     ExtendedTransmon,
+    IdlePulse,
+    LoopOperation,
     Measure,
     Measure_RO1,
+    Measure_RO_3state_Opt,
     Reset,
     Schedule,
     X,
 )
 
+# a coupler's cz clock runs at this frequency less the CZ pulse's
+DOWNCONVERT_FREQUENCY = 4.4e9
 AddPoint = Callable[[Schedule, str, dict[str, Any], int], None]
 
 
@@ -113,6 +119,45 @@ def prepare_state(schedule: Schedule, transmon: ExtendedTransmon, state: int) ->
             ),
         )
     return pulse
+
+
+def get_cz_clock_frequency(cz_frequency: float) -> float:
+    return DOWNCONVERT_FREQUENCY - cz_frequency
+
+
+def add_cz_clock(schedule: Schedule, coupler: str, cz_frequency: float) -> str:
+    """Adds ``coupler``'s cz clock at ``cz_frequency`` to ``schedule`` and returns its name."""
+    clock = f"{coupler}.cz"
+    schedule.add_resource(
+        ClockResource(name=clock, freq=get_cz_clock_frequency(cz_frequency))
+    )
+    return clock
+
+
+def add_pair_measurement(
+    schedule: Schedule, qubits: Iterable[str], acq_index: int, ref_op: Any
+) -> None:
+    """Measures each of ``qubits`` in three states at the same time, after ``ref_op``."""
+    for qubit in qubits:
+        schedule.add(
+            Measure_RO_3state_Opt(qubit, acq_index=acq_index, bin_mode=BinMode.APPEND),
+            ref_op=ref_op,
+        )
+
+
+def get_repeated_schedule(
+    name: str,
+    shot: Schedule,
+    loop_repetitions: int,
+    padding: float,
+    repetitions: int = 1,
+) -> Schedule:
+    """A schedule looping over ``shot`` ``loop_repetitions`` times, with ``padding`` seconds of idling around the loop."""
+    schedule = Schedule(name, repetitions)
+    schedule.add(IdlePulse(padding))
+    schedule.add(LoopOperation(body=shot, repetitions=loop_repetitions))
+    schedule.add(IdlePulse(padding))
+    return schedule
 
 
 def _get_points(

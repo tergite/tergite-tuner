@@ -24,13 +24,9 @@ from tergite_tuner.backend import (
     CZ,
     X90,
     Y90,
-    BinMode,
-    ClockResource,
     ExtendedCompositeSquareEdge,
     ExtendedTransmon,
     IdlePulse,
-    LoopOperation,
-    Measure_RO_3state_Opt,
     Reset,
     Rxy,
     Schedule,
@@ -44,6 +40,11 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomize
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
+from tergite_tuner.lib.utils.schedules import (
+    add_cz_clock,
+    add_pair_measurement,
+    get_repeated_schedule,
+)
 from tergite_tuner.utils.logging import logger
 
 # Constants
@@ -51,7 +52,6 @@ IDLE_TIME = 12e-9
 # Frequency used for the downconversion of the readout signal. This was
 # previously sourced from the global config; if it ever needs to vary
 # per-device, surface it through the device configuration instead.
-DOWNCONVERT_FREQUENCY = 4.4e9
 
 
 class CZRBMeasurement(BaseMeasurement):
@@ -117,12 +117,7 @@ class CZRBMeasurement(BaseMeasurement):
             schedule: The schedule to add resources to
             coupler: Name identifier for the coupler
         """
-        downconvert = DOWNCONVERT_FREQUENCY
-        cz_frequency = self.couplers[coupler].clock_freqs.cz_freq()
-        clock_resource = ClockResource(
-            name=f"{coupler}.cz", freq=(downconvert - cz_frequency)
-        )
-        schedule.add_resource(clock_resource)
+        add_cz_clock(schedule, coupler, self.couplers[coupler].clock_freqs.cz_freq())
 
     def ro_shot(
         self,
@@ -224,21 +219,8 @@ class CZRBMeasurement(BaseMeasurement):
 
                 final = shot.add(IdlePulse(4e-9))
 
-                shot.add(
-                    Measure_RO_3state_Opt(
-                        control_qubit,
-                        acq_index=this_index,
-                        bin_mode=BinMode.APPEND,
-                    ),
-                    ref_op=final,
-                )
-                shot.add(
-                    Measure_RO_3state_Opt(
-                        target_qubit,
-                        acq_index=this_index,
-                        bin_mode=BinMode.APPEND,
-                    ),
-                    ref_op=final,
+                add_pair_measurement(
+                    shot, (control_qubit, target_qubit), this_index, final
                 )
                 shot.add(Reset(control_qubit, target_qubit))
         return shot
@@ -266,13 +248,6 @@ class CZRBMeasurement(BaseMeasurement):
             name = "tqg_randomized_benchmarking_interleaved_ssro"
         logger.info(f"interleaved or not: {name}")
 
-        schedule = Schedule(f"{name}", repetitions=1)  # Initialize schedule
-
-        # Initialize clock resources for each coupler in the system.
-        coupler_names = list(self.couplers.keys())
-        for coupler in coupler_names:
-            self.add_coupler_clock_resources(schedule=schedule, coupler=coupler)
-
         rb_shot = self.ro_shot(
             seeds=seeds,
             number_of_cliffords=number_of_cliffords,
@@ -282,8 +257,8 @@ class CZRBMeasurement(BaseMeasurement):
             coupler_dict=coupler_dict,
         )
 
-        schedule.add(IdlePulse(IDLE_TIME))
-        schedule.add(LoopOperation(body=rb_shot, repetitions=loop_repetitions))
-        schedule.add(IdlePulse(IDLE_TIME))
+        schedule = get_repeated_schedule(name, rb_shot, loop_repetitions, IDLE_TIME)
+        for coupler in self.couplers:
+            self.add_coupler_clock_resources(schedule=schedule, coupler=coupler)
 
         return schedule

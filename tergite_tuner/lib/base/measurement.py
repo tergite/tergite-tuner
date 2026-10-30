@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 
 
 class BaseMeasurement:
-    downconvert = 4.4e9
-
     def __init__(self, transmons: dict, couplers=None):
         if couplers is None:
             couplers = {}

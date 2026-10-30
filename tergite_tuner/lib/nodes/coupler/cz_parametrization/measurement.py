@@ -16,13 +16,9 @@
 import numpy as np
 
 from tergite_tuner.backend import (
-    BinMode,
-    ClockResource,
     ExtendedCompositeSquareEdge,
     ExtendedTransmon,
     IdlePulse,
-    LoopOperation,
-    Measure_RO_3state_Opt,
     Reset,
     Schedule,
     SetClockFrequency,
@@ -30,6 +26,12 @@ from tergite_tuner.backend import (
     X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import (
+    add_cz_clock,
+    add_pair_measurement,
+    get_cz_clock_frequency,
+    get_repeated_schedule,
+)
 
 
 class CZParametrizationMeasurement(BaseMeasurement):
@@ -59,12 +61,7 @@ class CZParametrizationMeasurement(BaseMeasurement):
             this_edge = self.couplers[coupler]
             cz_half_duration = this_edge.cz.half_square_duration()
 
-            cz_schedule.add_resource(
-                ClockResource(
-                    name=coupler + ".cz",
-                    freq=self.downconvert - cz_frequencies[0],
-                )
-            )
+            add_cz_clock(cz_schedule, coupler, cz_frequencies[0])
 
             cz_schedule.add(
                 Reset(*qubits), ref_op=root
@@ -76,7 +73,8 @@ class CZParametrizationMeasurement(BaseMeasurement):
                 cz_pulse_port = f"{coupler}:fl"
                 cz_schedule.add(
                     SetClockFrequency(
-                        clock=cz_clock, clock_freq_new=self.downconvert - cz_frequency
+                        clock=cz_clock,
+                        clock_freq_new=get_cz_clock_frequency(cz_frequency),
                     ),
                 )
 
@@ -97,15 +95,7 @@ class CZParametrizationMeasurement(BaseMeasurement):
                         ref_op=operation_11,
                     )
 
-                    for this_qubit in qubits:
-                        cz_schedule.add(
-                            Measure_RO_3state_Opt(
-                                this_qubit,
-                                acq_index=this_index,
-                                bin_mode=BinMode.APPEND,
-                            ),
-                            ref_op=flux_pulse,
-                        )
+                    add_pair_measurement(cz_schedule, qubits, this_index, flux_pulse)
         return cz_schedule
 
     def schedule_function(
@@ -115,16 +105,15 @@ class CZParametrizationMeasurement(BaseMeasurement):
         loop_repetitions: int,
         repetitions: int = 1,
     ) -> Schedule:
-        schedule = Schedule("CZ_parametrization", repetitions)
 
         cz_parametrization = self.cz_parametrization(
             cz_pulse_frequencies, cz_pulse_amplitudes
         )
 
-        schedule.add(IdlePulse(8e-9))
-        schedule.add(
-            LoopOperation(body=cz_parametrization, repetitions=loop_repetitions)
+        return get_repeated_schedule(
+            "CZ_parametrization",
+            cz_parametrization,
+            loop_repetitions,
+            8e-9,
+            repetitions,
         )
-        schedule.add(IdlePulse(8e-9))
-
-        return schedule
