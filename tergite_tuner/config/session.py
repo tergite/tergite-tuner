@@ -55,9 +55,9 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from redis import Redis
 
+from tergite_tuner.backend import QbloxHardwareCompilationConfig
 from tergite_tuner.config.types import (
     ClusterConfig,
     DeviceConfig,

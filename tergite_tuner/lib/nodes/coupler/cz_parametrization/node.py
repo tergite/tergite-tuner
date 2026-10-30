@@ -104,7 +104,7 @@ class CZParametrizationNode(CouplerNode):
             dac_values[coupler] = this_iteration_value
         # don't set DAC currents if we are just recalibrating
         if not self.session.is_recalibration:
-            self.spi_manager.set_dac_current(dac_values)
+            self.hardware.spi.set_dac_current(dac_values)
 
     def final_operation(self):
         """
@@ -116,7 +116,7 @@ class CZParametrizationNode(CouplerNode):
                 dac_values[coupler] = 0
             # don't set DAC currents if we are just recalibrating
             if not self.session.is_recalibration:
-                self.spi_manager.set_dac_current(dac_values)
+                self.hardware.spi.set_dac_current(dac_values)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()

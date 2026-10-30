@@ -12,6 +12,8 @@
 # that they have been altered from the originals.
 
 
+from types import SimpleNamespace
+
 from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.coupler.cz_chevron.node import CZChevronNode
 from tergite_tuner.tests.utils.fixtures import (
@@ -47,10 +49,10 @@ def test_set_parking_current_from_redis_recalibration_on(
             qubits=DEFAULT_TEST_QUBITS,
             session=session_context,
         )
-        node.spi_manager = DummySpiManager()
+        node.hardware = SimpleNamespace(spi=DummySpiManager())
 
         node.set_parking_current_from_redis()
-        assert node.spi_manager.get_dac_current() is None
+        assert node.hardware.spi.get_dac_current() is None
 
 
 def test_set_parking_current_from_redis_recalibration_off(
@@ -68,10 +70,10 @@ def test_set_parking_current_from_redis_recalibration_off(
             qubits=DEFAULT_TEST_QUBITS,
             session=session_context,
         )
-        node.spi_manager = DummySpiManager()
+        node.hardware = SimpleNamespace(spi=DummySpiManager())
 
         node.set_parking_current_from_redis()
-        currents_dict = node.spi_manager.get_dac_current()
+        currents_dict = node.hardware.spi.get_dac_current()
         assert "q00_q01" in currents_dict
         assert currents_dict["q00_q01"] == 0.00095
 
@@ -89,7 +91,7 @@ def test_set_parking_current_from_redis_recalibration(
             qubits=DEFAULT_TEST_QUBITS,
             session=session_context,
         )
-        node.spi_manager = DummySpiManager()
+        node.hardware = SimpleNamespace(spi=DummySpiManager())
 
         node.set_parking_current_from_redis()
-        assert node.spi_manager.get_dac_current() is None
+        assert node.hardware.spi.get_dac_current() is None

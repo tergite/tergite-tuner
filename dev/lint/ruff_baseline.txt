@@ -15,6 +15,7 @@ tergite_tuner/backend/gates.py: UP045 Use `X | None` for type annotations
 tergite_tuner/backend/gates.py: UP045 Use `X | None` for type annotations
 tergite_tuner/backend/gates.py: UP045 Use `X | None` for type annotations
 tergite_tuner/backend/pulse_factories.py: ARG001 Unused function argument: `reference_magnitude`
+tergite_tuner/backend/spi.py: RET505 Unnecessary `elif` after `return` statement
 tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
@@ -157,7 +158,6 @@ tergite_tuner/lib/base/node.py: UP035 `typing.Tuple` is deprecated, use `tuple` 
 tergite_tuner/lib/base/node.py: UP035 `typing.Type` is deprecated, use `type` instead
 tergite_tuner/lib/base/node.py: UP037 Remove quotes from type annotation
 tergite_tuner/lib/base/node.py: UP037 Remove quotes from type annotation
-tergite_tuner/lib/base/node.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/node.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/node.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/tests/test_configure_dataset.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
@@ -419,11 +419,6 @@ tergite_tuner/tests/test_redis_store.py: UP035 `typing.Dict` is deprecated, use 
 tergite_tuner/tests/test_redis_utils.py: B007 Loop control variable `coupler_qoi` not used within loop body
 tergite_tuner/tests/test_redis_utils.py: B007 Loop control variable `qubit_qoi` not used within loop body
 tergite_tuner/tests/test_tuner.py: ARG001 Unused function argument: `redis_connection`
-tergite_tuner/tests/test_tuner.py: ARG001 Unused function argument: `redis_connection`
-tergite_tuner/tests/test_tuner.py: ARG001 Unused function argument: `redis_connection`
-tergite_tuner/tests/test_tuner.py: ARG001 Unused function argument: `redis_connection`
-tergite_tuner/tests/test_tuner.py: ARG002 Unused method argument: `args`
-tergite_tuner/tests/test_tuner.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/tests/utils/fixtures.py: RET505 Unnecessary `elif` after `return` statement
 tergite_tuner/tests/utils/fixtures.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/tests/utils/fixtures.py: UP006 Use `dict` instead of `Dict` for type annotation
@@ -441,25 +436,16 @@ tergite_tuner/tests/utils/redis.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/tests/utils/redis.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/tests/utils/redis.py: UP015 Unnecessary mode argument
 tergite_tuner/tests/utils/redis.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/tuner.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/tuner.py: RET505 Unnecessary `elif` after `return` statement
-tergite_tuner/tuner.py: RET505 Unnecessary `else` after `return` statement
 tergite_tuner/tuner.py: SIM103 Return the condition `path not in forbidden` directly
 tergite_tuner/tuner.py: SIM108 Use ternary operator `topo_order = [node] if node else node_manager.topo_order(session.target_node)` instead of `if`-`else`-block
-tergite_tuner/tuner.py: SIM118 Use `key not in dict` instead of `key not in dict.keys()`
-tergite_tuner/tuner.py: UP006 Use `frozenset` instead of `FrozenSet` for type annotation
-tergite_tuner/tuner.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/tuner.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/tuner.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/tuner.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/tuner.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/tuner.py: UP035 `typing.FrozenSet` is deprecated, use `frozenset` instead
 tergite_tuner/tuner.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/tuner.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/tuner.py: UP037 Remove quotes from type annotation
-tergite_tuner/tuner.py: UP037 Remove quotes from type annotation
-tergite_tuner/tuner.py: UP037 Remove quotes from type annotation
-tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
 tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
 tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
 tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
@@ -481,7 +467,6 @@ tergite_tuner/utils/dicts.py: UP035 Import from `collections.abc` instead: `Mapp
 tergite_tuner/utils/dicts.py: UP035 Import from `collections.abc` instead: `Mapping`
 tergite_tuner/utils/dicts.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/utils/dicts.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
-tergite_tuner/utils/hardware/spi.py: RET505 Unnecessary `elif` after `return` statement
 tergite_tuner/utils/logging/visuals.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/utils/logging/visuals.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/utils/measurement.py: UP035 Import from `collections.abc` instead: `Iterable`

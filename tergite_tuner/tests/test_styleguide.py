@@ -219,11 +219,13 @@ FORBIDDEN_IMPORTS = {
     "tergite_tuner/storage": ("lib", "tuner", "export"),
     "tergite_tuner/config": ("lib", "tuner", "export"),
     "tergite_tuner/lib": ("tuner", "export"),
+    "tergite_tuner/backend": ("lib", "tuner", "export"),
 }
 # each package that may import these, and only it
 CONFINED_IMPORTS = {
     "quantify_scheduler": "tergite_tuner/backend/",
     "qblox_scheduler": "tergite_tuner/backend/",
+    "qblox_instruments": "tergite_tuner/backend/",
     "redis": "tergite_tuner/storage/",
 }
 HOST_TAKEOVER_CALLS = frozenset({"quit", "exit", "sys.exit", "matplotlib.use"})

@@ -17,6 +17,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Read the TOML config files with Python's `tomllib`; a malformed one raises `tomllib.TOMLDecodeError` where it raised `toml.TomlDecodeError`, and `toml`, `h5py` and `requests` are no longer direct dependencies
 - Moved the transmon, coupler edge, extended gates and device helpers from `tergite_tuner.utils.types.extended_*` and `tergite_tuner.lib.utils.device` to `tergite_tuner.backend`
 - Waited for a schedule's estimated duration plus `cluster_timeout` before raising, instead of a fixed hour, and dropped the progress bar, which only slept for the estimate
+- Replaced `tergite_tuner.tuner.HardwareManager` and the nodes' `lab_instr_coordinator` and `spi_manager` with `tergite_tuner.backend.Hardware`, which a node reaches as `node.hardware`
+- Gave the dummy cluster the modules in the cluster config's `hardware_description`; it had 15 QCM-RF and 2 QRM-RF modules whatever the config said
 - [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 
 ### Fixed

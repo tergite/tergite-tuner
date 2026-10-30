@@ -15,6 +15,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox.operations.pulse_factories import (
     long_square_pulse,
 )
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import Loop, LoopOperation
@@ -49,6 +50,7 @@ from .device import (
 from .edge import ExtendedCompositeSquareEdge
 from .execute import run_schedule
 from .gates import Measure_RO1, Measure_RO_3state_Opt
+from .hardware import Hardware, set_output_attenuations
 from .transmon import ExtendedTransmon
 
 __all__ = [
@@ -60,12 +62,14 @@ __all__ = [
     "ExtendedCompositeSquareEdge",
     "ExtendedTransmon",
     "H",
+    "Hardware",
     "IdlePulse",
     "Loop",
     "LoopOperation",
     "Measure",
     "Measure_RO1",
     "Measure_RO_3state_Opt",
+    "QbloxHardwareCompilationConfig",
     "QuantumDevice",
     "Reset",
     "ResetClockPhase",
@@ -85,4 +89,5 @@ __all__ = [
     "long_square_pulse",
     "run_schedule",
     "save_serial_device",
+    "set_output_attenuations",
 ]

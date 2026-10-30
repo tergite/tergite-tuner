@@ -34,7 +34,6 @@ from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
 from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.utils.dicts import insert_nested_key
-from tergite_tuner.utils.hardware.spi import SpiDAC
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import print_measurement_info
 from tergite_tuner.utils.measurement import samplespace_dimensions
@@ -42,11 +41,7 @@ from tergite_tuner.utils.types.enums import MeasurementMode
 from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
-    from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
-        InstrumentCoordinator,
-    )
-
-    from tergite_tuner.backend import CompiledSchedule, QuantumDevice
+    from tergite_tuner.backend import CompiledSchedule, Hardware, QuantumDevice
     from tergite_tuner.config.session import SessionContext
 
 
@@ -59,8 +54,7 @@ class BaseNode(ABC):
     def __init__(self, session: "SessionContext", **node_dictionary):
         self.session = session
         self.node_dictionary = node_dictionary
-        self.lab_instr_coordinator: Optional["InstrumentCoordinator"] = None
-        self.spi_manager: Optional[SpiDAC] = None
+        self.hardware: Optional["Hardware"] = None
         self.schedule_samplespace = {}
         self.external_samplespace = {}
         self.redis_fields = []
@@ -141,7 +135,7 @@ class BaseNode(ABC):
 
         start = time.perf_counter()
         raw_dataset = run_schedule(
-            self.lab_instr_coordinator,
+            self.hardware.coordinator,
             compiled_schedule,
             timeout=schedule_duration + self.session.cluster_timeout,
         )
@@ -468,7 +462,7 @@ class CouplerNode(BaseNode):
         # do not set dac currents when in calibration
         if not self.session.is_recalibration:
             logger.status("Setting updated DC currents")
-            self.spi_manager.set_dac_current(currents_dict)
+            self.hardware.spi.set_dac_current(currents_dict)
         else:
             logger.debug("Skipping setting DC currents")
 

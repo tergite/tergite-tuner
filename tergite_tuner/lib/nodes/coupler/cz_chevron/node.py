@@ -100,7 +100,7 @@ class CZChevronNode(CouplerNode):
     def initial_operation(self):
         # during recalibration, initial parking currents should not be set
         if not self.session.is_recalibration:
-            self.spi_manager.set_initial_parking_currents(self.couplers)
+            self.hardware.spi.set_initial_parking_currents(self.couplers)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()

@@ -33,15 +33,9 @@ boolean: tergite_tuner/tuner.py::tune_device(keep_data_files)
 boolean: tergite_tuner/tuner.py::tune_device(refresh_session)
 boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 boolean: tergite_tuner/utils/types/qoi.py::QOI.analysis_successful
-confined-import: tergite_tuner/config/session.py::import quantify_scheduler.backends.qblox_backend
 confined-import: tergite_tuner/config/session.py::import redis
-confined-import: tergite_tuner/config/types/cluster.py::import quantify_scheduler.backends.qblox_backend
-confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
-confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator
-confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator.components.qblox
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.base.node
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.nodes
-import-layering: tergite_tuner/utils/hardware/spi.py::import tergite_tuner.config.session
 license-header: tergite_tuner/config/__init__.py
 license-header: tergite_tuner/config/tests/__init__.py
 license-header: tergite_tuner/lib/__init__.py
@@ -107,14 +101,13 @@ license-header: tergite_tuner/storage/redis/__init__.py
 license-header: tergite_tuner/tests/__init__.py
 license-header: tergite_tuner/tests/utils/__init__.py
 license-header: tergite_tuner/utils/__init__.py
-license-header: tergite_tuner/utils/hardware/__init__.py
 license-header: tergite_tuner/utils/types/__init__.py
 private-helper-position: tergite_tuner/config/session.py::SessionContext
 private-helper-position: tergite_tuner/config/session.py::SessionOptions
 private-helper-position: tergite_tuner/export.py::CalibrationResults
 private-helper-position: tergite_tuner/tuner.py::is_safe_path
-private-helper-position: tergite_tuner/utils/hardware/spi.py::OperatingSystem
-private-helper-position: tergite_tuner/utils/hardware/spi.py::SpiDAC
+private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
+private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_bool_fields
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_cluster_mode
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_comma_separated_to_list
@@ -459,21 +452,17 @@ type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_or
 type-hints: tergite_tuner/storage/redis/utils.py::populate_initial_parameters
 type-hints: tergite_tuner/storage/redis/utils.py::populate_node_parameters
 type-hints: tergite_tuner/storage/redis/utils.py::revert_node_parameters
-type-hints: tergite_tuner/tuner.py::HardwareManager.create_spi
-type-hints: tergite_tuner/tuner.py::HardwareManager.get_instrument_coordinator
 type-hints: tergite_tuner/tuner.py::NodeManager.inspect_node
-type-hints: tergite_tuner/tuner.py::_configure_cluster_settings
-type-hints: tergite_tuner/tuner.py::_set_output_attenuations
 type-hints: tergite_tuner/utils/cliffords.py::RXY
 type-hints: tergite_tuner/utils/cliffords.py::from_physical_decomp_to_PTM
 type-hints: tergite_tuner/utils/cliffords.py::reversing_XY_matrix
 type-hints: tergite_tuner/utils/cliffords.py::x_PTM
 type-hints: tergite_tuner/utils/cliffords.py::y_PTM
 type-hints: tergite_tuner/utils/dicts.py::insert_nested_key
-type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.close_spi_rack
-type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.create_spi_dac
-type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.ramp_current_serially
-type-hints: tergite_tuner/utils/hardware/spi.py::_find_and_validate_spi_port
+type-hints: tergite_tuner/backend/spi.py::SpiDAC.close_spi_rack
+type-hints: tergite_tuner/backend/spi.py::SpiDAC.create_spi_dac
+type-hints: tergite_tuner/backend/spi.py::SpiDAC.ramp_current_serially
+type-hints: tergite_tuner/backend/spi.py::_find_and_validate_spi_port
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.__init__
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_console_handler
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_file_handler

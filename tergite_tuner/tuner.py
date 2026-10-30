@@ -20,18 +20,13 @@ import os
 import shutil
 from os import PathLike
 from pathlib import Path
-from types import MappingProxyType
-from typing import FrozenSet, List, Optional, Tuple, TypeVar, Union, Unpack
+from typing import List, Optional, Tuple, TypeVar, Union, Unpack
 
 import networkx as nx
-from qblox_instruments import Cluster
-from qblox_instruments.types import ClusterType
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
 from tergite_tuner import read_result
+from tergite_tuner.backend import Hardware
 from tergite_tuner.config.session import SessionContext, SessionOptions
-from tergite_tuner.exc import ClusterUnreachableError
 from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
@@ -41,115 +36,12 @@ from tergite_tuner.storage.redis.utils import (
     populate_node_parameters,
     revert_node_parameters,
 )
-from tergite_tuner.utils.hardware.spi import SpiDAC
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
 from tergite_tuner.utils.types.enums import DataStatus, MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 T = TypeVar("T")
-
-
-class HardwareManager:
-    """
-    Manages hardware setup, including initializing clusters and instrument coordinators.
-    """
-
-    def __init__(self, session: "SessionContext") -> None:
-        # Store the configuration settings and initialize the instrument coordinator
-        self.session = session
-        self.lab_ic: Optional[InstrumentCoordinator] = None
-        logger.info("Initializing Hardware")
-
-        # Check if hardware setup is necessary based on measurement mode
-        if self.session.cluster_mode == MeasurementMode.re_analyse:
-            # In re-analysis mode, measurements are not needed, so no hardware setup is performed
-            logger.info(
-                "Cluster will not be defined as there is no need to take a measurement in re-analysis mode."
-            )
-        else:
-            # In measurement mode, create the cluster and initialize the instrument coordinator
-            self.cluster: "Cluster" = self._create_cluster()
-            self.lab_ic = self._create_instrument_coordinator(self.cluster)
-
-    def _create_cluster(self) -> "Cluster":
-        """
-        Creates and initializes a Cluster object to represent the hardware cluster
-        based on the given IP address in the configuration.
-        """
-        cluster_name = list(self.session.cluster_config.hardware_description.keys())[0]
-        cluster: "Cluster"
-        if self.session.cluster_mode == MeasurementMode.real:
-            # Ensure all previous connections are closed before creating a new cluster instance
-            Cluster.close_all()
-
-            try:
-                # Create a new cluster instance using the specified cluster name and IP address
-                cluster = Cluster(cluster_name, str(self.session.cluster_ip))
-            except ConnectionRefusedError as exp:
-                raise ClusterUnreachableError(
-                    f"Cluster at {self.session.cluster_ip} refused the connection; "
-                    "it may have crashed, so try power-cycling it"
-                ) from exp
-
-            # don't reset cluster when doing recalibration
-            if not self.session.is_recalibration:
-                cluster.reset()  # Reset the cluster to a default state for consistency
-                logger.status(
-                    f" \n⚠ Resetting Cluster at IP *{str(self.session.cluster_ip)[-3:]}\n"
-                )
-            return cluster
-        else:
-            Cluster.close_all()
-            dummy_setup = {str(mod): ClusterType.CLUSTER_QCM_RF for mod in range(1, 16)}
-            dummy_setup["16"] = ClusterType.CLUSTER_QRM_RF
-            dummy_setup["17"] = ClusterType.CLUSTER_QRM_RF
-            cluster = Cluster(cluster_name, dummy_cfg=dummy_setup)
-            return cluster
-
-    def _create_instrument_coordinator(
-        self, clusters: Union["Cluster", List["Cluster"]]
-    ) -> "InstrumentCoordinator":
-        """
-        Sets up an InstrumentCoordinator to manage communication with the cluster
-        and configure its modules with specified attenuation settings.
-        """
-        lab_ic = InstrumentCoordinator("lab_ic")
-
-        # Ensure clusters is a list, even if a single cluster
-        clusters = [clusters] if isinstance(clusters, Cluster) else clusters
-
-        # Load attenuation settings for entire system (possibly across multiple clusters)
-        output_attenuation_settings = (
-            self.session.device_config.get_output_attenuations()
-        )
-        connectivity = MappingProxyType(
-            {
-                str(n): frozenset(neigh.keys())
-                for n, neigh in self.session.cluster_config.connectivity.graph.adj.items()
-            }
-        )
-
-        # Configure each cluster in the list and add it to the instrument coordinator
-        for cluster in clusters:
-            _configure_cluster_settings(
-                cluster,
-                connectivity=connectivity,
-                output_attenuation_settings=output_attenuation_settings,
-            )
-
-            # Add the configured cluster to the instrument coordinator and set a timeout
-            lab_ic.add_component(ClusterComponent(cluster))
-            lab_ic.timeout(self.session.cluster_timeout)
-
-        return lab_ic
-
-    def create_spi(self, couplers) -> SpiDAC:
-        return SpiDAC(couplers, self.session)
-
-    def get_instrument_coordinator(self):
-        """Access the instrument coordinator for use by other classes."""
-        return self.lab_ic
 
 
 class NodeManager:
@@ -159,12 +51,11 @@ class NodeManager:
 
     def __init__(
         self,
-        lab_ic: "InstrumentCoordinator",
+        hardware: Optional[Hardware],
         session: "SessionContext",
     ) -> None:
         self.session = session
-        self.lab_ic = lab_ic
-        self.spi_manager: Optional[SpiDAC] = None
+        self.hardware = hardware
 
         self.node_cls_map = session.node_cls_map
         self.ignored_nodes = session.ignored_nodes
@@ -252,12 +143,7 @@ class NodeManager:
             logger.info(f"Using user_samplespace for {node_obj.name}")
             self.update_to_user_samplespace(node_obj, self.session.user_samplespace)
 
-        # Since the node is responsible for compiling its schedule
-        # it needs access to the instrument_coordinator
-        node_obj.lab_instr_coordinator = self.lab_ic
-
-        # nodes operating on couplers require access the SPI DACs
-        node_obj.spi_manager = self.spi_manager
+        node_obj.hardware = self.hardware
 
         # Log initialization details
         logger.info(
@@ -416,9 +302,8 @@ def _tune(
     """
     if refresh_session:
         session.refresh_redis_fields_log()
-    hardware_manager = HardwareManager(session=session)
-    lab_ic = hardware_manager.get_instrument_coordinator()
-    node_manager = NodeManager(lab_ic, session=session)
+    hardware = Hardware(session)
+    node_manager = NodeManager(hardware, session=session)
     qubits = session.qubits
     couplers = session.couplers
 
@@ -435,15 +320,14 @@ def _tune(
         [str(n.value) for n in topo_order],
     )
 
-    # The node manager provides every node with access to the DACs
     if couplers:
-        node_manager.spi_manager = hardware_manager.create_spi(couplers)
+        hardware.connect_spi(couplers)
         # no setting initial parking currents during recalibration
         if not session.is_recalibration:
             assert (
                 session.spi_mode == SPIMode.real
             ), 'Set spi_mode to "real" in the session.'
-            node_manager.spi_manager.set_initial_parking_currents(couplers)
+            hardware.spi.set_initial_parking_currents(couplers)
 
     for calibration_node in topo_order:
         node_manager.inspect_node(
@@ -478,9 +362,7 @@ def _reanalyse(
             f"Wrong mode for re-analysis: '{session.cluster_mode}', should be: {MeasurementMode.re_analyse}"
         )
 
-    hardware_manager = HardwareManager(session=session)
-    lab_ic = hardware_manager.get_instrument_coordinator()
-    node_manager = NodeManager(lab_ic, session=session)
+    node_manager = NodeManager(None, session=session)
 
     target_node = session.target_node
     node = node_manager.initialize_node(target_node)
@@ -518,80 +400,3 @@ def is_safe_path(path_str: PathLike[str]) -> bool:
         return False
 
     return True
-
-
-# intermediary function in the call stack in case we want to set other cluster settings
-def _configure_cluster_settings(
-    cluster: Cluster,
-    *,
-    connectivity: MappingProxyType[str, FrozenSet[str]],
-    output_attenuation_settings: MappingProxyType[str, MappingProxyType[str, int]],
-):
-    _set_output_attenuations(cluster, connectivity, output_attenuation_settings)
-
-
-def _set_output_attenuations(cluster, connectivity, settings):
-    """
-    Sets the output attenuations for modules in the given cluster based on the provided settings.
-
-    This function iterates over couplers, resonators, and qubits, finds the corresponding output
-    ports from the connectivity map, and applies attenuation settings to the correct output
-    channels (complex_output_0 or complex_output_1) for modules that are part of the cluster.
-
-    Args:
-        cluster: Cluster object to configure
-        connectivity: A mapping that relates device names (with port suffixes) to their physical port paths.
-        settings: A dictionary specifying attenuation values for 'coupler', 'resonator', and 'qubit' devices.
-    """
-    cluster_modules = cluster.get_connected_modules()
-    module_names = frozenset(mod.name for _, mod in cluster_modules.items())
-
-    # read the device configuration (device_config.toml) settings for attenuation
-    # entire file, all couplers, all qubits, all resonators
-    for device_type, quantify_port_suffix in zip(
-        ["coupler", "resonator", "qubit"], [":fl", ":res", ":mw"]
-    ):
-        for name, att in settings[device_type].items():
-            quantify_port = name + quantify_port_suffix
-
-            if quantify_port not in connectivity.keys():
-                logger.warning(
-                    f"Skipping setting attenuation for '{quantify_port}', as it is "
-                    "not in the connectivity graph of the cluster_config.json."
-                )
-                continue
-
-            ports = connectivity[quantify_port]
-            assert len(ports) == 1
-            port_str = next(iter(ports))
-
-            # e.g. "cluster.module1.complex_output_0"
-            cl, mod, port = tuple(port_str.split(sep="."))
-
-            # inputs can also be specified in the connectivity graph, although such
-            # mappings are seldomly used in transmon systems, so just do a simple
-            # check here that we are actually configuring an output
-            assert "output" in port, (name + quantify_port_suffix, port_str)
-
-            # if the cluster that this qubit is mapped to in the connectivity
-            # is not the same as the cluster to be configured, then simply skip
-            if cl != cluster.name:
-                continue
-
-            # skip if the module is not connected
-            if "_".join((cl, mod)) not in module_names:
-                continue
-
-            # otherwise, use the dedicated QCoDeS function
-            # to set the attenuation
-            module_obj = getattr(cluster, mod)
-
-            if port == "complex_output_0":
-                module_obj.out0_att(att)
-            elif port == "complex_output_1":
-                module_obj.out1_att(att)
-            else:
-                raise KeyError(f"Failed to set attenuation for port: {port_str}")
-
-            logger.debug(f"Applied {att}dB attenuation on {port_str}")
-    logger.info("Attenuations are set")

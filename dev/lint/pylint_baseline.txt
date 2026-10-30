@@ -67,4 +67,3 @@ tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py: too-many-loca
 tergite_tuner/lib/nodes/schedule_node.py: too-many-locals OuterScheduleNode.measure_node
 tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary.__init__
 tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots
-tergite_tuner/tuner.py: too-many-locals _set_output_attenuations

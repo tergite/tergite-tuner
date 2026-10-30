@@ -25,7 +25,7 @@ import json
 from os import PathLike
 from typing import Self
 
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from tergite_tuner.backend import QbloxHardwareCompilationConfig
 
 
 class ClusterConfig(QbloxHardwareCompilationConfig):

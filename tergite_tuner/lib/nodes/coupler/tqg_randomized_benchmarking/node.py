@@ -80,7 +80,7 @@ class CZRBNode(CouplerNode):
     def initial_operation(self):
         # No setting parking currents when we are running a recalibration
         if not self.session.is_recalibration:
-            self.spi_manager.set_initial_parking_currents(self.couplers)
+            self.hardware.spi.set_initial_parking_currents(self.couplers)
 
     def generate_dummy_dataset(self):
         dataset = xr.Dataset()

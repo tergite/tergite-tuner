@@ -78,7 +78,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
         pass
 
     def pre_measurement_operation(self, reduced_ext_space):
-        self.spi_manager.set_dac_current(reduced_ext_space["dc_currents"])
+        self.hardware.spi.set_dac_current(reduced_ext_space["dc_currents"])
 
     def final_operation(self):
         logger.info("Final Operation")
@@ -86,7 +86,7 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
         for coupler in self.couplers:
             currents[coupler] = 0
 
-        self.spi_manager.set_dac_current(currents)
+        self.hardware.spi.set_dac_current(currents)
 
     def generate_dummy_dataset(self):
         dataset = xarray.Dataset()
@@ -157,7 +157,7 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
         pass
 
     def pre_measurement_operation(self, reduced_ext_space):
-        self.spi_manager.set_dac_current(reduced_ext_space["dc_currents"])
+        self.hardware.spi.set_dac_current(reduced_ext_space["dc_currents"])
 
     def final_operation(self):
         logger.info("Final Operation")
@@ -165,4 +165,4 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
         for coupler in self.couplers:
             currents[coupler] = 0
 
-        self.spi_manager.set_dac_current(currents)
+        self.hardware.spi.set_dac_current(currents)
