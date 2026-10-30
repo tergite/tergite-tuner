@@ -32,6 +32,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Fixed
 
+- Ran purity benchmarking, whose schedule raised `TypeError`; its sweep also gave its 128, 256 and 512 lengths up as calibration points, so they were never measured
 - Applied the session options of `run_node`, `tune_device`, `reanalyse` and `generate_calib_seed_file` to a session passed in, setting them over its values; they were ignored, so tergite-backend's one-qubit-at-a-time recalibration ran every qubit
 - Raised `ClusterUnreachableError` when the cluster refuses the connection, instead of exiting the calling program
 - Kept the caller's matplotlib backend; every node switched it, to TkAgg when `save_plot` was set, which fails on a headless machine

@@ -21,7 +21,6 @@ from tergite_tuner.utils.types.node_enum import NodeEnum
 _KNOWN_FAILURES = {
     NodeEnum.QUBIT_01_SPECTROSCOPY: "five 6 us spectroscopy amplitudes overflow the waveform memory",
     NodeEnum.ALL_XY: "AllXY cannot run (step 9.7)",
-    NodeEnum.PURITY_BENCHMARKING: "purity benchmarking cannot run (step 9.7)",
 }
 _DEFAULT_NODES = [
     pytest.param(

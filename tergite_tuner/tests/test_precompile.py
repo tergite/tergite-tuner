@@ -20,15 +20,9 @@ from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import get_compiler
 from tergite_tuner.tests.utils.state import loaded_state
-from tergite_tuner.utils.types.node_enum import NodeEnum
 
 _state_file = get_fixture_path("states", "standard_state.json")
-# purity benchmarking cannot be built (step 9.7)
-_OUTER_NODES = [
-    node
-    for node, spec in DEFAULT_NODE_SPECS.items()
-    if spec.outer_sweeps and node != NodeEnum.PURITY_BENCHMARKING
-]
+_OUTER_NODES = [node for node, spec in DEFAULT_NODE_SPECS.items() if spec.outer_sweeps]
 
 
 # every outer-sweep point: test_schedule_goldens.py compiles the first one on every run

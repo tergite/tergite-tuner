@@ -36,26 +36,33 @@ if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 SEEDS = 4
-CLIFFORDS = np.array([0, 2, 4, 8, 16, 128, 256, 512])
-LOOPS = 500
+LENGTHS = np.array([0, 2, 4, 8, 16, 128, 256, 512])
+# each length once per basis (X, Y, Z), then the calibration points |0>, |1> and |2>
+CLIFFORDS = np.concatenate([np.repeat(LENGTHS, 3), [0, 1, 2]])
+REPETITIONS = 500
+# the purity's decay per Clifford, which the analysis fits
+DUMMY_UNITARITY = 0.99
 
 
 def get_schedule(
     transmons: Mapping[str, ExtendedTransmon],
     number_of_cliffords: dict[str, np.ndarray],
     seeds: dict[str, int],
-    **keywords: object,
+    repetitions: int,
 ) -> Schedule:
-    """The schedule, which takes no ``loop_repetitions`` and so raises ``TypeError`` as the node always has."""
     return PurityBenchmarkingMeasurement(transmons).schedule_function(
-        seeds, number_of_cliffords, **keywords
+        seeds, number_of_cliffords, repetitions
     )
 
 
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    return np.zeros((len(sweeps["number_of_cliffords"]), LOOPS), dtype=complex)
+    """A Bloch vector along Z, its purity falling by ``DUMMY_UNITARITY`` per Clifford, as |1> populations."""
+    lengths = sweeps["number_of_cliffords"][:-3:3]
+    z_population = (1 + np.sqrt(DUMMY_UNITARITY**lengths)) / 2
+    bases = np.stack([np.full_like(z_population, 0.5)] * 2 + [z_population], axis=1)
+    return np.concatenate([bases.ravel(), [0.0, 1.0, 0.5]]).astype(complex)
 
 
 PURITY_BENCHMARKING_SPECS = {
@@ -68,7 +75,7 @@ PURITY_BENCHMARKING_SPECS = {
         sweeps={"number_of_cliffords": get_fixed_sweep(CLIFFORDS)},
         get_dummy_s21=get_dummy_s21,
         plot=plot_class_analysis,
-        loops=LOOPS,
+        schedule_keywords={"repetitions": REPETITIONS},
         outer_sweeps={"seeds": get_fixed_sweep(np.arange(SEEDS, dtype=np.int32))},
     )
 }

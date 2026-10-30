@@ -44,8 +44,8 @@ def run_dummy_node(
     session_context: SessionContext,
     data_dir: Path,
     keep_data_files: bool = True,
-) -> None:
-    """Recalibrates ``node`` alone on the dummy cluster, from the standard recorded values."""
+) -> SessionContext:
+    """Recalibrates ``node`` alone on the dummy cluster, from the standard recorded values; returns its session."""
     session = session_context.model_copy(
         update={
             "data_dir": data_dir,
@@ -66,3 +66,4 @@ def run_dummy_node(
             refresh_session=False,
             keep_data_files=keep_data_files,
         )
+    return session

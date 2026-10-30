@@ -11,6 +11,7 @@
   "n_rabi_12_oscillations": "1c2281b17486e6716ac3757fa4b909801d110523ee0e58fc63f3bbf202b8367d",
   "n_rabi_oscillations": "4ec87935d40627fc0b446f1c692e9f3d178e1af436fcbaf7ab25027e14b529e6",
   "punchout": "fb3b0c584ad5db7fd40e5510bfc9db15de8c9508e8786e9b375fe1534aa15eb5",
+  "purity_benchmarking": "5c447730fe8efed7f77b2541d51f901884ecba687e3666b2fb2ecee93c884168",
   "qubit_01_spectroscopy": "cfece7b6a7036f86b3d7facef5bdbce16830fd9579cecd24919c37fb1b92cd13",
   "qubit_12_spectroscopy": "f4a2255c467206f4d2aab9ded8ccbccbffb452b0a6221ff77164888fcdfd4653",
   "qubit_bring_up_spectroscopy": "88c50a98a36f2e317418dae53904a4644055330a1fa3d8c31db60efc04a43522",

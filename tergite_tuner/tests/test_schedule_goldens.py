@@ -33,11 +33,9 @@ GOLDEN_FILE = Path(get_fixture_path("goldens")) / "schedules.json"
 STATE_FILE = get_fixture_path("states", "standard_state.json")
 # below the last bits in which platforms' maths libraries differ
 SIGNIFICANT_DIGITS = 9
-# purity benchmarking cannot be built (step 9.7)
-NODE_NAMES = [name for name in DEFAULT_NODE_NAMES if name != "purity_benchmarking"]
 
 
-@pytest.mark.parametrize("node_name", NODE_NAMES)
+@pytest.mark.parametrize("node_name", DEFAULT_NODE_NAMES)
 def test_compiled_program_matches_its_golden(node_name, session_context):
     with loaded_state(session_context, STATE_FILE):
         compiled = get_compiler(node_name, session_context)()

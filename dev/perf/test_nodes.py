@@ -28,17 +28,15 @@ from tergite_tuner.tests.utils.goldens import (
 from tergite_tuner.tests.utils.state import loaded_state
 
 STATE_FILE = get_fixture_path("states", "standard_state.json")
-# purity benchmarking cannot be built (step 9.7)
-NODE_NAMES = [name for name in DEFAULT_NODE_NAMES if name != "purity_benchmarking"]
 
 
-@pytest.mark.parametrize("node_name", NODE_NAMES)
+@pytest.mark.parametrize("node_name", DEFAULT_NODE_NAMES)
 def test_compile(measure, node_name, session_context):
     with loaded_state(session_context, STATE_FILE):
         measure(get_compiler(node_name, session_context))
 
 
-@pytest.mark.parametrize("node_name", NODE_NAMES)
+@pytest.mark.parametrize("node_name", DEFAULT_NODE_NAMES)
 def test_dataset(measure, node_name, session_context):
     with loaded_state(session_context, STATE_FILE):
         measure(get_dataset_builder(node_name, session_context))
