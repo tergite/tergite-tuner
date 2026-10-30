@@ -1,0 +1,810 @@
+{
+  "couplers": {
+    "q06_q07": {
+      "control_qubit_crossing_points": [
+        -0.0019249999999999985,
+        -0.0010999999999999964,
+        0.0013750000000000103,
+        0.0022000000000000123
+      ],
+      "control_qubit_crossing_points_error": 0,
+      "target_qubit_crossing_points": [
+        -0.002024999999999999,
+        -0.0009999999999999961,
+        0.00128750000000001,
+        0.0023000000000000125
+      ],
+      "target_qubit_crossing_points_error": 0
+    },
+    "q08_q09": {
+      "control_qubit_crossing_points": [
+        -0.002149999999999999,
+        -0.001349999999999997,
+        0.00132500000000001,
+        0.002125000000000012
+      ],
+      "control_qubit_crossing_points_error": 0,
+      "target_qubit_crossing_points": [
+        -0.0023624999999999996,
+        -0.0011374999999999966,
+        0.0011000000000000094,
+        0.0022875000000000126
+      ],
+      "target_qubit_crossing_points_error": 0
+    },
+    "q11_q12": {
+      "7.161e8.": "7.161e8]",
+      "attenuation": 10,
+      "cz_pulse_amplitude": "nan",
+      "cz_pulse_frequency": "nan",
+      "cz_working_frequencies": [
+        716100000.0,
+        716100000.0,
+        716100000.0
+      ],
+      "parking_current": 0,
+      "qubit_crossing_points": "nan",
+      "reset": {
+        "duration": 0.00024
+      },
+      "spec": {
+        "spec_duration": 6e-06
+      }
+    },
+    "q11_q12:q11": {
+      "qubit_crossing_points": [
+        -0.0010000000000000005,
+        0.0009499999999999989
+      ]
+    },
+    "q11_q12:q12": {
+      "qubit_crossing_points": [
+        -0.0010000000000000005,
+        0.0009499999999999989
+      ]
+    },
+    "q12_q13": {
+      "control_qubit_crossing_points": [
+        -0.0018999999999999985,
+        -0.0010499999999999962,
+        0.0014750000000000104,
+        0.002375000000000013
+      ],
+      "control_qubit_crossing_points_error": 0,
+      "target_qubit_crossing_points": [
+        -0.002087499999999999,
+        0.00137500000000001
+      ],
+      "target_qubit_crossing_points_error": 0
+    },
+    "q13_q14": {
+      "attenuation": 2,
+      "control_local_phase": "nan",
+      "control_local_phase_error": "nan",
+      "control_qubit": "q13",
+      "control_qubit_crossing_points": "nan",
+      "control_qubit_crossing_points_error": "nan",
+      "cz_fidelity": "nan",
+      "cz_phase_path": "via_20",
+      "cz_pulse_amplitude": "nan",
+      "cz_pulse_duration": 1.56e-07,
+      "cz_pulse_duration_error": "nan",
+      "cz_pulse_frequency": "nan",
+      "cz_pulse_frequency_error": "nan",
+      "cz_working_durations_in_ns": "nan",
+      "cz_working_durations_in_ns_error": 0,
+      "cz_working_frequencies": "nan",
+      "cz_working_frequencies_error": 0,
+      "parking_current": 0,
+      "qubit_crossing_points": "nan",
+      "reset": {
+        "duration": 0.00024
+      },
+      "spec": {
+        "spec_duration": 6e-06
+      },
+      "target_local_phase": "nan",
+      "target_local_phase_error": "nan",
+      "target_qubit": "q14",
+      "target_qubit_crossing_points": "nan",
+      "target_qubit_crossing_points_error": "nan"
+    },
+    "q13_q14:q13": {
+      "qubit_crossing_points": [
+        0.00037499999999999676
+      ]
+    },
+    "q13_q14:q14": {
+      "qubit_crossing_points": [
+        0.0004749999999999966
+      ]
+    },
+    "q14_q15": {
+      "control_qubit_crossing_points": [
+        -0.0017999999999999982,
+        -0.000949999999999996,
+        0.0016500000000000104
+      ],
+      "control_qubit_crossing_points_error": 0,
+      "target_qubit_crossing_points": [
+        -0.0018499999999999983,
+        -0.0008249999999999957,
+        0.001550000000000011
+      ],
+      "target_qubit_crossing_points_error": 0
+    }
+  },
+  "cs": {
+    "q06_q07": {
+      "qubit_spectroscopy_vs_current": "calibrated"
+    },
+    "q08_q09": {
+      "qubit_spectroscopy_vs_current": "calibrated"
+    },
+    "q11": {
+      "motzoi_parameter": "calibrated",
+      "n_rabi_oscillations": "calibrated",
+      "punchout": "not_calibrated",
+      "purity_benchmarking": "not_calibrated",
+      "qubit_01_spectroscopy": "calibrated",
+      "qubit_12_spectroscopy": "not_calibrated",
+      "qubit_bring_up_spectroscopy": "not_calibrated",
+      "rabi_oscillations": "not_calibrated",
+      "rabi_oscillations_12": "not_calibrated",
+      "ramsey_correction": "calibrated",
+      "ramsey_correction_12": "not_calibrated",
+      "randomized_benchmarking": "not_calibrated",
+      "resonator_spectroscopy": "calibrated",
+      "resonator_spectroscopy_1": "calibrated",
+      "resonator_spectroscopy_2": "not_calibrated",
+      "ro_amplitude_three_state_optimization": "not_calibrated",
+      "ro_amplitude_two_state_optimization": "calibrated",
+      "ro_frequency_three_state_optimization": "not_calibrated",
+      "ro_frequency_two_state_optimization": "calibrated",
+      "t1": "not_calibrated",
+      "t2": "not_calibrated",
+      "t2_echo": "not_calibrated"
+    },
+    "q11_q12": {
+      "coupler_anticrossing": "not_calibrated",
+      "cz_chevron": "not_calibrated",
+      "cz_parametrization": "not_calibrated",
+      "qubit_spectroscopy_vs_current": "not_calibrated",
+      "resonator_spectroscopy_vs_current": "not_calibrated"
+    },
+    "q12": {
+      "motzoi_parameter": "calibrated",
+      "n_rabi_oscillations": "calibrated",
+      "punchout": "not_calibrated",
+      "purity_benchmarking": "not_calibrated",
+      "qubit_01_spectroscopy": "calibrated",
+      "qubit_12_spectroscopy": "calibrated",
+      "qubit_bring_up_spectroscopy": "not_calibrated",
+      "rabi_oscillations": "calibrated",
+      "rabi_oscillations_12": "calibrated",
+      "ramsey_correction": "calibrated",
+      "ramsey_correction_12": "calibrated",
+      "randomized_benchmarking": "not_calibrated",
+      "resonator_spectroscopy": "calibrated",
+      "resonator_spectroscopy_1": "calibrated",
+      "resonator_spectroscopy_2": "calibrated",
+      "ro_amplitude_three_state_optimization": "not_calibrated",
+      "ro_amplitude_two_state_optimization": "calibrated",
+      "ro_frequency_three_state_optimization": "calibrated",
+      "ro_frequency_two_state_optimization": "calibrated",
+      "t1": "not_calibrated",
+      "t2": "not_calibrated",
+      "t2_echo": "not_calibrated"
+    },
+    "q12_q13": {
+      "qubit_spectroscopy_vs_current": "calibrated"
+    },
+    "q13": {
+      "motzoi_parameter": "calibrated",
+      "n_rabi_oscillations": "calibrated",
+      "punchout": "not_calibrated",
+      "purity_benchmarking": "not_calibrated",
+      "qubit_01_spectroscopy": "calibrated",
+      "qubit_12_spectroscopy": "calibrated",
+      "qubit_bring_up_spectroscopy": "not_calibrated",
+      "rabi_oscillations": "calibrated",
+      "rabi_oscillations_12": "calibrated",
+      "ramsey_correction": "calibrated",
+      "ramsey_correction_12": "calibrated",
+      "randomized_benchmarking": "not_calibrated",
+      "resonator_spectroscopy": "calibrated",
+      "resonator_spectroscopy_1": "calibrated",
+      "resonator_spectroscopy_2": "calibrated",
+      "ro_amplitude_three_state_optimization": "calibrated",
+      "ro_amplitude_two_state_optimization": "calibrated",
+      "ro_frequency_three_state_optimization": "calibrated",
+      "ro_frequency_two_state_optimization": "calibrated",
+      "t1": "not_calibrated",
+      "t2": "not_calibrated",
+      "t2_echo": "not_calibrated"
+    },
+    "q13_q14": {
+      "coupler_anticrossing": "not_calibrated",
+      "cz_calibration": "not_calibrated",
+      "cz_chevron": "not_calibrated",
+      "cz_dynamic_phase": "not_calibrated",
+      "cz_parametrization": "calibrated",
+      "cz_rb": "not_calibrated",
+      "qubit_spectroscopy_vs_current": "not_calibrated",
+      "resonator_spectroscopy_vs_current": "not_calibrated"
+    },
+    "q14": {
+      "motzoi_parameter": "calibrated",
+      "n_rabi_oscillations": "calibrated",
+      "punchout": "not_calibrated",
+      "purity_benchmarking": "not_calibrated",
+      "qubit_01_spectroscopy": "calibrated",
+      "qubit_12_spectroscopy": "calibrated",
+      "qubit_bring_up_spectroscopy": "not_calibrated",
+      "rabi_oscillations": "calibrated",
+      "rabi_oscillations_12": "calibrated",
+      "ramsey_correction": "calibrated",
+      "ramsey_correction_12": "calibrated",
+      "randomized_benchmarking": "not_calibrated",
+      "resonator_spectroscopy": "calibrated",
+      "resonator_spectroscopy_1": "calibrated",
+      "resonator_spectroscopy_2": "calibrated",
+      "ro_amplitude_three_state_optimization": "calibrated",
+      "ro_amplitude_two_state_optimization": "calibrated",
+      "ro_frequency_three_state_optimization": "calibrated",
+      "ro_frequency_two_state_optimization": "calibrated",
+      "t1": "not_calibrated",
+      "t2": "not_calibrated",
+      "t2_echo": "not_calibrated"
+    },
+    "q14_q15": {
+      "qubit_spectroscopy_vs_current": "calibrated"
+    },
+    "q15": {
+      "motzoi_parameter": "calibrated",
+      "n_rabi_oscillations": "calibrated",
+      "punchout": "not_calibrated",
+      "purity_benchmarking": "not_calibrated",
+      "qubit_01_spectroscopy": "calibrated",
+      "qubit_12_spectroscopy": "calibrated",
+      "qubit_bring_up_spectroscopy": "not_calibrated",
+      "rabi_oscillations": "calibrated",
+      "rabi_oscillations_12": "calibrated",
+      "ramsey_correction": "calibrated",
+      "ramsey_correction_12": "calibrated",
+      "randomized_benchmarking": "not_calibrated",
+      "resonator_spectroscopy": "calibrated",
+      "resonator_spectroscopy_1": "calibrated",
+      "resonator_spectroscopy_2": "calibrated",
+      "ro_amplitude_three_state_optimization": "calibrated",
+      "ro_amplitude_two_state_optimization": "calibrated",
+      "ro_frequency_three_state_optimization": "calibrated",
+      "ro_frequency_two_state_optimization": "calibrated",
+      "t1": "not_calibrated",
+      "t2": "not_calibrated",
+      "t2_echo": "not_calibrated"
+    }
+  },
+  "transmons": {
+    "q11": {
+      "Ql": 12296.276851128483,
+      "Ql_1": 6826377020.1954,
+      "Ql_1_error": 0,
+      "Ql_error": 0,
+      "VNA_f01_frequency": 4742000000.0,
+      "VNA_f12_frequency": 4491000000.0,
+      "attenuation": 8,
+      "centroid_I": "nan",
+      "centroid_I_error": "nan",
+      "centroid_Q": "nan",
+      "centroid_Q_error": "nan",
+      "clock_freqs": {
+        "f01": 4740000250.498322,
+        "f01_error": 0,
+        "f12": "nan",
+        "f12_error": "nan",
+        "readout": 6826375416.493596,
+        "readout_error": 0
+      },
+      "extended_clock_freqs": {
+        "readout_1": 6826377020.1954,
+        "readout_1_error": 0,
+        "readout_2": "nan",
+        "readout_2_error": "nan",
+        "readout_2state_opt": 6827600000.0,
+        "readout_2state_opt_error": 0,
+        "readout_3state_opt": "nan",
+        "readout_3state_opt_error": "nan"
+      },
+      "inv_cm_opt": "nan",
+      "inv_cm_opt_error": "nan",
+      "measure": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 2.5e-06,
+        "pulse_amp": 0.015,
+        "pulse_amp_error": "nan",
+        "pulse_duration": 3e-06
+      },
+      "measure1": {
+        "pulse_amp": 0.015
+      },
+      "measure2": {
+        "pulse_amp": 0.005
+      },
+      "measure_1": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 2.5e-06,
+        "pulse_duration": 3e-06
+      },
+      "measure_2": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 2.5e-06,
+        "pulse_duration": 3e-06
+      },
+      "measure_2state_opt": {
+        "acq_rotation": 21.496540633590097,
+        "acq_rotation_error": 0,
+        "acq_threshold": 0.015871393876263337,
+        "acq_threshold_error": 0,
+        "pulse_amp": 0.006017045454545454,
+        "pulse_amp_error": 0
+      },
+      "measure_3state_opt": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 2.5e-06,
+        "pulse_amp": 0,
+        "pulse_amp_error": 0,
+        "pulse_duration": 3e-06
+      },
+      "omega_01": "nan",
+      "omega_01_error": "nan",
+      "omega_12": "nan",
+      "omega_12_error": "nan",
+      "omega_20": "nan",
+      "omega_20_error": "nan",
+      "r12": {
+        "ef_amp180": "nan",
+        "ef_amp180_error": "nan"
+      },
+      "reset": {
+        "duration": 0.00024
+      },
+      "resonator_minimum": 6826355555.555555,
+      "resonator_minimum_1": 6826355555.555555,
+      "resonator_minimum_1_error": 0,
+      "resonator_minimum_error": 0,
+      "rxy": {
+        "amp180": "nan",
+        "amp180_error": 0,
+        "duration": 6e-08,
+        "motzoi": -0.06666666666666671,
+        "motzoi_error": 0
+      },
+      "spec": {
+        "spec_ampl_12_optimal": "nan",
+        "spec_ampl_12_optimal_error": "nan",
+        "spec_ampl_optimal": 0.0045000000000000005,
+        "spec_ampl_optimal_error": 0,
+        "spec_duration": 6e-06
+      },
+      "t1_time": "nan",
+      "t1_time_error": "nan"
+    },
+    "q12": {
+      "Ql": 12306.527357694391,
+      "Ql_1": 6411544191.751908,
+      "Ql_1_error": 0,
+      "Ql_error": 0,
+      "VNA_f01_frequency": 4267000000.0,
+      "VNA_f12_frequency": 4111000000.0,
+      "attenuation": 8,
+      "centroid_I": "nan",
+      "centroid_I_error": "nan",
+      "centroid_Q": "nan",
+      "centroid_Q_error": "nan",
+      "clock_freqs": {
+        "f01": 4266190879.087689,
+        "f01_error": 0,
+        "f12": 4111209733.136258,
+        "f12_error": 0,
+        "readout": 6411680540.106494,
+        "readout_error": 0
+      },
+      "extended_clock_freqs": {
+        "readout_1": 6411544191.751908,
+        "readout_1_error": 0,
+        "readout_2": 6411085580.2244625,
+        "readout_2_error": 0,
+        "readout_2state_opt": 6411600000.0,
+        "readout_2state_opt_error": 0,
+        "readout_3state_opt": 6411511111.111111,
+        "readout_3state_opt_error": 0
+      },
+      "inv_cm_opt": "nan",
+      "inv_cm_opt_error": "nan",
+      "measure": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.018,
+        "pulse_amp_error": "nan",
+        "pulse_duration": 4e-06
+      },
+      "measure1": {
+        "pulse_amp": 0.018
+      },
+      "measure2": {
+        "pulse_amp": 0.018
+      },
+      "measure_1": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2state_opt": {
+        "acq_rotation": 182.90934958406868,
+        "acq_rotation_error": 0,
+        "acq_threshold": 0.00022258115604658805,
+        "acq_threshold_error": 0,
+        "pulse_amp": 0.015732954545454543,
+        "pulse_amp_error": 0
+      },
+      "measure_3state_opt": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0,
+        "pulse_amp_error": 0,
+        "pulse_duration": 4e-06
+      },
+      "omega_01": "nan",
+      "omega_01_error": "nan",
+      "omega_12": "nan",
+      "omega_12_error": "nan",
+      "omega_20": "nan",
+      "omega_20_error": "nan",
+      "r12": {
+        "ef_amp180": 0.4999999999999998,
+        "ef_amp180_error": 0
+      },
+      "reset": {
+        "duration": 0.0004
+      },
+      "resonator_minimum": 6411688888.888889,
+      "resonator_minimum_1": 6411555555.555555,
+      "resonator_minimum_1_error": 0,
+      "resonator_minimum_error": 0,
+      "rxy": {
+        "amp180": 0.5324776291677201,
+        "amp180_error": 0,
+        "duration": 4.8e-08,
+        "motzoi": 0.01025641025641022,
+        "motzoi_error": 0
+      },
+      "spec": {
+        "spec_ampl_12_optimal": 0.006,
+        "spec_ampl_12_optimal_error": 0,
+        "spec_ampl_optimal": 0.008,
+        "spec_ampl_optimal_error": 0,
+        "spec_duration": 6e-06
+      },
+      "t1_time": "nan",
+      "t1_time_error": "nan"
+    },
+    "q13": {
+      "Ql": 13776.343624540354,
+      "Ql_1": 7180460169.226781,
+      "Ql_1_error": 0,
+      "Ql_error": 0,
+      "VNA_f01_frequency": 5274000000.0,
+      "VNA_f12_frequency": 5024000000.0,
+      "attenuation": 8,
+      "centroid_I": -0.012624946655923447,
+      "centroid_I_error": 0,
+      "centroid_Q": -0.003466614304425858,
+      "centroid_Q_error": 0,
+      "clock_freqs": {
+        "f01": 5274032978.913045,
+        "f01_error": 0,
+        "f12": 5024209733.136258,
+        "f12_error": 0,
+        "readout": 7180665715.511508,
+        "readout_error": 0
+      },
+      "extended_clock_freqs": {
+        "readout_1": 7180460169.226781,
+        "readout_1_error": 0,
+        "readout_2": 7179795841.57504,
+        "readout_2_error": 0,
+        "readout_2state_opt": 7180566666.666667,
+        "readout_2state_opt_error": 0,
+        "readout_3state_opt": 7180211111.111111,
+        "readout_3state_opt_error": 0
+      },
+      "inv_cm_opt": 0,
+      "inv_cm_opt_error": 0,
+      "measure": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.018,
+        "pulse_amp_error": "nan",
+        "pulse_duration": 4e-06
+      },
+      "measure1": {
+        "pulse_amp": 0.018
+      },
+      "measure2": {
+        "pulse_amp": 0.018
+      },
+      "measure_1": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2state_opt": {
+        "acq_rotation": 298.6949255132462,
+        "acq_rotation_error": 0,
+        "acq_threshold": 0.0013487968979805263,
+        "acq_threshold_error": 0,
+        "pulse_amp": 0.017352272727272727,
+        "pulse_amp_error": 0
+      },
+      "measure_3state_opt": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.017551724137931032,
+        "pulse_amp_error": 0,
+        "pulse_duration": 4e-06
+      },
+      "omega_01": 94.1816867715259,
+      "omega_01_error": 0,
+      "omega_12": 359.8018491905928,
+      "omega_12_error": 0,
+      "omega_20": 236.8958766021067,
+      "omega_20_error": 0,
+      "r12": {
+        "ef_amp180": 0.5014672546299845,
+        "ef_amp180_error": 0
+      },
+      "reset": {
+        "duration": 0.0004
+      },
+      "resonator_minimum": 7180700000.0,
+      "resonator_minimum_1": 7180477777.777778,
+      "resonator_minimum_1_error": 0,
+      "resonator_minimum_error": 0,
+      "rxy": {
+        "amp180": 0.5871022866615381,
+        "amp180_error": 0,
+        "duration": 4.8e-08,
+        "motzoi": 0.03589743589743588,
+        "motzoi_error": 0
+      },
+      "spec": {
+        "spec_ampl_12_optimal": 0.006,
+        "spec_ampl_12_optimal_error": 0,
+        "spec_ampl_optimal": 0.00625,
+        "spec_ampl_optimal_error": 0,
+        "spec_duration": 6e-06
+      },
+      "t1_time": "nan",
+      "t1_time_error": "nan"
+    },
+    "q14": {
+      "Ql": 14828.768579350846,
+      "Ql_1": 6630967574.651754,
+      "Ql_1_error": 0,
+      "Ql_error": 0,
+      "VNA_f01_frequency": 4302500000.0,
+      "VNA_f12_frequency": 4150000000.0,
+      "attenuation": 8,
+      "centroid_I": -0.008453734675643346,
+      "centroid_I_error": 0,
+      "centroid_Q": 0.0152903365969433,
+      "centroid_Q_error": 0,
+      "clock_freqs": {
+        "f01": 4302646320.651085,
+        "f01_error": 0,
+        "f12": 4150209733.136258,
+        "f12_error": 0,
+        "readout": 6631065908.345407,
+        "readout_error": 0
+      },
+      "extended_clock_freqs": {
+        "readout_1": 6630967574.651754,
+        "readout_1_error": 0,
+        "readout_2": 6630088503.648133,
+        "readout_2_error": 0,
+        "readout_2state_opt": 6631000000.0,
+        "readout_2state_opt_error": 0,
+        "readout_3state_opt": 6630511111.111111,
+        "readout_3state_opt_error": 0
+      },
+      "inv_cm_opt": 0,
+      "inv_cm_opt_error": 0,
+      "measure": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.018,
+        "pulse_amp_error": "nan",
+        "pulse_duration": 4e-06
+      },
+      "measure1": {
+        "pulse_amp": 0.018
+      },
+      "measure2": {
+        "pulse_amp": 0.018
+      },
+      "measure_1": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2state_opt": {
+        "acq_rotation": 205.1342713830969,
+        "acq_rotation_error": 0,
+        "acq_threshold": -0.0036510021246633747,
+        "acq_threshold_error": 0,
+        "pulse_amp": 0.01702840909090909,
+        "pulse_amp_error": 0
+      },
+      "measure_3state_opt": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.017551724137931032,
+        "pulse_amp_error": 0,
+        "pulse_duration": 4e-06
+      },
+      "omega_01": 6.801142960947061,
+      "omega_01_error": 0,
+      "omega_12": 276.5463073652701,
+      "omega_12_error": 0,
+      "omega_20": 148.09803430841032,
+      "omega_20_error": 0,
+      "r12": {
+        "ef_amp180": 0.5029229173671139,
+        "ef_amp180_error": 0
+      },
+      "reset": {
+        "duration": 0.0004
+      },
+      "resonator_minimum": 6631044444.444445,
+      "resonator_minimum_1": 6630955555.555555,
+      "resonator_minimum_1_error": 0,
+      "resonator_minimum_error": 0,
+      "rxy": {
+        "amp180": 0.6096873555708262,
+        "amp180_error": 0,
+        "duration": 4.8e-08,
+        "motzoi": -0.11794871794871797,
+        "motzoi_error": 0
+      },
+      "spec": {
+        "spec_ampl_12_optimal": 0.006,
+        "spec_ampl_12_optimal_error": 0,
+        "spec_ampl_optimal": 0.00625,
+        "spec_ampl_optimal_error": 0,
+        "spec_duration": 6e-06
+      },
+      "t1_time": "nan",
+      "t1_time_error": "nan"
+    },
+    "q15": {
+      "Ql": 13946.775770940849,
+      "Ql_1": 7130447677.091371,
+      "Ql_1_error": 0,
+      "Ql_error": 0,
+      "VNA_f01_frequency": 4572000000.0,
+      "VNA_f12_frequency": 4320000000.0,
+      "attenuation": 8,
+      "centroid_I": 0.00304332684284721,
+      "centroid_I_error": 0,
+      "centroid_Q": -0.01218776363887684,
+      "centroid_Q_error": 0,
+      "clock_freqs": {
+        "f01": 4571728801.803842,
+        "f01_error": 0,
+        "f12": 4320209733.136258,
+        "f12_error": 0,
+        "readout": 7130573004.398576,
+        "readout_error": 0
+      },
+      "extended_clock_freqs": {
+        "readout_1": 7130447677.091371,
+        "readout_1_error": 0,
+        "readout_2": 7129595171.456918,
+        "readout_2_error": 0,
+        "readout_2state_opt": 7130544444.444445,
+        "readout_2state_opt_error": 0,
+        "readout_3state_opt": 7130011111.111111,
+        "readout_3state_opt_error": 0
+      },
+      "inv_cm_opt": 0,
+      "inv_cm_opt_error": 0,
+      "measure": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.018,
+        "pulse_amp_error": "nan",
+        "pulse_duration": 4e-06
+      },
+      "measure1": {
+        "pulse_amp": 0.018
+      },
+      "measure2": {
+        "pulse_amp": 0.018
+      },
+      "measure_1": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_duration": 4e-06
+      },
+      "measure_2state_opt": {
+        "acq_rotation": 207.18933024909524,
+        "acq_rotation_error": 0,
+        "acq_threshold": 0.00790335477873865,
+        "acq_threshold_error": 0,
+        "pulse_amp": 0.017676136363636363,
+        "pulse_amp_error": 0
+      },
+      "measure_3state_opt": {
+        "acq_delay": 2.2e-07,
+        "integration_time": 3.5e-06,
+        "pulse_amp": 0.017551724137931032,
+        "pulse_amp_error": 0,
+        "pulse_duration": 4e-06
+      },
+      "omega_01": 90.99726942196372,
+      "omega_01_error": 0,
+      "omega_12": 18.677248814134146,
+      "omega_12_error": 0,
+      "omega_20": 256.054770954933,
+      "omega_20_error": 0,
+      "r12": {
+        "ef_amp180": 0.504316597299042,
+        "ef_amp180_error": 0
+      },
+      "reset": {
+        "duration": 0.0004
+      },
+      "resonator_minimum": 7130588888.888889,
+      "resonator_minimum_1": 7130455555.555555,
+      "resonator_minimum_1_error": 0,
+      "resonator_minimum_error": 0,
+      "rxy": {
+        "amp180": 0.44949801004769113,
+        "amp180_error": 0,
+        "duration": 4.8e-08,
+        "motzoi": -0.09230769230769231,
+        "motzoi_error": 0
+      },
+      "spec": {
+        "spec_ampl_12_optimal": 0.006,
+        "spec_ampl_12_optimal_error": 0,
+        "spec_ampl_optimal": 0.0045000000000000005,
+        "spec_ampl_optimal_error": 0,
+        "spec_duration": 6e-06
+      },
+      "t1_time": "nan",
+      "t1_time_error": "nan"
+    }
+  }
+}
