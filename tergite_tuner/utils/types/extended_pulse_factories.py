@@ -85,7 +85,6 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
             t0=t0,
         )
     )
-    # )
 
     if virt_z_parent_qubit_phase is float("nan"):
         virt_z_parent_qubit_phase = 0

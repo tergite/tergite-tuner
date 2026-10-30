@@ -52,8 +52,6 @@ def test_cz_chevron_analysis_good_data(
             )
 
             assert qoi.analysis_successful
-            # assert len(cz_working_frequencies) == number_of_working_points
-            # assert len(cz_working_durations_in_ns) == number_of_working_points
             assert 715415456 in cz_working_frequencies
             assert 408 in cz_working_durations_in_ns
 

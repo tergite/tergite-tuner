@@ -49,9 +49,6 @@ def test_12_pulse_duration(seeded_redis, session_context):
     node_12 = ROAmplitudeThreeStateOptimizationNode(
         qubits, ["q13_q14"], session=session_context
     )
-    # samplespace = {
-    #     "mw_amplitudes": {qubit: np.linspace(0.002, 0.800, 3) for qubit in qubits}
-    # }
     samplespace = {  # small samplespace
         "qubit_states": {
             qubit: np.array([0, 1, 2], dtype=np.int16) for qubit in qubits

@@ -38,8 +38,6 @@ def test_cz_local_phases(redis_connection, session_context, node_data_dir):
             cz_dynamic_target = qoi.analysis_result["cz_dynamic_target"]["value"]
 
             assert qoi.analysis_successful
-            # assert pytest.approx(control_local_phase) == -135.2184
-            # assert pytest.approx(target_local_phase) == 73.0427
 
 
 def test_plotting(redis_connection, session_context, node_data_dir):

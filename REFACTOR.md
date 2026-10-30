@@ -261,7 +261,7 @@ Tests only. After this step, a refactor commit that changes behaviour fails a te
 1. **Every default node in dummy mode** (the README TODO). Built as `tests/test_tune_up.py`: one test per node in the default graph, each on the calibrated device in `standard_redis_mock.json` with `ignore_spec`, so a node does not depend on what the one before it wrote from random data. Analyses of random IQ points may fail, which is fine; the check is that the node measures, saves its dataset and analyses without raising. It takes about five minutes, so it is marked `slow`, and CI runs it. Four nodes fail, as strict `xfail`s that turn red when fixed:
    - qubit 01 spectroscopy: five 6 µs `SoftSquarePulse` amplitudes need 18,000 waveform samples, over the 16,384 limit. `test_precompile.py` missed it, as it does not apply the node config, whose 6 µs `node_config.example.toml` shares. For the testbed list.
    - AllXY and purity benchmarking (step 9.7).
-   - CZ chevron: its analysis raises `IndexError` on data it cannot fit (`analysis.py:217`), where it should fail the QOI.
+   - CZ chevron: its analysis raised `IndexError` on data it could not fit (`analysis.py:217`); fixed in step 4.3, as the line was dead.
 
    Found besides: `NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT` maps to the class named `coupler_anticrossing`. It saves and marks its status under that name, while `inspect_node` reads the status under the enum's, so the node never counts as calibrated. Fixed with a test in step 9.
 2. **Golden reanalysis per node.**
@@ -527,7 +527,7 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 7. **Fix AllXY and Purity** (step 0.7), with a recorded dataset each, so a run that targets them completes.
 8. **One name per node.** `NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT` and `COUPLER_ANTICROSSING` share the class named `coupler_anticrossing` (step 2.1), so the first is never marked calibrated. Give it its own node, or drop the alias from the graph. A test first: run it, then check `inspect_node` sees it in spec.
 9. **Qubit 01 spectroscopy's waveform memory** (step 2.1): on the testbed, check the spectroscopy duration the real node config uses, then switch to `long_square_pulse` at or below 6 µs, or sweep fewer amplitudes, and remove its `xfail`.
-10. **The CZ chevron analysis fails its QOI** on data it cannot fit, instead of raising (step 2.1), and its `xfail` goes.
+10. ~~The CZ chevron analysis raised on data it could not fit~~: its `IndexError` came from a dead `np.linspace` over the working frequencies, removed in step 4.3.
 11. **The T2 and two-qubit RB analyses fail their QOI** on data they cannot fit, instead of raising: on some draws of random IQ points each raised `ZeroDivisionError` (step 3.5). A test with such data first.
 
 ## Step 10: tests in the right place

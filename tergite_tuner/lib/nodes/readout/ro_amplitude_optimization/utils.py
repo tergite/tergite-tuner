@@ -40,7 +40,6 @@ def align_on_y_axis(
             [np.sin(np.pi), np.cos(np.pi)],
         ]
     )
-    # translated_IQ = iq_points - np.array([0, y_intercept])
     translated_IQ = iq_points
     rotated_IQ = translated_IQ @ rotation_matrix.T
 

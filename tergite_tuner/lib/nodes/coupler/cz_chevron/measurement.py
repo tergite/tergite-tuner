@@ -80,8 +80,6 @@ class CZChevronMeasurement(BaseMeasurement):
                 for qubit in qubits:
                     operation_11 = cz_schedule.add(X(qubit), ref_op=starting_op)
 
-                # cz_schedule.add(ResetClockPhase(clock=coupler + ".cz"))
-
                 flux_pulse = cz_schedule.add(
                     SoftSquarePulse(
                         duration=cz_duration,
@@ -90,8 +88,6 @@ class CZChevronMeasurement(BaseMeasurement):
                         clock=cz_clock,
                     ),
                     ref_op=operation_11,
-                    # ref_pt="start",
-                    # rel_time=28e-9,
                 )
 
                 for this_qubit in qubits:

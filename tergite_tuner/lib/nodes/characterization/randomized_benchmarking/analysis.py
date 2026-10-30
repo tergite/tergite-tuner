@@ -182,7 +182,6 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
             self.standard_fit_y,
             "b--",
             lw=2,
-            # label=f"p = {self.fidelity:.4f} ± {self.fidelity_error:.4f}",
             label=rf"$p_{{SRB}}$ = {self.standard_p_value:.4f}",
         )
         ax.plot(

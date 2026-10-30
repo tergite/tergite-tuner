@@ -197,7 +197,6 @@ tergite_tuner/lib/nodes/coupler/cz_calibration/node.py: RET504 Unnecessary assig
 tergite_tuner/lib/nodes/coupler/cz_calibration/node.py: RET504 Unnecessary assignment to `working_points_fixed_duration_array` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_calibration/tests/test_analysis.py: F401 `os` imported but unused
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: E722 Do not use bare `except`
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: F841 Local variable `parabolic_fit_frequencies` is assigned to but never used
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_chevron/node.py: RET504 Unnecessary assignment to `known_cz_frequency` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_chevron/tests/test_analysis.py: ARG001 Unused function argument: `session_context`

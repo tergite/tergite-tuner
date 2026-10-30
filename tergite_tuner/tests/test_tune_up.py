@@ -39,7 +39,6 @@ _KNOWN_FAILURES = {
     NodeEnum.QUBIT_01_SPECTROSCOPY: "five 6 us spectroscopy amplitudes overflow the waveform memory",
     NodeEnum.ALL_XY: "AllXY cannot run (step 9.7)",
     NodeEnum.PURITY_BENCHMARKING: "purity benchmarking cannot run (step 9.7)",
-    NodeEnum.CZ_CHEVRON: "the CZ chevron analysis raises on data it cannot fit",
 }
 _DEFAULT_NODES = [
     pytest.param(

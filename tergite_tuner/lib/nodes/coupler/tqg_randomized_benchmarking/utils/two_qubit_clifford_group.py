@@ -515,8 +515,6 @@ class TwoQubitClifford(Clifford):
         C1_q1 = [(g, "q1") for g in gate_decomposition[idx_q1]]
         CZ = [("CZ", ["q0", "q1"])]
 
-        # sq_swap_gates_0 = np.kron(Y90, mY90)
-
         sqs_idx_q0 = SingleQubitClifford._get_clifford_id(mY90)
         sqs_idx_q1 = SingleQubitClifford._get_clifford_id(Y90)
         sq_swap_gates_0_q0 = [(g, "q0") for g in gate_decomposition[sqs_idx_q0]]

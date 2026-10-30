@@ -333,10 +333,6 @@ class SineOscillatingModel(lmfit.model.Model):
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
-# def chevron_func(x, x0, amplitude, offset):
-#     return -amplitude * np.sqrt((x - x0) ** 2) + offset
-
-
 def parabolic(x, x0=0, a=0.0, c=0.0):
     """Return a parabolic function.
 

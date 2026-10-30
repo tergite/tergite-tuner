@@ -47,7 +47,6 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
                 self.magnitudes[self.data_var].isel({self.detuning_coord: indx}).values
             )
 
-            # magnitudes = np.array(np.absolute(complex_values.values).flat)
             guess = model.guess(magnitudes, t=ramsey_delays)
             fit_result = model.fit(magnitudes, params=guess, t=ramsey_delays)
             fit_y = model.eval(

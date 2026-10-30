@@ -4,13 +4,13 @@ banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:316
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:319
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py:154
-banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py:550
-banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py:553
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py:548
+banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py:551
 banner: tergite_tuner/utils/cliffords.py:19
 banner: tergite_tuner/utils/cliffords.py:23
 banner: tergite_tuner/utils/types/extended_transmon.py:124
-banner: tergite_tuner/utils/types/extended_transmon.py:157
-banner: tergite_tuner/utils/types/extended_transmon.py:192
+banner: tergite_tuner/utils/types/extended_transmon.py:154
+banner: tergite_tuner/utils/types/extended_transmon.py:188
 banner: tergite_tuner/utils/types/extended_transmon.py:93
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
 boolean: tergite_tuner/config/session.py::SessionContext.save_plot

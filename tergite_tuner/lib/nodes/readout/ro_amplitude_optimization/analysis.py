@@ -135,7 +135,6 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
         self.iq1_fp = array_iq1_fp
         self.optimal_index = np.argmax(self.fidelities)
         self.optimal_amplitude = self.amplitudes.values[self.optimal_index]
-        # self.optimal_inv_cm = inv(self.cms[self.optimal_index])
 
         return
 
@@ -359,7 +358,6 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         inv_cm_str: str
             string encoding of the confusion matrix
         """
-        # super().analyse_qubit()
         self.populate_coords()
         self.three_state_classification()
 

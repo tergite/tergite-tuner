@@ -64,8 +64,6 @@ class ExternalParameterNode(MeasurementType):
             )
             element_dict = list(self.node.reduced_external_samplespace.values())[0]
 
-            # current_value = list(element_dict.values())[0]
-
             self.node.pre_measurement_operation(
                 reduced_ext_space=self.node.reduced_external_samplespace
             )
@@ -76,7 +74,6 @@ class ExternalParameterNode(MeasurementType):
                 measurement=(this_interation_index, all_iterations),
             )
 
-            # ds = ds.expand_dims({external_dim: np.array([current_value])})
             for external_dim in self.node.reduced_external_samplespace:
                 # NOTE: this assumes the external values are the same for all elements
                 ext_value = list(

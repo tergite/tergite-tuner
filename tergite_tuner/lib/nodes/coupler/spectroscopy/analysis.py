@@ -318,8 +318,6 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
         spurious_threshold = 4000
         min_interval = 0.0005  # Adjust based on data range
 
-        # control_qubit_magnitudes = xarray.ufuncs.abs(self.control_qubit_data_var)
-        # target_qubit_magnitudes = xarray.ufuncs.abs(self.target_qubit_data_var)
         self.control_qubit_detected_frequencies, self.target_qubit_detected_currents = (
             self.detect_peaks(self.control_qubit_data_var)
         )

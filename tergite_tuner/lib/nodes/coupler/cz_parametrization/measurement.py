@@ -86,9 +86,6 @@ class CZParametrizationMeasurement(BaseMeasurement):
                     for this_qubit in qubits:
                         operation_11 = cz_schedule.add(X(this_qubit), ref_op=relaxation)
 
-                    # TODO: does this do anything?
-                    # cz_schedule.add(ResetClockPhase(clock=self.coupler + ".cz"))
-
                     flux_pulse = cz_schedule.add(
                         SoftSquarePulse(
                             duration=cz_half_duration,
@@ -97,8 +94,6 @@ class CZParametrizationMeasurement(BaseMeasurement):
                             clock=cz_clock,
                         ),
                         ref_op=operation_11,
-                        # ref_pt="start",
-                        # rel_time=28e-9,
                     )
 
                     for this_qubit in qubits:

@@ -100,9 +100,7 @@ class CZCalibrationMeasurement(BaseMeasurement):
                     else:
                         initial = shot.add(IdlePulse(r_xy_duration), ref_op=starting_op)
 
-                    # shot.add(IdlePulse(20e-9))
                     shot.add(ResetClockPhase(clock=cz_clock), ref_op=initial)
-                    # shot.add(IdlePulse(20e-9))
                     cz = shot.add(
                         SoftSquarePulse(
                             duration=cz_duration,

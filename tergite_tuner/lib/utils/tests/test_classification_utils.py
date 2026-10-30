@@ -20,11 +20,6 @@ from tergite_tuner.lib.utils.classification_functions import assign_state
 
 def test_assign_state(redis_connection):
     qubit = "q06"
-    # centroid_I = 1
-    # centroid_Q = 0
-    # omega_01 = 330
-    # omega_12 = 180
-    # omega_20 = 90
     redis_connection.hset(f"transmons:{qubit}", "centroid_I", "1")
     redis_connection.hset(f"transmons:{qubit}", "centroid_Q", "0")
     redis_connection.hset(f"transmons:{qubit}", "omega_01", "330")

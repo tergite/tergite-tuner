@@ -128,7 +128,6 @@ class ExtendedTransmon(BasicTransmonElement):
                 "acq_delay": self.measure.acq_delay(),
                 "acq_duration": self.measure.integration_time(),
                 "acq_channel": self.measure.acq_channel(),
-                # 'acq_channel_override': None,
                 "acq_protocol_default": "SSBIntegrationComplex",
                 "reset_clock_phase": self.measure.reset_clock_phase(),
                 "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
@@ -137,8 +136,6 @@ class ExtendedTransmon(BasicTransmonElement):
                 "acq_weights_a": self.measure.acq_weights_a(),
                 "acq_weights_b": self.measure.acq_weights_b(),
                 "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
-                # 'acq_rotation': self.measure.acq_rotation(),
-                # 'acq_threshold': self.measure.acq_threshold(),
             },
             gate_info_factory_kwargs=[
                 "acq_channel_override",
@@ -161,7 +158,6 @@ class ExtendedTransmon(BasicTransmonElement):
                     "acq_delay": self.measure_2state_opt.acq_delay(),
                     "acq_duration": self.measure_2state_opt.integration_time(),
                     "acq_channel": self.measure_2state_opt.acq_channel(),
-                    # 'acq_channel_override': None,
                     "acq_protocol_default": "SSBIntegrationComplex",
                     "reset_clock_phase": self.measure_2state_opt.reset_clock_phase(),
                     "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
@@ -196,7 +192,6 @@ class ExtendedTransmon(BasicTransmonElement):
                     "acq_delay": self.measure_3state_opt.acq_delay(),
                     "acq_duration": self.measure_3state_opt.integration_time(),
                     "acq_channel": self.measure_3state_opt.acq_channel(),
-                    # 'acq_channel_override': None,
                     "acq_protocol_default": "SSBIntegrationComplex",
                     "reset_clock_phase": self.measure_3state_opt.reset_clock_phase(),
                     "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
@@ -205,8 +200,6 @@ class ExtendedTransmon(BasicTransmonElement):
                     "acq_weights_a": self.measure_3state_opt.acq_weights_a(),
                     "acq_weights_b": self.measure_3state_opt.acq_weights_b(),
                     "acq_weights_sampling_rate": self.measure_3state_opt.acq_weights_sampling_rate(),
-                    # 'acq_rotation': self.measure_3state_opt.acq_rotation(),
-                    # 'acq_threshold': self.measure_3state_opt.acq_threshold(),
                 },
                 gate_info_factory_kwargs=[
                     "acq_channel_override",

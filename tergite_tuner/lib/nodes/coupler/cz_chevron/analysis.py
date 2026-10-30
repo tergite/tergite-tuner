@@ -113,13 +113,6 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         cz_working_durations_in_ns = (integer_gate_durations_in_ns // 4) * 4
         cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
 
-        # # fit the working points to a parabola model to extract the peak of the chevron
-        # parabolic_fit = self.apply_parabolic_fit(
-        #     cz_duration_values, cz_working_frequencies
-        # )
-        # selected_cz_frequencies = parabolic_fit.selected_cz_frequencies
-        # selected_cz_durations_in_ns = parabolic_fit.selected_cz_durations
-
         selected_cz_frequencies = cz_working_frequencies
         selected_cz_durations_in_ns = cz_working_durations_in_ns
 
@@ -160,27 +153,13 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         )
 
         fig = plt.gcf()
-        parabolic_fit_frequencies = np.linspace(
-            self.cz_working_frequencies[0], self.cz_working_frequencies[-1], 100
-        )
-        # parabolic_fit_durations = self.chevron_fit_result.eval(
-        #     self.chevron_fit_result.params, x=parabolic_fit_frequencies
-        # )
-
         # if there are no working points return only the faceting plot
         if self.cz_working_durations_in_ns.size == 0:
             figures_dictionary[self.coupler] = [fig]
             return
 
-        # for every one of the six faceting axes, plot the working points and
-        # their parabolic fit
+        # plot the working points on every one of the six faceting axes
         for ax in fig.axes:
-            # ax.plot(
-            #     parabolic_fit_frequencies,
-            #     parabolic_fit_durations,
-            #     color="grey",
-            #     lw=5,
-            # )
             ax.plot(
                 self.cz_working_frequencies,
                 self.cz_working_durations_in_ns * 1e-9,

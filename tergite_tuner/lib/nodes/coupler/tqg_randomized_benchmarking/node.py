@@ -52,7 +52,6 @@ class CZRBNode(CouplerNode):
         self.schedule_keywords["loop_repetitions"] = self.loops
         self.coupled_qubits = self.get_coupled_qubits()
         self.all_qubits = self.coupled_qubits
-        #    self.schedule_keywords["interleaving_clifford_id"] = 4386 #leaving it as a reminder
         self.schedule_keywords["coupler_dict"] = self.gate_qubit_types_dict()
 
         self.outer_schedule_samplespace = {
@@ -64,7 +63,6 @@ class CZRBNode(CouplerNode):
 
         self.schedule_samplespace = {
             "number_of_cliffords": {
-                # coupler: np.array([0, 2, 4, 8, 16, 32, 64, 128])
                 coupler: np.array([0, 1, 2, 3, 4, 8, 16, 32, 48, 64])
                 for coupler in self.couplers
             },

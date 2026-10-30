@@ -64,7 +64,6 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
             An experiment schedule.
         """
 
-        # if port_out is None: port_out = port
         schedule = Schedule("qubit_spectroscopy", repetitions)
 
         # Initialize the clock for each qubit

@@ -85,9 +85,6 @@ class OuterScheduleNode(MeasurementType):
                 current_value_multi_index = pandas.MultiIndex.from_tuples(
                     [current_value], names=["l1", "l2"]
                 )
-                # current_value = xarray.Coordinates.from_pandas_multiindex(
-                #     current_value_multi_index, outer_dim
-                # )
                 ds = ds.expand_dims({outer_dim: current_value_multi_index})
                 ds = ds.assign_coords(
                     {outer_dim: (outer_dim, current_value_multi_index)}
