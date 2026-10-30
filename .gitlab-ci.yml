@@ -24,6 +24,9 @@ variables:
 test_lint_build:
   stage: test_lint_build
   image: python:${PYTHON_VERSION}
+  variables:
+    # measures the same lines as coverage's default core, at almost none of its cost
+    COVERAGE_CORE: sysmon
   script:
     # The test suite uses fakeredis, so we don't install / run a real
     # redis server here. ``ffmpeg``/``libsm6``/``libxext6`` are kept
