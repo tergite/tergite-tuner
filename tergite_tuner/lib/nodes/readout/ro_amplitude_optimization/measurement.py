@@ -12,9 +12,9 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
 
 from tergite_tuner.backend import (
+    BinMode,
     ClockResource,
     DRAGPulse,
     ExtendedTransmon,

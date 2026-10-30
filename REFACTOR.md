@@ -370,7 +370,7 @@ tergite_tuner/backend/
 3. **`run_schedule`** replaces `execute_schedule`:
    - It drops the fake progress thread (`schedule_execution.py:37-49`), which only sleeps for the estimated duration. Log the estimate instead, or use the coordinator's real progress if it reports any.
    - The hard-coded 3600 s wait becomes the schedule's estimated duration plus the session's `cluster_timeout`. `cluster_timeout` alone (222 s by default) is shorter than punchout's 264 s schedule.
-4. **`AcquisitionMode`**, our own enum, replaces `BinMode` (22 uses). It is mapped to the scheduler's own setting in one place.
+4. **`BinMode`** comes from `tergite_tuner.backend` (22 uses). An `AcquisitionMode` enum of our own was planned, but every use passes it straight to a scheduler operation's `bin_mode`, so it would need wrapping each of those operations to translate it back; the re-export gives step 11 the same one place to change.
 5. **Shared schedule building blocks**, one commit each, moving every measurement onto them:
    - `get_multiplexed_schedule(name, transmons, sweeps, add_point, repetitions)` replaces the skeleton all 10 readout and qubit-control schedules copy: root reset, per-qubit reset, the nested sweep with its `acq_index` arithmetic, measure, reset. It iterates in the order `configure_dataset` reshapes (`order="F"`), so that ordering lives in one place.
    - `prepare_state(schedule, transmon, state)`, `get_drive_clock(qubit, state)`, `get_measure_operation(state)` and `add_12_clocks(schedule, transmons)` replace the 0/1/2-state dispatch copied in 8 measurements. The ef π DRAG pulse alone is built 4 times.

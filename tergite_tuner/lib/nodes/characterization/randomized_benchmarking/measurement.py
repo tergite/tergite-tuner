@@ -20,9 +20,9 @@ Module containing a schedule class for randomized benchmarking measurement.
 from typing import Literal
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
 
 from tergite_tuner.backend import (
+    BinMode,
     ExtendedTransmon,
     IdlePulse,
     Loop,

@@ -19,12 +19,12 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
-from quantify_scheduler.enums import BinMode
 
 from tergite_tuner.backend import (
     CZ,
     X90,
     Y90,
+    BinMode,
     ClockResource,
     ExtendedCompositeSquareEdge,
     ExtendedTransmon,

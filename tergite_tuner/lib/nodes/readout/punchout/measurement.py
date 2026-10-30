@@ -15,9 +15,9 @@ Module containing a schedule class for punchout (readout amplitude) calibration.
 """
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
 
 from tergite_tuner.backend import (
+    BinMode,
     ClockResource,
     Reset,
     Schedule,

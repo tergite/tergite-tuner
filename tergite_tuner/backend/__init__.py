@@ -15,6 +15,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox.operations.pulse_factories import (
     long_square_pulse,
 )
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import Loop, LoopOperation
 from quantify_scheduler.operations.gate_library import (
@@ -51,6 +52,7 @@ from .gates import Measure_RO1, Measure_RO_3state_Opt
 from .transmon import ExtendedTransmon
 
 __all__ = [
+    "BinMode",
     "CZ",
     "ClockResource",
     "CompiledSchedule",

@@ -16,9 +16,9 @@ Module containing a schedule class for two-tone (qubit) spectroscopy calibration
 """
 
 import numpy as np
-from quantify_scheduler.enums import BinMode
 
 from tergite_tuner.backend import (
+    BinMode,
     ClockResource,
     ExtendedTransmon,
     Measure,
