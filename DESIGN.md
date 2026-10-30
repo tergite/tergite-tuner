@@ -102,7 +102,7 @@ Each can also be passed as an object. The README shows both.
 
 ## 6. Testing
 
-`pytest tergite_tuner -n auto`, in parallel with pytest-xdist and with fakeredis, so no Redis server is needed. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
+`pytest tergite_tuner -n auto`, in parallel with pytest-xdist and with fakeredis, so no Redis server is needed. CI runs it serially: in its containers, parallel runs were slower. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
 
 - Each node's tests live in its `tests/` folder, beside the recorded datasets they analyse (`tests/data/`).
 - Shared helpers live in `tergite_tuner/tests/utils/`, grouped by what they do: `fixtures.py`, `redis.py`, `pytest.py`.

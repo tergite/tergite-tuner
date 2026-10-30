@@ -312,7 +312,7 @@ The refactor must lower neither.
    - `pytest-xdist` (`-n auto`), once the tests that share module state (`ExtendedTransmon.close_all()`, the global matplotlib backend) are isolated.
    - A `slow` marker for the compile-everything tests, so the per-commit run can skip them while CI runs all of them.
    - Record the suite's wall time in `dev/perf/baselines/` with the rest, so the refactor does not slow it down.
-   - Built: compiling every outer-sweep point is marked `slow` (`f2734497`), which took the suite without slow tests from about 3 min to 71 s, and pytest-xdist runs it in parallel: 35 s for the fast tests and 1 m 45 s for everything, on 12 cores, against about 8 min serially. The run in parallel surfaced unseeded dummy data, now seeded (`3ca8cbb4`). Fixtures were not session-scoped: no fixture costs more than the tests it would share.
+   - Built: compiling every outer-sweep point is marked `slow` (`f2734497`), which took the suite without slow tests from about 3 min to 71 s, and pytest-xdist runs it in parallel: 35 s for the fast tests and 1 m 45 s for everything, on 12 cores, against about 8 min serially. The run in parallel surfaced unseeded dummy data, now seeded (`3ca8cbb4`). CI runs serially: in GitLab's containers, `-n auto` made the job slower, likely because each worker pays the 5–8 s import and the container has few cores. Fixtures were not session-scoped: no fixture costs more than the tests it would share.
 
 ## Step 4: delete what nothing uses
 
