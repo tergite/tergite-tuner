@@ -326,3 +326,11 @@ class SineOscillatingModel(lmfit.model.Model):
 
         params = self.make_params()
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
+
+
+def fit_sine_phase(
+    model: lmfit.Model, data: np.ndarray, x: np.ndarray, plot_x: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """The phase ``model`` fits to ``data`` over ``x``, and its fit over ``plot_x``, as ``xr.apply_ufunc`` takes them."""
+    fit = model.fit(data, params=model.guess(data, x=x), x=x)
+    return np.array([fit.values["phase"]]), np.array([model.eval(fit.params, x=plot_x)])

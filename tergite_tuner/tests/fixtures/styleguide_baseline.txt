@@ -111,13 +111,11 @@ type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.__i
 type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.guess
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.single_qubit_T2_echo
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
-type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.apply_sine_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.ro_shot
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_sinusoidal_slices_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.sinusoidal_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.ro_shot
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationAnalysis.calculate_probabilities
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter
@@ -204,7 +202,6 @@ verb: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAn
 verb: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::CZChevronMeasurement.cz_chevron
 verb: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::CZChevronMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.plotter
-verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.sinusoidal_fit
 verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter

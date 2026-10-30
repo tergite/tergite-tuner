@@ -12,6 +12,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
@@ -19,7 +20,10 @@ import numpy as np
 import xarray as xr
 
 from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
-from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
+from tergite_tuner.lib.utils.analysis_models import (
+    SineOscillatingModel,
+    fit_sine_phase,
+)
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 
 if TYPE_CHECKING:
@@ -31,17 +35,6 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
         super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("phase", min=-360, max=360, vary=True)
-
-    def apply_sine_fit(self, data):
-        guess = self.model.guess(data, x=self.target_phases)
-        fit = self.model.fit(
-            data,
-            params=guess,
-            x=self.target_phases,
-        )
-        phase = fit.values["phase"]
-        fit_data = self.model.eval(fit.params, x=self.fit_plot_phases)
-        return np.array([phase]), np.array([fit_data])
 
     def analyse(self) -> Fits | None:
 
@@ -79,7 +72,12 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
 
         # self.phi_0 is the global phase of each for the |0> state of the target qubit
         self.phi_0, target_plot_points_0 = xr.apply_ufunc(
-            self.apply_sine_fit,
+            partial(
+                fit_sine_phase,
+                self.model,
+                x=self.target_phases,
+                plot_x=self.fit_plot_phases,
+            ),
             data_target_0,
             input_core_dims=[[self.target_phase_coord]],
             output_core_dims=[["phases"], ["plot_points"]],
