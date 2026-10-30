@@ -34,6 +34,8 @@ from tergite_tuner.tests.utils.state import loaded_state
 GOLDENS_DIR = Path(get_fixture_path("goldens"))
 # relative tolerance across platforms' floating point and fitting libraries
 TOLERANCE = 1e-6
+# fitted values the data constrains loosely, which platforms' last bits move further
+LOOSE_TOLERANCES = {"Ql": 1e-3}
 
 
 @pytest.mark.parametrize("case", RECORDED_DATASETS)
@@ -52,9 +54,12 @@ def test_reanalysis_gives_the_golden_qois(case, session_context, tmp_path):
     assert {k: v for k, v in values.items() if k not in numbers} == {
         k: v for k, v in golden.items() if k not in numbers
     }
-    assert {k: values.get(k) for k in numbers} == pytest.approx(
-        {k: golden[k] for k in numbers}, rel=TOLERANCE
-    )
+    assert {k: values.get(k) for k in numbers} == {
+        k: pytest.approx(
+            golden[k], rel=LOOSE_TOLERANCES.get(k.split("/")[1], TOLERANCE)
+        )
+        for k in numbers
+    }
 
 
 def _get_flat_values(qois: dict) -> dict:
