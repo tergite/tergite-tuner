@@ -33,6 +33,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Fixed
 
+- Rounded CZ chevron's working durations down to 4 ns from whole nanoseconds; floating-point division turned an exact 100 ns into 99, and so 96
 - Logged each run to the console at `STDOUT_LOG_LEVEL` and to `tergite_tuner.log` in its folder at `FILE_LOG_LEVEL`; both settings were ignored and the tuner set up no logging, and importing it made `ExtendedLogger` the class of every logger made after
 - Failed the T2 and CZ RB fits on data they cannot fit, where they raised `ZeroDivisionError`: a T2 repetition with no oscillation, a CZ RB standard decay fitted to zero
 - Stored qubit spectroscopy vs current's results and status under its own name; they went under `coupler_anticrossing`, so the node was never in spec

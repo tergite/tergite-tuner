@@ -128,3 +128,7 @@ def test_each_qubit_leads_from_its_1_to_its_end_of_the_phase_path():
 
     assert control_lead.item() == pytest.approx(0.7 - 0.2)
     assert target_lead.item() == pytest.approx(0.6 - 0.3)
+
+
+def test_a_whole_nanosecond_duration_keeps_its_nanoseconds():
+    assert get_durations_in_ns(np.array([100e-9])).tolist() == [100]

@@ -154,4 +154,6 @@ def get_chevron_leads(
 
 def get_durations_in_ns(durations: np.ndarray) -> np.ndarray:
     """Durations in seconds, rounded down to whole nanoseconds and then to multiples of 4 ns."""
-    return ((durations // 1e-9).astype(int) // 4) * 4
+    # rounded to a millionth of a nanosecond first, so 100e-9 is 100 ns, not 99
+    nanoseconds = np.floor(np.round(durations * 1e9, 6)).astype(int)
+    return (nanoseconds // 4) * 4
