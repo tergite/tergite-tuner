@@ -33,7 +33,7 @@ import tomlkit
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
 from tergite_tuner.config.session import SessionContext, SessionOptions
-from tergite_tuner.storage.redis import QueryOptions
+from tergite_tuner.storage import QueryOptions
 
 _CalibValueType = TypeVar("_CalibValueType", int, float, str)
 _NodeState = Literal["calibrated", "not_calibrated"]

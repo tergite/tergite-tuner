@@ -14,7 +14,7 @@
 
 The suite covers per-type round-tripping, the layout contract that lets the
 store drop in for the legacy ``_save_parameters_*`` helpers, and the merge /
-reset semantics of ``save_many``.
+``should_reset`` semantics of ``save_many``.
 """
 
 import ast
@@ -175,7 +175,7 @@ def test_legacy_value_without_types_sidecar_reads_as_raw_string(
 
 
 def test_save_many_default_merges_into_existing_pk(store):
-    """The default ``reset=False`` overwrites same-named fields, adds new
+    """The default ``should_reset=False`` overwrites same-named fields, adds new
     fields, and leaves untouched fields in place."""
     store.save_many(
         {
@@ -203,7 +203,7 @@ def test_save_many_default_merges_into_existing_pk(store):
 
 
 def test_save_many_reset_wipes_pk_before_writing(redis_connection, store):
-    """``reset=True`` deletes both the canonical hash and its types sidecar
+    """``should_reset=True`` deletes both the canonical hash and its types sidecar
     before writing, so stale fields and their type labels are gone."""
     store.save_many(
         {
@@ -215,7 +215,7 @@ def test_save_many_reset_wipes_pk_before_writing(redis_connection, store):
             }
         }
     )
-    store.save_many({"transmons": {"q01": {"only": 1.0}}}, reset=True)
+    store.save_many({"transmons": {"q01": {"only": 1.0}}}, should_reset=True)
     assert store.read_field("transmons", "q01", "only") == 1.0
     assert store.read_field("transmons", "q01", "clock_freqs:f01") is None
     assert store.read_field("transmons", "q01", "clock_freqs:f12") is None
@@ -223,10 +223,10 @@ def test_save_many_reset_wipes_pk_before_writing(redis_connection, store):
 
 
 def test_save_many_reset_only_affects_listed_pks(store):
-    """``reset=True`` only resets the primary keys passed in this call; other
+    """``should_reset=True`` only resets the primary keys passed in this call; other
     pks in the same collection are left alone."""
     store.save_many({"transmons": {"q01": {"x": 1.0}, "q02": {"x": 2.0}}})
-    store.save_many({"transmons": {"q01": {"new": 7.0}}}, reset=True)
+    store.save_many({"transmons": {"q01": {"new": 7.0}}}, should_reset=True)
     assert store.read_field("transmons", "q02", "x") == 2.0
     assert store.read_field("transmons", "q01", "x") is None
     assert store.read_field("transmons", "q01", "new") == 7.0

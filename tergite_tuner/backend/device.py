@@ -22,7 +22,7 @@ from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEnc
 from tergite_tuner.backend import transmon as transmon_module
 from tergite_tuner.backend.edge import ExtendedCompositeSquareEdge
 from tergite_tuner.backend.transmon import ExtendedTransmon
-from tergite_tuner.storage.redis import RedisStore
+from tergite_tuner.storage import Store
 from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
@@ -92,7 +92,7 @@ def save_serial_device(device: QuantumDevice, data_path: str) -> None:
 
 
 def _load_transmon_from_redis(
-    redis_store: RedisStore,
+    redis_store: Store,
     qubit: str,
     channel: int,
 ) -> ExtendedTransmon:
@@ -140,13 +140,13 @@ def _load_transmon_from_redis(
 
 
 def _load_coupler_from_redis(
-    redis_store: RedisStore, coupler: str
+    redis_store: Store, coupler: str
 ) -> ExtendedCompositeSquareEdge:
     """Loads the coupler from redis store
 
     Args:
         coupler: the coupler name of format qXX_qXX
-        redis_store: the RedisStore instance
+        redis_store: the store
 
     Returns:
         the ExtendedCompositeSquareEdge instance

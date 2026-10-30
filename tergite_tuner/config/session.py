@@ -69,6 +69,7 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_DAG_EDGES,
     NodeSpec,
 )
+from tergite_tuner.storage import Store
 from tergite_tuner.storage.redis import RedisStore
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -233,7 +234,7 @@ class SessionContext(BaseSettings):
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
     _redis: Optional[Redis] = PrivateAttr(default=None)
-    _redis_store: RedisStore = PrivateAttr(default=None)
+    _redis_store: Store | None = PrivateAttr(default=None)
 
     @field_validator(
         "device_config", "node_config", "spi_config", "cluster_config", mode="before"
@@ -302,7 +303,7 @@ class SessionContext(BaseSettings):
         return self._redis
 
     @property
-    def redis_store(self) -> RedisStore:
+    def redis_store(self) -> Store:
         """The redis store instance that handles data persistence"""
         if self._redis_store is None:
             self._redis_store = RedisStore(self.redis)

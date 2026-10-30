@@ -23,27 +23,20 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Literal,
     Mapping,
     Optional,
-    Protocol,
     Sequence,
     Tuple,
-    TypedDict,
-    Union,
 )
 
 import numpy as np
 from redis import Redis
 
+from tergite_tuner.storage.store import Collection, QueryFunc, Records, Store, Value
 from tergite_tuner.utils.dicts import insert_nested_key
 
 np.set_printoptions(legacy="1.25")
 
-
-_Value = Union[str, float, int, bool, list, dict, None]
-_Collection = Literal["transmons", "couplers", "cs"]
-RedisStoreQueryResult = Mapping[_Collection, Mapping[str, Mapping[str, _Value]]]
 
 _ALL_COLLECTIONS = ("transmons", "couplers", "cs")
 
@@ -230,24 +223,7 @@ return item_count
 """
 
 
-class QueryOptions(TypedDict, total=False):
-    collection: _Collection
-    pk: str
-    field: str
-    value: _Value
-
-
-class RedisStoreQueryFunc(Protocol):
-    """Matches the fields that should be returned by a query
-
-    It returns true if the value should be added to the resulting
-    dictionary of Dict[collection, Dict[pk, Dict[field, _Value]]]
-    """
-
-    def __call__(self, opts: QueryOptions) -> bool: ...
-
-
-class RedisStore:
+class RedisStore(Store):
     """Store to handle persisting and querying data from Redis."""
 
     def __init__(self, connection: Redis):
@@ -260,7 +236,7 @@ class RedisStore:
         self._delete_hashes_script = connection.register_script(_DELETE_HASHES_LUA)
 
     def save_field(
-        self, collection: _Collection, pk: str, field_path: str, value: _Value
+        self, collection: Collection, pk: str, field_path: str, value: Value
     ) -> None:
         """Save a field to Redis.
 
@@ -278,7 +254,7 @@ class RedisStore:
         )
 
     def prune_fields(
-        self, collection: _Collection, pk: str, field_paths: Sequence[str]
+        self, collection: Collection, pk: str, field_paths: Sequence[str]
     ) -> int:
         """Delete fields from a Redis hash
 
@@ -297,7 +273,7 @@ class RedisStore:
             args=list(field_paths),
         )
 
-    def read_field(self, collection: _Collection, pk: str, field_path: str) -> _Value:
+    def read_field(self, collection: Collection, pk: str, field_path: str) -> Value:
         """Extract a field from Redis.
 
         Args:
@@ -316,22 +292,22 @@ class RedisStore:
         )
         return _deserialize(raw, label)
 
-    def save_many(self, obj: RedisStoreQueryResult, reset: bool = False) -> None:
+    def save_many(self, records: Records, should_reset: bool = False) -> None:
         """Save many records to Redis, with the records nested in their collections
 
         Args:
-            obj: the object to save. It is of format
-                ``Mapping[collection, Mapping[primary_key, Mapping[field_name, _Value]]]``
-            reset: if ``True`` every primary key in ``obj`` is wiped (the
+            records: the records to save. It is of format
+                ``Mapping[collection, Mapping[primary_key, Mapping[field_name, Value]]]``
+            should_reset: if ``True`` every primary key in ``records`` is wiped (the
                 canonical hash and its types sidecar are deleted) before the
                 new fields are written, yielding a fresh record. If ``False``
                 (default) the new fields are merged on top of any pre-existing
                 record: fields that share a name are overwritten and the rest
                 are left untouched.
         """
-        reset_flag = int(reset)
+        reset_flag = int(should_reset)
 
-        for collection, record_list in obj.items():
+        for collection, record_list in records.items():
             for pk, record in record_list.items():
                 redis_args = list(_to_redis_args(record))
                 field_count = len(redis_args) / 2
@@ -344,10 +320,10 @@ class RedisStore:
 
     def find_many(
         self,
-        collection: Optional[_Collection] = None,
+        collection: Optional[Collection] = None,
         pks: Optional[Sequence[str]] = None,
-        query: Optional[RedisStoreQueryFunc] = None,
-    ) -> RedisStoreQueryResult:
+        query: Optional[QueryFunc] = None,
+    ) -> Records:
         """Read all objects from Redis matching ``query``.
 
         Args:
@@ -358,14 +334,14 @@ class RedisStore:
 
         Returns:
             a dictionary of format
-            ``Dict[collection, Dict[primary_key, Dict[field_name, _Value]]]``.
+            ``Dict[collection, Dict[primary_key, Dict[field_name, Value]]]``.
         """
         pattern = "*" if not collection else f"{collection}:*"
         result = {}
 
         if pks:
             # if pks are provided, skip the scan
-            collections: Tuple[_Collection] = (
+            collections: Tuple[Collection] = (
                 (collection,) if collection else _ALL_COLLECTIONS
             )
             hash_keys = (
@@ -383,7 +359,7 @@ class RedisStore:
 
             try:
                 record = self._find_by_hash_key(key)
-                collection, pk = key.split(":", maxsplit=1)  # type: _Collection, str
+                collection, pk = key.split(":", maxsplit=1)  # type: Collection, str
             except (KeyError, ValueError):
                 continue
 
@@ -402,7 +378,7 @@ class RedisStore:
 
         return result
 
-    def find_one(self, collection: _Collection, pk: str) -> Mapping[str, _Value]:
+    def find_one(self, collection: Collection, pk: str) -> Mapping[str, Value]:
         """Read a single object from Redis collection matching ``pk``.
 
         Args:
@@ -421,7 +397,7 @@ class RedisStore:
         except KeyError as e:
             raise KeyError(f"Key {pk} not found in collection {collection}") from e
 
-    def delete_many(self, collection: _Collection, pks: Sequence[str]) -> int:
+    def delete_many(self, collection: Collection, pks: Sequence[str]) -> int:
         """Deletes objects from Redis collection matching ``pk``'s.
 
         Args:
@@ -434,7 +410,7 @@ class RedisStore:
         hash_keys = [self._get_hash_key(collection, pk) for pk in pks]
         return self._delete_hashes_script(args=list(hash_keys))
 
-    def _find_by_hash_key(self, hash_key: str) -> Mapping[str, _Value]:
+    def _find_by_hash_key(self, hash_key: str) -> Mapping[str, Value]:
         """Reads the single record whose hash key matches ``hash_key``.
 
         Args:
@@ -454,7 +430,7 @@ class RedisStore:
         return _from_redis_values(raw_data=raw_data, raw_types=raw_types)
 
     @staticmethod
-    def _get_hash_key(collection: _Collection, pk: str) -> str:
+    def _get_hash_key(collection: Collection, pk: str) -> str:
         """Returns the canonical hash key for ``(collection, pk)``."""
         return f"{collection}:{pk}"
 
@@ -542,7 +518,7 @@ def _to_redis_args(value: Mapping[str, Any], key_prefix: str = "") -> Iterator[s
             yield from (key, _serialize(v), _get_type_str(v))
 
 
-def _from_redis_values(raw_data: List[str], raw_types: List[str]) -> Dict[str, _Value]:
+def _from_redis_values(raw_data: List[str], raw_types: List[str]) -> Dict[str, Value]:
     """Creates a dictionary from the raw data and raw types passed from redis
 
     The raw data and keys are of the form [k1, v1, k2, v2]

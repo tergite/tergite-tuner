@@ -259,7 +259,6 @@ tergite_tuner/storage/redis/store.py: UP006 Use `dict` instead of `Dict` for typ
 tergite_tuner/storage/redis/store.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/storage/redis/store.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/storage/redis/store.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/storage/redis/store.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/storage/redis/store.py: UP035 Import from `collections.abc` instead: `Iterator`, `Mapping`, `Sequence`
 tergite_tuner/storage/redis/store.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/storage/redis/store.py: UP035 `typing.List` is deprecated, use `list` instead

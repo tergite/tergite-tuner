@@ -14,7 +14,6 @@ boolean: tergite_tuner/export.py::read_result(session_only)
 boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot(apply_inverse_gate)
 boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function(apply_inverse_gate)
 boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py::randomized_benchmarking_sequence(apply_inverse)
-boolean: tergite_tuner/storage/redis/store.py::RedisStore.save_many(reset)
 boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(ignore_spec)
 boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(save_plot)
 boolean: tergite_tuner/tuner.py::_reanalyse(refresh_session)
@@ -88,7 +87,6 @@ license-header: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/
 license-header: tergite_tuner/lib/utils/__init__.py
 license-header: tergite_tuner/lib/utils/analysis_models.py
 license-header: tergite_tuner/lib/utils/fitting_models.py
-license-header: tergite_tuner/storage/__init__.py
 license-header: tergite_tuner/storage/redis/__init__.py
 license-header: tergite_tuner/tests/__init__.py
 license-header: tergite_tuner/tests/utils/__init__.py
