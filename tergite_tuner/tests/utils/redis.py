@@ -22,6 +22,8 @@ from redis import Redis
 if TYPE_CHECKING:
     import redis
 
+    from tergite_tuner.config.types import DeviceConfig
+
 
 def dump_redis(redis_session: "redis.Redis") -> Dict[str, Any]:
     """
@@ -178,3 +180,18 @@ def loaded_redis(redis_connection: Redis, path_: Union[Path, str]):
     finally:
         redis_connection.flushall()
         load_redis(redis_backup, redis_connection)
+
+
+def set_drive_frequencies_from_device(
+    redis_connection: Redis, device_config: "DeviceConfig"
+) -> None:
+    """Sets each qubit's f01 and f12 to the device config's.
+
+    standard_redis_mock.json holds another chip's frequencies, 0.6-0.8 GHz above the
+    fixture cluster's drive LOs, which the dummy cluster refuses to set as NCO frequencies.
+    """
+    for qubit, values in device_config.qubits.items():
+        key = f"transmons:{qubit}"
+        if redis_connection.exists(key):
+            redis_connection.hset(key, "clock_freqs:f01", values["VNA_f01_frequency"])
+            redis_connection.hset(key, "clock_freqs:f12", values["VNA_f12_frequency"])

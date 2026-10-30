@@ -528,7 +528,7 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 8. **One name per node.** `NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT` and `COUPLER_ANTICROSSING` share the class named `coupler_anticrossing` (step 2.1), so the first is never marked calibrated. Give it its own node, or drop the alias from the graph. A test first: run it, then check `inspect_node` sees it in spec.
 9. **Qubit 01 spectroscopy's waveform memory** (step 2.1): on the testbed, check the spectroscopy duration the real node config uses, then switch to `long_square_pulse` at or below 6 µs, or sweep fewer amplitudes, and remove its `xfail`.
 10. **The CZ chevron analysis fails its QOI** on data it cannot fit, instead of raising (step 2.1), and its `xfail` goes.
-11. **The T2 analysis fails its QOI** on data it cannot fit, instead of raising: on one draw of random IQ points its fit raised `ZeroDivisionError` (step 3.5). A test with such data first.
+11. **The T2 and two-qubit RB analyses fail their QOI** on data they cannot fit, instead of raising: on some draws of random IQ points each raised `ZeroDivisionError` (step 3.5). A test with such data first.
 
 ## Step 10: tests in the right place
 

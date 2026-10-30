@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 
 import networkx as nx
+import numpy as np
 import pytest
 
 from tergite_tuner import run_node
@@ -21,7 +22,10 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_DAG_EDGES,
 )
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.redis import (
+    loaded_redis,
+    set_drive_frequencies_from_device,
+)
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -55,8 +59,10 @@ _DEFAULT_NODES = [
 @pytest.mark.slow
 @pytest.mark.parametrize("node", _DEFAULT_NODES)
 def test_every_default_node_runs_in_dummy_mode(
-    node, redis_connection, session_context, tmp_path
+    node, redis_connection, session_context, tmp_path, monkeypatch
 ):
+    # the dummy cluster assembles in the working directory, which workers would share
+    monkeypatch.chdir(tmp_path)
     session = session_context.model_copy(
         update={
             "data_dir": tmp_path,
@@ -67,6 +73,9 @@ def test_every_default_node_runs_in_dummy_mode(
         }
     )
     with loaded_redis(redis_connection, _REDIS_VALUES):
+        set_drive_frequencies_from_device(redis_connection, session.device_config)
+        # nodes' own dummy generators draw from numpy's global generator
+        np.random.seed(0)
         ExtendedTransmon.close_all()
         run_node(node, session=session, refresh_session=False)
 

@@ -14,6 +14,8 @@
 import re
 import shutil
 
+import pytest
+
 from tergite_tuner import (
     CalibrationResults,
     NodeEnum,
@@ -43,6 +45,12 @@ STANDARD_RUN_RESONATOR = get_fixture_path(
 SPI_CONFIG = SpiConfig.model_validate(
     {"q00_q01": {"spi_module_number": 1, "dac_name": "dac0", "edge_group": 1}}
 )
+
+
+@pytest.fixture(autouse=True)
+def _work_in_tmp_path(tmp_path, monkeypatch):
+    """The dummy cluster assembles in the working directory, which workers would share."""
+    monkeypatch.chdir(tmp_path)
 
 
 def test_tune_device_calibrates_up_to_the_target_node(
