@@ -52,6 +52,19 @@ class CZ(InstrumentChannel):
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
+        self._add_pulse_parameters()
+        self._add_phase_corrections()
+        self._add_flux_parameters()
+        self.edge_group = ManualParameter(
+            name="edge_group",
+            instrument=self,
+            label=r"Group assignment for the edge",
+            initial_value=0,
+            unit="",
+            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
+        )
+
+    def _add_pulse_parameters(self) -> None:
         self.square_amp = ManualParameter(
             "square_amp",
             docstring=r"""Amplitude of the square envelope.""",
@@ -87,6 +100,7 @@ class CZ(InstrumentChannel):
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
 
+    def _add_phase_corrections(self) -> None:
         self.parent_phase_correction = ManualParameter(
             name="parent_phase_correction",
             docstring=r"""The phase correction for the parent qubit after the"""
@@ -98,13 +112,14 @@ class CZ(InstrumentChannel):
 
         self.child_phase_correction = ManualParameter(
             name="child_phase_correction",
-            docstring=r"""The phase correction for the parent qubit after the"""
+            docstring=r"""The phase correction for the child qubit after the"""
             r""" square pulse operation has been performed.""",
             unit="degrees",
             initial_value=0,
             vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
         )
 
+    def _add_flux_parameters(self) -> None:
         self.dc_flux_0 = ManualParameter(
             name="dc_flux_0",
             instrument=self,
@@ -121,15 +136,6 @@ class CZ(InstrumentChannel):
             initial_value=0,
             unit="A",
             vals=Numbers(min_value=-3e-3, max_value=3e-3, allow_nan=True),
-        )
-
-        self.edge_group = ManualParameter(
-            name="edge_group",
-            instrument=self,
-            label=r"Group assignment for the edge",
-            initial_value=0,
-            unit="",
-            vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
 
 
