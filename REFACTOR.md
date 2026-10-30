@@ -53,7 +53,7 @@ The rest are adapted to a calibration library:
    - Errors are exceptions from `tergite_tuner/exc.py`.
 5. **One home per kind of thing.**
    - The scheduler (quantify-scheduler, and qblox-scheduler from step 11) is imported only in `tergite_tuner/backend/`.
-   - Redis is touched only through `RedisStore`: nothing calls `session.redis.hget`.
+   - A run's device values live in the session's device state: no node reads them from a database.
    - Dummy-data generators, the hash-table generator, the benchmarks and other tooling live in `dev/`.
    - Shared test helpers live in `tergite_tuner/tests/utils/`, grouped by what they do.
 6. **Physics constants are named once.** This covers the 4.4 GHz downconvert frequency (seven copies today), the sweep widths and sample counts (`lib/utils/samplespace.py`), and the ±3.1 mA DAC limit. Each is a constant at the top of the one module that owns it, or a config field.
@@ -459,50 +459,38 @@ class NodeSpec:
 - **`BaseMeasurement` stays**: the schedules are still the measurement classes, which `get_class_schedule` wraps.
 - The alias of step 9.8 remains: `QUBIT_SPECTROSCOPY_VS_CURRENT` runs coupler anticrossing's spec, under its name.
 
-## Step 7: configuration, the session and storage
+## Step 7: configuration, the session and the device state
 
-Today `SessionContext` is passed to every function, and it holds:
-- the configuration;
-- the Redis connection and the store;
-- the node registry;
-- a log of touched fields.
+`SessionContext` is passed to every function. It is the run's context, as a request context is a request's: everything in a run shares it, and the run's state with it. What goes wrong is where that state lives:
+- Redis holds it, and every run writes the device config over Redis first. Redis adds only what earlier runs left behind, which no config shows.
+- Redis also holds state that lives only during a node: `populate_node_parameters` writes each node's config overrides before it and `revert_node_parameters` writes them back after, and 14 raw `session.redis` calls in 8 files read values mid-run (NRabi's amplitude, Ramsey's frequency, the resonator plots, the discriminator in `calculate_probabilities`, the parking currents).
+- A copy of a session shares the original's touched-field log, since `model_copy` is shallow.
 
-It also makes `config/` import `lib/` (`session.py:65`), to get the node class map.
+`config/` also imports `lib/` (`session.py:65`), to get the node defaults.
 
 1. **pydantic-settings.**
    - `SessionContext` becomes a `BaseSettings`. It reads the `.env` file and the environment for its declared fields only.
    - Its built-in parsing replaces the hand-written casting validators: bools, enums by name, and comma-separated lists through a `NoDecode` field with one validator.
-   - **Decide:** precedence. Today the `.env` file overrides the environment, the reverse of pydantic-settings, Docker and twelve-factor. Recommended: let the environment win, with a `Changed` entry.
-   - `is_recalibration` and `ignore_spec` default to `True`, which the README's examples contradict. Pick defaults the README can state.
-2. **Config apart from runtime.**
-   - The Redis connection and `RedisStore` leave the model: the entry point creates them and passes them in.
-   - `redis_fields_touched` becomes a value that `run_node` returns.
+   - **Decided:** the environment wins over the `.env` file, as in pydantic-settings, Docker and twelve-factor, with a `Changed` entry.
+   - **Decided:** `is_recalibration` and `ignore_spec` keep their `True` defaults; the README states them.
+2. **The session is the run's context.**
+   - It holds the device state and the calibration statuses, in memory (item 5).
+   - A copy of a session gets its own state, not its original's.
    - `config/` no longer imports `lib/`; the entry point fills in the node defaults.
    - `cluster_config` is typed with `backend/`'s `ClusterConfig`.
 3. **One loader per config file.**
    - `DeviceConfigFile.from_toml`, `NodeConfig.from_toml`, `SpiConfig.from_toml` and `ClusterConfig.from_json` share one `load_config(model, path)`.
    - The hand-written `__getitem__`/`__contains__`/`__iter__` on `NodeConfig` and `SpiConfig` go, since `RootModel` gives `.root`.
 4. **Safe deletion.** `is_safe_path` (`tuner.py:498`) guards `shutil.rmtree(session.data_dir)` with a list of five system paths. Replace it with deleting only what this run created: its own subfolder.
-5. **Storage behind a URL**, as tergite-frontend's `libs/storage` does it.
-   - `storage/` defines a `Store`:
-     - read and write an element's parameters;
-     - read and set its calibration statuses.
-   - Two implementations: `RedisStore`, and a `SqlStore` on SQLAlchemy.
-   - `get_store(database_url)` picks one by the URL's scheme: `redis://`, `sqlite:///` or `postgresql://`. Changing the URL is all it takes to switch.
-   - The style guide already confines `redis` to `storage/`; it confines `sqlalchemy` there too.
-   - `redis_url` becomes `database_url`. `redis_url` stays accepted for one release, with a `Changed` entry.
-   - SQL keeps one row per element, field and value, with the value's type, plus one row per element, node and status. That mirrors the Redis hashes, so the store needs no migration whenever a node adds a field.
-   - A conformance test runs every `Store` method on fakeredis and on in-memory SQLite. Every storage test then runs on both.
-   - tergite-backend reads results through `read_result` and `generate_calib_seed_file`, which stay. Its test helper writes the `cs:` hashes directly, so it moves to the `Store` API in the same change.
-6. **Intermediate state in memory; one write per node.**
-   - Today the store holds state that lives only during a node:
-     - `populate_node_parameters` writes each node's config overrides into Redis before the node, and `revert_node_parameters` writes them back after;
-     - 14 raw `session.redis` calls in 8 files read values mid-run (NRabi's amplitude, Ramsey's frequency, the resonator plots, the discriminator in `calculate_probabilities`, the parking currents).
-   - Instead, a run loads the device's parameters from the store once, into an in-memory `DeviceState`.
-   - A node's config overrides apply to that node's copy of the state, so nothing needs reverting.
-   - Measurements and analyses read from the state, never from the store.
-   - After each node, its fits and calibration statuses go to the store in one write, and into the state. A node that fails writes nothing.
-   - The perf suite counts store round trips per node, before and after.
+5. **No store: the device state in memory.** A run starts from what its caller gives it, never from what an earlier run left in a database.
+   - A session's device state starts from the device config, with an earlier calibration's results over it when the caller gives them: a `CalibrationResults`, or the results file a run wrote, as a session field. A periodic recalibration passes its latest calibration this way.
+   - A node is in spec when those results mark it calibrated, as the `cs` hashes do today. **Later:** the results' values, such as their age or fit errors, could decide whether a node needs recalibrating.
+   - A node's config overrides apply to its own copy of the state, so nothing is reverted.
+   - Measurements and analyses read the state. After each node, its fits and statuses go into it; a node that fails changes nothing.
+   - Each run writes the state's results into its folder, as `CalibrationResults` JSON.
+   - `read_result(session)` reads the session's state; `session_only` keeps the fields this session's nodes set. `generate_calib_seed_file` takes a session or a results file.
+   - Going: the `redis` and `fakeredis` dependencies, `redis_url`, `storage/redis/`, the `Store` interface, the touched-field log, `populate_*`/`revert_node_parameters`, the raw reads above and the perf suite's store round-trip count. Each with a `Changed` entry.
+   - **tergite-backend**, in a worktree on a branch of its own: it passes its latest calibration to the session, reads the results from the session, and no longer needs Redis for the tuner. Its test helper writes into the session's state instead of the `cs:` hashes.
 
 ## Step 8: one Clifford implementation
 
@@ -552,15 +540,9 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
    - `get_assignment_fidelities(iq_per_amplitude, states)`, for 3 copies in `ro_amplitude_optimization`;
    - `scipy.stats.median_abs_deviation`, in place of the two `reject_outliers`/`has_peak` copies;
    - `wait_between_repetitions`, for T1, T2 and T2Echo;
-   - `get_phase_paths(store, couplers)`, for 2 copies.
-3. **Analyses read Redis through `RedisStore`**, or better, are given the values they need. This applies to:
-   - `ro_amplitude_optimization/node.py:213`;
-   - `resonator_spectroscopy/analysis.py:160, 190`;
-   - `ramsey_fringes/analysis.py:37`;
-   - `SpiDAC.set_initial_parking_currents`.
-4. **`RedisStore`** keeps its tested serialisation.
-   - **Decide:** whether `prune_fields`, `save_field` and `delete_many`, used only by tests, stay as API.
-   - The spec's `element` replaces the `"_" in pk` test for coupler vs qubit (`base/node.py:178`).
+   - `get_phase_paths(state, couplers)`, for 2 copies.
+3. ~~Analyses read Redis through `RedisStore`~~: step 7.5 gives them the session's device state, and removes `RedisStore`.
+4. ~~The spec's `element` replaces the `"_" in pk` test for coupler vs qubit~~: it went with `base/node.py` in step 6.
 5. **Logging.** `ExtendedLogger` adds its handlers at import time, but a library should only create its logger.
    - Keep `status` as a level.
    - Move `add_console_handler`/`add_file_handler` behind an explicit `setup_logging(stdout_level, file_level, log_dir)`, which the entry points call.
