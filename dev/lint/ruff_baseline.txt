@@ -209,7 +209,6 @@ tergite_tuner/tests/utils/fixtures.py: UP006 Use `list` instead of `List` for ty
 tergite_tuner/tests/utils/fixtures.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/tests/utils/fixtures.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/tests/utils/fixtures.py: UP035 `typing.List` is deprecated, use `list` instead
-tergite_tuner/tuner.py: SIM108 Use ternary operator `topo_order = [node] if node else node_manager.topo_order(session.target_node)` instead of `if`-`else`-block
 tergite_tuner/tuner.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/tuner.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/tuner.py: UP006 Use `tuple` instead of `Tuple` for type annotation

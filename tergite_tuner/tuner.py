@@ -234,49 +234,24 @@ def _tune(
     refresh_session: bool = True,
     keep_data_files: bool = True,
 ) -> None:
-    """Tunes the device running all nodes till target node if node is None else only that node.
-
-    Args:
-        session: the session context to use
-        node: the only node to run.
-            If not provided, all nodes are run till target node.
-        refresh_session: whether to refresh the session before tuning.
-        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
-
-    Returns:
-        the current affected state of the device after the tuning
-    """
+    """Runs only ``node``, or every node up to the session's target node."""
     if refresh_session:
         session.state.written_paths.clear()
     run_path = get_unique_data_path(session.data_dir, "run")
     setup_logging(session.stdout_log_level, session.file_log_level, run_path)
     hardware = Hardware(session)
     node_manager = NodeManager(hardware, session=session, run_path=run_path)
-    qubits = session.qubits
-    couplers = session.couplers
-
-    if node:
-        topo_order = [node]
-    else:
-        topo_order = node_manager.topo_order(session.target_node)
+    topo_order = [node] if node else node_manager.topo_order(session.target_node)
 
     logger.info("Node Manager is initialized")
     logger.info("Starting System Calibration")
-
     draw_arrow_chart(
-        f"Qubits: {len(qubits)}",
+        f"Qubits: {len(session.qubits)}",
         [str(n.value) for n in topo_order],
     )
 
-    if couplers:
-        hardware.connect_spi(couplers)
-        # no setting initial parking currents during recalibration
-        if not session.is_recalibration:
-            assert (
-                session.spi_mode == SPIMode.real
-            ), 'Set spi_mode to "real" in the session.'
-            hardware.spi.set_initial_parking_currents(couplers)
-
+    if session.couplers:
+        _connect_couplers(hardware, session)
     for calibration_node in topo_order:
         node_manager.inspect_node(
             calibration_node,
@@ -284,17 +259,7 @@ def _tune(
             save_plot=session.save_plot,
         )
         logger.info(f"{calibration_node.value} node is completed")
-
-    if keep_data_files:
-        run_path.mkdir(parents=True, exist_ok=True)
-        results = read_result(session, session_only=False)
-        (run_path / RESULTS_FILE).write_text(
-            results.model_dump_json(by_alias=True, exclude_none=True, indent=2)
-        )
-    else:
-        # closes the run's log file before its folder goes
-        setup_logging(session.stdout_log_level, session.file_log_level)
-        shutil.rmtree(run_path)
+    _close_run(session, run_path, keep_data_files)
 
 
 def _reanalyse(
@@ -349,3 +314,29 @@ def _get_qubit_node_config(node_section: dict[str, Any], qubit: str) -> dict[str
     qubit_config = copy.deepcopy(node_section.get(qubit, {}))
     update_nested(qubit_config, node_section.get("all", {}))
     return qubit_config
+
+
+def _connect_couplers(hardware: Hardware, session: SessionContext) -> None:
+    hardware.connect_spi(session.couplers)
+    # no setting initial parking currents during recalibration
+    if not session.is_recalibration:
+        assert session.spi_mode == SPIMode.real, (
+            'Set spi_mode to "real" in the session.'
+        )
+        hardware.spi.set_initial_parking_currents(session.couplers)
+
+
+def _close_run(
+    session: SessionContext, run_path: Path, should_keep_data_files: bool
+) -> None:
+    """Writes the run's results into its folder, or deletes the folder."""
+    if should_keep_data_files:
+        run_path.mkdir(parents=True, exist_ok=True)
+        results = read_result(session, session_only=False)
+        (run_path / RESULTS_FILE).write_text(
+            results.model_dump_json(by_alias=True, exclude_none=True, indent=2)
+        )
+    else:
+        # closes the run's log file before its folder goes
+        setup_logging(session.stdout_log_level, session.file_log_level)
+        shutil.rmtree(run_path)
