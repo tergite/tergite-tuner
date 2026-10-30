@@ -280,19 +280,15 @@ class ExpDecayModel(lmfit.model.Model):
         self.set_param_hint("p", vary=True, min=0)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
+        """Guesses ``A`` and ``B`` unless ``amplitude`` and ``offset`` are given; needs ``m``."""
         m = kws.get("m", None)
 
         if m is None:
             return None
 
-        amplitude_guess = 1 / 2
-        self.set_param_hint("A", value=amplitude_guess)
-
-        offset_guess = data[-1]
-        self.set_param_hint("B", value=offset_guess)
-
-        p_guess = 0.95
-        self.set_param_hint("p", value=p_guess)
+        self.set_param_hint("A", value=kws.pop("amplitude", 1 / 2))
+        self.set_param_hint("B", value=kws.pop("offset", data[-1]))
+        self.set_param_hint("p", value=0.95)
 
         params = self.make_params()
         return lmfit.models.update_param_vals(params, self.prefix, **kws)

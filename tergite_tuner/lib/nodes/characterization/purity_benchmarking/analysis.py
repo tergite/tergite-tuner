@@ -17,52 +17,16 @@ Module containing classes that model, fit and plot data from the purity benchmar
 
 from typing import TYPE_CHECKING
 
-import lmfit
 import numpy as np
 import xarray as xr
 from matplotlib.axes import Axes
 
 from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
-from tergite_tuner.lib.utils.functions import exponential_decay_function
+from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
-
-
-class ExpDecayModel(lmfit.model.Model):
-    """
-    Generate an exponential decay model that can be fit to purity benchmarking data.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(exponential_decay_function, *args, **kwargs)
-
-        # Set parameter hints for the fitting process
-        self.set_param_hint("A", vary=True)
-        self.set_param_hint("B", vary=True, min=0)
-        self.set_param_hint("p", vary=True, min=0)
-
-    def guess(self, data, **kws) -> lmfit.parameter.Parameters:
-        """
-        Generate initial guesses for the model parameters based on the data.
-        """
-        m = kws.get("m", None)
-        if m is None:
-            return None
-
-        # Initial guesses
-        amplitude_guess = data[0]
-        offset_guess = data[-4]
-        p_guess = 0.95
-
-        self.set_param_hint("A", value=amplitude_guess)
-        self.set_param_hint("B", value=offset_guess)
-        self.set_param_hint("p", value=p_guess)
-
-        # Create and return the parameters object with initial guesses
-        params = self.make_params()
-        return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
 class PurityBenchmarkingQubitAnalysis(ElementAnalysis):
@@ -171,7 +135,12 @@ class PurityBenchmarkingQubitAnalysis(ElementAnalysis):
         n_cliffords = np.array(self.number_of_cliffords)
 
         # Generate initial parameter guesses and fit the model to the data
-        guess = model.guess(data=avg_purity, m=n_cliffords)
+        guess = model.guess(
+            data=avg_purity,
+            m=n_cliffords,
+            amplitude=avg_purity[0],
+            offset=avg_purity[-4],
+        )
         fit_result = model.fit(avg_purity, params=guess, m=n_cliffords)
 
         # Generate fitted values for plotting

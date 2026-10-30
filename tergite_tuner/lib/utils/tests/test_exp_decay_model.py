@@ -13,9 +13,7 @@
 import numpy as np
 import pytest
 
-from tergite_tuner.lib.nodes.characterization.purity_benchmarking.analysis import (
-    ExpDecayModel,
-)
+from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 
 
 def test_exponential_decay_model_initialization():
@@ -29,12 +27,20 @@ def test_exponential_decay_model_initialization():
     assert model.param_hints["p"]["min"] == 0
 
 
-def test_guess_parameters():
-    model = ExpDecayModel()
-    data = np.array([1.0, 0.8, 0.6, 0.4, 0.2])  # Example data
-    m = np.array([0, 1, 2, 3, 4])  # Example m values
-    params = model.guess(data, m=m)
-    # Verify that the guessed parameters are close to expected values
-    assert params["A"].value, pytest.approx(1.0)
-    assert params["B"].value, pytest.approx(0.8)
-    assert params["B"].value, pytest.approx(0.95)
+def test_guess_defaults_to_half_and_the_last_point():
+    data = np.array([1.0, 0.8, 0.6, 0.4, 0.2])
+
+    params = ExpDecayModel().guess(data, m=np.arange(5))
+
+    assert params["A"].value == pytest.approx(0.5)
+    assert params["B"].value == pytest.approx(0.2)
+    assert params["p"].value == pytest.approx(0.95)
+
+
+def test_guess_takes_the_amplitude_and_offset_given():
+    data = np.array([1.0, 0.8, 0.6, 0.4, 0.2])
+
+    params = ExpDecayModel().guess(data, m=np.arange(5), amplitude=1.0, offset=0.8)
+
+    assert params["A"].value == pytest.approx(1.0)
+    assert params["B"].value == pytest.approx(0.8)

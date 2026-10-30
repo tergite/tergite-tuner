@@ -119,7 +119,6 @@ tergite_tuner/lib/nodes/__init__.py: UP035 Import from `collections.abc` instead
 tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/lib/nodes/characterization/all_xy/measurement.py: ARG002 Unused method argument: `XY_index`
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: C416 Unnecessary list comprehension (rewrite using `list()`)
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
