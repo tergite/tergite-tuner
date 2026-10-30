@@ -51,6 +51,7 @@ from pydantic import (
     Field,
     PrivateAttr,
     RedisDsn,
+    ValidationInfo,
     computed_field,
     field_validator,
     model_validator,
@@ -64,6 +65,7 @@ from tergite_tuner.config.types import (
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
+    load_config,
 )
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
@@ -73,6 +75,13 @@ from tergite_tuner.lib.nodes import (
 from tergite_tuner.storage.redis import RedisStore
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
+
+_CONFIG_FILE_MODELS = {
+    "device_config": DeviceConfigFile,
+    "node_config": NodeConfig,
+    "spi_config": SpiConfig,
+    "cluster_config": ClusterConfig,
+}
 
 
 def _default_data_dir() -> Path:
@@ -227,37 +236,16 @@ class SessionContext(BaseModel):
     _redis: Optional[Redis] = PrivateAttr(default=None)
     _redis_store: RedisStore = PrivateAttr(default=None)
 
-    @field_validator("device_config", mode="before")
+    @field_validator(
+        "device_config", "node_config", "spi_config", "cluster_config", mode="before"
+    )
     @classmethod
-    def load_device_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to DeviceConfig."""
-        if isinstance(value, (str, Path)):
-            return DeviceConfigFile.from_toml(value).device
-        return value
-
-    @field_validator("node_config", mode="before")
-    @classmethod
-    def load_node_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to NodeConfig."""
-        if isinstance(value, (str, Path)):
-            return NodeConfig.from_toml(value)
-        return value
-
-    @field_validator("spi_config", mode="before")
-    @classmethod
-    def load_spi_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to SpiConfig."""
-        if isinstance(value, (str, Path)):
-            return SpiConfig.from_toml(value)
-        return value
-
-    @field_validator("cluster_config", mode="before")
-    @classmethod
-    def load_cluster_config_file(cls, value: Any):
-        """If file paths are passed, it converts them to ClusterConfig."""
-        if isinstance(value, (str, Path)):
-            return ClusterConfig.from_json(value)
-        return value
+    def load_config_files(cls, value: Any, info: ValidationInfo) -> Any:
+        """Loads a config given as a file path."""
+        if not isinstance(value, (str, Path)):
+            return value
+        config = load_config(_CONFIG_FILE_MODELS[info.field_name], value)
+        return config.device if isinstance(config, DeviceConfigFile) else config
 
     @field_validator(
         "qubits",

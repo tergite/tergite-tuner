@@ -12,8 +12,6 @@
 
 """Schema for the ``spi_config.toml`` file."""
 
-import tomllib
-from os import PathLike
 from typing import Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
@@ -47,26 +45,3 @@ class SpiConfig(RootModel[Dict[str, _SpiCouplerEntry]]):
     """
 
     root: Dict[str, _SpiCouplerEntry] = Field(default_factory=dict)
-
-    @classmethod
-    def from_toml(cls, file: "PathLike[str]") -> "SpiConfig":
-        """Loads the SPI configuration from a TOML file.
-
-        Args:
-            file: path to the ``spi_config.toml`` file
-
-        Returns:
-            the parsed and validated ``SpiConfig`` instance
-        """
-        with open(file, "rb") as f:
-            data = tomllib.load(f)
-        return cls(data)
-
-    def __getitem__(self, key: str) -> _SpiCouplerEntry:
-        return self.root[key]
-
-    def __contains__(self, key: object) -> bool:
-        return key in self.root
-
-    def __iter__(self):
-        return iter(self.root)

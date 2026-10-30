@@ -64,7 +64,7 @@ def test_populate_node_parameters(redis_connection, session_context):
     )
 
     # test node config values are correctly uploaded onto redis
-    node_config = session_context.node_config["resonator_spectroscopy"]["all"]
+    node_config = session_context.node_config.root["resonator_spectroscopy"]["all"]
     reset_duration_config = node_config["reset"]["duration"]
     reset_duration_redis = float(
         redis_connection.hget("transmons:q00", "reset:duration")

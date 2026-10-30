@@ -62,13 +62,13 @@ def populate_node_parameters(
         is_node_calibrated: whether the node is calibrated
     """
     transmon_configuration = session.node_config
-    if not node_name in transmon_configuration:
+    if node_name not in transmon_configuration.root:
         logger.status(f"{node_name} does not have specific node config")
         return
     if is_node_calibrated:
         logger.status(f"{node_name} is already calibrated")
         return
-    data = transmon_configuration[node_name]
+    data = transmon_configuration.root[node_name]
     couplers = session.couplers
     qubits = session.qubits
 
@@ -90,7 +90,7 @@ def revert_node_parameters(session: "SessionContext", node_name: str):
         session: session context we are working in
     """
     node_configuration = session.node_config
-    if not node_name in node_configuration:
+    if node_name not in node_configuration.root:
         return  # no node specific config found
 
     initial_params = session.device_config.qubits
@@ -99,7 +99,7 @@ def revert_node_parameters(session: "SessionContext", node_name: str):
     for qubit in session.qubits:
         qubit_conf = initial_params.get(qubit)
         node_specific_dict = _get_qubit_node_config(
-            node_configuration[node_name], qubit
+            node_configuration.root[node_name], qubit
         )
         if qubit_conf:
             try:

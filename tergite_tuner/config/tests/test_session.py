@@ -31,6 +31,7 @@ from tergite_tuner.config.types import (
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
+    load_config,
 )
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
@@ -49,10 +50,10 @@ _NODE_CONFIG_PATH = _PROJECT_ROOT / "node_config.example.toml"
 _SPI_CONFIG_PATH = _PROJECT_ROOT / "spi_config.example.toml"
 _CLUSTER_CONFIG_PATH = _PROJECT_ROOT / "cluster_config.example.json"
 
-_DEVICE_CONFIG = DeviceConfigFile.from_toml(_DEVICE_CONFIG_PATH).device
-_NODE_CONFIG = NodeConfig.from_toml(_NODE_CONFIG_PATH)
-_CLUSTER_CONFIG = ClusterConfig.from_json(_CLUSTER_CONFIG_PATH)
-_SPI_CONFIG = SpiConfig.from_toml(_SPI_CONFIG_PATH)
+_DEVICE_CONFIG = load_config(DeviceConfigFile, _DEVICE_CONFIG_PATH).device
+_NODE_CONFIG = load_config(NodeConfig, _NODE_CONFIG_PATH)
+_CLUSTER_CONFIG = load_config(ClusterConfig, _CLUSTER_CONFIG_PATH)
+_SPI_CONFIG = load_config(SpiConfig, _SPI_CONFIG_PATH)
 
 
 @pytest.fixture

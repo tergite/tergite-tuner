@@ -24,6 +24,7 @@ from tergite_tuner.config.types import (
     DeviceConfigFile,
     NodeConfig,
     SpiConfig,
+    load_config,
 )
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -36,7 +37,7 @@ _CLUSTER_CONFIG_PATH = _PROJECT_ROOT / "cluster_config.example.json"
 
 def test_device_config_load_example():
     """The device configuration of the example template loads cleanly."""
-    dev = DeviceConfigFile.from_toml(_DEVICE_CONFIG_PATH)
+    dev = load_config(DeviceConfigFile, _DEVICE_CONFIG_PATH)
 
     assert dev.device.name == "V8a #1"
 
@@ -75,7 +76,7 @@ def test_device_config_uses_defaults_when_section_missing(tmp_path):
     sample = tmp_path / "device_config.toml"
     sample.write_text("")
 
-    dev = DeviceConfigFile.from_toml(sample)
+    dev = load_config(DeviceConfigFile, sample)
     assert dev.device.name == "no_device_name_configured"
     assert dev.device.resonators == {}
     assert dev.device.qubits == {}
@@ -84,7 +85,7 @@ def test_device_config_uses_defaults_when_section_missing(tmp_path):
 
 def test_node_config_load_example():
     """The node configuration of the example loads cleanly."""
-    node = NodeConfig.from_toml(_NODE_CONFIG_PATH)
+    node = load_config(NodeConfig, _NODE_CONFIG_PATH)
 
     expected_sections = {
         "resonator_spectroscopy",
@@ -100,8 +101,8 @@ def test_node_config_load_example():
     assert expected_sections.issubset(set(node.root.keys()))
 
     # Dotted TOML keys come back as nested dicts
-    assert node["resonator_spectroscopy"]["all"] == {"reset": {"duration": 60e-6}}
-    assert node["cz_chevron"]["all"]["coupler_spec_amp"] == 0.3
+    assert node.root["resonator_spectroscopy"]["all"] == {"reset": {"duration": 60e-6}}
+    assert node.root["cz_chevron"]["all"]["coupler_spec_amp"] == 0.3
 
 
 def test_node_config_rejects_non_dict_section():
@@ -114,36 +115,26 @@ def test_node_config_rejects_non_dict_section():
     )
 
 
-def test_node_config_membership_iteration():
-    """The dunder helpers should expose the parsed content like a dict."""
-    node = NodeConfig.from_toml(_NODE_CONFIG_PATH)
-    assert "punchout" in node
-    assert "non_existent_node" not in node
-    assert set(iter(node)) == set(node.root.keys())
-
-
 def test_node_config_default_is_empty():
     """``NodeConfig()`` constructs with no nodes — it is the default for
     :class:`SessionContext.node_config`, so this contract matters."""
     node = NodeConfig()
     assert node.root == {}
-    assert "anything" not in node
-    assert list(iter(node)) == []
 
 
 def test_spi_config_load_example():
     """The SPI configuration from the example spi config file loads cleanly."""
-    spi = SpiConfig.from_toml(_SPI_CONFIG_PATH)
+    spi = load_config(SpiConfig, _SPI_CONFIG_PATH)
 
     # Coupler with an edge group
-    assert spi["q11_q12"].spi_module_number == 1
-    assert spi["q11_q12"].dac_name == "dac0"
-    assert spi["q11_q12"].edge_group == 1
+    assert spi.root["q11_q12"].spi_module_number == 1
+    assert spi.root["q11_q12"].dac_name == "dac0"
+    assert spi.root["q11_q12"].edge_group == 1
 
     # Coupler without an edge group (edge_group is Optional)
-    assert spi["q08_q09"].spi_module_number == 2
-    assert spi["q08_q09"].dac_name == "dac0"
-    assert spi["q08_q09"].edge_group is None
+    assert spi.root["q08_q09"].spi_module_number == 2
+    assert spi.root["q08_q09"].dac_name == "dac0"
+    assert spi.root["q08_q09"].edge_group is None
 
 
 def test_spi_config_rejects_missing_dac_name():
@@ -164,29 +155,20 @@ def test_spi_config_rejects_non_integer_module_number():
     assert ("q01_q02", "spi_module_number") in locs
 
 
-def test_spi_config_membership_iteration():
-    spi = SpiConfig.from_toml(_SPI_CONFIG_PATH)
-    assert "q11_q12" in spi
-    assert "q99_q99" not in spi
-    assert "q08_q09" in list(iter(spi))
-
-
 def test_spi_config_default_is_empty():
     """``SpiConfig()`` constructs with no couplers wired — useful as a
     default when the calibration doesn't drive the SPI rack."""
     spi = SpiConfig()
     assert spi.root == {}
-    assert "anything" not in spi
-    assert list(iter(spi)) == []
 
 
 def test_cluster_config_load_example():
     """The cluster configuration of the example file loads via quantify-scheduler."""
     pytest.importorskip("quantify_scheduler")
 
-    cluster = ClusterConfig.from_json(_CLUSTER_CONFIG_PATH)
+    cluster = load_config(ClusterConfig, _CLUSTER_CONFIG_PATH)
 
-    # ``from_json`` returns the canonical quantify-scheduler model, so a
+    # the canonical quantify-scheduler model, so a
     # few of its fields should be populated
     assert "clusterA" in cluster.hardware_description
     assert cluster.hardware_options is not None
@@ -210,22 +192,15 @@ def test_cluster_config_rejects_invalid_payload(tmp_path):
     sample.write_text("{}")
 
     with pytest.raises(ValidationError):
-        ClusterConfig.from_json(sample)
+        load_config(ClusterConfig, sample)
 
 
-@pytest.mark.parametrize(
-    "loader",
-    [
-        DeviceConfigFile.from_toml,
-        NodeConfig.from_toml,
-        SpiConfig.from_toml,
-    ],
-)
-def test_toml_loaders_raise_for_missing_file(tmp_path, loader):
+@pytest.mark.parametrize("model", [DeviceConfigFile, NodeConfig, SpiConfig])
+def test_toml_loaders_raise_for_missing_file(tmp_path, model):
     """Every file-based loader propagates a ``FileNotFoundError`` for a non-existent file."""
     missing = tmp_path / "does_not_exist"
     with pytest.raises(FileNotFoundError):
-        loader(missing)
+        load_config(model, missing)
 
 
 def test_cluster_loader_raises_for_missing_file(tmp_path):
@@ -234,21 +209,14 @@ def test_cluster_loader_raises_for_missing_file(tmp_path):
 
     missing = tmp_path / "does_not_exist"
     with pytest.raises(FileNotFoundError):
-        ClusterConfig.from_json(missing)
+        load_config(ClusterConfig, missing)
 
 
-@pytest.mark.parametrize(
-    ("loader", "extension"),
-    [
-        (DeviceConfigFile.from_toml, ".toml"),
-        (NodeConfig.from_toml, ".toml"),
-        (SpiConfig.from_toml, ".toml"),
-    ],
-)
-def test_toml_loaders_raise_on_invalid_toml(tmp_path, loader, extension):
+@pytest.mark.parametrize("model", [DeviceConfigFile, NodeConfig, SpiConfig])
+def test_toml_loaders_raise_on_invalid_toml(tmp_path, model):
     """Invalid TOML content raises a ``TomlDecodeError`` from the loader."""
-    bad = tmp_path / f"bad{extension}"
+    bad = tmp_path / "bad.toml"
     bad.write_text("invalid: toml: content")
 
     with pytest.raises(tomllib.TOMLDecodeError):
-        loader(bad)
+        load_config(model, bad)

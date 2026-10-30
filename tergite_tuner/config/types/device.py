@@ -13,8 +13,6 @@
 """Schema for the ``device_config.toml`` file."""
 
 import copy
-import tomllib
-from os import PathLike
 from types import MappingProxyType
 from typing import Any, Dict, Tuple
 
@@ -236,20 +234,6 @@ class DeviceConfigFile(BaseModel):
 
     device: DeviceConfig = Field(default_factory=DeviceConfig)
     layout: DeviceLayout = Field(default_factory=DeviceLayout)
-
-    @classmethod
-    def from_toml(cls, file: PathLike[str]) -> "DeviceConfigFile":
-        """Loads the device configuration from a TOML file.
-
-        Args:
-            file: path to the ``device_config.toml`` file
-
-        Returns:
-            the parsed and validated ``DeviceConfigFile`` instance
-        """
-        with open(file, "rb") as f:
-            data = tomllib.load(f)
-        return cls(**data)
 
 
 def _apply_all_defaults(
