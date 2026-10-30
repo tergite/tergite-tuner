@@ -13,6 +13,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Changed
 
+- Removed `NodeEnum.PROCESS_TOMOGRAPHY_SSRO`, whose node could not run and was left out of the node map, with the unused reset chevron node
 - [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 
 ### Fixed

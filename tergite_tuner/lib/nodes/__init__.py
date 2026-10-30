@@ -33,9 +33,6 @@ from typing import Mapping, Tuple, Type
 
 from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes.characterization.all_xy.node import AllXYNode
-from tergite_tuner.lib.nodes.characterization.process_tomography.node import (
-    ProcessTomographySSRONode,
-)
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.node import (
     PurityBenchmarkingNode,
 )
@@ -121,7 +118,6 @@ DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.ALL_XY: AllXYNode,
     NodeEnum.RANDOMIZED_BENCHMARKING: RandomizedBenchmarkingNode,
     NodeEnum.PURITY_BENCHMARKING: PurityBenchmarkingNode,
-    # NodeEnum.PROCESS_TOMOGRAPHY_SSRO: ProcessTomographySSRONode,
     NodeEnum.CZ_PARAMETRIZATION: CZParametrizationNode,
     NodeEnum.CZ_CHEVRON: CZChevronNode,
     NodeEnum.CZ_CALIBRATION: CZCalibrationNode,
@@ -208,10 +204,6 @@ DEFAULT_NODE_DAG_EDGES: Tuple[Tuple[NodeEnum, NodeEnum], ...] = (
     (NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION, NodeEnum.CZ_CALIBRATION),
     (NodeEnum.CZ_CALIBRATION, NodeEnum.CZ_LOCAL_PHASES),
     (NodeEnum.CZ_LOCAL_PHASES, NodeEnum.CZ_RB),
-    # (
-    #     NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
-    #     NodeEnum.PROCESS_TOMOGRAPHY_SSRO,
-    # ),
 )
 """The default directed edges of the calibration DAG.
 

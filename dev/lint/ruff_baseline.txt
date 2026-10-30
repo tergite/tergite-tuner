@@ -148,7 +148,6 @@ tergite_tuner/lib/base/node.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/node.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/node.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/base/tests/test_configure_dataset.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
-tergite_tuner/lib/nodes/__init__.py: F401 `tergite_tuner.lib.nodes.characterization.process_tomography.node.ProcessTomographySSRONode` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
 tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for type annotation
@@ -158,24 +157,6 @@ tergite_tuner/lib/nodes/__init__.py: UP035 Import from `collections.abc` instead
 tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Type` is deprecated, use `type` instead
 tergite_tuner/lib/nodes/characterization/all_xy/measurement.py: ARG002 Unused method argument: `XY_index`
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: B007 Loop control variable `index` not used within loop body
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: E741 Ambiguous variable name: `I`
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: E741 Ambiguous variable name: `I`
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: F841 Local variable `assignment` is assigned to but never used
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: F841 Local variable `colors` is assigned to but never used
-tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py: RET504 Unnecessary assignment to `w` before `return` statement
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: B007 Loop control variable `index` not used within loop body
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: B007 Loop control variable `index` not used within loop body
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: B905 `zip()` without an explicit `strict=` parameter
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: B905 `zip()` without an explicit `strict=` parameter
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: F841 Local variable `cz_pulse_port` is assigned to but never used
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: F841 Local variable `number_of_levels` is assigned to but never used
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: F841 Local variable `qubit_type_list` is assigned to but never used
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: F841 Local variable `qubits` is assigned to but never used
-tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py: F841 Local variable `reset_phase` is assigned to but never used
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: C416 Unnecessary list comprehension (rewrite using `list()`)
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
@@ -190,7 +171,6 @@ tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: F8
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: F841 Local variable `interleaved_mean_probabilities_state_2` is assigned to but never used
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: F841 Local variable `standard_mean_probabilities_state_1` is assigned to but never used
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: RET504 Unnecessary assignment to `w` before `return` statement
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/node.py: F841 Local variable `noise_scale` is assigned to but never used
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: E713 Test for membership should be `not in`
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: F401 `os` imported but unused
@@ -243,26 +223,6 @@ tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/test_node.py: F541 f-st
 tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/test_node.py: F541 f-string without any placeholders
 tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/test_node.py: F541 f-string without any placeholders
 tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/test_node.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: B023 Function definition does not bind loop variable `prob`
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: B023 Function definition does not bind loop variable `prob`
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: B023 Function definition does not bind loop variable `times_cut_index`
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: B023 Function definition does not bind loop variable `times_cut`
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: B023 Function definition does not bind loop variable `times_cut`
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: E722 Do not use bare `except`
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: F811 Redefinition of unused `fitfunc` from line 127: `fitfunc` redefined here
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: F841 Local variable `res2` is assigned to but never used
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: RET505 Unnecessary `else` after `return` statement
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: RET505 Unnecessary `else` after `return` statement
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: UP032 Use f-string instead of `format` call
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: UP032 Use f-string instead of `format` call
-tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py: UP032 Use f-string instead of `format` call
-tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py: B007 Loop control variable `i` not used within loop body
-tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py: B007 Loop control variable `index` not used within loop body
-tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py: F841 Local variable `qc` is assigned to but never used
-tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py: RET504 Unnecessary assignment to `seq` before `return` statement
-tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py: RET504 Unnecessary assignment to `y` before `return` statement
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutable data structures for argument defaults
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutable data structures for argument defaults
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement

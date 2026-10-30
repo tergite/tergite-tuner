@@ -67,7 +67,6 @@ class NodeEnum(str, Enum):
     ALL_XY = "all_xy"
     RANDOMIZED_BENCHMARKING = "randomized_benchmarking"
     PURITY_BENCHMARKING = "purity_benchmarking"
-    PROCESS_TOMOGRAPHY_SSRO = "process_tomography_ssro"
     CZ_PARAMETRIZATION = "cz_parametrization"
     CZ_CHEVRON = "cz_chevron"
     CZ_CALIBRATION = "cz_calibration"

@@ -1,15 +1,4 @@
 # Violations that predate the style-guide test. Delete a line when you fix it; never add one.
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:114
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:154
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:199
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:225
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:237
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:247
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py:257
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:225
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:271
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:332
-banner: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py:387
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:144
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:268
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:316
@@ -58,12 +47,6 @@ confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.devic
 confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
 confined-import: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::import quantify_scheduler
 confined-import: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::import quantify_scheduler.operations.gate_library
-confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler
-confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.enums
-confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.operations.control_flow_library
-confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.operations.gate_library
-confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.operations.pulse_library
-confined-import: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::import quantify_scheduler.resources
 confined-import: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::import quantify_scheduler.operations.gate_library
 confined-import: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::import quantify_scheduler.operations.pulse_library
 confined-import: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::import quantify_scheduler.schedules.schedule
@@ -102,11 +85,6 @@ confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.
 confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.operations.gate_library
 confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.operations.pulse_library
 confined-import: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::import quantify_scheduler.resources
-confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler
-confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.enums
-confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.operations.gate_library
-confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.operations.pulse_library
-confined-import: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::import quantify_scheduler.resources
 confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler
 confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::import quantify_scheduler.operations.control_flow_library
@@ -189,8 +167,6 @@ license-header: tergite_tuner/lib/base/utils/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/all_xy/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/all_xy/tests/__init__.py
-license-header: tergite_tuner/lib/nodes/characterization/process_tomography/__init__.py
-license-header: tergite_tuner/lib/nodes/characterization/process_tomography/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/purity_benchmarking/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/__init__.py
@@ -208,9 +184,6 @@ license-header: tergite_tuner/lib/nodes/coupler/cz_local_phases/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/cz_local_phases/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/cz_parametrization/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/__init__.py
-license-header: tergite_tuner/lib/nodes/coupler/cz_parametrization/utils/__init__.py
-license-header: tergite_tuner/lib/nodes/coupler/reset_chevron/__init__.py
-license-header: tergite_tuner/lib/nodes/coupler/reset_chevron/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/spectroscopy/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/spectroscopy/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/__init__.py
@@ -325,16 +298,6 @@ type-hints: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAn
 type-hints: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.string_representation
 type-hints: tergite_tuner/lib/nodes/characterization/all_xy/node.py::AllXYNode.__init__
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyNodeAnalysis.__init__
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyNodeAnalysis.analyze_node
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.analyse_qubit
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.save_plot
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.con
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.m
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::ProcessTomographyMeasurement.schedule_function
-type-hints: tergite_tuner/lib/nodes/characterization/process_tomography/node.py::ProcessTomographySSRONode.__init__
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::ExpDecayModel.__init__
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::ExpDecayModel.guess
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.__init__
@@ -350,9 +313,6 @@ type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/ana
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.analyse_qubit
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate
-type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.con
-type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.m
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/node.py::RandomizedBenchmarkingNode.__init__
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/node.py::RandomizedBenchmarkingNode.generate_dummy_dataset
@@ -424,22 +384,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParame
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.initial_operation
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.parking_current
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.pre_measurement_operation
-type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/utils/no_valid_combination_exception.py::NoValidCombinationException.__init__
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult._
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.__init__
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.get_result
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.set_not_found
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult.set_result
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronCouplerAnalysis.__init__
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.errfunc
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.fitfunc
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.generate_local_adiabatic_fc
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.generate_local_adiabatic_pulse
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.local_analytic
-type-hints: tergite_tuner/lib/nodes/coupler/reset_chevron/node.py::ResetChevronNode.__init__
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis._find_crossing_currents
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis._get_resonator_crossing_points
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.analyze_coupler
@@ -699,15 +643,9 @@ verb: tergite_tuner/lib/base/node.py::qoi_to_redis_record
 verb: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.plotter
 verb: tergite_tuner/lib/nodes/characterization/all_xy/analysis.py::AllXYAnalysis.string_representation
 verb: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::AllXYMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::ProcessTomographyQubitAnalysis.plotter
-verb: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.con
-verb: tergite_tuner/lib/nodes/characterization/process_tomography/analysis.py::mitigate.m
-verb: tergite_tuner/lib/nodes/characterization/process_tomography/measurement.py::ProcessTomographyMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::PurityBenchmarkingMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
-verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.con
-verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::mitigate.m
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.single_qubit_rb_shot
@@ -761,13 +699,6 @@ verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizat
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.parking_current
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.pre_measurement_operation
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.single_point_around
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::OptimalResult._
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronCouplerAnalysis.plotter
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.errfunc
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.analyse_qubit.fitfunc
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/analysis.py::ResetChevronQubitAnalysis.plotter
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/coupler/reset_chevron/measurement.py::ResetChevronDCMeasurement.schedule_function.local_analytic
 verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
 verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
 verb: tergite_tuner/lib/nodes/coupler/spectroscopy/node.py::QubitSpectroscopyVsCurrentNode.final_operation

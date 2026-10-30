@@ -14,8 +14,6 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from scipy.linalg import norm
-from scipy.optimize import minimize
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
@@ -24,26 +22,6 @@ from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
-
-
-def mitigate(v, cm_inv):
-    u = np.dot(v, cm_inv)
-
-    def m(t):
-        return norm(u - np.array(t))
-
-    def con(t):
-        return t[0] + t[1] + t[2] - 1
-
-    cons = (
-        {"type": "eq", "fun": con},
-        {"type": "ineq", "fun": lambda t: t[0]},
-        {"type": "ineq", "fun": lambda t: t[1]},
-        {"type": "ineq", "fun": lambda t: t[2]},
-    )
-    result = minimize(m, v, method="SLSQP", constraints=cons)
-    w = np.abs(np.round(result.x, 10))
-    return w
 
 
 class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
