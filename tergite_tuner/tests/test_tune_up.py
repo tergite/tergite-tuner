@@ -79,5 +79,6 @@ def test_every_default_node_runs_in_dummy_mode(
         run_node(node, session=session, refresh_session=False)
 
     # analyses of random IQ points may fail; reaching them without raising is the check
-    node_name = DEFAULT_NODE_CLS_MAP[node].name
+    # a class may save under another name than its node's (step 9.8)
+    node_name = getattr(DEFAULT_NODE_CLS_MAP.get(node), "name", node.value)
     assert (tmp_path / f"dataset_{node_name}.hdf5").exists()

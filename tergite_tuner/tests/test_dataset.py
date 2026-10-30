@@ -16,28 +16,19 @@ import xarray as xr
 
 from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
-from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
-    ResonatorSpectroscopyNode,
-)
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.tests.utils.fixtures import (
-    DEFAULT_TEST_COUPLERS,
-    DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
+from tergite_tuner.tests.utils.goldens import get_dataset_builder
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
 
 
 def test_save_dataset(tmp_path, session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopyNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    dummy_raw_dataset = node.generate_dummy_dataset()
-    result_dataset = node.configure_dataset(dummy_raw_dataset)
     name = "resonator_spectroscopy"
+    result_dataset = get_dataset_builder(name, session_context)()
     results_file = tmp_path / f"dataset_{name}.hdf5"
 
     try:

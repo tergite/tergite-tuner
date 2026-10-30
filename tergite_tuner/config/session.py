@@ -26,6 +26,7 @@ Build a :class:`SessionContext` directly with kwargs, or via the
 
 import os
 import os.path
+from collections.abc import Iterable
 from datetime import datetime
 from functools import cached_property
 from ipaddress import IPv4Address
@@ -369,13 +370,9 @@ class SessionContext(BaseModel):
         """The redis fields that might have been touched by the calibration"""
         return self._redis_fields_touched
 
-    def update_redis_fields_log(self, node: BaseNode):
-        """Updates the redis fields that might have been touched
-
-        Args:
-            node: the current node running
-        """
-        for field in node.redis_fields:
+    def update_redis_fields_log(self, fields: Iterable[str]):
+        """Counts ``fields`` as touched in this session."""
+        for field in fields:
             old_count = self._redis_fields_touched.setdefault(field, 0)
             self._redis_fields_touched[field] = old_count + 1
 

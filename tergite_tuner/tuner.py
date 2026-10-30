@@ -28,7 +28,10 @@ from tergite_tuner import read_result
 from tergite_tuner.backend import Hardware
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.export import CalibrationResults
+from tergite_tuner.lib import run
 from tergite_tuner.lib.base.node import BaseNode, CouplerNode
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
+from tergite_tuner.lib.spec import NodeSpec
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import create_node_data_path
 from tergite_tuner.storage.redis.utils import (
@@ -38,7 +41,7 @@ from tergite_tuner.storage.redis.utils import (
 )
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
-from tergite_tuner.utils.types.enums import DataStatus, MeasurementMode, SPIMode
+from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 T = TypeVar("T")
@@ -57,6 +60,8 @@ class NodeManager:
         self.session = session
         self.hardware = hardware
 
+        # a node class the session maps wins over a default spec
+        self.nodes = {**DEFAULT_NODE_SPECS, **session.node_cls_map}
         self.node_cls_map = session.node_cls_map
         self.ignored_nodes = session.ignored_nodes
         self.node_dag_edges = session.node_dag_edges
@@ -65,7 +70,7 @@ class NodeManager:
         # excluding any given nodes of choice
         self.node_graph: "nx.DiGraph" = nx.DiGraph()
         self.node_graph.add_edges_from(self.node_dag_edges)
-        for member in self.node_cls_map:
+        for member in self.nodes:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
@@ -83,18 +88,22 @@ class NodeManager:
     def inspect_node(
         self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False
     ):
-        node_cls = self.node_cls_map[node]
+        node_spec = self.nodes[node]
         node_name = node.value
         logger.info(f"Inspecting node {node_name}")
-        node_cls.reset_qois(self.session, node_name=node_name)
+        if isinstance(node_spec, NodeSpec):
+            run.mark_not_calibrated(node_spec, self.session)
+        else:
+            node_spec.reset_qois(self.session, node_name=node_name)
 
         # Check Redis if node is calibrated
         if ignore_spec:
             is_node_calibrated = False
             logger.info(f"Ignoring calibration status for {node_name}")
         else:
-            calibration_status = self._check_calibration_status_redis(node)
-            is_node_calibrated = calibration_status == DataStatus.in_spec
+            is_node_calibrated = run.is_in_spec(
+                node_name, self._get_elements(node), self.session
+            )
 
         populate_node_parameters(
             node_name,
@@ -108,22 +117,24 @@ class NodeManager:
         else:
             logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
 
-            # Initialize node and update samplespace
-            calibration_node = self.initialize_node(node)
-            logger.info(f"Calibrating node {calibration_node.name}")
-
+            logger.info(f"Calibrating node {node_name}")
             data_path = self.session.data_dir
             # avoid creating new logs folders if we are re_analysing or recalibrating
             if (
                 self.session.cluster_mode != MeasurementMode.re_analyse
                 and not self.session.is_recalibration
             ):
-                data_path = create_node_data_path(
-                    self.session, node_name=calibration_node.name
-                )
+                data_path = create_node_data_path(self.session, node_name=node_name)
 
-            # Perform calibration
-            calibration_node.calibrate(data_path, self.session.cluster_mode, save_plot)
+            if isinstance(node_spec, NodeSpec):
+                run.calibrate(
+                    node_spec, self.session, self.hardware, data_path, save_plot
+                )
+            else:
+                calibration_node = self.initialize_node(node)
+                calibration_node.calibrate(
+                    data_path, self.session.cluster_mode, save_plot
+                )
 
         # if we are in recalibration, we should not revert node parameters
         if not self.session.is_recalibration:
@@ -152,23 +163,13 @@ class NodeManager:
         )
         return node_obj
 
-    def _check_calibration_status_redis(self, node: NodeEnum) -> DataStatus:
-        """Queries Redis for the calibration status of each qubit or coupler
-        associated with ``node``, determining if it is in or out of specification."""
-        node_cls = self.node_cls_map[node]
-        node_name = node.value
-        elements = (
-            self.session.couplers
-            if issubclass(node_cls, CouplerNode)
-            else self.session.qubits
-        )
-        for element in elements:
-            status = self.session.redis.hget(f"cs:{element}", node_name)
-            if status == "not_calibrated":
-                return DataStatus.out_of_spec
-            elif status != "calibrated":
-                raise ValueError(f"REDIS error: cannot find cs:{element}", node_name)
-        return DataStatus.in_spec
+    def _get_elements(self, node: NodeEnum) -> list[str]:
+        node_spec = self.nodes[node]
+        if isinstance(node_spec, NodeSpec):
+            return run.get_elements(node_spec, self.session)
+        if issubclass(node_spec, CouplerNode):
+            return list(self.session.couplers)
+        return list(self.session.qubits)
 
     @staticmethod
     def update_to_user_samplespace(node: BaseNode, user_samplespace: dict) -> None:
@@ -365,11 +366,12 @@ def _reanalyse(
     node_manager = NodeManager(None, session=session)
 
     target_node = session.target_node
-    node = node_manager.initialize_node(target_node)
-    logger.status(
-        f"Analysing '{session.target_node_name}' with {node.analysis_cls.__name__}"
-    )
-    node.post_process(session.data_dir)
+    logger.status(f"Analysing '{session.target_node_name}'")
+    node_spec = node_manager.nodes[target_node]
+    if isinstance(node_spec, NodeSpec):
+        run.analyse_node(node_spec, session.data_dir, session, should_save_plot=False)
+    else:
+        node_manager.initialize_node(target_node).post_process(session.data_dir)
     logger.status("Analysis completed.")
 
     if not keep_data_files and is_safe_path(session.data_dir):

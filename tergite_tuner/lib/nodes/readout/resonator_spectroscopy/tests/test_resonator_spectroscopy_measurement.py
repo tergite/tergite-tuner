@@ -11,80 +11,30 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from tergite_tuner.backend import ExtendedTransmon
+import numpy as np
+import pytest
+
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
-    ResonatorSpectroscopy1Node,
-    ResonatorSpectroscopy2Node,
-    ResonatorSpectroscopyNode,
+    DUMMY_SHIFTS,
+    RESONATOR_SPECTROSCOPY_SPECS,
 )
-from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
-from tergite_tuner.tests.utils.fixtures import (
-    DEFAULT_TEST_COUPLERS,
-    DEFAULT_TEST_QUBITS,
-)
+from tergite_tuner.lib.run import get_dummy_dataset, get_sweeps
 
 
-def test_measurement_0_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_0 = ResonatorSpectroscopyNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    assert issubclass(node_0.measurement_type_cls, ScheduleNode)
+@pytest.mark.parametrize("state", [0, 1, 2])
+def test_dummy_resonator_dips_below_its_vna_frequency_by_the_states_shift(
+    state, session_context
+):
+    spec = list(RESONATOR_SPECTROSCOPY_SPECS.values())[state]
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    sweeps = get_sweeps(spec, session)
 
+    dataset = get_dummy_dataset(spec, sweeps, session)
 
-def test_measurement_1_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_1 = ResonatorSpectroscopy1Node(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    assert issubclass(node_1.measurement_type_cls, ScheduleNode)
-
-
-def test_measurement_2_type(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node_2 = ResonatorSpectroscopy2Node(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    assert issubclass(node_2.measurement_type_cls, ScheduleNode)
-
-
-def test_dummy_0_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopyNode(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    dummy_dataset_0 = node.generate_dummy_dataset()
-    first_qubit = DEFAULT_TEST_QUBITS[0]
-    number_of_frequencies = len(
-        node.schedule_samplespace["ro_frequencies"][first_qubit]
-    )
-    assert len(dummy_dataset_0.data_vars) == len(DEFAULT_TEST_QUBITS)
-    assert dummy_dataset_0.data_vars[0].size == number_of_frequencies
-
-
-def test_dummy_1_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopy1Node(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    dummy_dataset_1 = node.generate_dummy_dataset()
-    first_qubit = DEFAULT_TEST_QUBITS[0]
-    number_of_frequencies = len(
-        node.schedule_samplespace["ro_frequencies"][first_qubit]
-    )
-    assert len(dummy_dataset_1.data_vars) == len(DEFAULT_TEST_QUBITS)
-    assert dummy_dataset_1.data_vars[0].size == number_of_frequencies
-
-
-def test_dummy_2_generation(session_context):
-    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-    node = ResonatorSpectroscopy2Node(
-        DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
-    )
-    dummy_dataset_2 = node.generate_dummy_dataset()
-    first_qubit = DEFAULT_TEST_QUBITS[0]
-    number_of_frequencies = len(
-        node.schedule_samplespace["ro_frequencies"][first_qubit]
-    )
-    assert len(dummy_dataset_2.data_vars) == len(DEFAULT_TEST_QUBITS)
-    assert dummy_dataset_2.data_vars[0].size == number_of_frequencies
+    qubit = session.qubits[0]
+    frequencies = sweeps["ro_frequencies"][qubit]
+    dip = frequencies[np.argmin(np.abs(dataset[0].values))]
+    vna_frequency = session.device_config.resonators[qubit]["VNA_frequency"]
+    assert len(dataset.data_vars) == len(session.qubits)
+    assert dataset[0].size == len(frequencies)
+    assert dip == pytest.approx(vna_frequency - DUMMY_SHIFTS[state], abs=0.3e6)

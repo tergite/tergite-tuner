@@ -22,6 +22,8 @@ from uuid import uuid4
 import cf_xarray as cf
 import xarray
 
+from tergite_tuner.utils.logging import logger
+
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
@@ -50,6 +52,18 @@ def create_node_data_path(session_config: "SessionContext", node_name: str) -> P
     )
     data_path = Path(os.path.join(session_config.data_dir, measurement_id))
     return data_path
+
+
+def load_dataset(node_name: str, data_path: Path) -> xarray.Dataset:
+    """The dataset ``save_dataset`` saved for ``node_name`` in ``data_path``."""
+    dataset_path = Path(data_path) / f"dataset_{node_name}.hdf5"
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+    logger.info(f"Open dataset {dataset_path}")
+    dataset = xarray.open_dataset(dataset_path)
+    if "working_points" in dataset.coords:
+        dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
+    return dataset
 
 
 def save_dataset(

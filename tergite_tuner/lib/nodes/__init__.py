@@ -73,9 +73,7 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.node import (
 )
 from tergite_tuner.lib.nodes.readout.punchout.node import PunchoutNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
-    ResonatorSpectroscopy1Node,
-    ResonatorSpectroscopy2Node,
-    ResonatorSpectroscopyNode,
+    RESONATOR_SPECTROSCOPY_SPECS,
 )
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.node import (
     ROAmplitudeThreeStateOptimizationNode,
@@ -86,13 +84,14 @@ from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node import (
     ROFrequencyThreeStateOptimizationNode,
     ROFrequencyTwoStateOptimizationNode,
 )
+from tergite_tuner.lib.spec import NodeSpec
 from tergite_tuner.utils.types.node_enum import NodeEnum
+
+# the nodes moved to NodeSpec; the rest are still classes in DEFAULT_NODE_CLS_MAP
+DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {**RESONATOR_SPECTROSCOPY_SPECS}
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.PUNCHOUT: PunchoutNode,
-    NodeEnum.RESONATOR_SPECTROSCOPY: ResonatorSpectroscopyNode,
-    NodeEnum.RESONATOR_SPECTROSCOPY_1: ResonatorSpectroscopy1Node,
-    NodeEnum.RESONATOR_SPECTROSCOPY_2: ResonatorSpectroscopy2Node,
     NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: ResonatorSpectroscopyVsCurrentNode,
     NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
     NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,

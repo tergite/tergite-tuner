@@ -41,7 +41,6 @@ tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py: too-many-locals 
 tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py: too-many-locals NRabiOscillationsNode.generate_dummy_dataset
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: too-many-locals RamseyDetuningsBaseQubitAnalysis._analyse_ramsey
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py: too-many-locals RamseyFringesBase.generate_dummy_dataset
-tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py: too-many-locals ResonatorSpectroscopyBase.generate_dummy_dataset
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse_qubit
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot

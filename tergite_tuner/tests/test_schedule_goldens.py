@@ -25,10 +25,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tergite_tuner.backend import ExtendedTransmon
-from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.goldens import get_first_samplespace
+from tergite_tuner.tests.utils.goldens import DEFAULT_NODE_NAMES, get_compiler
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 GOLDEN_FILE = Path(get_fixture_path("goldens")) / "schedules.json"
@@ -36,9 +34,7 @@ REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
 # below the last bits in which platforms' maths libraries differ
 SIGNIFICANT_DIGITS = 9
 # purity benchmarking cannot be built (step 9.7)
-NODE_NAMES = [
-    name for name in DEFAULT_NODE_NAME_CLS_MAP if name != "purity_benchmarking"
-]
+NODE_NAMES = [name for name in DEFAULT_NODE_NAMES if name != "purity_benchmarking"]
 
 
 @pytest.mark.parametrize("node_name", NODE_NAMES)
@@ -46,11 +42,7 @@ def test_compiled_program_matches_its_golden(
     node_name, redis_connection, session_context
 ):
     with loaded_redis(redis_connection, REDIS_VALUES):
-        ExtendedTransmon.close_all()
-        node = DEFAULT_NODE_NAME_CLS_MAP[node_name](
-            all_qubits=["q00", "q01"], couplers=["q00_q01"], session=session_context
-        )
-        compiled = node.precompile(get_first_samplespace(node))
+        compiled = get_compiler(node_name, session_context)()
 
     digest = _get_digest(compiled.compiled_instructions)
     goldens = json.loads(GOLDEN_FILE.read_text()) if GOLDEN_FILE.exists() else {}

@@ -10,6 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
@@ -19,94 +20,76 @@ from tergite_tuner.lib.nodes.readout.resonator_spectroscopy import (
     analysis as resonator_analysis,
 )
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
-    ResonatorSpectroscopy1QubitAnalysis,
     ResonatorSpectroscopyQubitAnalysis,
+    analyse_resonator,
+    plot_resonator,
 )
-from tergite_tuner.utils.types.qoi import QOI
+from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
+    RESONATOR_SPECTROSCOPY_SPECS,
+)
+from tergite_tuner.lib.run import get_redis_record
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
-def test_resonator_spectroscopy_setup(node_data_dir):
+def _get_s21(node_data_dir, qubit: str = "q06") -> xr.DataArray:
     file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
     with xr.open_dataset(file_path) as dataset:
-        analysis = ResonatorSpectroscopyQubitAnalysis(
-            "name",
-            ["clock_freqs:readout", "Ql", "resonator_minimum"],
-            session=SessionContext(data_dir=node_data_dir),
-        )
-        qoi = analysis.process_qubit(dataset, "yq06")
-        result_values = qoi.analysis_result
-
-        assert isinstance(qoi, QOI)
-        for quantity in result_values:
-            assert isinstance(result_values[quantity]["value"], float)
-        assert (
-            len(result_values) == 3
-        ), f"The dataset should contain three elements {len(dataset)}"
+        data = dataset[f"y{qubit}"].load()
+    s21 = data.isel(ReIm=0) + 1j * data.isel(ReIm=1)
+    s21.attrs["qubit"] = qubit
+    return s21
 
 
-def test_run_fitting(node_data_dir):
-    file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
-    with xr.open_dataset(file_path) as dataset:
-        analysis = ResonatorSpectroscopyQubitAnalysis(
-            "name",
-            ["clock_freqs:readout", "Ql", "resonator_minimum"],
-            session=SessionContext(data_dir=node_data_dir),
-        )
-        qoi = analysis.process_qubit(dataset, "yq06")
-        minimum_freq = qoi.analysis_result["clock_freqs:readout"]["value"]
-        fit_Ql = qoi.analysis_result["Ql"]["value"]
-        min_freq_data = qoi.analysis_result["resonator_minimum"]["value"]
+def test_analyse_resonator_fits_the_dip(node_data_dir):
+    fits = analyse_resonator(_get_s21(node_data_dir))
 
-        assert (
-            6e9 < minimum_freq < 8e9
-        ), f"Minimum frequency should be between 6 GHz and 8 GHz, got {minimum_freq}"
-        assert fit_Ql > 0, f"Fit Ql should be a positive value, got {fit_Ql}"
-        assert min_freq_data == pytest.approx(
-            minimum_freq, rel=1e-4
-        ), f"The both frequencies should be close to each other {minimum_freq} {min_freq_data}"
+    assert 6e9 < fits["frequency"].value < 8e9
+    assert fits["Ql"].value > 0
+    assert fits["minimum"].value == pytest.approx(fits["frequency"].value, rel=1e-4)
 
 
-def test_plotting(node_data_dir):
-    file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
-    with xr.open_dataset(file_path) as dataset:
-        analysis = ResonatorSpectroscopyQubitAnalysis(
-            "name",
-            ["clock_freqs:readout", "Ql", "resonator_minimum"],
-            session=SessionContext(data_dir=node_data_dir),
-        )
-        analysis.process_qubit(dataset, "yq06")
-        figure_path = node_data_dir / "Resonator_spectroscopy_q06.png"
-        figure_path.unlink(missing_ok=True)
-
-        fig, ax = plt.subplots()
-        analysis.plotter(ax)
-        fig.savefig(figure_path)
-        plt.close(fig)
-
-        assert figure_path.exists()
-
-
-def test_resonator_spectroscopy_1_stores_the_fitted_ql(node_data_dir):
-    file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
-    session = SessionContext(data_dir=node_data_dir)
-    with xr.open_dataset(file_path) as dataset:
-        ql = ResonatorSpectroscopyQubitAnalysis("name", [], session=session)
-        ql = ql.process_qubit(dataset, "yq06").analysis_result["Ql"]["value"]
-        analysis = ResonatorSpectroscopy1QubitAnalysis("name", [], session=session)
-        result = analysis.process_qubit(dataset, "yq06").analysis_result
-
-    assert result["Ql_1"]["value"] == pytest.approx(ql)
-
-
-def test_resonator_fit_that_raises_fails_the_analysis(node_data_dir, monkeypatch):
+def test_a_fit_that_raises_fails_the_element(node_data_dir, monkeypatch):
     def _raise(*args, **kwargs):
         raise ValueError("fit diverged")
 
     monkeypatch.setattr(resonator_analysis.model, "fit", _raise)
+
+    assert analyse_resonator(_get_s21(node_data_dir)) is None
+
+
+def test_each_state_stores_its_own_fields(node_data_dir):
+    fits = analyse_resonator(_get_s21(node_data_dir))
+    records = {
+        node: get_redis_record(spec.qois, fits)
+        for node, spec in RESONATOR_SPECTROSCOPY_SPECS.items()
+    }
+
+    assert records[NodeEnum.RESONATOR_SPECTROSCOPY]["Ql"] == fits["Ql"].value
+    assert records[NodeEnum.RESONATOR_SPECTROSCOPY_1]["Ql_1"] == fits["Ql"].value
+    assert set(records[NodeEnum.RESONATOR_SPECTROSCOPY_2]) == {
+        "extended_clock_freqs:readout_2",
+        "extended_clock_freqs:readout_2_error",
+    }
+
+
+def test_plot_resonator_draws_the_fit(node_data_dir):
+    s21 = _get_s21(node_data_dir)
+    figure, axis = plt.subplots()
+
+    plot_resonator(axis, s21, analyse_resonator(s21), session=None, state=0)
+
+    assert axis.lines
+    plt.close(figure)
+
+
+def test_punchout_reuses_the_fit_through_the_qubit_analysis(node_data_dir):
     file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
-    session = SessionContext(data_dir=node_data_dir)
     with xr.open_dataset(file_path) as dataset:
-        analysis = ResonatorSpectroscopyQubitAnalysis("name", [], session=session)
+        analysis = ResonatorSpectroscopyQubitAnalysis(
+            "name", [], session=SessionContext(data_dir=node_data_dir)
+        )
         qoi = analysis.process_qubit(dataset, "yq06")
 
-    assert not qoi.analysis_successful
+    expected = analyse_resonator(_get_s21(node_data_dir))["frequency"].value
+    assert qoi.analysis_result["clock_freqs:readout"]["value"] == expected
+    assert np.isfinite(expected)

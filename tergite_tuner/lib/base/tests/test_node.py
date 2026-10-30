@@ -14,16 +14,13 @@ import matplotlib
 import pytest
 
 from tergite_tuner.backend import ExtendedTransmon
-from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
-from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
-    ResonatorSpectroscopyNode,
-)
+from tergite_tuner.lib.nodes import RabiOscillationsNode
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
-from tergite_tuner.tests.utils.goldens import get_first_external_point
+from tergite_tuner.tests.utils.goldens import DEFAULT_NODE_NAMES, get_dataset_builder
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
@@ -37,7 +34,7 @@ def test_node_keeps_the_callers_matplotlib_backend(session_context, save_plot):
     session = session_context.model_copy(update={"save_plot": save_plot})
 
     try:
-        ResonatorSpectroscopyNode(
+        RabiOscillationsNode(
             DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session
         )
         assert matplotlib.get_backend() == "pdf"
@@ -45,17 +42,11 @@ def test_node_keeps_the_callers_matplotlib_backend(session_context, save_plot):
         matplotlib.use(original_backend)
 
 
-@pytest.mark.parametrize("node_name", list(DEFAULT_NODE_NAME_CLS_MAP))
+@pytest.mark.parametrize("node_name", DEFAULT_NODE_NAMES)
 def test_every_node_has_a_dummy_dataset_it_can_configure(
     node_name, redis_connection, session_context
 ):
     with loaded_redis(redis_connection, _REDIS_VALUES):
-        ExtendedTransmon.close_all()
-        node = DEFAULT_NODE_NAME_CLS_MAP[node_name](
-            all_qubits=["q00", "q01"], couplers=["q00_q01"], session=session_context
-        )
-        node.reduced_external_samplespace = get_first_external_point(node)
-
-        dataset = node.configure_dataset(node.generate_dummy_dataset())
+        dataset = get_dataset_builder(node_name, session_context)()
 
     assert dataset.data_vars

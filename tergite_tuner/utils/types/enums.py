@@ -15,15 +15,6 @@
 from enum import Enum
 
 
-class DataStatus(Enum):
-    """
-    Used by check_data to indicate outcome
-    """
-
-    in_spec = 1
-    out_of_spec = 2
-
-
 class MeasurementMode(Enum):
     """
     Used to set the cluster mode e.g.  real cluster or re analyse

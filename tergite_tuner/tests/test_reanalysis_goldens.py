@@ -23,13 +23,10 @@ from pathlib import Path
 
 import pytest
 
-from tergite_tuner.lib.nodes import DEFAULT_NODE_CLS_MAP
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import (
     RECORDED_DATASETS,
-    copy_dataset,
-    get_dataset_path,
-    get_qois,
+    get_analyser,
     get_redis_file,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
@@ -44,20 +41,9 @@ def test_reanalysis_gives_the_golden_qois(
     case, redis_connection, session_context, tmp_path
 ):
     golden_case = RECORDED_DATASETS[case]
-    node_cls = DEFAULT_NODE_CLS_MAP[golden_case.node]
-    copy_dataset(
-        get_dataset_path(golden_case.dataset),
-        tmp_path / f"dataset_{node_cls.name}.hdf5",
-    )
-
+    analyse = get_analyser(golden_case, tmp_path, session_context)
     with loaded_redis(redis_connection, get_redis_file(golden_case)):
-        analysis = node_cls.analysis_cls(
-            name=node_cls.name,
-            redis_fields=get_qois(node_cls),
-            session=session_context,
-            **golden_case.analysis_keywords,
-        )
-        qois = analysis.analyze_node(tmp_path, save_plot=False)
+        qois = analyse()
 
     values = _get_flat_values(qois)
     golden_path = GOLDENS_DIR / f"{case}.json"

@@ -201,7 +201,7 @@ class BaseNode(ABC):
             )
 
         self.session.redis_store.save_many(redis_data)
-        self.session.update_redis_fields_log(self)
+        self.session.update_redis_fields_log(self.redis_fields)
         return results
 
     def configure_dataset(
