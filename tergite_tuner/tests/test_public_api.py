@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 """The entry points called the ways the README shows."""
 
+import dataclasses
 import re
 import shutil
 
@@ -26,12 +27,9 @@ from tergite_tuner import (
 )
 from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
-from tergite_tuner.lib.nodes import DEFAULT_NODE_CLS_MAP, T1Node
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.redis import (
-    loaded_redis,
-    set_drive_frequencies_from_device,
-)
+from tergite_tuner.tests.utils.redis import loaded_redis
 from tergite_tuner.utils.types.enums import MeasurementMode
 
 REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
@@ -82,23 +80,27 @@ def test_run_node_runs_only_that_node(redis_connection, session_context, tmp_pat
     ]
 
 
-def test_run_node_uses_a_custom_node_class(redis_connection, session_context, tmp_path):
-    built_nodes = []
+def test_run_node_uses_a_custom_node_spec(redis_connection, session_context, tmp_path):
+    analysed_qubits = []
+    spec = DEFAULT_NODE_SPECS[NodeEnum.RESONATOR_SPECTROSCOPY]
 
-    class CustomT1Node(T1Node):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            built_nodes.append(self)
+    def analyse(s21, session):
+        analysed_qubits.append(s21.attrs["qubit"])
+        return spec.analyse(s21, session)
 
-    node_cls_map = dict(DEFAULT_NODE_CLS_MAP)
-    node_cls_map[NodeEnum.T1] = CustomT1Node
-    session = _get_dummy_session(session_context, tmp_path, node_cls_map=node_cls_map)
+    custom_spec = dataclasses.replace(spec, analyse=analyse)
+    session = _get_dummy_session(
+        session_context,
+        tmp_path,
+        node_specs={NodeEnum.RESONATOR_SPECTROSCOPY: custom_spec},
+    )
     with loaded_redis(redis_connection, REDIS_VALUES):
-        set_drive_frequencies_from_device(redis_connection, session.device_config)
         ExtendedTransmon.close_all()
-        run_node(NodeEnum.T1, session=session, refresh_session=False)
+        run_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
+        )
 
-    assert len(built_nodes) == 1
+    assert analysed_qubits == sorted(session.qubits)
 
 
 def test_reanalyse_analyses_a_recorded_dataset(

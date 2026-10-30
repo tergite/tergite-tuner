@@ -180,13 +180,7 @@ tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C4
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: E713 Test for membership should be `not in`
-tergite_tuner/lib/nodes/characterization/t1/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/characterization/t1/node.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
-tergite_tuner/lib/nodes/characterization/t2/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/characterization/t2/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/characterization/t2/analysis.py: SIM910 Use `kws.get("x")` instead of `kws.get("x", None)`
-tergite_tuner/lib/nodes/characterization/t2/node.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
-tergite_tuner/lib/nodes/characterization/t2/node.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: UP006 Use `tuple` instead of `Tuple` for type annotation

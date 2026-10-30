@@ -39,8 +39,12 @@ from tergite_tuner.lib.nodes.characterization.purity_benchmarking.node import (
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
     RandomizedBenchmarkingNode,
 )
-from tergite_tuner.lib.nodes.characterization.t1.node import T1Node
-from tergite_tuner.lib.nodes.characterization.t2.node import T2EchoNode, T2Node
+from tergite_tuner.lib.nodes.characterization.t1.node import (
+    T1_SPECS,
+)
+from tergite_tuner.lib.nodes.characterization.t2.node import (
+    T2_SPECS,
+)
 from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.coupler.cz_chevron.node import CZChevronNode
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import CZLocalPhasesNode
@@ -92,6 +96,8 @@ DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
     **PUNCHOUT_SPECS,
     **RO_FREQUENCY_SPECS,
     **RO_AMPLITUDE_SPECS,
+    **T1_SPECS,
+    **T2_SPECS,
 }
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
@@ -99,9 +105,6 @@ DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
     NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
     NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
-    NodeEnum.T1: T1Node,
-    NodeEnum.T2: T2Node,
-    NodeEnum.T2_ECHO: T2EchoNode,
     NodeEnum.ALL_XY: AllXYNode,
     NodeEnum.RANDOMIZED_BENCHMARKING: RandomizedBenchmarkingNode,
     NodeEnum.PURITY_BENCHMARKING: PurityBenchmarkingNode,

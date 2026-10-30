@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 """Running a node spec: sweep, measure, analyse, plot and store."""
 
+import itertools
 import math
 import time
 from collections.abc import Iterable, Mapping
@@ -62,9 +63,7 @@ def calibrate(
             spec.name.value, session.qubits, session.couplers, session
         )
         try:
-            dataset = measure(
-                spec, hardware, device, get_sweeps(spec, session), session
-            )
+            dataset = measure(spec, hardware, device, session)
             save_serial_device(device, data_path)
             save_dataset(dataset, spec.name.value, data_path)
         finally:
@@ -75,17 +74,8 @@ def calibrate(
 
 
 def get_sweeps(spec: NodeSpec, session: "SessionContext") -> Sweeps:
-    """Each swept setting's values per element, with the session's user samplespace applied."""
-    elements = get_elements(spec, session)
-    sweeps = {
-        setting: {element: get_values(element, session) for element in elements}
-        for setting, get_values in spec.sweeps.items()
-    }
-    for setting, values in session.user_samplespace.get(spec.name.value, {}).items():
-        if setting not in sweeps:
-            raise KeyError(f"{setting} not in any samplespace")
-        sweeps[setting] = values
-    return sweeps
+    """Each of the schedule's swept settings' values per element, with the session's user samplespace applied."""
+    return _get_sweeps(spec.sweeps, spec, session)
 
 
 def get_elements(spec: NodeSpec, session: "SessionContext") -> list[str]:
@@ -107,26 +97,57 @@ def measure(
     spec: NodeSpec,
     hardware: Hardware,
     device: QuantumDevice,
-    sweeps: Sweeps,
     session: "SessionContext",
 ) -> xr.Dataset:
-    """The node's dataset: its schedule run on ``hardware``, or dummy data in dummy mode."""
+    """The node's dataset: its schedule run on ``hardware`` once per external point, or dummy data in dummy mode."""
+    sweeps = get_sweeps(spec, session)
     compiled_schedule = compile_node(spec, device, sweeps)
-    duration = compiled_schedule.get_schedule_duration()
-    print_measurement_info(duration, (1, 1))
-
-    start = time.perf_counter()
-    raw_dataset = run_schedule(
-        hardware.coordinator,
-        compiled_schedule,
-        timeout=duration + session.cluster_timeout,
-    )
-    logger.info(f"Measured {spec.name.value} in {time.perf_counter() - start:.2f} s")
-
-    if session.cluster_mode == MeasurementMode.dummy:
-        raw_dataset = get_dummy_dataset(spec, sweeps, session)
+    qubits = list(device.elements())
+    points = get_external_points(get_external_sweeps(spec, session))
+    dataset = xr.Dataset()
+    for index, point in enumerate(points):
+        if spec.set_external is not None:
+            spec.set_external(hardware, point, index)
+        point_dataset = _run_once(
+            spec,
+            hardware,
+            compiled_schedule,
+            sweeps,
+            session,
+            qubits,
+            (index, len(points)),
+        )
+        for setting, values in point.items():
+            # the external values are the same for every element
+            value = next(iter(values.values()))
+            point_dataset = point_dataset.expand_dims({setting: np.array([value])})
+        dataset = xr.merge(
+            [point_dataset, dataset], join="outer", compat="no_conflicts"
+        )
+    if spec.reset_external is not None:
+        spec.reset_external(hardware)
     logger.info("Finished measurement")
-    return get_dataset(raw_dataset, sweeps, list(device.elements()), spec.loops)
+    return dataset
+
+
+def get_external_sweeps(spec: NodeSpec, session: "SessionContext") -> Sweeps:
+    return _get_sweeps(spec.external_sweeps, spec, session)
+
+
+def get_external_points(external_sweeps: Sweeps) -> list[dict[str, dict[str, Any]]]:
+    """Each point of the external sweeps, as each setting's value per element; one empty point without any."""
+    names = list(external_sweeps)
+    counts = [len(next(iter(external_sweeps[name].values()))) for name in names]
+    return [
+        {
+            name: {
+                element: values[index]
+                for element, values in external_sweeps[name].items()
+            }
+            for name, index in zip(names, indices, strict=True)
+        }
+        for indices in itertools.product(*(range(count) for count in counts))
+    ]
 
 
 def get_dummy_dataset(
@@ -307,3 +328,42 @@ def _get_element_axes(axes: np.ndarray, index: int, rows: int) -> Any:
     """The ``index``-th element's axis, or its column of ``rows`` axes, in a grid of ``PLOT_COLUMNS``."""
     row, column = rows * (index // PLOT_COLUMNS), index % PLOT_COLUMNS
     return axes[row : row + rows, column] if rows > 1 else axes[row, column]
+
+
+def _get_sweeps(
+    sweep_fns: Mapping[str, Any], spec: NodeSpec, session: "SessionContext"
+) -> Sweeps:
+    elements = get_elements(spec, session)
+    sweeps = {
+        setting: {element: get_values(element, session) for element in elements}
+        for setting, get_values in sweep_fns.items()
+    }
+    user_samplespace = session.user_samplespace.get(spec.name.value, {})
+    unknown = user_samplespace.keys() - spec.sweeps.keys() - spec.external_sweeps.keys()
+    if unknown:
+        raise KeyError(f"{unknown} not in any samplespace")
+    sweeps.update({k: v for k, v in user_samplespace.items() if k in sweep_fns})
+    return sweeps
+
+
+def _run_once(
+    spec: NodeSpec,
+    hardware: Hardware,
+    compiled_schedule: CompiledSchedule,
+    sweeps: Sweeps,
+    session: "SessionContext",
+    qubits: list[str],
+    measurement: tuple[int, int],
+) -> xr.Dataset:
+    duration = compiled_schedule.get_schedule_duration()
+    print_measurement_info(duration, measurement)
+    start = time.perf_counter()
+    raw_dataset = run_schedule(
+        hardware.coordinator,
+        compiled_schedule,
+        timeout=duration + session.cluster_timeout,
+    )
+    logger.info(f"Measured {spec.name.value} in {time.perf_counter() - start:.2f} s")
+    if session.cluster_mode == MeasurementMode.dummy:
+        raw_dataset = get_dummy_dataset(spec, sweeps, session)
+    return get_dataset(raw_dataset, sweeps, qubits, spec.loops)

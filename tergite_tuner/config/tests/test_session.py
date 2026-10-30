@@ -36,9 +36,8 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
     DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
+    DEFAULT_NODE_SPECS,
     NodeEnum,
-    Qubit01SpectroscopyAmplitudeNode,
-    T1Node,
 )
 from tergite_tuner.utils.types.enums import MeasurementMode
 
@@ -294,9 +293,9 @@ def test_session_rejects_invalid_is_recalibration(tmp_path, clean_environ):
 
 def test_session_loads_node_vars_from_py_objects():
     """Can load the node vars like node_dag_edges, ignored_nodes etc. from python objects"""
-    node_cls_map = {
-        NodeEnum.CZ_RB: T1Node,
-        NodeEnum.CZ_CHEVRON: Qubit01SpectroscopyAmplitudeNode,
+    node_specs = {
+        NodeEnum.CZ_RB: DEFAULT_NODE_SPECS[NodeEnum.T1],
+        NodeEnum.CZ_CHEVRON: DEFAULT_NODE_SPECS[NodeEnum.T2],
     }
     ignored_nodes = (NodeEnum.CZ_RB,)
     node_dag_edges = (
@@ -305,11 +304,11 @@ def test_session_loads_node_vars_from_py_objects():
     )
 
     session = SessionContext(
-        node_cls_map=node_cls_map,
+        node_specs=node_specs,
         ignored_nodes=ignored_nodes,
         node_dag_edges=node_dag_edges,
     )
-    assert session.node_cls_map == node_cls_map
+    assert session.node_specs == node_specs
     assert session.node_dag_edges == node_dag_edges
     assert session.ignored_nodes == ignored_nodes
 
@@ -318,6 +317,7 @@ def test_default_session_has_default_node_props():
     """default session has the default node vars."""
     session = SessionContext()
     assert session.node_cls_map == DEFAULT_NODE_CLS_MAP
+    assert session.node_specs == {}
     assert session.ignored_nodes == DEFAULT_IGNORED_NODES
     assert session.node_dag_edges == DEFAULT_NODE_DAG_EDGES
 

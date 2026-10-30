@@ -18,6 +18,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import time
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING
@@ -63,6 +64,12 @@ class Hardware:
     def connect_spi(self, couplers: list[str]) -> SpiDAC:
         self.spi = SpiDAC(couplers, self.session)
         return self.spi
+
+    def wait(self, seconds: float) -> None:
+        """Lets the device settle; a dummy cluster has nothing to wait for."""
+        if self.session.cluster_mode == MeasurementMode.real:
+            logger.info(f"sleeping for {seconds} seconds")
+            time.sleep(seconds)
 
 
 def set_output_attenuations(

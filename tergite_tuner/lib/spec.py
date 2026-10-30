@@ -23,6 +23,7 @@ from tergite_tuner.backend import Schedule
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
+    from tergite_tuner.backend import Hardware
     from tergite_tuner.config.session import SessionContext
 
 # an element's values of a swept setting
@@ -60,6 +61,12 @@ class NodeSpec:
             the dataset.
         plot_rows: how many axes ``plot`` draws on per element.
         save_details: saves an element's own figures in the node's data folder.
+        external_sweeps: settings outside the schedule, such as a coupler's current,
+            each value of which takes a run of the schedule; the dataset gains a
+            dimension per setting.
+        set_external: sets an external sweep's point before its run, given the
+            hardware, each setting's value per element and the point's index.
+        reset_external: undoes the external settings after the last point.
     """
 
     name: NodeEnum
@@ -76,11 +83,28 @@ class NodeSpec:
     save_details: (
         Callable[[xr.DataArray, Fits, Path, "SessionContext"], None] | None
     ) = None
+    external_sweeps: Mapping[str, SweepFn] = field(default_factory=dict)
+    set_external: (
+        Callable[["Hardware", Mapping[str, Mapping[str, Any]], int], None] | None
+    ) = None
+    reset_external: Callable[["Hardware"], None] | None = None
 
 
 def get_fixed_sweep(values: np.ndarray) -> SweepFn:
     """A sweep over the same ``values`` for every element."""
     return lambda _element, _session: values
+
+
+def get_waits_between_points(
+    seconds: float,
+) -> Callable[["Hardware", Mapping[str, Mapping[str, Any]], int], None]:
+    """A ``set_external`` that lets the device settle ``seconds`` before every point but the first."""
+
+    def wait(hardware: "Hardware", _point: Mapping, index: int) -> None:
+        if index > 0:
+            hardware.wait(seconds)
+
+    return wait
 
 
 def get_coord_name(quantity: str, element: str) -> str:

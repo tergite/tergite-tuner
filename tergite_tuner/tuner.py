@@ -60,8 +60,12 @@ class NodeManager:
         self.session = session
         self.hardware = hardware
 
-        # a node class the session maps wins over a default spec
-        self.nodes = {**DEFAULT_NODE_SPECS, **session.node_cls_map}
+        # the session's own specs win over its classes, which win over the default specs
+        self.nodes = {
+            **DEFAULT_NODE_SPECS,
+            **session.node_cls_map,
+            **session.node_specs,
+        }
         self.node_cls_map = session.node_cls_map
         self.ignored_nodes = session.ignored_nodes
         self.node_dag_edges = session.node_dag_edges
