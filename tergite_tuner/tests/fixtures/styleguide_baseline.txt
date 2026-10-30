@@ -93,7 +93,6 @@ type-hints: tergite_tuner/backend/transmon.py::ExtendedTransmon.__init__
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_target_node
 type-hints: tergite_tuner/export.py::generate_calib_seed_file
 type-hints: tergite_tuner/lib/base/measurement.py::BaseMeasurement.__init__
-type-hints: tergite_tuner/lib/base/utils/figure_utils.py::create_figure_with_top_band
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._fit_data
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._get_magnitudes
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._identify_coords
