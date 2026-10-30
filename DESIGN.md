@@ -98,7 +98,7 @@ Each can also be passed as an object. The README shows both.
 
 ## 6. Testing
 
-`pytest tergite_tuner -n auto`, in parallel with pytest-xdist. CI runs it serially: in its containers, parallel runs were slower. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
+`pytest tergite_tuner -n 4`, in parallel with pytest-xdist, as CI runs it. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
 
 - Each node's tests live in its `tests/` folder, beside the recorded datasets they analyse (`tests/data/`); `tergite_tuner/tests/` holds the tests of the tuner as a whole.
 - Shared helpers live in `tergite_tuner/tests/utils/`, grouped by what they do: `datasets.py`, `fixtures.py`, `goldens.py`, `pytest.py`, `runs.py`, `state.py`. A test's device state is JSON that `DeviceState` takes as is, in the shape `results.json` has.

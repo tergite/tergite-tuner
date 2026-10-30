@@ -37,7 +37,7 @@ jobs:
           uv run --locked python -m dev.lint.baseline pylint
           uv run --locked python -m dev.lint.baseline vulture
       - name: Run tests
-        run: uv run --locked pytest tergite_tuner
+        run: uv run --locked pytest tergite_tuner -n 4
         env:
           CODE_STATUS: ${{ vars.CODE_STATUS }}
 
