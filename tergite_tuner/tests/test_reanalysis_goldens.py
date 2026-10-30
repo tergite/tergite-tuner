@@ -36,6 +36,10 @@ GOLDENS_DIR = Path(get_fixture_path("goldens"))
 TOLERANCE = 1e-6
 # fitted values the data constrains loosely, which platforms' last bits move further
 LOOSE_TOLERANCES = {"Ql": 1e-3}
+# choices whose deciding fit sits within its own uncertainty of the threshold, so
+# platforms' fits fall either side: q08's last punchout shift is 98.5 kHz against
+# the 100 kHz threshold, from a fit uncertain by 13.5 kHz
+EITHER_VALUE = {"punchout": {"q08/measure:pulse_amp": (0.04525, 0.06)}}
 
 
 @pytest.mark.parametrize("case", RECORDED_DATASETS)
@@ -50,6 +54,11 @@ def test_reanalysis_gives_the_golden_qois(case, session_context, tmp_path):
     if os.environ.get("UPDATE_GOLDENS"):
         golden_path.write_text(json.dumps(values, indent=2, sort_keys=True) + "\n")
     golden = json.loads(golden_path.read_text())
+    either = EITHER_VALUE.get(case, {})
+    for key, choices in either.items():
+        value = values.pop(key)
+        assert any(value == pytest.approx(choice) for choice in choices), value
+        golden.pop(key)
     numbers = {key for key, value in golden.items() if _is_number(value)}
     assert {k: v for k, v in values.items() if k not in numbers} == {
         k: v for k, v in golden.items() if k not in numbers
