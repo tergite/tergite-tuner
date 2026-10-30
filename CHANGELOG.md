@@ -15,6 +15,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Changed
 
+- [BREAKING] Back on quantify-scheduler 0.22 and qblox-instruments 0.14, which tergite-backend pins; 2026.10.0rc1 had moved to qblox-scheduler 1.0.0b8 and qblox-instruments 1.4, so a Cluster updated for it needs firmware that qblox-instruments 0.14 supports
 - Removed `NodeEnum.PROCESS_TOMOGRAPHY_SSRO`, whose node could not run and was left out of the node map, with the unused reset chevron node
 - Read the TOML config files with Python's `tomllib`; a malformed one raises `tomllib.TOMLDecodeError` where it raised `toml.TomlDecodeError`, and `toml`, `h5py` and `requests` are no longer direct dependencies
 - Moved the transmon, coupler edge, extended gates and device helpers from `tergite_tuner.utils.types.extended_*` and `tergite_tuner.lib.utils.device` to `tergite_tuner.backend`
