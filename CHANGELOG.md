@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.2] - 2026-10-31
+
 ### Added
 
 - Analysed AllXY: each pulse pair's |1> population against the ideal gates', with their mean deviation stored as `all_xy_error`; the node raised `NotImplementedError`

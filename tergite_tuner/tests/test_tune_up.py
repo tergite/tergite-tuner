@@ -13,7 +13,6 @@
 
 import pytest
 
-from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.runs import DEFAULT_NODES, run_dummy_node
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -28,9 +27,7 @@ def test_every_default_node_runs_in_dummy_mode(
     run_dummy_node(node, session_context, tmp_path)
 
     # analyses of random IQ points may fail; reaching them without raising is the check
-    # a node may save under another node's name (step 9.8)
-    node_name = DEFAULT_NODE_SPECS[node].name.value
-    assert list(tmp_path.glob(f"*-run/dataset_{node_name}.hdf5"))
+    assert list(tmp_path.glob(f"*-run/dataset_{node.value}.hdf5"))
 
 
 def test_unkept_data_files_delete_only_the_runs_folder(

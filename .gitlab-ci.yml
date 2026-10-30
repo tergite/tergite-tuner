@@ -28,11 +28,6 @@ test_lint_build:
     # measures the same lines as coverage's default core, at almost none of its cost
     COVERAGE_CORE: sysmon
   script:
-    # ``ffmpeg``/``libsm6``/``libxext6`` are kept
-    # because ``quantify-scheduler`` pulls them in transitively for
-    # plotting backends.
-    - apt-get update
-    - apt-get install ffmpeg libsm6 libxext6 -y
     - pip install uv==0.11.26
     - uv sync --locked --all-groups
     # print the status of the code
@@ -57,7 +52,7 @@ test_lint_build:
       - .venv
 
 # Performance: about 15 minutes, so on main and tags, and by hand on a merge request. It
-# reports without failing until the CI runner's noise is known (REFACTOR.md step 3.4).
+# reports without failing until the CI runner's noise is known.
 performance:
   stage: test_lint_build
   image: python:${PYTHON_VERSION}
@@ -66,8 +61,6 @@ performance:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_TAG
     - when: manual
   script:
-    - apt-get update
-    - apt-get install ffmpeg libsm6 libxext6 -y
     - pip install uv==0.11.26
     - uv sync --locked --all-groups
     - dev/perf/record.sh perf-recording

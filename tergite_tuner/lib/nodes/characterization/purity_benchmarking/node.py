@@ -10,7 +10,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""Purity benchmarking, which cannot run yet (REFACTOR.md step 9.7)."""
+"""Purity benchmarking: the decay of the state's purity over random Clifford sequences, which gives the incoherent error."""
 
 from collections.abc import Mapping
 from typing import TYPE_CHECKING

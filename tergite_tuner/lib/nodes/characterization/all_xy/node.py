@@ -10,7 +10,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""AllXY, which has no analysis yet (REFACTOR.md step 9.7)."""
+"""AllXY: each pair of pulses' |1> population against the ideal gates'."""
 
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
