@@ -27,6 +27,12 @@ if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
+# the weight of each nearest neighbour's score in a point's
+NEIGHBOUR_WEIGHTS = np.array(
+    [[0.02, 0.05, 0.01], [0.05, 1.0, 0.05], [0.02, 0.02, 0.02]]
+)
+
+
 class CZParametrizationAnalysis(CouplerAnalysis):
 
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
@@ -69,95 +75,50 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
 
     def analyse(self) -> Fits | None:
         self.calculate_probabilities()
-
         self.optimal_values = xr.DataArray(name=self.coupler)
-        for current_index, _ in enumerate(self.dc_currents):
-            current_probabilities = self.probabilities.isel(
-                {self.dc_currents_coord: current_index}
-            )
-            control_state_2 = current_probabilities.sel(
-                {"qubit": self.control_qubit, "state": 2}
-            )
-            control_state_1 = current_probabilities.sel(
-                {"qubit": self.control_qubit, "state": 1}
-            )
-            control_state_0 = current_probabilities.sel(
-                {"qubit": self.control_qubit, "state": 0}
-            )
-            target_state_0 = current_probabilities.sel(
-                {"qubit": self.target_qubit, "state": 0}
-            )
-            target_state_1 = current_probabilities.sel(
-                {"qubit": self.target_qubit, "state": 1}
-            )
-            target_state_2 = current_probabilities.sel(
-                {"qubit": self.target_qubit, "state": 2}
-            )
-            if self.phase_path == "via_20":
-                control_diffs = control_state_2 - control_state_1 - control_state_0
-                target_diffs = target_state_0 - target_state_1 - target_state_2
-            elif self.phase_path == "via_02":
-                control_diffs = control_state_0 - control_state_1 - control_state_2
-                target_diffs = target_state_2 - target_state_1 - target_state_0
-            else:
-                raise ValueError("Invalid phase path")
-
-            # Compute signed distance including nearest neighbor influence
-            convolution_kernel = np.array(
-                [[0.02, 0.05, 0.01], [0.05, 1.0, 0.05], [0.02, 0.02, 0.02]]
-            )
-
-            summed_differences = control_diffs + target_diffs
-
-            weighted_sum = summed_differences.copy(deep=True)
-            weighted_sum.values = convolve(
-                weighted_sum.values,
-                convolution_kernel / np.sum(convolution_kernel),
-                mode="constant",
-                cval=-1,
-            )
-
-            weighted_optimal_point = (
-                weighted_sum.where(weighted_sum == weighted_sum.max(), drop=True)
-                .expand_dims(self.dc_currents_coord)  # promote dimension
-                .expand_dims({"index": [current_index]})
-            )
-            weighted_optimal_point = weighted_optimal_point.stack(
-                multi=[
-                    self.frequencies_coord,
-                    self.amplitudes_coord,
-                    self.dc_currents_coord,
-                    "index",
-                ]
-            )
+        for current_index in range(len(self.dc_currents)):
             self.optimal_values = xr.merge(
-                [self.optimal_values, weighted_optimal_point],
+                [self.optimal_values, self._get_optimal_point(current_index)],
                 join="outer",
                 compat="no_conflicts",
             )
-
-        optimal_coords = self.optimal_values.idxmax()
-        self.optimal_frequency = optimal_coords[self.coupler].values.tolist()[0]
-        self.optimal_amplitude = optimal_coords[self.coupler].values.tolist()[1]
-        self.optimal_dc_current = optimal_coords[self.coupler].values.tolist()[2]
-        self.optimal_current_index = optimal_coords[self.coupler].values.tolist()[3]
+        optimal = self.optimal_values.idxmax()[self.coupler].values.tolist()
+        self.optimal_frequency = optimal[0]
+        self.optimal_amplitude = optimal[1]
+        self.optimal_dc_current = optimal[2]
+        self.optimal_current_index = optimal[3]
 
         self.analysis_succesful = any(self.optimal_values[self.coupler] > 1)
         analysis_result = {
-            "cz_pulse_frequency": {
-                "value": self.optimal_frequency,
-                "error": 0,
-            },
-            "cz_pulse_amplitude": {
-                "value": self.optimal_amplitude,
-                "error": 0,
-            },
-            "parking_current": {
-                "value": self.optimal_dc_current,
-                "error": 0,
-            },
+            "cz_pulse_frequency": {"value": self.optimal_frequency, "error": 0},
+            "cz_pulse_amplitude": {"value": self.optimal_amplitude, "error": 0},
+            "parking_current": {"value": self.optimal_dc_current, "error": 0},
         }
         return get_fits_from_result(analysis_result, self.analysis_succesful)
+
+    def _get_optimal_point(self, current_index: int) -> xr.DataArray:
+        """The best-scoring frequency and amplitude at one parking current, as a point of the stack."""
+        probabilities = self.probabilities.isel({self.dc_currents_coord: current_index})
+        scores = get_smoothed_scores(
+            get_path_scores(
+                probabilities.sel({"qubit": self.control_qubit}),
+                probabilities.sel({"qubit": self.target_qubit}),
+                self.phase_path,
+            )
+        )
+        point = (
+            scores.where(scores == scores.max(), drop=True)
+            .expand_dims(self.dc_currents_coord)
+            .expand_dims({"index": [current_index]})
+        )
+        return point.stack(
+            multi=[
+                self.frequencies_coord,
+                self.amplitudes_coord,
+                self.dc_currents_coord,
+                "index",
+            ]
+        )
 
     def plotter(self, figures_dictionary: dict[str, list]):
         figures_list = []
@@ -212,3 +173,38 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
             figures_list.append(fig)
 
         figures_dictionary[self.coupler] = figures_list
+
+
+def get_path_scores(
+    control: xr.DataArray, target: xr.DataArray, phase_path: str
+) -> xr.DataArray:
+    """How far each point moves the population along the phase path: |2> for the control and |0> for the target via 20, the reverse via 02."""
+    if phase_path == "via_20":
+        control_end, target_end = 2, 0
+    elif phase_path == "via_02":
+        control_end, target_end = 0, 2
+    else:
+        raise ValueError("Invalid phase path")
+    return _get_state_lead(control, control_end) + _get_state_lead(target, target_end)
+
+
+def get_smoothed_scores(scores: xr.DataArray) -> xr.DataArray:
+    """The scores weighted with their nearest neighbours', points off the grid counting -1."""
+    smoothed = scores.copy(deep=True)
+    smoothed.values = convolve(
+        smoothed.values,
+        NEIGHBOUR_WEIGHTS / np.sum(NEIGHBOUR_WEIGHTS),
+        mode="constant",
+        cval=-1,
+    )
+    return smoothed
+
+
+def _get_state_lead(probabilities: xr.DataArray, state: int) -> xr.DataArray:
+    """The probability of ``state`` less those of |1> and of the third state, in that order."""
+    other = 2 - state
+    return (
+        probabilities.sel({"state": state})
+        - probabilities.sel({"state": 1})
+        - probabilities.sel({"state": other})
+    )

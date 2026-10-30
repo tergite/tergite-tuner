@@ -15,11 +15,15 @@
 import math
 import shutil
 
+import numpy as np
+import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationCouplerAnalysis,
+    get_path_scores,
+    get_smoothed_scores,
 )
 from tergite_tuner.lib.run import get_coupler_datasets
 from tergite_tuner.lib.spec import is_failed, save_coupler_figures
@@ -108,3 +112,33 @@ def test_plotting(session_context, tmp_path, node_data_dir):
                 assert image_path.exists()
             finally:
                 image_path.unlink(missing_ok=True)
+
+
+def _get_probabilities(p0: float, p1: float, p2: float) -> xr.DataArray:
+    return xr.DataArray([p0, p1, p2], coords={"state": [0, 1, 2]}, dims="state")
+
+
+@pytest.mark.parametrize(
+    "phase_path, expected",
+    [
+        ("via_20", (0.7 - 0.2 - 0.1) + (0.6 - 0.3 - 0.1)),
+        ("via_02", (0.1 - 0.2 - 0.7) + (0.1 - 0.3 - 0.6)),
+    ],
+)
+def test_a_point_scores_how_far_it_moves_along_the_phase_path(phase_path, expected):
+    control = _get_probabilities(0.1, 0.2, 0.7)
+    target = _get_probabilities(0.6, 0.3, 0.1)
+
+    assert get_path_scores(control, target, phase_path).item() == pytest.approx(
+        expected
+    )
+
+
+def test_smoothing_weights_a_point_by_its_neighbours():
+    scores = xr.DataArray(np.ones((3, 3)))
+
+    smoothed = get_smoothed_scores(scores)
+
+    # the centre has all its neighbours; the edges count the -1s beyond the grid
+    assert smoothed.values[1, 1] == pytest.approx(1.0)
+    assert smoothed.values[0, 0] < smoothed.values[1, 1]

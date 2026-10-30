@@ -8,7 +8,6 @@ tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: too-many-locals C
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: too-many-locals CZChevronCouplerAnalysis.analyse
 tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py: too-many-locals CZChevronMeasurement.cz_chevron
 tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py: too-many-locals CZLocalPhasesMeasurement.ro_shot
-tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py: too-many-locals CZParametrizationCouplerAnalysis.analyse
 tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py: too-many-locals CZParametrizationMeasurement.cz_parametrization
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: too-many-locals CouplerAnticrossingAnalysis._find_crossing_currents
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: too-many-locals ResonatorSpectroscopyVsCurrentCouplerAnalysis._find_crossing_currents
