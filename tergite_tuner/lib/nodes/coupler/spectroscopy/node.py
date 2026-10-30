@@ -107,13 +107,8 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
             number_of_samples = len(samples)
             frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
             true_s21 = peak.eval(params=true_params, x=frequncies)
-            noise_scale = 0.02
 
-            np.random.seed(123)
-            measured_s21 = true_s21 + 0 * noise_scale * (
-                np.random.randn(number_of_samples)
-                + 1j * np.random.randn(number_of_samples)
-            )
+            measured_s21 = true_s21
             data_array = xarray.DataArray(measured_s21)
 
             # Add the DataArray to the Dataset with an integer name (converted to string)

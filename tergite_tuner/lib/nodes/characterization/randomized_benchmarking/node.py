@@ -35,7 +35,6 @@ class RandomizedBenchmarkingNode(QubitNode):
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
         super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.schedule_keywords = schedule_keywords
         self.schedule_keywords = {}
         self.loops = 500
         self.schedule_keywords["loop_repetitions"] = self.loops

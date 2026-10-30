@@ -32,7 +32,6 @@ class PurityBenchmarkingNode(QubitNode):
     def __init__(self, all_qubits: list[str], **schedule_keywords):
         super().__init__(all_qubits, **schedule_keywords)
         self.all_qubits = all_qubits
-        self.schedule_keywords = schedule_keywords
         self.schedule_keywords = {}
         self.loops = 500
         self.schedule_keywords["loop_repetitions"] = self.loops

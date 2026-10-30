@@ -98,9 +98,6 @@ class CZParametrizationNode(CouplerNode):
 
     def pre_measurement_operation(self, reduced_ext_space: dict[str, dict]):
         iteration_dict = reduced_ext_space["dc_currents"]
-        # there is some redundancy tha all qubits have the same
-        # iteration index, that's why we keep the first value->
-        this_iteration_value = list(iteration_dict.values())[0]
         dac_values = {}
         for coupler in self.couplers:
             this_iteration_value = iteration_dict[coupler]

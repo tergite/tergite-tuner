@@ -6,7 +6,6 @@ duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.util
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 duplicate-code: tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.measurement, tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.measurement
-duplicate-code: tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node, tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node
 duplicate-code: tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.measurement, tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.measurement
 duplicate-code: tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node
 duplicate-code: tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.analysis

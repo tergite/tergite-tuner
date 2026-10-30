@@ -66,13 +66,8 @@ class QubitSpectroscopyBase(QubitNode):
             number_of_samples = len(samples)
             frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
             true_s21 = peak.eval(params=true_params, x=frequncies)
-            noise_scale = 0.02
 
-            np.random.seed(123)
-            measured_s21 = true_s21 + 0 * noise_scale * (
-                np.random.randn(number_of_samples)
-                + 1j * np.random.randn(number_of_samples)
-            )
+            measured_s21 = true_s21
             measured_s21 = np.repeat(measured_s21, number_of_amplitudes)
             data_array = xarray.DataArray(measured_s21)
 
@@ -168,6 +163,6 @@ class Qubit01SpectroscopyAmplitudeNode(QubitNode):
         qub_spec_samples = 821
         sweep_range = 500e6
         VNA_frequency = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
-        min_freq = VNA_frequency - sweep_range / 2 + 0 * 50e6
-        max_freq = VNA_frequency + sweep_range / 2 + 0 * 50e6
+        min_freq = VNA_frequency - sweep_range / 2
+        max_freq = VNA_frequency + sweep_range / 2
         return np.linspace(min_freq, max_freq, qub_spec_samples)
