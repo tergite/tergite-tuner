@@ -55,6 +55,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Failed punchout when no resonator fit succeeds, where it stored `None` as a successful amplitude, and plotted its fitted frequencies against amplitude instead of the swapped axes
 - Reset and excited only each coupler's own qubits in CZ parametrization; with several couplers, every coupler's loop drove all of their qubits
 - Interleaved the CZ only in two-qubit RB's interleaved mode, where the order of `interleave_modes` decided it, and raised `ValueError` for more than one coupler instead of silently benchmarking only the first
+- Shifted no phase for a CZ's uncalibrated (NaN) phase correction; the check for it never matched, so the CZ shifted the qubit's clock by NaN
 
 ## [2026.06.0] - 2026-06-26
 

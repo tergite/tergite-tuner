@@ -20,6 +20,8 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 
+import math
+
 from quantify_scheduler.operations import pulse_library
 
 from tergite_tuner.utils.logging import logger
@@ -52,18 +54,15 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
         )
     )
 
-    if virt_z_parent_qubit_phase is float("nan"):
-        virt_z_parent_qubit_phase = 0
-
-    if virt_z_child_qubit_phase is float("nan"):
-        virt_z_child_qubit_phase = 0
-
+    # an uncalibrated phase correction is NaN
     for phase, clock in (
         (virt_z_parent_qubit_phase, virt_z_parent_qubit_clock),
         (virt_z_child_qubit_phase, virt_z_child_qubit_clock),
     ):
         composite_pulse.add_pulse(
-            pulse_library.ShiftClockPhase(phase_shift=phase, clock=clock, t0=t0)
+            pulse_library.ShiftClockPhase(
+                phase_shift=0 if math.isnan(phase) else phase, clock=clock, t0=t0
+            )
         )
     composite_pulse.add_pulse(pulse_library.IdlePulse(4e-9))
 
