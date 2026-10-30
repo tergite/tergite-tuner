@@ -11,6 +11,5 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: too-
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py: too-many-locals align_on_y_axis
 tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary.__init__
-tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots
 tergite_tuner/lib/utils/cliffords/clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
 tergite_tuner/lib/utils/cliffords/clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates

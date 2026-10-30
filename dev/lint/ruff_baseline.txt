@@ -153,9 +153,7 @@ tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("drive_amp")` in
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("t")` instead of `kws.get("t", None)`
 tergite_tuner/lib/utils/classification_functions.py: C416 Unnecessary dict comprehension (rewrite using `dict()`)
-tergite_tuner/lib/utils/classification_functions.py: C416 Unnecessary dict comprehension (rewrite using `dict()`)
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `assigned_states` before `return` statement
-tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `iq_points` before `return` statement
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `state_probabilities` before `return` statement
 tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gate_decomp` before `return` statement
 tergite_tuner/lib/utils/cliffords/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
