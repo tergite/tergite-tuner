@@ -320,9 +320,9 @@ def _connect_couplers(hardware: Hardware, session: SessionContext) -> None:
     hardware.connect_spi(session.couplers)
     # no setting initial parking currents during recalibration
     if not session.is_recalibration:
-        assert session.spi_mode == SPIMode.real, (
-            'Set spi_mode to "real" in the session.'
-        )
+        assert (
+            session.spi_mode == SPIMode.real
+        ), 'Set spi_mode to "real" in the session.'
         hardware.spi.set_initial_parking_currents(session.couplers)
 
 

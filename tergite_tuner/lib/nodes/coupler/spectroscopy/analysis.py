@@ -300,9 +300,7 @@ def find_crossing_currents(
     return crossings
 
 
-def _fill_dropouts(
-    frequencies: np.ndarray, spurious_threshold: float
-) -> np.ndarray:
+def _fill_dropouts(frequencies: np.ndarray, spurious_threshold: float) -> np.ndarray:
     """Fills a single dropout between close neighbours, and drops a point isolated between dropouts."""
     frequencies = frequencies.copy()
     for i in range(1, len(frequencies) - 1):
