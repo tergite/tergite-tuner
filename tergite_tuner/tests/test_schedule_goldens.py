@@ -45,6 +45,8 @@ def test_compiled_program_matches_its_golden(node_name, session_context):
     digest = _get_digest(compiled.compiled_instructions)
     goldens = json.loads(GOLDEN_FILE.read_text()) if GOLDEN_FILE.exists() else {}
     if os.environ.get("UPDATE_GOLDENS"):
+        if os.environ.get("PYTEST_XDIST_WORKER"):
+            pytest.fail("UPDATE_GOLDENS rewrites one shared file: run it without -n")
         goldens[node_name] = digest
         GOLDEN_FILE.write_text(json.dumps(goldens, indent=2, sort_keys=True) + "\n")
     assert digest == goldens.get(node_name)
