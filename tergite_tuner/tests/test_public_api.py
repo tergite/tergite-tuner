@@ -64,6 +64,25 @@ def test_tune_device_calibrates_up_to_the_target_node(session_context, tmp_path)
     assert list(tmp_path.glob("*-run/dataset_resonator_spectroscopy.hdf5"))
 
 
+def test_a_runs_results_file_seeds_a_later_session(session_context, tmp_path):
+    session = _get_dummy_session(session_context, tmp_path)
+    with loaded_state(session, REDIS_VALUES):
+        ExtendedTransmon.close_all()
+        run_node(NodeEnum.RESONATOR_SPECTROSCOPY, session=session)
+    [results_file] = tmp_path.glob("*-run/results.json")
+
+    later = SessionContext(qubits=session.qubits, calibration=results_file)
+
+    fields = DEFAULT_NODE_SPECS[NodeEnum.RESONATOR_SPECTROSCOPY].qois.values()
+    for qubit in session.qubits:
+        for field in fields:
+            value = session.state.read("transmons", qubit, field)
+            assert value is not None
+            assert later.state.read("transmons", qubit, field) == pytest.approx(
+                value, nan_ok=True
+            )
+
+
 def test_run_node_runs_only_that_node(session_context, tmp_path):
     session = _get_dummy_session(session_context, tmp_path)
     with loaded_state(session, REDIS_VALUES):

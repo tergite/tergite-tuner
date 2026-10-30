@@ -10,6 +10,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 ### Added
 
 - Logged how long each node's compile, measurement and analysis take, so a run's log shows where its time went
+- Wrote each run's results to `results.json` in its folder, which a later session takes as its `calibration`, unless `keep_data_files=False`
 
 ### Changed
 

@@ -39,6 +39,8 @@ from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 T = TypeVar("T")
+# a run's results in its folder, which a later session can take as its calibration
+RESULTS_FILE = "results.json"
 
 
 class NodeManager:
@@ -267,7 +269,13 @@ def _tune(
         )
         logger.info(f"{calibration_node.value} node is completed")
 
-    if not keep_data_files and run_path.exists():
+    if keep_data_files:
+        run_path.mkdir(parents=True, exist_ok=True)
+        results = read_result(session, session_only=False)
+        (run_path / RESULTS_FILE).write_text(
+            results.model_dump_json(by_alias=True, exclude_none=True, indent=2)
+        )
+    elif run_path.exists():
         shutil.rmtree(run_path)
 
 

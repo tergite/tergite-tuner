@@ -209,7 +209,8 @@ in spec.
 #### Recalibrate the device
 
 A session's device state starts from `device_config.toml`, and nothing carries over from an earlier run
-unless you pass it in: give an earlier calibration's results, as `tune_device` returns them, as `calibration`.
+unless you pass it in: give an earlier calibration's results as `calibration`, as `tune_device` returns them
+or as the `results.json` each run writes in its folder.
 A session keeps its state across the calls you pass it to.
 
 ```python

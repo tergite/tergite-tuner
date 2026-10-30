@@ -82,7 +82,7 @@ The session's `DeviceState` holds the device as the run knows it. It starts from
 
 `read_result` returns the fields the session's nodes wrote, or everything, as `CalibrationResults`. `generate_calib_seed_file` turns that into the TOML seed tergite-backend reads.
 
-Each run writes a folder under `data_dir`, and each measured node a folder in it: the dataset (`dataset_<node>.hdf5`), the device's serialised elements (`<node>.json`), and its plots. A recalibration's nodes write straight into the run's folder. `keep_data_files=False` deletes the run's folder, and nothing else in `data_dir`.
+Each run writes a folder under `data_dir`, with its results in `results.json`, which a later session takes as `calibration`, and each measured node a folder in it: the dataset (`dataset_<node>.hdf5`), the device's serialised elements (`<node>.json`), and its plots. A recalibration's nodes write straight into the run's folder. `keep_data_files=False` deletes the run's folder, and nothing else in `data_dir`.
 
 ## 5. Configuration
 
