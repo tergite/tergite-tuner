@@ -9,7 +9,8 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""A ``measure`` fixture that records each benchmark's median time and peak memory.
+"""A ``measure`` fixture that records each benchmark's median time and peak memory,
+and a ``record_measures`` one for measures a test takes itself.
 
 Our own, not pytest-benchmark: its latest release (5.3.0) reads a private pytest attribute
 that pytest 9.2 removed.
@@ -40,6 +41,16 @@ def measure(request: pytest.FixtureRequest) -> Callable[[Callable[[], Any]], Non
             "seconds": _get_median_seconds(action),
             "peak_memory_mb": _get_peak_memory_mb(action),
         }
+
+    return record
+
+
+@pytest.fixture
+def record_measures(
+    request: pytest.FixtureRequest,
+) -> Callable[[dict[str, float]], None]:
+    def record(measures: dict[str, float]) -> None:
+        _RESULTS[request.node.name] = measures
 
     return record
 

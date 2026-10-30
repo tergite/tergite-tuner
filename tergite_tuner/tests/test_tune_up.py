@@ -10,32 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from pathlib import Path
 
-import networkx as nx
-import numpy as np
 import pytest
 
-from tergite_tuner import run_node
-from tergite_tuner.backend import ExtendedTransmon
-from tergite_tuner.config.types import SpiConfig
-from tergite_tuner.lib.nodes import (
-    DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_DAG_EDGES,
-    DEFAULT_NODE_SPECS,
-)
-from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.redis import (
-    loaded_redis,
-    set_drive_frequencies_from_device,
-)
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
+from tergite_tuner.tests.utils.runs import DEFAULT_NODES, run_dummy_node
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-_REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
-# the fixture spi_config.toml wires q06 to q25, not the session's coupler
-_SPI_CONFIG = SpiConfig.model_validate(
-    {"q00_q01": {"spi_module_number": 1, "dac_name": "dac0", "edge_group": 1}}
-)
 # each fails on a defect REFACTOR.md lists; strict, so a fix fails the test until removed
 _KNOWN_FAILURES = {
     NodeEnum.QUBIT_01_SPECTROSCOPY: "five 6 us spectroscopy amplitudes overflow the waveform memory",
@@ -52,8 +33,7 @@ _DEFAULT_NODES = [
             else []
         ),
     )
-    for node in nx.topological_sort(nx.DiGraph(DEFAULT_NODE_DAG_EDGES))
-    if node not in DEFAULT_IGNORED_NODES
+    for node in DEFAULT_NODES
 ]
 
 
@@ -64,7 +44,7 @@ def test_every_default_node_runs_in_dummy_mode(
 ):
     # the dummy cluster assembles in the working directory, which workers would share
     monkeypatch.chdir(tmp_path)
-    _run_dummy_node(node, redis_connection, session_context, tmp_path)
+    run_dummy_node(node, redis_connection, session_context, tmp_path)
 
     # analyses of random IQ points may fail; reaching them without raising is the check
     # a node may save under another node's name (step 9.8)
@@ -81,7 +61,7 @@ def test_unkept_data_files_delete_only_the_runs_folder(
     earlier_file.parent.mkdir(parents=True)
     earlier_file.touch()
 
-    _run_dummy_node(
+    run_dummy_node(
         NodeEnum.RESONATOR_SPECTROSCOPY,
         redis_connection,
         session_context,
@@ -90,32 +70,3 @@ def test_unkept_data_files_delete_only_the_runs_folder(
     )
 
     assert sorted(data_dir.rglob("*")) == [earlier_file.parent, earlier_file]
-
-
-def _run_dummy_node(
-    node: NodeEnum,
-    redis_connection,
-    session_context,
-    data_dir: Path,
-    keep_data_files: bool = True,
-) -> None:
-    session = session_context.model_copy(
-        update={
-            "data_dir": data_dir,
-            "ignore_spec": True,
-            "is_recalibration": True,
-            "spi_config": _SPI_CONFIG,
-            "user_samplespace": {},
-        }
-    )
-    with loaded_redis(redis_connection, _REDIS_VALUES):
-        set_drive_frequencies_from_device(redis_connection, session.device_config)
-        # nodes' own dummy generators draw from numpy's global generator
-        np.random.seed(0)
-        ExtendedTransmon.close_all()
-        run_node(
-            node,
-            session=session,
-            refresh_session=False,
-            keep_data_files=keep_data_files,
-        )

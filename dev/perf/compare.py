@@ -23,7 +23,13 @@ from pathlib import Path
 # two recordings on one busy MacBook differed by up to 11% (import), 9% (memory), 8% (tests)
 THRESHOLD = 0.15
 # below these, differences are noise rather than a regression
-NOISE_FLOORS = {"seconds": 0.05, "peak_memory_mb": 1.0, "size_mb": 1.0, "packages": 0}
+NOISE_FLOORS = {
+    "seconds": 0.05,
+    "peak_memory_mb": 1.0,
+    "size_mb": 1.0,
+    "packages": 0,
+    "store_round_trips": 0,
+}
 RECORDINGS = ("nodes.json", "runs.json")
 
 
