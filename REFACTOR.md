@@ -574,7 +574,9 @@ qcodes cannot go while we drive the Cluster through qblox-instruments, which req
    - The OS sniffing in `_find_and_validate_spi_port` goes: open the port and report the error.
    - On its own this saves no space while the Cluster needs qcodes. What it removes is the coupler code's dependence on qcodes' parameter API.
 4. **Trim the transitive extras.**
-   - uv's `override-dependencies` drops qcodes' pyarrow and dask, and IPython, from our lock and CI image.
+   - Measured on the quantify line (step 3): of the 743 MB install, about 230 MB is never imported: PyQt5 and pyqtgraph (138 MB, via quantify-core), plotly (39 MB, via quantify-scheduler), and `ipykernel` with jedi and debugpy (43 MB, via qcodes). pyarrow (123 MB) stays, as the pandas/xarray chain imports it. Drop the rest with impossible markers, e.g. `override-dependencies = ["pyqt5; python_version < '0'", ...]`, and add the same overrides to tergite-backend, which shares the environment and also installs with uv. Shipping empty stub modules instead was considered and rejected: pip still installs the real packages that quantify declares, and stand-in packages under those names would break anything else in the environment that uses them.
+   - Import time is a separate problem: of its 5–8 s, scipy takes 2.0 s, pandas 1.0 s and scikit-learn 0.6 s, which the tuner uses itself; quantify-scheduler's own code takes 0.24 s, and nothing above is imported. Lazy imports of the analysis stack in the nodes that need it would help, not trimming.
+   - uv's `override-dependencies` drops what is never imported from our lock and CI image (below); pyarrow stays.
    - This lands only once the dummy run and a testbed run pass.
    - It helps uv installs only: `pip install tergite-tuner` still pulls the full tree.
 5. **Not in this plan: a scheduler-free backend.**
