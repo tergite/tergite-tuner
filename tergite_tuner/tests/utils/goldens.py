@@ -179,7 +179,7 @@ def get_dataset_builder(
         return lambda: node.configure_dataset(raw_dataset)
     sweeps = _get_default_sweeps(spec, session)
     raw_dataset = run.get_dummy_dataset(spec, sweeps, session)
-    return lambda: run.get_dataset(raw_dataset, sweeps, TEST_QUBITS)
+    return lambda: run.get_dataset(raw_dataset, sweeps, TEST_QUBITS, spec.loops)
 
 
 def get_analyser(

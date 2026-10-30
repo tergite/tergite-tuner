@@ -23,6 +23,7 @@ from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
 from tergite_tuner.storage.fs.dataset import load_dataset
 from tergite_tuner.tests.utils.goldens import (
     RECORDED_DATASETS,
+    STANDARD_REDIS,
     copy_dataset,
     get_dataset_path,
     get_redis_file,
@@ -56,15 +57,19 @@ def test_plot_elements_saves_the_preview_and_the_full_plot(
 
 
 @pytest.mark.parametrize("node", list(DEFAULT_NODE_SPECS))
-def test_dummy_data_has_a_point_per_sweep_point(node, session_context):
+def test_dummy_data_has_a_point_per_sweep_point(
+    node, redis_connection, session_context
+):
     spec = DEFAULT_NODE_SPECS[node]
     session = session_context.model_copy(update={"user_samplespace": {}})
-    sweeps = run.get_sweeps(spec, session)
+    with loaded_redis(redis_connection, STANDARD_REDIS):
+        sweeps = run.get_sweeps(spec, session)
 
     dataset = run.get_dummy_dataset(spec, sweeps, session)
 
     qubit = session.qubits[0]
     points = math.prod(len(values[qubit]) for values in sweeps.values())
+    points *= spec.loops or 1
     assert len(dataset.data_vars) == len(session.qubits)
     assert dataset[0].size == points
 

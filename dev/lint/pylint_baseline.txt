@@ -4,7 +4,6 @@ duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.util
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
-duplicate-code: tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.analysis
 tergite_tuner/backend/transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__
 tergite_tuner/lib/base/node.py: too-many-locals BaseNode.configure_dataset
 tergite_tuner/lib/base/utils/figure_utils.py: too-many-locals create_figure_with_top_band
@@ -36,12 +35,10 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse_qubit
+tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/tests/test_ro_ampl_analysis.py: too-many-locals test_ro_ampl_3states
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py: too-many-locals align_on_y_axis
 tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py: too-many-locals ROFrequencyOptimizationMeasurement.schedule_function
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py: too-many-locals ROFrequencyOptimizationBase.generate_dummy_dataset
 tergite_tuner/lib/nodes/schedule_node.py: too-many-locals OuterScheduleNode.measure_node
 tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary.__init__
 tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots

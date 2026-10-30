@@ -19,6 +19,7 @@ from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
+from tergite_tuner.tests.utils.goldens import get_compiler
 from tergite_tuner.tests.utils.redis import loaded_redis
 from tergite_tuner.utils.measurement import (
     reduce_samplespace,
@@ -67,10 +68,6 @@ def test_precompile_all_nodes_without_error(
 def test_precompile_restores_the_grid_time_tolerance(redis_connection, session_context):
     default_tolerance = qblox_constants.GRID_TIME_TOLERANCE_TIME
     with loaded_redis(redis_connection, _redis_values):
-        ExtendedTransmon.close_all()
-        node = DEFAULT_NODE_NAME_CLS_MAP["punchout"](
-            all_qubits=["q00", "q01"], couplers=["q00_q01"], session=session_context
-        )
-        node.precompile(node.schedule_samplespace)
+        get_compiler("punchout", session_context)()
 
     assert qblox_constants.GRID_TIME_TOLERANCE_TIME == default_tolerance

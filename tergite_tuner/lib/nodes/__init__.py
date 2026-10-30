@@ -66,18 +66,17 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.node import (
     QUBIT_SPECTROSCOPY_SPECS,
     Qubit01SpectroscopyAmplitudeNode,
 )
-from tergite_tuner.lib.nodes.readout.punchout.node import PunchoutNode
+from tergite_tuner.lib.nodes.readout.punchout.node import (
+    PUNCHOUT_SPECS,
+)
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
     RESONATOR_SPECTROSCOPY_SPECS,
 )
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.node import (
-    ROAmplitudeThreeStateOptimizationNode,
-    ROAmplitudeTwoStateOptimizationNode,
-    ThreeStateDiscriminationNode,
+    RO_AMPLITUDE_SPECS,
 )
 from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node import (
-    ROFrequencyThreeStateOptimizationNode,
-    ROFrequencyTwoStateOptimizationNode,
+    RO_FREQUENCY_SPECS,
 )
 from tergite_tuner.lib.spec import NodeSpec
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -90,19 +89,16 @@ DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
     **RAMSEY_SPECS,
     **MOTZOI_SPECS,
     **QUBIT_SPECTROSCOPY_SPECS,
+    **PUNCHOUT_SPECS,
+    **RO_FREQUENCY_SPECS,
+    **RO_AMPLITUDE_SPECS,
 }
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
-    NodeEnum.PUNCHOUT: PunchoutNode,
     NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: ResonatorSpectroscopyVsCurrentNode,
     NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
     NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
     NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
-    NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION: ROFrequencyTwoStateOptimizationNode,
-    NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION: ROFrequencyThreeStateOptimizationNode,
-    NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION: ROAmplitudeTwoStateOptimizationNode,
-    NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION: ROAmplitudeThreeStateOptimizationNode,
-    NodeEnum.THREE_STATE_DISCRIMINATION: ThreeStateDiscriminationNode,
     NodeEnum.T1: T1Node,
     NodeEnum.T2: T2Node,
     NodeEnum.T2_ECHO: T2EchoNode,

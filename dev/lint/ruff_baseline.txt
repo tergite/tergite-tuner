@@ -292,33 +292,13 @@ tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessa
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
-tergite_tuner/lib/nodes/readout/punchout/analysis.py: B007 Loop control variable `i` not used within loop body
-tergite_tuner/lib/nodes/readout/punchout/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/readout/punchout/analysis.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/readout/punchout/analysis.py: UP035 `typing.List` is deprecated, use `list` instead
-tergite_tuner/lib/nodes/readout/punchout/tests/test_qubit_analysis.py: ARG001 Unused function argument: `args`
-tergite_tuner/lib/nodes/readout/punchout/tests/test_qubit_analysis.py: ARG001 Unused function argument: `args`
-tergite_tuner/lib/nodes/readout/punchout/tests/test_qubit_analysis.py: ARG001 Unused function argument: `kwargs`
-tergite_tuner/lib/nodes/readout/punchout/tests/test_qubit_analysis.py: ARG001 Unused function argument: `kwargs`
-tergite_tuner/lib/nodes/readout/punchout/tests/test_qubit_analysis.py: I001 Import block is un-sorted or un-formatted
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: ARG001 Unused function argument: `args`
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: ARG001 Unused function argument: `kwargs`
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: ARG002 Unused method argument: `amplitude_index`
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: B007 Loop control variable `ro_amplitude` not used within loop body
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: E741 Ambiguous variable name: `I`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/tests/test_ro_ampl_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/tests/test_ro_ampl_analysis.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/tests/test_ro_ampl_optimization_measurement.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/tests/test_ro_ampl_optimization_measurement.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/test_ro_freq_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/test_ro_freq_analysis.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/test_ro_frequency_optimization_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/schedule_node.py: RET504 Unnecessary assignment to `result_dataset` before `return` statement
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("drive_amp")` instead of `kws.get("drive_amp", None)`

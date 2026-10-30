@@ -19,18 +19,25 @@ import xarray as xr
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.utils import (
     align_on_y_axis,
 )
+from tergite_tuner.lib.spec import Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ThreeClassBoundary, TwoClassBoundary
-from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
-class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
+class OptimalROAmplitudeQubitAnalysis:
+    """Classifies a qubit's readout shots at each amplitude; ``analyse`` gives the best amplitude's."""
+
+    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
+        self.qubit = s21.attrs["qubit"]
+        self.data_var = f"y{self.qubit}"
+        self.S21 = s21.to_dataset(name=self.data_var)
+        self.session = session
+
     def populate_coords(self):
         for coord in self.S21.coords:
             if "amplitudes" in str(coord):
@@ -159,7 +166,7 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
 
 
 class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
-    def analyse_qubit(self):
+    def analyse(self) -> Fits:
         self.populate_coords()
         self.run_initial_fitting()
 
@@ -220,23 +227,15 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 
         self.rotation_angle_degrees = np.rad2deg(rotation_angle_rad)
 
-        analysis_successful = True
-        analysis_result = {
-            "measure_2state_opt:pulse_amp": {
-                "value": self.optimal_amplitude,
-                "error": 0,
-            },
-            "measure_2state_opt:acq_rotation": {
-                "value": self.rotation_angle_degrees,
-                "error": 0,
-            },
-            "measure_2state_opt:acq_threshold": {"value": self.threshold, "error": 0},
-            "lda_coef_0": {"value": str(float(self.lda.coef_[0][0])), "error": 0},
-            "lda_coef_1": {"value": str(float(self.lda.coef_[0][1])), "error": 0},
-            "lda_intercept": {"value": str(float(self.lda.intercept_[0])), "error": 0},
+        return {
+            "measure_2state_opt:pulse_amp": Fit(self.optimal_amplitude),
+            "measure_2state_opt:acq_rotation": Fit(self.rotation_angle_degrees),
+            "measure_2state_opt:acq_threshold": Fit(self.threshold),
+            "lda_coef_0": Fit(str(float(self.lda.coef_[0][0]))),
+            "lda_coef_1": Fit(str(float(self.lda.coef_[0][1]))),
+            "lda_intercept": Fit(str(float(self.lda.intercept_[0]))),
+            "analysis": Fit(self),
         }
-        qoi = QOI(analysis_result, analysis_successful)
-        return qoi
 
     def plotter(self, ax, secondary_axes):
         self.primary_plotter(ax)
@@ -326,7 +325,7 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.optimal_amplitude = self.amplitudes.values[self.optimal_index]
         return
 
-    def analyse_qubit(self):
+    def analyse(self) -> Fits:
         """
         classify the three states for each RO amplitude
         and return the RO amplitude that gives the maximum three state classification fidelity
@@ -377,21 +376,16 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.IQ2_tp = IQ2[tp2]  # True Positive when sending 2
         self.IQ2_fp = IQ2[~tp2]
 
-        analysis_successful = True
-        analysis_result = {
-            "measure_3state_opt:pulse_amp": {
-                "value": self.optimal_amplitude,
-                "error": 0,
-            },
-            "centroid_I": {"value": self.centroid_I, "error": 0},
-            "centroid_Q": {"value": self.centroid_Q, "error": 0},
-            "omega_01": {"value": self.omega_01, "error": 0},
-            "omega_12": {"value": self.omega_12, "error": 0},
-            "omega_20": {"value": self.omega_20, "error": 0},
-            "inv_cm_opt": {"value": 0, "error": 0},
+        return {
+            "measure_3state_opt:pulse_amp": Fit(self.optimal_amplitude),
+            "centroid_I": Fit(self.centroid_I),
+            "centroid_Q": Fit(self.centroid_Q),
+            "omega_01": Fit(self.omega_01),
+            "omega_12": Fit(self.omega_12),
+            "omega_20": Fit(self.omega_20),
+            "inv_cm_opt": Fit(0),
+            "analysis": Fit(self),
         }
-        qoi = QOI(analysis_result, analysis_successful)
-        return qoi
 
     def plot_classified_IQ_points(self, iq_axis, amplitude_index: int):
 
@@ -447,45 +441,21 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         disp.plot(ax=cm_axis)
 
 
-class OptimalROTwoStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = OptimalROTwoStateAmplitudeQubitAnalysis
-
-    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-        self.plots_per_qubit = 3
-
-    def _fill_plots(self):
-        for index, analysis in enumerate(self.qubit_analyses):
-            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-
-            list_of_secondary_axes = []
-            for plot_indx in range(1, self.plots_per_qubit):
-                secondary_plot_row = primary_plot_row + plot_indx
-                list_of_secondary_axes.append(
-                    self.axs[secondary_plot_row, index % self.column_grid]
-                )
-
-            analysis.plot(primary_axis, list_of_secondary_axes)
+def analyse_two_state_ro_amplitude(
+    s21: xr.DataArray, session: "SessionContext"
+) -> Fits:
+    return OptimalROTwoStateAmplitudeQubitAnalysis(s21, session).analyse()
 
 
-class ROThreeStateAmplitudeNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = ROThreeStateAmplitudeQubitAnalysis
+def analyse_three_state_ro_amplitude(
+    s21: xr.DataArray, session: "SessionContext"
+) -> Fits:
+    return ROThreeStateAmplitudeQubitAnalysis(s21, session).analyse()
 
-    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-        self.plots_per_qubit = 3
 
-    def _fill_plots(self):
-        for index, analysis in enumerate(self.qubit_analyses):
-            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-
-            list_of_secondary_axes = []
-            for plot_indx in range(1, self.plots_per_qubit):
-                secondary_plot_row = primary_plot_row + plot_indx
-                list_of_secondary_axes.append(
-                    self.axs[secondary_plot_row, index % self.column_grid]
-                )
-
-            analysis.plot(primary_axis, list_of_secondary_axes)
+def plot_ro_amplitude(
+    axes: np.ndarray, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    """The fidelity per amplitude, then the best amplitude's shots, on three axes."""
+    if fits:
+        fits["analysis"].value.plot(axes[0], list(axes[1:]))

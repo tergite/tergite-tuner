@@ -3,6 +3,7 @@
 # (C) Copyright Eleftherios Moschandreou 2023, 2024
 # (C) Copyright Liangyu Chen 2023, 2024
 # (C) Copyright Michele Faucci Giannelli 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -11,158 +12,90 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Finds the readout frequency at which the resonator's response tells the qubit's states apart best."""
 
 from typing import TYPE_CHECKING
 
 import numpy as np
+import xarray as xr
+from matplotlib.axes import Axes
 
-from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.lib.utils import fitting_models as fm
-from tergite_tuner.utils.types.qoi import QOI
-
-model = fm.ResonatorModel()
+from tergite_tuner.lib.spec import Fit, Fits, get_coord_name
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
-class OptimalRO01FrequencyQubitAnalysis(BaseQubitAnalysis):
+def analyse_ro_frequency(s21: xr.DataArray, _session: "SessionContext") -> Fits:
+    """``frequency``: where the states' S21 lie furthest apart.
+
+    With three states, the distance weighs the 1-2 pair twice, as it is the closest.
     """
-    Analysis that fits the data of resonator spectroscopy experiments
-    and extractst the optimal RO frequency.
-    """
+    s21s = _get_state_s21s(s21)
+    if len(s21s) == 2:
+        distance = np.abs(s21s[1] - s21s[0])
+    else:
+        distance = (
+            np.abs(s21s[0] - s21s[1])
+            + 2 * np.abs(s21s[1] - s21s[2])
+            + np.abs(s21s[2] - s21s[0])
+        ) / 4
+    return {"frequency": Fit(distance.idxmax().item()), "distance": Fit(distance)}
 
-    def analyse_qubit(self):
-        for coord in self.S21.coords:
-            if "frequencies" in str(coord):
-                self.frequencies = self.S21[coord].values
-                self.frequency_coord = coord
-            elif "qubit_states" in str(coord):
-                self.qubit_states = self.S21[coord].values
-                self.qubit_state_coord = coord
 
-        self.s21_0 = self.S21[self.data_var].sel({self.qubit_state_coord: 0})
-        self.s21_1 = self.S21[self.data_var].sel({self.qubit_state_coord: 1})
-        self.magnitudes_0 = np.abs(self.s21_0)
-        self.magnitudes_1 = np.abs(self.s21_1)
-        self.phase_0 = np.angle(self.s21_0)
-        self.phase_1 = np.angle(self.s21_1)
-
-        distances = self.s21_1 - self.s21_0
-
-        self.optimal_frequency = np.abs(distances).idxmax().item()
-        self.index_of_max_distance = np.abs(distances).argmax()
-
-        analysis_successful = True
-        analysis_result = {
-            "extended_clock_freqs:readout_2state_opt": {
-                "value": self.optimal_frequency,
-                "error": 0,
-            }
-        }
-
-        qoi = QOI(analysis_result, analysis_successful)
-
-        return qoi
-
-    def plotter(self, ax, secondary_axes):
-        """
-        primary axis: the |0> and |1> resonator traces on the IQ plane.
-            The points for which the distance between the traces is maximized is denoted.
-        magnitude_axis: s21 magnitudes in terms of the frequency for both
-            the |0> and |1> resonator traces. Optimal frequency is denoted.
-        phase_axis: s21 phases in terms of the frequency for both
-            the |0> and |1> resonator traces. Optimal frequency is denoted.
-        """
-        ax.set_xlabel("I quadrature (V)")
-        ax.set_ylabel("Q quadrature (V)")
-
-        f0 = self.s21_0[self.index_of_max_distance]
-        f1 = self.s21_1[self.index_of_max_distance]
-        label_text = f"opt_ro: {int(self.optimal_frequency)}\n"
-
-        styles = dict(marker="*", c="black", s=100, label=label_text, zorder=5)
-        ax.scatter([f0.real, f1.real], [f0.imag, f1.imag], **styles)
-
-        ax.plot(self.s21_0.real, self.s21_0.imag, "bo-", lw=2, ms=4)
-        ax.plot(self.s21_1.real, self.s21_1.imag, "ro-", lw=2, ms=4)
-
-        ax.legend()
-        ax.grid()
-
-        magnitude_axis = secondary_axes[0]
-        phase_axis = secondary_axes[1]
-        magnitude_axis.plot(
-            self.frequencies, self.magnitudes_0, "o-", ms=2, color="blue"
+def plot_two_state_ro_frequency(
+    axes: np.ndarray, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    """The two states' traces on the IQ plane, then their magnitudes and phases, with the optimum."""
+    s21_0, s21_1 = _get_state_s21s(s21)
+    frequencies = s21_0.coords[s21_0.dims[0]].values
+    iq_axis, magnitude_axis, phase_axis = axes
+    iq_axis.set_xlabel("I quadrature (V)")
+    iq_axis.set_ylabel("Q quadrature (V)")
+    if fits:
+        optimum = int(fits["distance"].value.argmax())
+        iq_axis.scatter(
+            [s21_0[optimum].real, s21_1[optimum].real],
+            [s21_0[optimum].imag, s21_1[optimum].imag],
+            marker="*",
+            c="black",
+            s=100,
+            label=f"opt_ro: {int(fits['frequency'].value)}\n",
+            zorder=5,
         )
-        magnitude_axis.plot(
-            self.frequencies, self.magnitudes_1, "o-", ms=2, color="red"
+    iq_axis.plot(s21_0.real, s21_0.imag, "bo-", lw=2, ms=4)
+    iq_axis.plot(s21_1.real, s21_1.imag, "ro-", lw=2, ms=4)
+    iq_axis.legend()
+    iq_axis.grid()
+    for axis, quantity in ((magnitude_axis, np.abs), (phase_axis, np.angle)):
+        axis.plot(frequencies, quantity(s21_0), "o-", ms=2, color="blue")
+        axis.plot(frequencies, quantity(s21_1), "o-", ms=2, color="red")
+        if fits:
+            axis.axvline(fits["frequency"].value, color="black")
+
+
+def plot_three_state_ro_frequency(
+    axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    """The three states' magnitudes and their weighted distance, with the optimum."""
+    s21s = _get_state_s21s(s21)
+    frequencies = s21s[0].coords[s21s[0].dims[0]].values
+    axis.set_xlabel("RO frequency")
+    axis.set_ylabel("IQ distance")
+    for state, state_s21 in enumerate(s21s):
+        axis.plot(frequencies, np.abs(state_s21), label=str(state))
+    if fits:
+        axis.plot(frequencies, fits["distance"].value, "--", label="distance")
+        axis.scatter(
+            fits["frequency"].value,
+            fits["distance"].value.max().item(),
+            marker="*",
+            c="red",
+            s=64,
         )
-        magnitude_axis.axvline(self.optimal_frequency, color="black")
-        phase_axis.plot(self.frequencies, self.phase_0, "o-", ms=2, color="blue")
-        phase_axis.plot(self.frequencies, self.phase_1, "o-", ms=2, color="red")
-        phase_axis.axvline(self.optimal_frequency, color="black")
+    axis.grid()
 
 
-class ROFrequencyThreeStateQubitAnalysis(OptimalRO01FrequencyQubitAnalysis):
-    def analyse_qubit(self):
-        super().analyse_qubit()
-        self.s21_2 = self.S21[self.data_var].sel({self.qubit_state_coord: 2})
-        self.magnitudes_2 = np.abs(self.s21_2)
-
-        distances_01 = np.abs(self.s21_0 - self.s21_1)
-        distances_12 = np.abs(self.s21_1 - self.s21_2)
-        distances_20 = np.abs(self.s21_2 - self.s21_0)
-        self.total_distance = (distances_01 + 2 * distances_12 + 1 * distances_20) / 4
-        self.optimal_frequency = self.total_distance.idxmax().item()
-        self.optimal_distance = self.total_distance.max().item()
-
-        analysis_successful = True
-        analysis_result = {
-            "extended_clock_freqs:readout_3state_opt": {
-                "value": self.optimal_frequency,
-                "error": 0,
-            }
-        }
-
-        qoi = QOI(analysis_result, analysis_successful)
-
-        return qoi
-
-    def plotter(self, ax):
-        ax.set_xlabel("RO frequency")
-        ax.set_ylabel("IQ distance")
-        ax.plot(self.frequencies, self.magnitudes_0, label="0")
-        ax.plot(self.frequencies, self.magnitudes_1, label="1")
-        ax.plot(self.frequencies, self.magnitudes_2, label="2")
-        ax.plot(self.frequencies, self.total_distance, "--", label="distance")
-
-        styles = dict(marker="*", c="red", s=64)
-        ax.scatter(self.optimal_frequency, self.optimal_distance, **styles)
-        ax.grid()
-
-
-class OptimalRO01FrequencyNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = OptimalRO01FrequencyQubitAnalysis
-
-    def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-        self.plots_per_qubit = 3
-
-    def _fill_plots(self):
-        for index, analysis in enumerate(self.qubit_analyses):
-            primary_plot_row = self.plots_per_qubit * (index // self.column_grid)
-            primary_axis = self.axs[primary_plot_row, index % self.column_grid]
-
-            list_of_secondary_axes = []
-            for plot_indx in range(1, self.plots_per_qubit):
-                secondary_plot_row = primary_plot_row + plot_indx
-                list_of_secondary_axes.append(
-                    self.axs[secondary_plot_row, index % self.column_grid]
-                )
-
-            analysis.plotter(primary_axis, list_of_secondary_axes)
-
-
-class ROFrequencyThreeStateNodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = ROFrequencyThreeStateQubitAnalysis
+def _get_state_s21s(s21: xr.DataArray) -> list[xr.DataArray]:
+    state_coord = get_coord_name("qubit_states", s21.attrs["qubit"])
+    return [s21.sel({state_coord: state}) for state in s21.coords[state_coord].values]

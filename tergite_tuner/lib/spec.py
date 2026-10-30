@@ -13,11 +13,11 @@
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 import numpy as np
 import xarray as xr
-from matplotlib.axes import Axes
 
 from tergite_tuner.backend import Schedule
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -54,7 +54,12 @@ class NodeSpec:
             is reshaped: the first setting varies fastest.
         get_dummy_s21: an element's S21 in dummy mode, given its sweeps' values, with
             an axis per sweep.
-        plot: draws an element's S21 and fits.
+        plot: draws an element's S21 and fits, on an axis, or on a column of
+            ``plot_rows`` axes.
+        loops: how many times the schedule repeats its shot, a last dimension of
+            the dataset.
+        plot_rows: how many axes ``plot`` draws on per element.
+        save_details: saves an element's own figures in the node's data folder.
     """
 
     name: NodeEnum
@@ -64,8 +69,13 @@ class NodeSpec:
     qois: Mapping[str, str]
     sweeps: Mapping[str, SweepFn]
     get_dummy_s21: Callable[[str, Mapping[str, np.ndarray], "SessionContext"], Any]
-    plot: Callable[[Axes, xr.DataArray, Fits, "SessionContext"], None] | None = None
+    plot: Callable[[Any, xr.DataArray, Fits, "SessionContext"], None] | None = None
     schedule_keywords: Mapping[str, Any] = field(default_factory=dict)
+    loops: int | None = None
+    plot_rows: int = 1
+    save_details: (
+        Callable[[xr.DataArray, Fits, Path, "SessionContext"], None] | None
+    ) = None
 
 
 def get_fixed_sweep(values: np.ndarray) -> SweepFn:

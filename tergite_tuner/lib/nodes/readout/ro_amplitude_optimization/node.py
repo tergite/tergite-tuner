@@ -2,6 +2,7 @@
 #
 # (C) Copyright Eleftherios Moschandreou 2023, 2024
 # (C) Copyright Michele Faucci Giannelli 2024
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -10,205 +11,147 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Readout amplitude optimization for two and three states, and three-state discrimination."""
 
+from collections.abc import Callable, Mapping
+from functools import partial
 from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray
 
-from tergite_tuner.lib.base.node import QubitNode
+from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis import (
-    OptimalROTwoStateAmplitudeNodeAnalysis,
-    ROThreeStateAmplitudeNodeAnalysis,
+    analyse_three_state_ro_amplitude,
+    analyse_two_state_ro_amplitude,
+    plot_ro_amplitude,
 )
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.measurement import (
     ROAmplitudeOptimizationMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
+from tergite_tuner.lib.spec import Fits, NodeSpec, SweepFn, get_fixed_sweep
 from tergite_tuner.lib.utils.functions import isosceles_triangle
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
-
-class ROAmplitudeTwoStateOptimizationNode(QubitNode):
-    name: str = "ro_amplitude_two_state_optimization"
-    measurement_cls = ROAmplitudeOptimizationMeasurement
-    analysis_cls = OptimalROTwoStateAmplitudeNodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = [
-        "measure_2state_opt:pulse_amp",
-        "measure_2state_opt:acq_rotation",
-        "measure_2state_opt:acq_threshold",
-        "lda_coef_0",
-        "lda_coef_1",
-        "lda_intercept",
-    ]
-
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(all_qubits, couplers, session, **schedule_keywords)
-        self.qubit_state = 1
-        self.loops = 1000
-        self.schedule_keywords["loop_repetitions"] = self.loops
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-        self.plots_per_qubit = 3  #  fidelity plot, IQ shots, confusion matrix
-
-        self.schedule_samplespace = {
-            "qubit_states": {
-                qubit: np.array([0, 1], dtype=np.int16) for qubit in self.all_qubits
-            },
-            "ro_amplitudes": {
-                qubit: np.linspace(
-                    self.punchout_amplitude(qubit) / 4,
-                    self.punchout_amplitude(qubit) * 1.2,
-                    45,
-                )
-                for qubit in self.all_qubits
-            },
-        }
-
-    def punchout_amplitude(self, qubit: str):
-        return float(
-            self.session.redis_store.read_field("transmons", qubit, "measure:pulse_amp")
-        )
-
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-
-        first_qubit = self.all_qubits[0]
-        ro_amplitudes = self.schedule_samplespace["ro_amplitudes"][first_qubit]
-
-        def get_shot():
-            data_array = np.array([])
-            for ampl_index, _ in enumerate(ro_amplitudes):
-                triangle_size = ampl_index + 0.05
-                center_0, center_1, _ = isosceles_triangle(
-                    base_length=3 * triangle_size, height=5 * triangle_size
-                )
-                iq_point_0 = np.random.normal(loc=center_0, size=(1, 2), scale=0.7)
-                iq_point_1 = np.random.normal(loc=center_1, size=(1, 2), scale=0.7)
-                shot_0 = iq_point_0[:, 0] + 1j * iq_point_0[:, 1]
-                shot_1 = iq_point_1[:, 0] + 1j * iq_point_1[:, 1]
-                shots_array = np.concatenate((shot_0, shot_1)).ravel()
-                data_array = np.concatenate((shots_array, data_array))
-            return data_array
-
-        for index, _ in enumerate(self.all_qubits):
-
-            all_shots_array = np.concatenate(
-                [get_shot() for _ in range(self.loops)]
-            ).ravel()
-
-            dataset[index] = xarray.DataArray(all_shots_array)
-        return dataset
+LOOPS = 1000
+TWO_STATE_FIELDS = (
+    "measure_2state_opt:pulse_amp",
+    "measure_2state_opt:acq_rotation",
+    "measure_2state_opt:acq_threshold",
+    "lda_coef_0",
+    "lda_coef_1",
+    "lda_intercept",
+)
+THREE_STATE_FIELDS = (
+    "measure_3state_opt:pulse_amp",
+    "centroid_I",
+    "centroid_Q",
+    "omega_01",
+    "omega_12",
+    "omega_20",
+    "inv_cm_opt",
+)
+# the dummy shots' spread around their state's centre
+DUMMY_SPREAD = 0.7
 
 
-class ROAmplitudeThreeStateOptimizationNode(QubitNode):
-    name: str = "ro_amplitude_three_state_optimization"
-    measurement_cls = ROAmplitudeOptimizationMeasurement
-    analysis_cls = ROThreeStateAmplitudeNodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = [
-        "measure_3state_opt:pulse_amp",
-        "centroid_I",
-        "centroid_Q",
-        "omega_01",
-        "omega_12",
-        "omega_20",
-        "inv_cm_opt",
-    ]
-
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(all_qubits, couplers, session, **schedule_keywords)
-        self.qubit_state = 2
-        self.loops = 1000
-        self.schedule_keywords["loop_repetitions"] = self.loops
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-
-        self.schedule_samplespace = {
-            "qubit_states": {
-                qubit: np.array([0, 1, 2], dtype=np.int16) for qubit in self.all_qubits
-            },
-            "ro_amplitudes": {
-                qubit: np.linspace(
-                    self.punchout_amplitude(qubit) / 2.5,
-                    self.punchout_amplitude(qubit) * 1.4,
-                    30,
-                )
-                for qubit in self.all_qubits
-            },
-        }
-
-    def punchout_amplitude(self, qubit: str):
-        return float(
-            self.session.redis_store.read_field("transmons", qubit, "measure:pulse_amp")
-        )
-
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-
-        first_qubit = self.all_qubits[0]
-        ro_amplitudes = self.schedule_samplespace["ro_amplitudes"][first_qubit]
-
-        def get_shot():
-            data_array = np.array([])
-            for ampl_index, _ in enumerate(ro_amplitudes):
-                triangle_size = ampl_index + 0.05
-                center_0, center_1, center_2 = isosceles_triangle(
-                    base_length=3 * triangle_size, height=5 * triangle_size
-                )
-                iq_point_0 = np.random.normal(loc=center_0, size=(1, 2), scale=0.7)
-                iq_point_1 = np.random.normal(loc=center_1, size=(1, 2), scale=0.7)
-                iq_point_2 = np.random.normal(loc=center_2, size=(1, 2), scale=0.7)
-                shot_0 = iq_point_0[:, 0] + 1j * iq_point_0[:, 1]
-                shot_1 = iq_point_1[:, 0] + 1j * iq_point_1[:, 1]
-                shot_2 = iq_point_2[:, 0] + 1j * iq_point_2[:, 1]
-                shots_array = np.concatenate((shot_0, shot_1, shot_2)).ravel()
-                data_array = np.concatenate((shots_array, data_array))
-            return data_array
-
-        for index, _ in enumerate(self.all_qubits):
-
-            all_shots_array = np.concatenate(
-                [get_shot() for _ in range(self.loops)]
-            ).ravel()
-
-            dataset[index] = xarray.DataArray(all_shots_array)
-        return dataset
+def get_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    qubit_states: dict[str, np.ndarray],
+    ro_amplitudes: dict[str, np.ndarray],
+    loop_repetitions: int,
+    state: int,
+) -> Schedule:
+    return ROAmplitudeOptimizationMeasurement(transmons).schedule_function(
+        ro_amplitudes, qubit_states, loop_repetitions, qubit_state=state
+    )
 
 
-class ThreeStateDiscriminationNode(ROAmplitudeThreeStateOptimizationNode):
-    name: str = "three_state_discrimination"
+def get_amplitudes(
+    qubit: str, session: "SessionContext", low: float, high: float, points: int
+) -> np.ndarray:
+    """``points`` amplitudes from ``low`` to ``high`` times the qubit's punchout amplitude."""
+    punchout = float(
+        session.redis_store.read_field("transmons", qubit, "measure:pulse_amp")
+    )
+    return np.linspace(punchout * low, punchout * high, points)
 
-    def __init__(
-        self,
-        all_qubits: list[str],
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(all_qubits, couplers, session, **schedule_keywords)
 
-        self.schedule_samplespace["ro_amplitudes"] = {
-            qubit: np.array([self.optimal_3state_amplitude(qubit)])
-            for qubit in self.all_qubits
-        }
-
-    def optimal_3state_amplitude(self, qubit: str):
-        return float(
-            self.session.redis.hget(
-                f"transmons:{qubit}", "measure_3state_opt:pulse_amp"
+def get_optimal_amplitude(qubit: str, session: "SessionContext") -> np.ndarray:
+    return np.array(
+        [
+            float(
+                session.redis.hget(f"transmons:{qubit}", "measure_3state_opt:pulse_amp")
             )
-        )
+        ]
+    )
+
+
+def get_dummy_s21(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    """Shots around each state's corner of a triangle that grows with the amplitude's index."""
+    rng = np.random.default_rng(0)
+    states, amplitudes = len(sweeps["qubit_states"]), len(sweeps["ro_amplitudes"])
+    shots = np.empty((states, amplitudes, LOOPS), dtype=complex)
+    for amplitude in range(amplitudes):
+        size = amplitude + 0.05
+        centres = isosceles_triangle(base_length=3 * size, height=5 * size)
+        for state in range(states):
+            iq = rng.normal(loc=centres[state], scale=DUMMY_SPREAD, size=(LOOPS, 2))
+            shots[state, amplitude] = iq[:, 0] + 1j * iq[:, 1]
+    return shots
+
+
+def _get_spec(
+    name: NodeEnum,
+    states: int,
+    amplitudes: SweepFn,
+    analyse: Callable[..., Fits],
+    fields: tuple[str, ...],
+) -> NodeSpec:
+    return NodeSpec(
+        name=name,
+        element="qubit",
+        get_schedule=partial(get_schedule, state=states - 1),
+        analyse=analyse,
+        qois={field: field for field in fields},
+        sweeps={
+            "qubit_states": get_fixed_sweep(np.arange(states, dtype=np.int16)),
+            "ro_amplitudes": amplitudes,
+        },
+        get_dummy_s21=get_dummy_s21,
+        plot=plot_ro_amplitude,
+        loops=LOOPS,
+        plot_rows=3,
+    )
+
+
+RO_AMPLITUDE_SPECS = {
+    spec.name: spec
+    for spec in (
+        _get_spec(
+            NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
+            2,
+            partial(get_amplitudes, low=1 / 4, high=1.2, points=45),
+            analyse_two_state_ro_amplitude,
+            TWO_STATE_FIELDS,
+        ),
+        _get_spec(
+            NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
+            3,
+            partial(get_amplitudes, low=1 / 2.5, high=1.4, points=30),
+            analyse_three_state_ro_amplitude,
+            THREE_STATE_FIELDS,
+        ),
+        _get_spec(
+            NodeEnum.THREE_STATE_DISCRIMINATION,
+            3,
+            get_optimal_amplitude,
+            analyse_three_state_ro_amplitude,
+            THREE_STATE_FIELDS,
+        ),
+    )
+}

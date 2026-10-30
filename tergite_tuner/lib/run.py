@@ -15,7 +15,7 @@ import math
 import time
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -96,7 +96,10 @@ def compile_node(
     spec: NodeSpec, device: QuantumDevice, sweeps: Sweeps
 ) -> CompiledSchedule:
     transmons = {qubit: device.get_element(qubit) for qubit in device.elements()}
-    schedule = spec.get_schedule(transmons, **sweeps, **spec.schedule_keywords)
+    keywords = dict(spec.schedule_keywords)
+    if spec.loops is not None:
+        keywords["loop_repetitions"] = spec.loops
+    schedule = spec.get_schedule(transmons, **sweeps, **keywords)
     return compile_schedule(schedule, device, name=spec.name.value)
 
 
@@ -123,7 +126,7 @@ def measure(
     if session.cluster_mode == MeasurementMode.dummy:
         raw_dataset = get_dummy_dataset(spec, sweeps, session)
     logger.info("Finished measurement")
-    return get_dataset(raw_dataset, sweeps, list(device.elements()))
+    return get_dataset(raw_dataset, sweeps, list(device.elements()), spec.loops)
 
 
 def get_dummy_dataset(
@@ -148,11 +151,14 @@ def get_dummy_dataset(
 
 
 def get_dataset(
-    raw_dataset: xr.Dataset, sweeps: Sweeps, qubits: list[str]
+    raw_dataset: xr.Dataset,
+    sweeps: Sweeps,
+    qubits: list[str],
+    loops: int | None = None,
 ) -> xr.Dataset:
-    """The instruments' acquisitions, one variable per qubit, shaped and labelled by ``sweeps``."""
+    """The instruments' acquisitions, one variable per qubit, shaped and labelled by ``sweeps``, then ``loops``."""
     dataset = xr.Dataset(attrs={"elements": []})
-    dimensions = samplespace_dimensions(sweeps)
+    dimensions = samplespace_dimensions(sweeps, loops)
     for key in raw_dataset.data_vars:
         qubit = qubits[key % len(qubits)]
         coords = {}
@@ -166,6 +172,8 @@ def get_dataset(
                 "units": "NA",
             }
             coords[coord_name] = (coord_name, values[qubit], coord_attrs)
+        if loops is not None:
+            coords["loops"] = ("loops", np.arange(loops), {"element_type": "NA"})
         partial_dataset = xr.Dataset(coords=coords)
         partial_dataset[f"y{qubit}"] = (
             tuple(coords),
@@ -219,16 +227,20 @@ def plot_elements(
     """Plots each element in a grid and saves it at 100 and 400 dpi in ``data_path``."""
     if spec.plot is None:
         return
-    nrows = math.ceil(len(s21s) / PLOT_COLUMNS)
+    rows = spec.plot_rows
+    nrows = math.ceil(len(s21s) / PLOT_COLUMNS) * rows
     figure, axes = create_figure_with_top_band(nrows, min(PLOT_COLUMNS, len(s21s)))
     for index, (element, s21) in enumerate(s21s.items()):
-        axis = axes[index // PLOT_COLUMNS, index % PLOT_COLUMNS]
-        spec.plot(axis, s21, fits[element] or {}, session)
-        axis.set_title(f"Qubit {element}")
+        element_axes = _get_element_axes(axes, index, rows)
+        spec.plot(element_axes, s21, fits[element] or {}, session)
+        (element_axes[0] if rows > 1 else element_axes).set_title(f"Qubit {element}")
     name = spec.name.value
     figure.savefig(data_path / f"{name}_preview.png", bbox_inches="tight", dpi=100)
     figure.savefig(data_path / f"{name}.png", bbox_inches="tight", dpi=400)
     plt.close(figure)
+    if spec.save_details is not None:
+        for element, s21 in s21s.items():
+            spec.save_details(s21, fits[element] or {}, data_path, session)
     logger.info(f"Plots saved to {data_path}")
 
 
@@ -289,3 +301,9 @@ def is_in_spec(name: str, elements: Iterable[str], session: "SessionContext") ->
                 f"No calibration status of {name} for {element}"
             )
     return True
+
+
+def _get_element_axes(axes: np.ndarray, index: int, rows: int) -> Any:
+    """The ``index``-th element's axis, or its column of ``rows`` axes, in a grid of ``PLOT_COLUMNS``."""
+    row, column = rows * (index // PLOT_COLUMNS), index % PLOT_COLUMNS
+    return axes[row : row + rows, column] if rows > 1 else axes[row, column]
