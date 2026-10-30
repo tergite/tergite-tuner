@@ -15,6 +15,8 @@
 Module containing a schedule class for two-tone (qubit) spectroscopy calibration.
 """
 
+from functools import partial
+
 import numpy as np
 
 from tergite_tuner.backend import (
@@ -50,58 +52,13 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
         repetitions: int = 1024,
         qubit_state: int = 0,
     ) -> Schedule:
-        """
-        Generate a schedule for performing two-tone (qubit) spectroscopy to locate the qubits resonance frequency for multiple qubits.
-
-        Schedule sequence
-            Reset -> Spectroscopy pulse -> Measure
-
-        Parameters
-        ----------
-        repetitions
-            The amount of times the Schedule will be repeated.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
-
-        measure_function = get_measure_operation(qubit_state)
-
+        """Sweeps each qubit's drive frequency and amplitude from ``qubit_state``, all qubits in parallel."""
         if spec_pulse_amplitudes is None:
             spec_pulse_amplitudes = {}
             for qubit in spec_frequencies:
                 amplitude = self.transmons[qubit].spec.spec_ampl_optimal()
                 logger.info(f"setting optimal spec_amplitude for {qubit} {amplitude}")
                 spec_pulse_amplitudes[qubit] = [amplitude]
-
-        def add_point(
-            schedule: Schedule, qubit: str, point: dict, acq_index: int
-        ) -> None:
-            transmon = self.transmons[qubit]
-            duration = transmon.spec.spec_duration()
-            clock = get_drive_clock(qubit, qubit_state)
-            # long pulses would not fit in the waveform memory
-            pulse = long_square_pulse if duration > 6e-6 else SoftSquarePulse
-            if acq_index % len(spec_pulse_amplitudes[qubit]) == 0:
-                schedule.add(
-                    SetClockFrequency(
-                        clock=clock, clock_freq_new=point["spec_frequencies"]
-                    ),
-                )
-            prepare_state(schedule, transmon, qubit_state)
-            schedule.add(
-                pulse(
-                    duration=duration,
-                    amp=point["spec_pulse_amplitudes"],
-                    port=transmon.ports.microwave(),
-                    clock=clock,
-                ),
-            )
-            schedule.add(
-                measure_function(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE),
-            )
 
         schedule = get_multiplexed_schedule(
             "qubit_spectroscopy",
@@ -110,7 +67,11 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
                 "spec_pulse_amplitudes": spec_pulse_amplitudes,
                 "spec_frequencies": spec_frequencies,
             },
-            add_point,
+            partial(
+                self._add_point,
+                qubit_state=qubit_state,
+                spec_pulse_amplitudes=spec_pulse_amplitudes,
+            ),
             repetitions,
         )
         for qubit, frequencies in spec_frequencies.items():
@@ -120,6 +81,42 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
                 )
             )
         return schedule
+
+    def _add_point(
+        self,
+        schedule: Schedule,
+        qubit: str,
+        point: dict,
+        acq_index: int,
+        *,
+        qubit_state: int,
+        spec_pulse_amplitudes: dict[str, np.ndarray],
+    ) -> None:
+        transmon = self.transmons[qubit]
+        duration = transmon.spec.spec_duration()
+        clock = get_drive_clock(qubit, qubit_state)
+        # long pulses would not fit in the waveform memory
+        pulse = long_square_pulse if duration > 6e-6 else SoftSquarePulse
+        # the amplitudes vary fastest, so the frequency changes once per sweep of them
+        if acq_index % len(spec_pulse_amplitudes[qubit]) == 0:
+            schedule.add(
+                SetClockFrequency(
+                    clock=clock, clock_freq_new=point["spec_frequencies"]
+                ),
+            )
+        prepare_state(schedule, transmon, qubit_state)
+        schedule.add(
+            pulse(
+                duration=duration,
+                amp=point["spec_pulse_amplitudes"],
+                port=transmon.ports.microwave(),
+                clock=clock,
+            ),
+        )
+        measure_operation = get_measure_operation(qubit_state)
+        schedule.add(
+            measure_operation(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE),
+        )
 
 
 class TwoTonesAmplitudeMeasurement(BaseMeasurement):
