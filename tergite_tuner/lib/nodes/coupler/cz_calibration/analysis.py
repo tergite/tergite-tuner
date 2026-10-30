@@ -27,6 +27,7 @@ from tergite_tuner.lib.utils.analysis_models import (
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 
 PLOT_COLUMNS = 5
+CURVE_POINTS = 200
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -39,7 +40,52 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
         self.model.set_param_hint("phase", min=-360, max=360, vary=True)
 
     def analyse(self) -> Fits | None:
+        self._find_coords()
+        self.control_qubit_probabilities = calculate_probabilities(
+            self.control_qubit_data_var, self.session.state
+        )
+        self.target_qubit_probabilities = calculate_probabilities(
+            self.target_qubit_data_var, self.session.state
+        )
+        self.fit_plot_phases = np.linspace(
+            self.target_phases[0], self.target_phases[-1], CURVE_POINTS
+        )
+        # the phase of the target's |0> at each working point, with and without the control
+        self.phi_0, plot_points = xr.apply_ufunc(
+            partial(
+                fit_sine_phase,
+                self.model,
+                x=self.target_phases,
+                plot_x=self.fit_plot_phases,
+            ),
+            self.target_qubit_probabilities.sel({"state": 0}),
+            input_core_dims=[[self.target_phase_coord]],
+            output_core_dims=[["phases"], ["plot_points"]],
+            vectorize=True,
+        )
+        self.target_plot_points_0 = plot_points.assign_coords(
+            {"plot_points": self.fit_plot_phases}
+        ).rename({"plot_points": self.target_phase_coord})
 
+        distances = get_distances_from_pi(
+            self.phi_0.sel({self.control_mode_coord: True}),
+            self.phi_0.sel({self.control_mode_coord: False}),
+        )
+        self.optimal_point_index = distances.argmin().item()
+        analysis_result = {
+            "cz_pulse_frequency": {
+                "value": self.frequencies[self.optimal_point_index],
+                "error": 0,
+            },
+            "cz_pulse_duration": {
+                "value": self.durations[self.optimal_point_index],
+                "error": 0,
+            },
+            "cz_phase": {"value": distances.min().item() + 180, "error": 0},
+        }
+        return get_fits_from_result(analysis_result, True)
+
+    def _find_coords(self) -> None:
         for coord in self.S21.coords:
             coord = str(coord)
             if "control_ons" in coord:
@@ -58,69 +104,6 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
                     self.target_phases = self.S21[coord].values
             elif "loops" in coord:
                 self.loops_coord = coord
-
-        self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.state
-        )
-        self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.state
-        )
-
-        data_target_0 = self.target_qubit_probabilities.sel({"state": 0})
-
-        self.fit_plot_phases = np.linspace(
-            self.target_phases[0], self.target_phases[-1], 200
-        )  # x-values for plotting
-
-        # self.phi_0 is the global phase of each for the |0> state of the target qubit
-        self.phi_0, target_plot_points_0 = xr.apply_ufunc(
-            partial(
-                fit_sine_phase,
-                self.model,
-                x=self.target_phases,
-                plot_x=self.fit_plot_phases,
-            ),
-            data_target_0,
-            input_core_dims=[[self.target_phase_coord]],
-            output_core_dims=[["phases"], ["plot_points"]],
-            vectorize=True,
-        )
-
-        self.target_plot_points_0 = target_plot_points_0.assign_coords(
-            {"plot_points": self.fit_plot_phases}
-        )
-        self.target_plot_points_0 = self.target_plot_points_0.rename(
-            {"plot_points": self.target_phase_coord}
-        )
-
-        phi_with_control_on = self.phi_0.sel({self.control_mode_coord: True})
-        phi_with_control_off = self.phi_0.sel({self.control_mode_coord: False})
-
-        # we subtract 180 because we want the distance of each phase from 180
-        delta_phis = abs(
-            (np.rad2deg(phi_with_control_on - phi_with_control_off) + 360) % 360 - 180
-        )
-        self.optimal_point_index = delta_phis.argmin().item()
-        optimal_frequency = self.frequencies[self.optimal_point_index]
-        optimal_duration = self.durations[self.optimal_point_index]
-        optimal_phase = delta_phis.min().item() + 180
-
-        analysis_succesful = True
-        analysis_result = {
-            "cz_pulse_frequency": {
-                "value": optimal_frequency,
-                "error": 0,
-            },
-            "cz_pulse_duration": {
-                "value": optimal_duration,
-                "error": 0,
-            },
-            "cz_phase": {
-                "value": optimal_phase,
-                "error": 0,
-            },
-        }
-        return get_fits_from_result(analysis_result, analysis_succesful)
 
     def plotter(self, figures_dictionary):
         rows = max(1, int(np.ceil((self.number_of_wp + 1) / PLOT_COLUMNS)))
@@ -188,3 +171,8 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
             axis._shared_axes["x"].remove(other)
             axis._shared_axes["y"].remove(other)
         axis.plot(self.frequencies, np.rad2deg((phis_off - phis_on).values), "bo")
+
+
+def get_distances_from_pi(phi_on: xr.DataArray, phi_off: xr.DataArray) -> xr.DataArray:
+    """How far, in degrees, the phase the control adds is from 180°, a CZ's."""
+    return abs((np.rad2deg(phi_on - phi_off) + 360) % 360 - 180)

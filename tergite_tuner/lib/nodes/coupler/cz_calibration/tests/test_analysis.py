@@ -13,11 +13,13 @@
 
 
 import cf_xarray as cf
+import numpy as np
 import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_calibration.analysis import (
     CZCalibrationCouplerAnalysis,
+    get_distances_from_pi,
 )
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset
@@ -86,3 +88,13 @@ def test_plotting(session_context, node_data_dir):
             # axes are the (freq, duration) plots + figure title +
             # figure x label + figure y label + global trend plot
             assert len(figure.get_axes()) == dataset.working_points.size + 4
+
+
+@pytest.mark.parametrize(
+    "difference, distance", [(180, 0), (90, 90), (-170, 10), (350, 170)]
+)
+def test_the_distance_is_from_a_cz_phase_of_180_degrees(difference, distance):
+    phi_on = xr.DataArray(np.deg2rad(difference))
+    phi_off = xr.DataArray(0.0)
+
+    assert get_distances_from_pi(phi_on, phi_off).item() == pytest.approx(distance)
