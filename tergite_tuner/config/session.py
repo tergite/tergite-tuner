@@ -287,7 +287,7 @@ class SessionContext(BaseSettings):
         return f"{self._timestamp.strftime('%Y-%m-%d--%H-%M-%S')}--tac-run-id"
 
     @computed_field
-    @cached_property
+    @property
     def target_node_name(self) -> Optional[str]:
         """Name of the target node (or ``None`` if unset)."""
         if self.target_node is None:
@@ -298,21 +298,7 @@ class SessionContext(BaseSettings):
     def state(self) -> DeviceState:
         """The run's device state: the device config's qubits and couplers, with ``calibration`` over them."""
         if self._state is None:
-            config = self.device_config
-            self._state = DeviceState(
-                {
-                    "transmons": {
-                        qubit: config.qubits[qubit]
-                        for qubit in self.qubits
-                        if qubit in config.qubits
-                    },
-                    "couplers": {
-                        coupler: config.couplers[coupler]
-                        for coupler in self.couplers
-                        if coupler in config.couplers
-                    },
-                }
-            )
+            self._state = DeviceState(self._get_config_records())
             self._state.load(self.calibration or {})
         return self._state
 
@@ -325,6 +311,26 @@ class SessionContext(BaseSettings):
         # a copy gets its own state, as model_copy shares private attributes
         session._state = copy.deepcopy(self._state)
         return session
+
+    def update(self, **options: Any) -> None:
+        """Sets ``options`` over this session's values, validated, as ``dict.update`` does.
+
+        The state stays, and gains the device config's values of qubits and couplers it did not have.
+        """
+        validated = self.model_validate({**dict(self), **options})
+        for name in options:
+            setattr(self, name, getattr(validated, name))
+        if self._state is not None:
+            self._state.load(
+                {
+                    collection: {
+                        element: record
+                        for element, record in records.items()
+                        if not self._state.get_record(collection, element)
+                    }
+                    for collection, records in self._get_config_records().items()
+                }
+            )
 
     @classmethod
     def from_env(
@@ -340,3 +346,19 @@ class SessionContext(BaseSettings):
         if file is not None and not Path(file).exists():
             raise FileNotFoundError(f"No .env file at {file}")
         return cls(_env_file=file, **kwargs)
+
+    def _get_config_records(self) -> dict[str, dict[str, Any]]:
+        """The device config's values of the session's qubits and couplers."""
+        config = self.device_config
+        return {
+            "transmons": {
+                qubit: config.qubits[qubit]
+                for qubit in self.qubits
+                if qubit in config.qubits
+            },
+            "couplers": {
+                coupler: config.couplers[coupler]
+                for coupler in self.couplers
+                if coupler in config.couplers
+            },
+        }

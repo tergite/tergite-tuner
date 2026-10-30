@@ -24,6 +24,7 @@ from tergite_tuner import (
     reanalyse,
     run_node,
     tune_device,
+    tuner,
 )
 from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
@@ -118,6 +119,19 @@ def test_run_node_uses_a_custom_node_spec(session_context, tmp_path):
         )
 
     assert analysed_qubits == sorted(session.qubits)
+
+
+def test_run_node_sets_its_options_over_a_given_session(session_context, monkeypatch):
+    qubits = []
+    monkeypatch.setattr(
+        tuner, "_tune", lambda session, **_kwargs: qubits.append(session.qubits)
+    )
+
+    returned, _ = run_node(NodeEnum.T1, session=session_context, qubits=["q01"])
+    run_node(NodeEnum.T1, session=session_context)
+
+    assert returned is session_context
+    assert qubits == [["q01"], ["q01"]]
 
 
 def test_reanalyse_analyses_a_recorded_dataset(session_context, tmp_path):

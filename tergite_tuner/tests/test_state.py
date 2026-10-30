@@ -63,6 +63,34 @@ def test_a_copied_session_writes_only_its_own_state(session_context):
     assert not session_context.state.written_paths
 
 
+def test_update_sets_options_over_a_session_and_keeps_its_state(session_context):
+    state = session_context.state
+    state.write({"transmons": {"q00": {"rxy:amp180": 0.5}}})
+
+    session_context.update(qubits=["q00"], target_node="T1")
+
+    assert session_context.qubits == ["q00"]
+    assert session_context.target_node == NodeEnum.T1
+    assert session_context.target_node_name == "t1"
+    assert session_context.couplers == ["q00_q01"]
+    assert session_context.state is state
+    assert state.read("transmons", "q00", "rxy:amp180") == 0.5
+
+
+def test_update_gives_the_state_the_config_of_added_qubits(session_context):
+    session_context.update(qubits=["q00"])
+    session_context.state.write({"transmons": {"q00": {"rxy:amp180": 0.5}}})
+
+    session_context.update(qubits=["q00", "q01"])
+
+    config = session_context.device_config.qubits["q01"]
+    state = session_context.state
+    assert state.read("transmons", "q00", "rxy:amp180") == 0.5
+    assert state.read("transmons", "q01", "measure:pulse_duration") == (
+        config["measure"]["pulse_duration"]
+    )
+
+
 def test_a_nodes_config_applies_only_while_it_runs(session_context, monkeypatch):
     session = session_context.model_copy(
         update={"node_config": NODE_CONFIG, "is_recalibration": False}

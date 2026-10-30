@@ -77,7 +77,8 @@ def generate_calib_seed_file(
 
     Args:
         path: the file to write; defaults to ``calibration.seed.toml``.
-        session: the session to read; built from ``env_file`` and ``session_options`` if not given.
+        session: the session to read; built from ``env_file`` and ``session_options`` if not given,
+            or with ``session_options`` set over its values.
         env_file: an optional ``.env`` file for that session.
         coupler_name_map: each coupler's name in the session mapped to its name in the backend;
             defaults to the same names.
@@ -86,6 +87,8 @@ def generate_calib_seed_file(
     """
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)
+    elif session_options:
+        session.update(**session_options)
 
     if coupler_name_map is None:
         coupler_name_map = {k: k for k in session.couplers}

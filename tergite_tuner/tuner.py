@@ -143,7 +143,7 @@ def run_node(
     Args:
         node: The calibration node to run
         env_file: Optional environment file to use
-        session: Optional session context to use
+        session: the session to run in, with ``session_options`` set over its values.
         refresh_session: whether to refresh the session context before running; defaults to True.
         keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: Optional session options
@@ -154,6 +154,8 @@ def run_node(
     """
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)
+    elif session_options:
+        session.update(**session_options)
     _tune(
         session,
         node=node,
@@ -179,7 +181,7 @@ def tune_device(
 
     Args:
         env_file: optional path to .env file to load session config from.
-        session: optional session context to use
+        session: the session to run in, with ``session_options`` set over its values.
         refresh_session: whether to refresh the session context before running; defaults to True.
         keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: optional keyword arguments to override config settings.
@@ -190,6 +192,8 @@ def tune_device(
     """
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)
+    elif session_options:
+        session.update(**session_options)
     _tune(session, refresh_session=refresh_session, keep_data_files=keep_data_files)
     results = read_result(session)
     return session, results
@@ -208,16 +212,15 @@ def reanalyse(
 
     Args:
         env_file: optional path to .env file to load session config from.
-        session: optional session context to use
+        session: the session to run in, with ``session_options`` set over its values.
         refresh_session: whether to refresh the session context before running; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
     if session is None:
-        session = SessionContext.from_env(
-            env_file,
-            **session_options,
-        )
+        session = SessionContext.from_env(env_file, **session_options)
+    elif session_options:
+        session.update(**session_options)
 
     session.cluster_mode = MeasurementMode.re_analyse
     _reanalyse(session, refresh_session=refresh_session)
