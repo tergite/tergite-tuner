@@ -16,7 +16,6 @@ import numpy as np
 from tergite_tuner.backend import (
     BinMode,
     ClockResource,
-    DRAGPulse,
     ExtendedTransmon,
     IdlePulse,
     LoopOperation,
@@ -24,9 +23,9 @@ from tergite_tuner.backend import (
     Schedule,
     SquarePulse,
     SSBIntegrationComplex,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import add_12_clocks, prepare_state
 
 
 class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
@@ -56,13 +55,12 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
                 ro_frequency = this_transmon.extended_clock_freqs.readout_2state_opt()
             elif qubit_state == 2:
                 ro_frequency = this_transmon.extended_clock_freqs.readout_3state_opt()
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                this_clock = f"{this_qubit}.12"
-                shot.add_resource(ClockResource(name=this_clock, freq=mw_frequency_12))
             else:
                 raise ValueError(f"Invalid state {qubit_state}")
 
             shot.add_resource(ClockResource(name=this_ro_clock, freq=ro_frequency))
+        if qubit_state == 2:
+            add_12_clocks(shot, self.transmons)
 
         # The outer for-loop iterates over all qubits:
         root_relaxation = shot.add(Reset(*qubits), label="Reset")
@@ -73,17 +71,12 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
             # unpack the static parameters:
             this_transmon = self.transmons[this_qubit]
             ro_pulse_duration = this_transmon.measure.pulse_duration()
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-            mw_ef_motzoi = this_transmon.r12.ef_motzoi()
-            mw_ef_duration = this_transmon.r12.ef_duration()
             mw_pulse_duration = this_transmon.rxy.duration()
-            mw_pulse_port = this_transmon.ports.microwave()
             acquisition_delay = this_transmon.measure.acq_delay()
             integration_time = this_transmon.measure.integration_time()
             ro_port = this_transmon.ports.readout()
 
             this_ro_clock = f"{this_qubit}." + ro_str
-            this_12_clock = f"{this_qubit}.12"
 
             qubit_levels = qubit_states[this_qubit]
             number_of_levels = len(qubit_levels)
@@ -99,23 +92,8 @@ class ROAmplitudeOptimizationMeasurement(BaseMeasurement):
 
                     if state_level == 0:
                         prep = shot.add(IdlePulse(mw_pulse_duration))
-
-                    elif state_level == 1:
-                        prep = shot.add(X(this_qubit))
-
-                    elif state_level == 2:
-                        shot.add(X(this_qubit))
-
-                        prep = shot.add(
-                            DRAGPulse(
-                                duration=mw_ef_duration,
-                                G_amp=mw_ef_amp180,
-                                D_amp=mw_ef_motzoi,
-                                port=mw_pulse_port,
-                                clock=this_12_clock,
-                                phase=0,
-                            ),
-                        )
+                    elif state_level in (1, 2):
+                        prep = prepare_state(shot, this_transmon, state_level)
                     else:
                         raise ValueError("State Input Error")
 

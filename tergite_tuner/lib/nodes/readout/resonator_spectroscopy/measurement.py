@@ -28,7 +28,7 @@ from tergite_tuner.backend import (
     X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
+from tergite_tuner.lib.utils.schedules import add_12_clocks, get_multiplexed_schedule
 
 
 class ResonatorSpectroscopyMeasurement(BaseMeasurement):
@@ -129,7 +129,5 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
                 ClockResource(name=f"{qubit}.{ro_str}", freq=frequencies[0])
             )
         if qubit_state == 2:
-            for qubit, transmon in self.transmons.items():
-                frequency = transmon.clock_freqs.f12()
-                schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
+            add_12_clocks(schedule, self.transmons)
         return schedule

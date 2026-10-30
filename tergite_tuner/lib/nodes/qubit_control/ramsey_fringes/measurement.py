@@ -17,17 +17,19 @@ import numpy as np
 from tergite_tuner.backend import (
     X90,
     BinMode,
-    ClockResource,
     DRAGPulse,
     ExtendedTransmon,
-    Measure,
-    Measure_RO1,
     Rxy,
     Schedule,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
+from tergite_tuner.lib.utils.schedules import (
+    add_12_clocks,
+    get_drive_clock,
+    get_measure_operation,
+    get_multiplexed_schedule,
+    prepare_state,
+)
 
 
 class RamseyDetuningsMeasurement(BaseMeasurement):
@@ -64,14 +66,7 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
             An experiment schedule.
         """
 
-        if qubit_state == 0:
-            schedule_title = "multiplexed_ramsey_01"
-            measure_function = Measure
-        elif qubit_state == 1:
-            schedule_title = "multiplexed_ramsey_12"
-            measure_function = Measure_RO1
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
+        measure_function = get_measure_operation(qubit_state)
 
         def add_point(
             schedule: Schedule, qubit: str, point: dict, acq_index: int
@@ -87,7 +82,7 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
                 )
             else:
                 transmon = self.transmons[qubit]
-                schedule.add(X(qubit))
+                prepare_state(schedule, transmon, qubit_state)
                 for phase, rel_time in ((0, 0), (recovery_phase, delay)):
                     schedule.add(
                         DRAGPulse(
@@ -95,7 +90,7 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
                             G_amp=transmon.r12.ef_amp180() / 2,
                             D_amp=0,
                             port=transmon.ports.microwave(),
-                            clock=f"{qubit}.12",
+                            clock=get_drive_clock(qubit, qubit_state),
                             phase=phase,
                         ),
                         rel_time=rel_time,
@@ -105,7 +100,7 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
             )
 
         schedule = get_multiplexed_schedule(
-            schedule_title,
+            f"multiplexed_ramsey_{qubit_state}{qubit_state + 1}",
             self.transmons,
             {
                 "ramsey_delays": ramsey_delays,
@@ -116,7 +111,5 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
             qubit_reset_ref_pt_new="end",
         )
         if qubit_state == 1:
-            for qubit, transmon in self.transmons.items():
-                frequency = transmon.clock_freqs.f12()
-                schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
+            add_12_clocks(schedule, self.transmons)
         return schedule

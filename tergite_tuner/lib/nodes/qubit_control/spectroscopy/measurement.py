@@ -22,15 +22,18 @@ from tergite_tuner.backend import (
     ClockResource,
     ExtendedTransmon,
     Measure,
-    Measure_RO1,
     Schedule,
     SetClockFrequency,
     SoftSquarePulse,
-    X,
     long_square_pulse,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
+from tergite_tuner.lib.utils.schedules import (
+    get_drive_clock,
+    get_measure_operation,
+    get_multiplexed_schedule,
+    prepare_state,
+)
 from tergite_tuner.utils.logging import logger
 
 
@@ -64,14 +67,7 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
             An experiment schedule.
         """
 
-        if qubit_state == 0:
-            measure_function = Measure
-            clock_name = "01"
-        elif qubit_state == 1:
-            measure_function = Measure_RO1
-            clock_name = "12"
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
+        measure_function = get_measure_operation(qubit_state)
 
         if spec_pulse_amplitudes is None:
             spec_pulse_amplitudes = {}
@@ -85,7 +81,7 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
         ) -> None:
             transmon = self.transmons[qubit]
             duration = transmon.spec.spec_duration()
-            clock = f"{qubit}.{clock_name}"
+            clock = get_drive_clock(qubit, qubit_state)
             # long pulses would not fit in the waveform memory
             pulse = long_square_pulse if duration > 6e-6 else SoftSquarePulse
             if acq_index % len(spec_pulse_amplitudes[qubit]) == 0:
@@ -94,8 +90,7 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
                         clock=clock, clock_freq_new=point["spec_frequencies"]
                     ),
                 )
-            if qubit_state == 1:
-                schedule.add(X(qubit))
+            prepare_state(schedule, transmon, qubit_state)
             schedule.add(
                 pulse(
                     duration=duration,
@@ -120,7 +115,9 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
         )
         for qubit, frequencies in spec_frequencies.items():
             schedule.add_resource(
-                ClockResource(name=f"{qubit}.{clock_name}", freq=frequencies[0])
+                ClockResource(
+                    name=get_drive_clock(qubit, qubit_state), freq=frequencies[0]
+                )
             )
         return schedule
 

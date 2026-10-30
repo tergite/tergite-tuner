@@ -20,13 +20,16 @@ from tergite_tuner.backend import (
     ClockResource,
     DRAGPulse,
     ExtendedTransmon,
-    Measure,
-    Measure_RO1,
     Schedule,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
+from tergite_tuner.lib.utils.schedules import (
+    add_12_clocks,
+    get_drive_clock,
+    get_measure_operation,
+    get_multiplexed_schedule,
+    prepare_state,
+)
 
 
 class RabiOscillationsMeasurement(BaseMeasurement):
@@ -41,52 +44,42 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         qubit_state: int = 0,
     ) -> Schedule:
         """Drives each qubit with a DRAG pulse at each of its mw_amplitudes, then measures it."""
-        if qubit_state == 0:
-            schedule_title = "rabi_01_oscillations"
-            measure_function = Measure
-        elif qubit_state == 1:
-            schedule_title = "rabi_12_oscillations"
-            measure_function = Measure_RO1
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
+        measure = get_measure_operation(qubit_state)
 
         def add_point(
             schedule: Schedule, qubit: str, point: dict, acq_index: int
         ) -> None:
             transmon = self.transmons[qubit]
             if qubit_state == 0:
-                clock = f"{qubit}.01"
                 duration = transmon.rxy.duration()
             else:
-                clock = f"{qubit}.12"
                 duration = transmon.r12.ef_duration()
-                schedule.add(X(qubit))
+            prepare_state(schedule, transmon, qubit_state)
             schedule.add(
                 DRAGPulse(
                     duration=duration,
                     G_amp=point["mw_amplitudes"],
                     D_amp=0,
                     port=transmon.ports.microwave(),
-                    clock=clock,
+                    clock=get_drive_clock(qubit, qubit_state),
                     phase=0,
                 ),
             )
-            schedule.add(measure_function(qubit, acq_index=acq_index))
+            schedule.add(measure(qubit, acq_index=acq_index))
 
         schedule = get_multiplexed_schedule(
-            schedule_title,
+            f"rabi_{qubit_state}{qubit_state + 1}_oscillations",
             self.transmons,
             {"mw_amplitudes": mw_amplitudes},
             add_point,
             repetitions,
         )
-        for qubit, transmon in self.transmons.items():
-            if qubit_state == 0:
+        if qubit_state == 0:
+            for qubit, transmon in self.transmons.items():
                 frequency = transmon.clock_freqs.f01()
                 schedule.add_resource(ClockResource(name=f"{qubit}.01", freq=frequency))
-            else:
-                frequency = transmon.clock_freqs.f12()
-                schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
+        else:
+            add_12_clocks(schedule, self.transmons)
         return schedule
 
 
@@ -103,14 +96,7 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
         qubit_state: int = 0,
     ) -> Schedule:
         """Applies X_repetitions DRAG pulses at each of the mw_amplitudes_sweep, then measures."""
-        if qubit_state == 0:
-            schedule_title = "n_rabi_oscillations"
-            measure_function = Measure
-        elif qubit_state == 1:
-            schedule_title = "n_rabi_12_oscillations"
-            measure_function = Measure_RO1
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
+        measure = get_measure_operation(qubit_state)
 
         def add_point(
             schedule: Schedule, qubit: str, point: dict, acq_index: int
@@ -120,27 +106,25 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
                 duration = transmon.rxy.duration()
                 amplitude = transmon.rxy.amp180()
                 motzoi = transmon.rxy.motzoi()
-                clock = f"{qubit}.01"
             else:
                 duration = transmon.r12.ef_duration()
                 amplitude = transmon.r12.ef_amp180()
                 motzoi = transmon.r12.ef_motzoi()
-                clock = f"{qubit}.12"
-                schedule.add(X(qubit))
+            prepare_state(schedule, transmon, qubit_state)
             pulse = DRAGPulse(
                 duration=duration,
                 G_amp=amplitude + point["mw_amplitudes_sweep"],
                 D_amp=motzoi,
                 port=transmon.ports.microwave(),
-                clock=clock,
+                clock=get_drive_clock(qubit, qubit_state),
                 phase=0,
             )
             for _ in range(2 * point["X_repetitions"]):
                 schedule.add(pulse)
-            schedule.add(measure_function(qubit, acq_index=acq_index))
+            schedule.add(measure(qubit, acq_index=acq_index))
 
         schedule = get_multiplexed_schedule(
-            schedule_title,
+            "n_rabi_oscillations" if qubit_state == 0 else "n_rabi_12_oscillations",
             self.transmons,
             {
                 "mw_amplitudes_sweep": mw_amplitudes_sweep,
@@ -150,7 +134,5 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
             repetitions,
         )
         if qubit_state == 1:
-            for qubit, transmon in self.transmons.items():
-                frequency = transmon.clock_freqs.f12()
-                schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
+            add_12_clocks(schedule, self.transmons)
         return schedule

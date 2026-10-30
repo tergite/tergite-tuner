@@ -15,7 +15,16 @@ import itertools
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any, Literal
 
-from tergite_tuner.backend import ExtendedTransmon, Reset, Schedule
+from tergite_tuner.backend import (
+    ClockResource,
+    DRAGPulse,
+    ExtendedTransmon,
+    Measure,
+    Measure_RO1,
+    Reset,
+    Schedule,
+    X,
+)
 
 AddPoint = Callable[[Schedule, str, dict[str, Any], int], None]
 
@@ -61,6 +70,49 @@ def get_multiplexed_schedule(
             add_point(schedule, qubit, point, acq_index)
             schedule.add(Reset(qubit))
     return schedule
+
+
+def get_drive_clock(qubit: str, state: int) -> str:
+    """The clock that drives ``qubit`` from ``state`` (0 or 1) to the state above it."""
+    if state not in (0, 1):
+        raise ValueError(f"Invalid qubit state: {state}")
+    return f"{qubit}.{state}{state + 1}"
+
+
+def get_measure_operation(state: int) -> type[Measure]:
+    """The measurement that tells ``state`` (0 or 1) from the state above it."""
+    if state == 0:
+        return Measure
+    if state == 1:
+        return Measure_RO1
+    raise ValueError(f"Invalid qubit state: {state}")
+
+
+def add_12_clocks(
+    schedule: Schedule, transmons: Mapping[str, ExtendedTransmon]
+) -> None:
+    for qubit, transmon in transmons.items():
+        frequency = transmon.clock_freqs.f12()
+        schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
+
+
+def prepare_state(schedule: Schedule, transmon: ExtendedTransmon, state: int) -> Any:
+    """Adds the pulses taking ``transmon`` from 0 to ``state``, returning the last one, or None for 0."""
+    if state == 0:
+        return None
+    pulse = schedule.add(X(transmon.name))
+    if state == 2:
+        pulse = schedule.add(
+            DRAGPulse(
+                duration=transmon.r12.ef_duration(),
+                G_amp=transmon.r12.ef_amp180(),
+                D_amp=transmon.r12.ef_motzoi(),
+                port=transmon.ports.microwave(),
+                clock=f"{transmon.name}.12",
+                phase=0,
+            ),
+        )
+    return pulse
 
 
 def _get_points(

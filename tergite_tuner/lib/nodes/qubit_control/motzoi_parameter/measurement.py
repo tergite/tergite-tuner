@@ -23,13 +23,16 @@ from tergite_tuner.backend import (
     ClockResource,
     DRAGPulse,
     ExtendedTransmon,
-    Measure,
-    Measure_RO1,
     Schedule,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
+from tergite_tuner.lib.utils.schedules import (
+    add_12_clocks,
+    get_drive_clock,
+    get_measure_operation,
+    get_multiplexed_schedule,
+    prepare_state,
+)
 
 
 class MotzoiParameterMeasurement(BaseMeasurement):
@@ -48,14 +51,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
 
         The repetitions amplify the phase error that the right motzoi cancels.
         """
-        if qubit_state == 0:
-            schedule_title = "motzoi_01_parameter"
-            measure_function = Measure
-        elif qubit_state == 1:
-            schedule_title = "motzoi_12_parameter"
-            measure_function = Measure_RO1
-        else:
-            raise ValueError(f"Invalid qubit state: {qubit_state}")
+        measure_function = get_measure_operation(qubit_state)
         phases = (0, 180, 90, 270) if qubit_state == 0 else (0, 180)
 
         def add_point(
@@ -64,11 +60,9 @@ class MotzoiParameterMeasurement(BaseMeasurement):
             transmon = self.transmons[qubit]
             if qubit_state == 0:
                 amplitude = transmon.rxy.amp180()
-                clock = f"{qubit}.01"
             else:
                 amplitude = transmon.r12.ef_amp180()
-                clock = f"{qubit}.12"
-                schedule.add(X(qubit))
+            prepare_state(schedule, transmon, qubit_state)
             for _ in range(point["X_repetitions"]):
                 # each pulse is followed by its inverse, 180 degrees on
                 for phase in phases:
@@ -78,7 +72,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
                             G_amp=amplitude,
                             D_amp=point["mw_motzois"],
                             port=transmon.ports.microwave(),
-                            clock=clock,
+                            clock=get_drive_clock(qubit, qubit_state),
                             phase=phase,
                         ),
                     )
@@ -87,7 +81,7 @@ class MotzoiParameterMeasurement(BaseMeasurement):
             )
 
         schedule = get_multiplexed_schedule(
-            schedule_title,
+            f"motzoi_{qubit_state}{qubit_state + 1}_parameter",
             self.transmons,
             {"mw_motzois": mw_motzois, "X_repetitions": X_repetitions},
             add_point,
@@ -98,9 +92,6 @@ class MotzoiParameterMeasurement(BaseMeasurement):
         for qubit, transmon in self.transmons.items():
             frequency_01 = transmon.clock_freqs.f01()
             schedule.add_resource(ClockResource(name=f"{qubit}.01", freq=frequency_01))
-            if qubit_state == 1:
-                frequency_12 = transmon.clock_freqs.f12()
-                schedule.add_resource(
-                    ClockResource(name=f"{qubit}.12", freq=frequency_12)
-                )
+        if qubit_state == 1:
+            add_12_clocks(schedule, self.transmons)
         return schedule

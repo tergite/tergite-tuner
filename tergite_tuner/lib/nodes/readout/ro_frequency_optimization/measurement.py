@@ -17,16 +17,15 @@ import numpy as np
 
 from tergite_tuner.backend import (
     ClockResource,
-    DRAGPulse,
     ExtendedTransmon,
     Reset,
     Schedule,
     SetClockFrequency,
     SquarePulse,
     SSBIntegrationComplex,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import add_12_clocks, prepare_state
 
 
 class ROFrequencyOptimizationMeasurement(BaseMeasurement):
@@ -67,31 +66,15 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
     def measure_first_excited(
         self, schedule: Schedule, transmon: ExtendedTransmon, acq_index: int
     ):
-        this_qubit = transmon.name
-        schedule.add(X(this_qubit))
+        prepare_state(schedule, transmon, 1)
         self.measure(schedule, transmon, acq_index)
 
     def measure_second_excited(
         self, schedule: Schedule, transmon: ExtendedTransmon, acq_index: int
     ):
-        # repeat for when the qubit is at |2>
-        this_qubit = transmon.name
-        schedule.add(X(this_qubit))
-        this_mw_clock = f"{this_qubit}.12"
-
-        schedule.add(
-            DRAGPulse(
-                duration=transmon.r12.ef_duration(),
-                G_amp=transmon.r12.ef_amp180(),
-                D_amp=transmon.r12.ef_motzoi(),
-                port=transmon.ports.microwave(),
-                clock=this_mw_clock,
-                phase=0,
-            ),
-        )
+        prepare_state(schedule, transmon, 2)
         self.measure(schedule, transmon, acq_index)
-
-        schedule.add(Reset(this_qubit))
+        schedule.add(Reset(transmon.name))
 
     def schedule_function(
         self,
@@ -117,12 +100,7 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
             )
 
         if len(qubit_states[list(qubits)[0]]) == 3:
-            for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                this_clock = f"{this_qubit}.12"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_12)
-                )
+            add_12_clocks(schedule, self.transmons)
 
         root_relaxation = schedule.add(Reset(*qubits), label="Reset")
 
