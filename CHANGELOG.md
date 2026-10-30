@@ -23,6 +23,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Raised `MissingCalibrationStatusError`, a `ValueError`, for a node with no calibration status, and skipped the pause between T1 and T2 repetitions on a dummy cluster
 - [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 - [BREAKING] Loaded every config file with `tergite_tuner.config.types.load_config(model, path)`, replacing `from_toml` and `from_json`; `NodeConfig` and `SpiConfig` are read through `.root`, as they no longer index like dicts
+- [BREAKING] Wrote each run's node folders, or a recalibration's files, into a folder of the run's own in `data_dir`, which `keep_data_files=False` deletes; it deleted all of `data_dir`, and `reanalyse` deleted the dataset it re-analysed, so `reanalyse` no longer takes `keep_data_files`
 
 ### Fixed
 

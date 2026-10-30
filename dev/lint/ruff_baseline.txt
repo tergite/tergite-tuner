@@ -251,7 +251,6 @@ tergite_tuner/lib/utils/graph.py: UP035 `typing.List` is deprecated, use `list` 
 tergite_tuner/lib/utils/graph.py: UP047 Generic function `get_dependencies_in_topological_order` should use type parameters
 tergite_tuner/lib/utils/tests/test_graph.py: UP006 Use `set` instead of `Set` for type annotation
 tergite_tuner/lib/utils/tests/test_graph.py: UP035 `typing.Set` is deprecated, use `set` instead
-tergite_tuner/storage/fs/dataset.py: RET504 Unnecessary assignment to `data_path` before `return` statement
 tergite_tuner/storage/fs/dataset.py: RET504 Unnecessary assignment to `ds` before `return` statement
 tergite_tuner/storage/redis/store.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/storage/redis/store.py: B905 `zip()` without an explicit `strict=` parameter
@@ -316,7 +315,6 @@ tergite_tuner/tests/utils/redis.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/tests/utils/redis.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/tests/utils/redis.py: UP015 Unnecessary mode argument
 tergite_tuner/tests/utils/redis.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/tuner.py: SIM103 Return the condition `path not in forbidden` directly
 tergite_tuner/tuner.py: SIM108 Use ternary operator `topo_order = [node] if node else node_manager.topo_order(session.target_node)` instead of `if`-`else`-block
 tergite_tuner/tuner.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/tuner.py: UP006 Use `tuple` instead of `Tuple` for type annotation

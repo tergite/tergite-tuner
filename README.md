@@ -278,7 +278,7 @@ from tergite_tuner import reanalyse
 
 _, results = reanalyse(
     env_file=".env",
-    data_dir=Path("path/to/run/folder"),
+    data_dir=Path("out/<run>/<node folder>"),  # the folder holding dataset_<node>.hdf5
 )
 ```
 

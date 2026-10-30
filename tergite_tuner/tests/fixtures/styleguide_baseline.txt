@@ -17,11 +17,9 @@ boolean: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/rando
 boolean: tergite_tuner/storage/redis/store.py::RedisStore.save_many(reset)
 boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(ignore_spec)
 boolean: tergite_tuner/tuner.py::NodeManager.inspect_node(save_plot)
-boolean: tergite_tuner/tuner.py::_reanalyse(keep_data_files)
 boolean: tergite_tuner/tuner.py::_reanalyse(refresh_session)
 boolean: tergite_tuner/tuner.py::_tune(keep_data_files)
 boolean: tergite_tuner/tuner.py::_tune(refresh_session)
-boolean: tergite_tuner/tuner.py::reanalyse(keep_data_files)
 boolean: tergite_tuner/tuner.py::reanalyse(refresh_session)
 boolean: tergite_tuner/tuner.py::run_node(keep_data_files)
 boolean: tergite_tuner/tuner.py::run_node(refresh_session)
@@ -99,7 +97,6 @@ license-header: tergite_tuner/utils/types/__init__.py
 private-helper-position: tergite_tuner/config/session.py::SessionContext
 private-helper-position: tergite_tuner/config/session.py::SessionOptions
 private-helper-position: tergite_tuner/export.py::CalibrationResults
-private-helper-position: tergite_tuner/tuner.py::is_safe_path
 private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
 private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_bool_fields

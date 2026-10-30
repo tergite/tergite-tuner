@@ -10,6 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from pathlib import Path
+
 import networkx as nx
 import numpy as np
 import pytest
@@ -62,9 +64,44 @@ def test_every_default_node_runs_in_dummy_mode(
 ):
     # the dummy cluster assembles in the working directory, which workers would share
     monkeypatch.chdir(tmp_path)
+    _run_dummy_node(node, redis_connection, session_context, tmp_path)
+
+    # analyses of random IQ points may fail; reaching them without raising is the check
+    # a node may save under another node's name (step 9.8)
+    node_name = DEFAULT_NODE_SPECS[node].name.value
+    assert list(tmp_path.glob(f"*-run/dataset_{node_name}.hdf5"))
+
+
+def test_unkept_data_files_delete_only_the_runs_folder(
+    redis_connection, session_context, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    data_dir = tmp_path / "out"
+    earlier_file = data_dir / "earlier" / "dataset.hdf5"
+    earlier_file.parent.mkdir(parents=True)
+    earlier_file.touch()
+
+    _run_dummy_node(
+        NodeEnum.RESONATOR_SPECTROSCOPY,
+        redis_connection,
+        session_context,
+        data_dir,
+        keep_data_files=False,
+    )
+
+    assert sorted(data_dir.rglob("*")) == [earlier_file.parent, earlier_file]
+
+
+def _run_dummy_node(
+    node: NodeEnum,
+    redis_connection,
+    session_context,
+    data_dir: Path,
+    keep_data_files: bool = True,
+) -> None:
     session = session_context.model_copy(
         update={
-            "data_dir": tmp_path,
+            "data_dir": data_dir,
             "ignore_spec": True,
             "is_recalibration": True,
             "spi_config": _SPI_CONFIG,
@@ -76,9 +113,9 @@ def test_every_default_node_runs_in_dummy_mode(
         # nodes' own dummy generators draw from numpy's global generator
         np.random.seed(0)
         ExtendedTransmon.close_all()
-        run_node(node, session=session, refresh_session=False)
-
-    # analyses of random IQ points may fail; reaching them without raising is the check
-    # a node may save under another node's name (step 9.8)
-    node_name = DEFAULT_NODE_SPECS[node].name.value
-    assert (tmp_path / f"dataset_{node_name}.hdf5").exists()
+        run_node(
+            node,
+            session=session,
+            refresh_session=False,
+            keep_data_files=keep_data_files,
+        )

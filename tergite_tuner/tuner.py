@@ -16,7 +16,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-import os
 import shutil
 from os import PathLike
 from pathlib import Path
@@ -31,7 +30,7 @@ from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib import run
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
-from tergite_tuner.storage.fs.dataset import create_node_data_path
+from tergite_tuner.storage.fs.dataset import get_unique_data_path
 from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -54,9 +53,12 @@ class NodeManager:
         self,
         hardware: Optional[Hardware],
         session: "SessionContext",
+        run_path: Path | None = None,
     ) -> None:
         self.session = session
         self.hardware = hardware
+        # the run's own folder in data_dir, the only one keep_data_files=False deletes
+        self.run_path = run_path or session.data_dir
 
         self.nodes = {**DEFAULT_NODE_SPECS, **session.node_specs}
         self.ignored_nodes = session.ignored_nodes
@@ -110,13 +112,14 @@ class NodeManager:
             logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
 
             logger.info(f"Calibrating node {node_name}")
-            data_path = self.session.data_dir
-            # avoid creating new logs folders if we are re_analysing or recalibrating
-            if (
-                self.session.cluster_mode != MeasurementMode.re_analyse
-                and not self.session.is_recalibration
-            ):
-                data_path = create_node_data_path(self.session, node_name=node_name)
+            # re-analysis reads the datasets already in data_dir; a recalibration
+            # writes into the run's folder, so repeated ones need no folder per node
+            if self.session.cluster_mode == MeasurementMode.re_analyse:
+                data_path = self.session.data_dir
+            elif self.session.is_recalibration:
+                data_path = self.run_path
+            else:
+                data_path = get_unique_data_path(self.run_path, node_name)
 
             run.calibrate(node_spec, self.session, self.hardware, data_path, save_plot)
 
@@ -194,7 +197,6 @@ def reanalyse(
     env_file: Optional[Union[str, "PathLike[str]"]] = None,
     session: Optional[SessionContext] = None,
     refresh_session: bool = True,
-    keep_data_files: bool = True,
     **session_options: Unpack[SessionOptions],
 ) -> Tuple[SessionContext, CalibrationResults]:
     """Re-run the analysis of ``target_node`` against an already-recorded dataset.
@@ -206,7 +208,6 @@ def reanalyse(
         env_file: optional path to .env file to load session config from.
         session: optional session context to use
         refresh_session: whether to refresh the session context before running; defaults to True.
-        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
     """
@@ -217,9 +218,7 @@ def reanalyse(
         )
 
     session.cluster_mode = MeasurementMode.re_analyse
-    _reanalyse(
-        session, refresh_session=refresh_session, keep_data_files=keep_data_files
-    )
+    _reanalyse(session, refresh_session=refresh_session)
     results = read_result(session)
     return session, results
 
@@ -245,7 +244,8 @@ def _tune(
     if refresh_session:
         session.refresh_redis_fields_log()
     hardware = Hardware(session)
-    node_manager = NodeManager(hardware, session=session)
+    run_path = get_unique_data_path(session.data_dir, "run")
+    node_manager = NodeManager(hardware, session=session, run_path=run_path)
     qubits = session.qubits
     couplers = session.couplers
 
@@ -279,22 +279,19 @@ def _tune(
         )
         logger.info(f"{calibration_node.value} node is completed")
 
-    if not keep_data_files and is_safe_path(session.data_dir):
-        shutil.rmtree(session.data_dir)
-        os.makedirs(session.data_dir)
+    if not keep_data_files and run_path.exists():
+        shutil.rmtree(run_path)
 
 
 def _reanalyse(
     session: SessionContext,
     refresh_session: bool = True,
-    keep_data_files: bool = True,
 ) -> None:
     """Internal function implementing the re-analysis logic.
 
     Args:
         session: the session context to use
         refresh_session: whether to refresh the session before tuning.
-        keep_data_files: whether to keep the data files produced during calibration; defaults to True.
     """
     if refresh_session:
         session.refresh_redis_fields_log()
@@ -315,32 +312,3 @@ def _reanalyse(
         should_save_plot=False,
     )
     logger.status("Analysis completed.")
-
-    if not keep_data_files and is_safe_path(session.data_dir):
-        shutil.rmtree(session.data_dir)
-        os.makedirs(session.data_dir)
-
-
-def is_safe_path(path_str: PathLike[str]) -> bool:
-    """Checks that a path is safe to delete
-
-    Unsafe paths include '/', '/etc', '/var', '/bin', '/usr/'
-
-    Args:
-        path_str: the path to check
-
-    Returns:
-        True if the path is safe to delete, False otherwise
-    """
-    path = Path(path_str).resolve()
-
-    # Check against root
-    if path == path.parents[-1] if path.parents else path == Path("/"):
-        return False
-
-    # Extra safety: Ensure it's not a critical system directory
-    forbidden = {Path("/"), Path("/etc"), Path("/usr"), Path("/bin"), Path("/var")}
-    if path in forbidden:
-        return False
-
-    return True

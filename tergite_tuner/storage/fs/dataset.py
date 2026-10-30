@@ -13,19 +13,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os.path
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import cf_xarray as cf
 import xarray
 
 from tergite_tuner.utils.logging import logger
-
-if TYPE_CHECKING:
-    from tergite_tuner.config.session import SessionContext
 
 
 def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
@@ -34,24 +29,10 @@ def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
     return ds
 
 
-def create_node_data_path(session_config: "SessionContext", node_name: str) -> Path:
-    """
-    Create the folder where measurement results, plots and logs specific to the node are stored.
-
-    Args:
-        session_config: the configuration for the current session
-        node_name: to create a data path for.
-
-    Returns:
-        Path to the measurement log folder as Path.
-
-    """
-    now_ = datetime.now()
-    measurement_id = (
-        f"{now_.strftime('%Y%m%d-%H%M%S-%f')[:19]}-{str(uuid4())[:6]}-{node_name}"
-    )
-    data_path = Path(os.path.join(session_config.data_dir, measurement_id))
-    return data_path
+def get_unique_data_path(parent: Path, name: str) -> Path:
+    """A new folder's path in ``parent``, named for the time, a random id and ``name``; not created."""
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:19]
+    return Path(parent) / f"{timestamp}-{str(uuid4())[:6]}-{name}"
 
 
 def load_dataset(node_name: str, data_path: Path) -> xarray.Dataset:

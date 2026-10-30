@@ -29,7 +29,7 @@ flowchart TD
     I -->|out of spec| N["run.calibrate(spec)"]
     N --> C["compile_node: spec.get_schedule → compile_schedule, per outer point"]
     C --> X["run_schedule on the InstrumentCoordinator, per external point<br/>(or spec.get_dummy_s21 in dummy mode)"]
-    X --> D["get_dataset → save_dataset (data_dir/&lt;timestamp&gt;-&lt;node&gt;/)"]
+    X --> D["get_dataset → save_dataset (data_dir/&lt;run&gt;/&lt;timestamp&gt;-&lt;node&gt;/)"]
     D --> A["spec.analyse, per element → fits"]
     A --> Q["store_fits: the fits spec.qois names → Redis transmons / couplers, cs = calibrated"]
 ```
@@ -82,7 +82,7 @@ Redis holds the device as the tuner knows it, one hash per element, and fakeredi
 
 `RedisStore` serialises each value with its type, so it reads back as written. `populate_initial_parameters` seeds the hashes from `device_config` at the start of a run. `read_result` returns what the session touched, or everything, as `CalibrationResults`. `generate_calib_seed_file` turns that into the TOML seed tergite-backend reads.
 
-Each measured node writes a folder under `data_dir`: the dataset (`dataset_<node>.hdf5`), the device's serialised elements (`<node>.json`), and its plots.
+Each run writes a folder under `data_dir`, and each measured node a folder in it: the dataset (`dataset_<node>.hdf5`), the device's serialised elements (`<node>.json`), and its plots. A recalibration's nodes write straight into the run's folder. `keep_data_files=False` deletes the run's folder, and nothing else in `data_dir`.
 
 ## 5. Configuration
 

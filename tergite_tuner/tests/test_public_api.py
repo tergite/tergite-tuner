@@ -63,7 +63,7 @@ def test_tune_device_calibrates_up_to_the_target_node(
 
     assert returned_session is session
     assert isinstance(results, CalibrationResults)
-    assert (tmp_path / "dataset_resonator_spectroscopy.hdf5").exists()
+    assert list(tmp_path.glob("*-run/dataset_resonator_spectroscopy.hdf5"))
 
 
 def test_run_node_runs_only_that_node(redis_connection, session_context, tmp_path):
@@ -75,7 +75,7 @@ def test_run_node_runs_only_that_node(redis_connection, session_context, tmp_pat
         )
 
     assert isinstance(results, CalibrationResults)
-    assert [path.name for path in tmp_path.glob("dataset_*.hdf5")] == [
+    assert [path.name for path in tmp_path.glob("*-run/dataset_*.hdf5")] == [
         "dataset_resonator_spectroscopy.hdf5"
     ]
 
