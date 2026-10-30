@@ -137,145 +137,82 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
         return self.single_model.eval(result.params, m=self.fit_n_cliffords)
 
     def plotter(self, figures_dictionary):
+        figure, (decay_axis, leakage_axis) = plt.subplots(ncols=2)
+        self._plot_decays(decay_axis)
+        self._plot_leakage(leakage_axis)
+        figures_dictionary[self.coupler] = [figure]
 
-        fig, axs = plt.subplots(ncols=2)
-
-        computational_space_dimension = 4
-
-        standard_probs_00 = self.P00.sel({self.interleave_modes_coord: False})
-
-        comp_space_probs = self.P00 + self.P01 + self.P10 + self.P11
-
-        # Standard exponential plots
-        ############################
-        title = ""
-        axs[0].plot(
+    def _plot_decays(self, axis: Any) -> None:
+        """Each seed's |00> probability and its fitted decay, interleaved dotted."""
+        styles = {
+            "x": self.number_cliffords_coord,
+            "hue": self.seed_coord,
+            "alpha": 0.2,
+        }
+        axis.plot(
             self.fit_n_cliffords,
             self.standard.curve_00,
             color="red",
             lw=3,
             label=rf"$p_{{SRB}}$: {self.standard.p:.3f}",
         )
-        styles = {"hue": self.seed_coord, "alpha": 0.2}
-        standard_probs_00.plot(ax=axs[0], x=self.number_cliffords_coord, **styles)
-
-        standard_probs_chi_1 = comp_space_probs.sel(
-            {self.interleave_modes_coord: False}
-        )
-        standard_probs_reduced_ideal = (
-            standard_probs_00 - standard_probs_chi_1 / computational_space_dimension
-        )
-        interleaved_probs_00 = self.P00.sel({self.interleave_modes_coord: False})
-        interleaved_probs_chi_1 = comp_space_probs.sel(
-            {self.interleave_modes_coord: False}
-        )
-        interleaved_probs_reduced_ideal = (
-            interleaved_probs_00
-            - interleaved_probs_chi_1 / computational_space_dimension
-        )
-        if True in self.interleave_modes:
-            interleaved_probs_00 = self.P00.sel({self.interleave_modes_coord: True})
-            interleaved_probs_00.plot(
-                ax=axs[0],
-                x=self.number_cliffords_coord,
-                hue=self.seed_coord,
-                alpha=0.2,
-                ls=":",
+        self.P00.sel({self.interleave_modes_coord: False}).plot(ax=axis, **styles)
+        title = ""
+        if self.interleaved is not None:
+            self.P00.sel({self.interleave_modes_coord: True}).plot(
+                ax=axis, ls=":", **styles
             )
-            axs[0].plot(
+            axis.plot(
                 self.fit_n_cliffords,
                 self.interleaved.curve_00,
                 color="magenta",
                 lw=3,
                 label=f"$p_{{IRB}}$: {self.interleaved.p:.3f}",
             )
-            # fidelity based on simple exponential fits
             title = rf"CZ fidelity = {self.cz_fidelity:.3f}"
-        axs[0].set_ylabel(r"State |00$\rangle$ probability")
-        axs[0].axhline(0.25, color="black")
-        axs[0].legend()
-        axs[0].set_title(title)
-        ############################
+        axis.set_ylabel(r"State |00$\rangle$ probability")
+        axis.axhline(0.25, color="black")
+        axis.legend()
+        axis.set_title(title)
 
-        # Leakage RB plots from Nakamura's paper
-        ########################################
-        styles = {"hue": self.seed_coord, "alpha": 0.2}
-        standard_probs_chi_1.plot(ax=axs[1], x=self.number_cliffords_coord, **styles)
-        standard_probs_reduced_ideal.plot(
-            ax=axs[1], x=self.number_cliffords_coord, **styles
-        )
-        interleaved_probs_chi_1.plot(ax=axs[1], x=self.number_cliffords_coord, **styles)
-        interleaved_probs_reduced_ideal.plot(
-            ax=axs[1], x=self.number_cliffords_coord, **styles
-        )
-
-        lambda_standard_str = rf"$\lambda_L^{{SRB}}$: {self.standard.lambda_L:.3f}"
-        A_standard_str = rf"$A_M^{{SRB}}$: {self.standard.AM:.3f}"
-        L1_standard = (1 - self.standard.lambda_L) * (1 - self.standard.AM)
-        L2_standard = (1 - self.standard.lambda_L) * self.standard.AM
-        L1_standard_str = rf"$L1^{{SRB}}$: {L1_standard:.3f}"
-        L2_standard_str = rf"$L2^{{SRB}}$: {L2_standard:.3f}"
-        standard_label = (
-            lambda_standard_str
-            + " "
-            + A_standard_str
-            + "\n"
-            + L1_standard_str
-            + " "
-            + L2_standard_str,
-        )
-        lambda_interleaved_str = (
-            rf"$\lambda_L^{{IRB}}$: {self.interleaved.lambda_L:.3f}"
-        )
-        A_interleaved_str = rf"$A_M^{{IRB}}$: {self.interleaved.AM:.3f}"
-        L1_interleaved = (1 - self.interleaved.lambda_L) * (1 - self.interleaved.AM)
-        L2_interleaved = (1 - self.interleaved.lambda_L) * self.interleaved.AM
-        L1_interleaved_str = rf"$L1^{{IRB}}$: {L1_interleaved:.3f}"
-        L2_interleaved_str = rf"$L2^{{IRB}}$: {L2_interleaved:.3f}"
-        interleaved_label = (
-            lambda_interleaved_str
-            + " "
-            + A_interleaved_str
-            + "\n"
-            + L1_interleaved_str
-            + " "
-            + L2_interleaved_str,
-        )
-
-        axs[1].plot(
-            self.fit_n_cliffords,
-            self.standard.curve_chi_1,
-            color="teal",
-            lw=3,
-            label=standard_label,
-        )
-        axs[1].plot(
-            self.fit_n_cliffords,
-            self.interleaved.curve_chi_1,
-            color="orange",
-            lw=3,
-            label=interleaved_label,
-        )
-        axs[1].plot(
-            self.fit_n_cliffords,
-            self.standard.curve_ideal,
-            color="orchid",
-            lw=3,
-            label=rf"$\lambda_r^{{SRB}}$: {self.standard.lambda_r:.4f}",
-        )
-        axs[1].plot(
-            self.fit_n_cliffords,
-            self.interleaved.curve_ideal,
-            color="aqua",
-            lw=3,
-            label=rf"$\lambda_r^{{SRB}}$: {self.interleaved.lambda_r:.3f}",
-        )
-        axs[1].legend()
-        axs[1].set_title(
+    def _plot_leakage(self, axis: Any) -> None:
+        """Each seed's computational-subspace and reduced ideal probabilities, and Nakamura's fitted decays."""
+        styles = {
+            "x": self.number_cliffords_coord,
+            "hue": self.seed_coord,
+            "alpha": 0.2,
+        }
+        chi_1 = self.P00 + self.P01 + self.P10 + self.P11
+        modes = [(False, self.standard, "SRB", "teal", "orchid")]
+        if self.interleaved is not None:
+            modes.append((True, self.interleaved, "IRB", "orange", "aqua"))
+        for is_interleaved, *_ in modes:
+            mode = {self.interleave_modes_coord: is_interleaved}
+            chi_1.sel(mode).plot(ax=axis, **styles)
+            reduced_ideal = (
+                self.P00.sel(mode) - chi_1.sel(mode) / COMPUTATIONAL_SPACE_DIMENSION
+            )
+            reduced_ideal.plot(ax=axis, **styles)
+        for _, decays, name, chi_1_colour, _ in modes:
+            axis.plot(
+                self.fit_n_cliffords,
+                decays.curve_chi_1,
+                color=chi_1_colour,
+                lw=3,
+                label=_get_leakage_label(decays, name),
+            )
+        for _, decays, name, _, ideal_colour in modes:
+            axis.plot(
+                self.fit_n_cliffords,
+                decays.curve_ideal,
+                color=ideal_colour,
+                lw=3,
+                label=rf"$\lambda_r^{{{name}}}$: {decays.lambda_r:.4f}",
+            )
+        axis.legend()
+        axis.set_title(
             f"CZ fidelity (Nakamura paper): {self.average_fidelity_nakamura:0.3f}"
         )
-
-        figures_dictionary[self.coupler] = [fig]
 
 
 def get_cz_fidelities(
@@ -294,6 +231,17 @@ def get_cz_fidelities(
     return (
         0.25 + 0.75 * _get_ratio(interleaved.p, standard.p),
         3 / 4 * lambda_r + one_minus_l1 / 4,
+    )
+
+
+def _get_leakage_label(decays: DecayFits, name: str) -> str:
+    """The leakage decay's lambda_L and A_M, and the leakage L1 and seepage L2 they give."""
+    l1 = (1 - decays.lambda_L) * (1 - decays.AM)
+    l2 = (1 - decays.lambda_L) * decays.AM
+    return (
+        rf"$\lambda_L^{{{name}}}$: {decays.lambda_L:.3f} $A_M^{{{name}}}$: {decays.AM:.3f}"
+        "\n"
+        rf"$L1^{{{name}}}$: {l1:.3f} $L2^{{{name}}}$: {l2:.3f}"
     )
 
 
