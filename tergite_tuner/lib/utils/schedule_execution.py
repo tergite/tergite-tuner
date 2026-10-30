@@ -41,11 +41,6 @@ def execute_schedule(
 ) -> xarray.Dataset:
     logger.info("Starting measurement")
 
-    def run_measurement() -> None:
-        lab_ic.prepare(compiled_schedule)
-        lab_ic.start()
-        lab_ic.wait_done(timeout_sec=3600)
-
     def display_progress() -> None:
         steps = int(schedule_duration * 5)
         if cluster_status == MeasurementMode.dummy:
@@ -55,11 +50,12 @@ def execute_schedule(
         for _ in tqdm.tqdm(range(steps), desc=compiled_schedule.name, colour="blue"):
             time.sleep(progress_sleep)
 
-    thread_tqdm = threading.Thread(target=display_progress)
+    # the instruments run in this thread, so that their errors reach the caller
+    thread_tqdm = threading.Thread(target=display_progress, daemon=True)
     thread_tqdm.start()
-    thread_lab = threading.Thread(target=run_measurement)
-    thread_lab.start()
-    thread_lab.join()
+    lab_ic.prepare(compiled_schedule)
+    lab_ic.start()
+    lab_ic.wait_done(timeout_sec=3600)
     thread_tqdm.join()
 
     raw_dataset: xarray.Dataset = lab_ic.retrieve_acquisition()
