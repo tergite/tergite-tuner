@@ -20,7 +20,6 @@ from tergite_tuner.utils.types.node_enum import NodeEnum
 # each fails on a defect REFACTOR.md lists; strict, so a fix fails the test until removed
 _KNOWN_FAILURES = {
     NodeEnum.QUBIT_01_SPECTROSCOPY: "five 6 us spectroscopy amplitudes overflow the waveform memory",
-    NodeEnum.ALL_XY: "AllXY cannot run (step 9.7)",
 }
 _DEFAULT_NODES = [
     pytest.param(

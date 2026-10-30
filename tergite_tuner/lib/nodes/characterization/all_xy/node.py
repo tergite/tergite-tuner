@@ -16,15 +16,22 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray as xr
 
 from tergite_tuner.backend import ExtendedTransmon, Schedule
+from tergite_tuner.lib.nodes.characterization.all_xy.analysis import (
+    IDEAL_POPULATIONS,
+    analyse_all_xy,
+    plot_all_xy,
+)
 from tergite_tuner.lib.nodes.characterization.all_xy.measurement import AllXYMeasurement
-from tergite_tuner.lib.spec import Fits, NodeSpec, get_fixed_sweep
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
+
+
+DUMMY_ERROR = 0.01
 
 
 def get_schedule(
@@ -33,14 +40,12 @@ def get_schedule(
     return AllXYMeasurement(transmons).schedule_function(XY_index)
 
 
-def analyse_all_xy(_s21: xr.DataArray, _session: "SessionContext") -> Fits:
-    raise NotImplementedError("AllXY has no analysis yet (REFACTOR.md step 9.7)")
-
-
 def get_dummy_s21(
-    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+    _qubit: str, _sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    return np.zeros(len(sweeps["XY_index"]), dtype=complex)
+    """The ideal populations off by ``DUMMY_ERROR``, then the |0> and |1> calibration points."""
+    populations = IDEAL_POPULATIONS + DUMMY_ERROR
+    return np.concatenate([populations, [0.0, 1.0]]).astype(complex)
 
 
 ALL_XY_SPECS = {
@@ -49,8 +54,9 @@ ALL_XY_SPECS = {
         element="qubit",
         get_schedule=get_schedule,
         analyse=analyse_all_xy,
-        qois={},
+        qois={"error": "all_xy_error"},
         sweeps={"XY_index": get_fixed_sweep(np.arange(23))},
         get_dummy_s21=get_dummy_s21,
+        plot=plot_all_xy,
     )
 }
