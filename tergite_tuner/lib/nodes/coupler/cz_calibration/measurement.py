@@ -13,7 +13,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Tuple
+from typing import Any, Tuple
 
 import numpy as np
 
@@ -53,76 +53,76 @@ class CZCalibrationMeasurement(BaseMeasurement):
         control_ons: dict[str, np.ndarray],
         cz_working_points: dict[str, Tuple[float, float]],
         coupler_dict: dict[str, dict],
-    ):
+    ) -> Schedule:
         shot = Schedule("cz_calibration_shot", repetitions=1)
-
         qubits = self.transmons.keys()
         root = shot.add(IdlePulse(4e-9))
-
-        for this_coupler in self.couplers:
-
-            cz_frequency, cz_duration = cz_working_points[this_coupler]
-            control_on_values = control_ons[this_coupler]
-            control_qubit = coupler_dict[this_coupler]["control_qubit"]
-            target_qubit = coupler_dict[this_coupler]["target_qubit"]
-
-            # unpack the static parameters:
-            this_edge = self.couplers[this_coupler]
-            cz_amplitude = this_edge.cz.square_amp()
-            cz_clock = f"{this_coupler}.cz"
-            cz_pulse_port = f"{this_coupler}:fl"
-
-            add_cz_clock(shot, this_coupler, cz_frequency)
-
-            connected_qubits = this_coupler.split("_")
-            first_qubit = connected_qubits[0]
-            first_transmon = self.transmons[first_qubit]
-            r_xy_duration = first_transmon.rxy.duration()
-
-            shot.add(
-                Reset(*qubits), ref_op=root
-            )  # To enforce parallelism we refer to the root operation
-
-            ramsey_phases_values = ramsey_phases[target_qubit]
-            number_of_inners = len(ramsey_phases_values)
-            for outer_index, control_on in enumerate(control_on_values):
-
-                for inner_index, ramsey_phase in enumerate(ramsey_phases_values):
-                    starting_op = shot.add(IdlePulse(4e-9))
-
-                    this_index = outer_index * number_of_inners + inner_index
-                    initial = shot.add(X90(target_qubit), ref_op=starting_op)
-                    if control_on:
-                        initial = shot.add(X(control_qubit), ref_op=starting_op)
-                    else:
-                        initial = shot.add(IdlePulse(r_xy_duration), ref_op=starting_op)
-
-                    shot.add(ResetClockPhase(clock=cz_clock), ref_op=initial)
-                    cz = shot.add(
-                        SoftSquarePulse(
-                            duration=cz_duration,
-                            amp=cz_amplitude,
-                            port=cz_pulse_port,
-                            clock=cz_clock,
-                        ),
+        for coupler in self.couplers:
+            cz_frequency, cz_duration = cz_working_points[coupler]
+            pair = (
+                coupler_dict[coupler]["control_qubit"],
+                coupler_dict[coupler]["target_qubit"],
+            )
+            add_cz_clock(shot, coupler, cz_frequency)
+            # To enforce parallelism we refer to the root operation
+            shot.add(Reset(*qubits), ref_op=root)
+            phases = ramsey_phases[pair[1]]
+            for outer_index, control_on in enumerate(control_ons[coupler]):
+                for inner_index, ramsey_phase in enumerate(phases):
+                    self._add_point(
+                        shot,
+                        coupler,
+                        pair,
+                        (cz_duration, control_on, ramsey_phase),
+                        outer_index * len(phases) + inner_index,
                     )
-
-                    final = shot.add(
-                        Rxy(theta=90, phi=ramsey_phase, qubit=target_qubit),
-                        ref_op=cz,
-                    )
-                    if control_on:
-                        final = shot.add(X(control_qubit), ref_op=cz)
-                    else:
-                        final = shot.add(IdlePulse(r_xy_duration), ref_op=cz)
-
-                    add_pair_measurement(
-                        shot, (control_qubit, target_qubit), this_index, final
-                    )
-
-                    shot.add(Reset(control_qubit, target_qubit))
-
         return shot
+
+    def _add_point(
+        self,
+        shot: Schedule,
+        coupler: str,
+        pair: tuple[str, str],
+        point: tuple[float, bool, float],
+        acq_index: int,
+    ) -> None:
+        """A Ramsey on the target around ``coupler``'s CZ pulse, the control flipped there and back if on."""
+        control_qubit, target_qubit = pair
+        cz_duration, is_control_on, ramsey_phase = point
+        start = shot.add(IdlePulse(4e-9))
+        shot.add(X90(target_qubit), ref_op=start)
+        initial = self._add_control_pulse(
+            shot, coupler, control_qubit, is_control_on, start
+        )
+        cz = self._add_cz(shot, coupler, cz_duration, initial)
+        shot.add(Rxy(theta=90, phi=ramsey_phase, qubit=target_qubit), ref_op=cz)
+        final = self._add_control_pulse(shot, coupler, control_qubit, is_control_on, cz)
+        add_pair_measurement(shot, pair, acq_index, final)
+        shot.add(Reset(control_qubit, target_qubit))
+
+    def _add_control_pulse(
+        self, shot: Schedule, coupler: str, qubit: str, is_on: bool, ref_op: Any
+    ) -> Any:
+        """Flips ``qubit`` if on, or idles as long, after ``ref_op``."""
+        if is_on:
+            return shot.add(X(qubit), ref_op=ref_op)
+        r_xy_duration = self.transmons[coupler.split("_")[0]].rxy.duration()
+        return shot.add(IdlePulse(r_xy_duration), ref_op=ref_op)
+
+    def _add_cz(
+        self, shot: Schedule, coupler: str, duration: float, ref_op: Any
+    ) -> Any:
+        """``coupler``'s CZ pulse after ``ref_op``, its clock's phase reset first."""
+        clock = f"{coupler}.cz"
+        shot.add(ResetClockPhase(clock=clock), ref_op=ref_op)
+        return shot.add(
+            SoftSquarePulse(
+                duration=duration,
+                amp=self.couplers[coupler].cz.square_amp(),
+                port=f"{coupler}:fl",
+                clock=clock,
+            ),
+        )
 
     def schedule_function(
         self,

@@ -107,7 +107,6 @@ type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.gue
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.single_qubit_T2_echo
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
 type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibrationCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.ro_shot
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_sinusoidal_slices_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.plotter
