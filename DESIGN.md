@@ -1,6 +1,6 @@
 # Tergite Tuner — Design
 
-This document describes the architecture of `tergite-tuner`, a library that calibrates the WACQT quantum computers: how a calibration run flows from an entry point to the hardware and back into the session, where each kind of code lives, how it is configured and tested, and the conventions a contributor is expected to follow. [REFACTOR.md](REFACTOR.md) is the plan that is moving the code towards these conventions; where the two differ, the code is mid-refactor and this document describes what is there.
+This document describes the architecture of `tergite-tuner`, a library that calibrates the WACQT quantum computers: how a calibration run flows from an entry point to the hardware and back into the session, where each kind of code lives, how it is configured and tested, and the conventions a contributor is expected to follow.
 
 ## 1. What this repo is
 
@@ -15,7 +15,7 @@ A Python library (3.13+) that a program imports to tune up a chip: tergite-backe
 | Device state | `tergite_tuner/state.py`, `storage/fs/` | the session's `DeviceState` holds the device's parameters and calibration statuses; `fs/` writes each node's dataset |
 | Backend | `tergite_tuner/backend/` | everything taken from quantify-scheduler and qblox-instruments: the operations, the device model (our transmon and edge, extended with our gates and parameters), compiling and running schedules, and `Hardware`: the Qblox cluster and the SPI rack's current sources |
 
-It depends on quantify-scheduler 0.22 and qblox-instruments 0.14, as tergite-backend does. The move to qblox-scheduler is step 11 of the refactor.
+It depends on quantify-scheduler 0.22 and qblox-instruments 0.14, as tergite-backend does. The move to qblox-scheduler 1.0 is on the `feature/qblox-scheduler` branch, for a later release.
 
 ## 2. A calibration run
 
@@ -112,7 +112,7 @@ A test that changes module state resets it: call `ExtendedTransmon.close_all()` 
 
 ### Performance
 
-`dev/perf/record.sh <dir>` records each node's compile, dataset assembly and analysis (time and peak memory, `dev/perf/test_nodes.py`), the dummy run of every node, the fast tests, the import and the install size (`dev/perf/record_runs.py`). `python -m dev.perf.compare dev/perf/baselines/<machine> <dir>` exits 1 when a measure is more than 15% worse than that machine's baseline, past a noise floor. Timings depend on the machine, so each has its own baseline: `macos-arm64` now, `ci` once the CI job's first recording is committed. A refactor step is signed off only when its recording compares clean.
+`dev/perf/record.sh <dir>` records each node's compile, dataset assembly and analysis (time and peak memory, `dev/perf/test_nodes.py`), the dummy run of every node, the fast tests, the import and the install size (`dev/perf/record_runs.py`). `python -m dev.perf.compare dev/perf/baselines/<machine> <dir>` exits 1 when a measure is more than 15% worse than that machine's baseline, past a noise floor. Timings depend on the machine, so each has its own baseline: `macos-arm64` now, `ci` once the CI job's first recording is committed. A change that could affect performance merges only when its recording compares clean.
 
 ## 7. CI
 
@@ -132,6 +132,18 @@ One or two sentences: what changed, and what a user would have hit before. Alway
 
 One logical change per commit, decided before editing. Never add assistant attribution to commit messages or merge request bodies.
 
+### Verifying a change
+
+**Every commit** runs `black --check`, the three lint baselines and the style-guide test, then the tests the change can affect, logged as [below](#slow-commands). A change that alters a compiled program or an analysis's values on purpose rewrites its golden with `UPDATE_GOLDENS=1`, without `-n`, and its commit says why.
+
+**Before a merge request**:
+
+- CI's whole job on a clean checkout of the commit, a `git worktree`, so that untracked or ignored files cannot hide a missing fixture;
+- the performance check: `dev/perf/record.sh`, compared with `dev/perf/baselines`. Its numbers are this machine's, so on a busy machine record the base commit too, back to back with the change, and compare the two;
+- a change to a schedule, an analysis or the hardware code tried on a real device: resonator spectroscopy, Rabi and T1, and the coupler spectroscopy and CZ chain where couplers are wired.
+
+Floating point differs between macOS and the CI runner's x86, and emulating x86 does not reproduce it: a golden whose value sits close to a threshold is verified by a CI pipeline, not locally.
+
 ### Slow commands
 
 Redirect a test run to a file and read the file, rather than re-running it:
@@ -150,11 +162,11 @@ The conventions are tergite-frontend's, so the two read alike. Code reads like a
 2. **Callees sit below their callers.** A file runs: constants, public functions in the order a caller uses them, then private helpers in the order they are first called.
 3. **A comment that labels a phase is a missing function.**
 4. **Data is a struct; state gets a class.** A node definition, a sweep, a fit or a config is a Pydantic model, frozen dataclass or named tuple. The Cluster connection, the SPI rack and the device state are classes. A class that holds only what its single method needs is a function.
-5. **Stateless behaviour is a module-level function**, taking explicit arguments. No inheritance used only to share behaviour, no ABC with one implementation.
+5. **Stateless behaviour is a module-level function**, taking explicit arguments: a node's schedule, analysis and plot are its `get_schedule`, `analyse_<x>` and `plot_<x>`. No inheritance used only to share behaviour, no ABC with one implementation.
 6. **Dependencies arrive as arguments.** Only the entry points turn configuration into instances. A function is given the store, the cluster or the value it needs, not the whole session.
 7. **A library never takes over its host.** No `quit()`, no `matplotlib.use()`, no write to another package's globals that outlives the call, no write into the installed package. Errors are `TunerError`s from `exc.py`.
-8. **One home per kind of thing.** The scheduler is imported in one package (from refactor step 5), device values are read from the session's state, tooling in `dev/`, shared test helpers in `tests/utils/`.
-9. **Physics constants are named once**, at the top of the module that owns them.
+8. **One home per kind of thing.** The scheduler and the hardware drivers are imported in `backend/` only, device values are read from the session's state, tooling in `dev/`, shared test helpers in `tests/utils/`.
+9. **Physics constants are named once**, at the top of the module that owns them: the CZ clock's downconvert frequency, the sweeps' widths and counts, the couplers' ±3.1 mA limit.
 10. **A reputable library beats our own code.** Write our own only where no library does the job, or where getting the behaviour would mean fighting it; the commit says which.
 11. **A name says what the thing is.** Variables are nouns, functions verbs, booleans `is_`/`should_`. No `build_*`: a constructed thing is a class's constructor, anything else is a `get_*`.
 12. **Obvious beats clever.** An `if`/`else` that returns each whole literal; no comprehension that assembles operators, no helper that returns two things to be pulled apart.

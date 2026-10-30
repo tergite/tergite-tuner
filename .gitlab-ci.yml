@@ -57,7 +57,7 @@ test_lint_build:
       - .venv
 
 # Performance: about 15 minutes, so on main and tags, and by hand on a merge request. It
-# reports without failing until the CI runner's noise is known (REFACTOR.md step 3.4).
+# reports without failing until the CI runner's noise is known.
 performance:
   stage: test_lint_build
   image: python:${PYTHON_VERSION}
