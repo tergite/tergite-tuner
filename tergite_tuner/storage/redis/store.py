@@ -459,21 +459,6 @@ class RedisStore:
         return f"{collection}:{pk}"
 
 
-def _get_key_segments(key: str, expected_count: int = 2) -> Tuple[str, ...]:
-    """Get key's segments, as separated by ``:``
-
-    Args:
-        key: the key to look into.
-        expected_count: the expected number of segments.
-
-    Returns:
-        the key's segments as tuple
-
-    Raises:
-        ValueError: if the segments are not the expected number of segments.
-    """
-
-
 def _get_type_str(value: Any) -> str:
     """Returns a short python type label for ``value``."""
     for tp, label in _TYPE_LABELS.items():

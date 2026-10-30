@@ -13,12 +13,10 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from scipy.stats import spearmanr
 
 from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
@@ -26,12 +24,6 @@ from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
 )
 from tergite_tuner.lib.utils.analysis_models import QuadraticModel, SineOscillatingModel
 from tergite_tuner.utils.types.qoi import QOI
-
-
-@dataclass
-class ParabolicFit:
-    selected_cz_frequencies: np.ndarray
-    selected_cz_durations: np.ndarray
 
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
@@ -63,51 +55,6 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             return np.array([duration]), np.array([fit_data])
         except:
             return np.array([np.nan]), np.array([np.nan])
-
-    def apply_parabolic_fit(
-        self, cz_duration_values, cz_working_frequencies
-    ) -> ParabolicFit:
-        guess_params = self.chevron_model.guess(
-            cz_duration_values, x=cz_working_frequencies
-        )
-        try:
-            self.chevron_fit_result = self.chevron_model.fit(
-                cz_duration_values, params=guess_params, x=cz_working_frequencies
-            )
-            # x0 is the frequency at the parabola vertex
-            x0 = self.chevron_fit_result.params["x0"].value
-
-            # determine wheteher the residuals are randomly distributed
-            # as they should for a good fit
-            residuals = cz_duration_values - self.chevron_fit_result.best_fit
-            distances_from_vertex = np.abs(cz_working_frequencies - x0)
-            correlation = spearmanr(distances_from_vertex, residuals)
-            fit_is_good = correlation.statistic < 0.3
-
-            # if the vertex is contained, return a number of
-            # frequency duration pairs around it
-            vertex_is_contained = (
-                cz_working_frequencies.min() < x0 and x0 < cz_working_frequencies.max()
-            )
-            abs_distances_from_vertex = np.abs(cz_working_frequencies - x0)
-            sorted_distances_from_vertex = np.sort(abs_distances_from_vertex)
-            num_of_working_pairs = self.number_of_working_points
-            distance_threshold = sorted_distances_from_vertex[num_of_working_pairs]
-            selected_cz_frequencies = cz_working_frequencies[
-                abs_distances_from_vertex < distance_threshold
-            ]
-            selected_cz_durations = cz_duration_values[
-                abs_distances_from_vertex < distance_threshold
-            ]
-            int_selected_durations_in_ns = (selected_cz_durations // 1e-9).astype(int)
-            # ensure durations are in multiples of 4ns:
-            selected_cz_durations_in_ns = (int_selected_durations_in_ns // 4) * 4
-            parabolic_fit = ParabolicFit(
-                selected_cz_frequencies, selected_cz_durations_in_ns
-            )
-            return parabolic_fit
-        except:
-            return ParabolicFit(np.nan, np.nan)
 
     def analyze_coupler(self) -> QOI:
         """Analyze the chevron pattern measured while sweeping the flux duration and frequency.

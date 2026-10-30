@@ -21,7 +21,6 @@ from pathlib import Path
 from sys import platform
 from typing import TYPE_CHECKING
 
-import numpy as np
 from qblox_instruments import SpiRack
 from qcodes import validators
 from rich.progress import Progress
@@ -159,23 +158,6 @@ class SpiDAC:
             return
         self.ramp_current_serially(dac_values)
 
-    def ramp_current_simultaneusly(self, dac_values: dict[str, float]):
-        for coupler, target_current in dac_values.items():
-            dac = self.dacs_dictionary[coupler]
-            dac.current(target_current)
-        ramp_counter = 0
-        couplers = self.dacs_dictionary.keys()
-        dacs = self.dacs_dictionary.values()
-        logger.info("Ramping current (mA)")
-        logger.info(f"{couplers}")
-        while any([dac.is_ramping() for dac in dacs]):
-            ramp_counter += 1
-            these_currents = np.array([dac.current() for dac in dacs])
-            if ramp_counter % 8 == 0:
-                logger.info(f"Current: {these_currents * 1000}")
-            time.sleep(1)
-        logger.info(f"Ramping finished at {dac.current() * 1000:.4f} mA")
-
     def ramp_current_serially(self, dac_values: dict[str, float]):
         for coupler, target_current in dac_values.items():
             dac = self.dacs_dictionary[coupler]
@@ -214,11 +196,6 @@ class SpiDAC:
                         break
 
         logger.info("Ramping finished")
-
-    def print_currents(self):
-        for coupler, dac in self.dacs_dictionary.items():
-            current = dac.current() * 1000
-            logger.info(f"{coupler}: {current:.4f} mA")
 
     def close_spi_rack(self):
         self.spi.close()

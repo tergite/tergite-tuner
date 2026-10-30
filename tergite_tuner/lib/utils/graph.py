@@ -91,37 +91,3 @@ def get_dependencies_in_topological_order(
             )
 
     return topological_order
-
-
-def range_dependencies_in_topological_order(
-    graph: "nx.DiGraph",
-    from_nodes: Iterable[_T],
-    target_node: _T,
-    exclude_nodes: Iterable[_T],
-) -> List[_T]:
-    """Return the topologically-ordered subset spanning ``from_nodes`` to ``target_node``.
-
-    Args:
-        graph: The directed acyclic dependency graph.
-        from_nodes: Starting nodes; only ancestors that are descendants
-            of any of these are kept.
-        target_node: The terminal node.
-        exclude_nodes: Nodes to ignore. Must be iterable; pass an empty
-            collection to disable filtering.
-
-    Returns:
-        Ancestors of ``target_node`` that are also reachable from
-        ``from_nodes``, in dependency order.
-    """
-
-    from_set = set(from_nodes)
-
-    topological_order = get_dependencies_in_topological_order(
-        graph, target_node, exclude_nodes
-    )
-
-    back_range = set(from_set)
-    for from_node in from_set:
-        back_range = back_range.union(set(nx.descendants(graph, from_node)))
-
-    return list(filter(lambda node: node in back_range, topological_order))

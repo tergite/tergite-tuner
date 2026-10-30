@@ -81,12 +81,6 @@ class CZParametrizationNode(CouplerNode):
     def single_point_around(self, central_value: float) -> np.ndarray:
         return np.array([central_value])
 
-    def fine_samplespace_around(self, central_value: float) -> np.ndarray:
-        return np.arange(central_value - 5e-6, central_value + 4.5e-6, 2e-6)
-
-    def broad_samplespace_around(self, central_value: float) -> np.ndarray:
-        return np.arange(central_value - 50e-6, central_value + 45e-6, 8e-6)
-
     def parking_current(self, coupler: str):
         return float(
             self.session.redis.hget(f"couplers:{coupler}", "initial_parking_current")

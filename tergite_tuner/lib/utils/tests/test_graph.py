@@ -17,7 +17,6 @@ import pytest
 
 from tergite_tuner.lib.utils.graph import (
     get_dependencies_in_topological_order,
-    range_dependencies_in_topological_order,
 )
 
 
@@ -104,47 +103,6 @@ def test_dependencies_single_node():
     assert topological_order == []
 
 
-def test_range_dependencies_simple_graph(simple_graph):
-    """
-    Normal case with simple graph
-    """
-    topological_order = range_dependencies_in_topological_order(
-        simple_graph, ["B"], "D", exclude_nodes=()
-    )
-
-    assert topological_order == ["B", "C"]
-
-
-def test_range_dependencies_complex_graph(complex_graph):
-    """
-    Normal case with complex graph
-    """
-    topological_order = range_dependencies_in_topological_order(
-        complex_graph, ["F"], "I", exclude_nodes=()
-    )
-
-    assert len(topological_order) == 3
-    assert "F" in topological_order
-    assert "G" in topological_order
-    assert "H" in topological_order
-
-
-def test_range_dependencies_complex_graph_multi_node(complex_graph):
-    """
-    Normal case with complex graph with multiple nodes
-    """
-    topological_order = range_dependencies_in_topological_order(
-        complex_graph, ["F", "C"], "I", exclude_nodes=()
-    )
-
-    assert len(topological_order) == 5
-    assert "F" in topological_order
-    assert "G" in topological_order
-    assert "H" in topological_order
-    assert "C" in topological_order
-    assert "E" in topological_order
-
-
 def test_dependencies_with_exclude_nodes(complex_graph):
     """A single excluded node disappears from the topological order; the
     rest of the ancestors are still returned."""
@@ -166,17 +124,3 @@ def test_dependencies_with_multiple_exclude_nodes(complex_graph):
     assert set(topological_order).isdisjoint({"F", "G", "H"})
     # The C → E branch is the only remaining path
     assert set(topological_order) == {"A", "B", "C", "E"}
-
-
-def test_range_dependencies_with_exclude_nodes(complex_graph):
-    """``range_dependencies_in_topological_order`` honours ``exclude_nodes`` too."""
-    # F's direct ancestors normally include A and B. Excluding B keeps F in
-    # the result (it's a from-node) but drops B from the topological list.
-    topological_order = range_dependencies_in_topological_order(
-        complex_graph, ["F"], "I", exclude_nodes=["B"]
-    )
-
-    assert "B" not in topological_order
-    assert "F" in topological_order
-    assert "G" in topological_order
-    assert "H" in topological_order

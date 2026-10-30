@@ -333,31 +333,8 @@ class SineOscillatingModel(lmfit.model.Model):
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
-def chevron_func(x, x0, amplitude, curvature, offset):
-    return -np.sqrt(amplitude * (x - x0) ** 2 + curvature) + offset
-
-
 # def chevron_func(x, x0, amplitude, offset):
 #     return -amplitude * np.sqrt((x - x0) ** 2) + offset
-
-
-class CzChevronModel(lmfit.model.Model):
-    def __init__(self, *args, **kwargs):
-        # pass in the defining equation so the user doesn't have to later.
-        super().__init__(chevron_func, *args, **kwargs)
-
-    def guess(self, data, **kws) -> lmfit.parameter.Parameters:
-
-        amp_guess = 1e6
-        offs_guess = np.max(data)
-        curvature_guess = 1
-
-        self.set_param_hint("curvature", value=curvature_guess, min=0)
-        self.set_param_hint("offset", value=offs_guess, min=0)
-        self.set_param_hint("amplitude", value=amp_guess, min=0)
-
-        params = self.make_params()
-        return lmfit.models.update_param_vals(params, self.prefix, **kws)
 
 
 def parabolic(x, x0=0, a=0.0, c=0.0):

@@ -22,7 +22,6 @@ tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_meas
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: too-many-locals CZCalibrationCouplerAnalysis.plotter
 tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: too-many-locals CZCalibrationMeasurement.ro_shot
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: too-many-locals CZChevronCouplerAnalysis.analyze_coupler
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: too-many-locals CZChevronCouplerAnalysis.apply_parabolic_fit
 tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py: too-many-locals CZChevronMeasurement.cz_chevron
 tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py: too-many-locals CZLocalPhasesCouplerAnalysis.analyze_coupler
 tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py: too-many-locals CZLocalPhasesMeasurement.ro_shot
@@ -59,7 +58,6 @@ tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: too-many-loca
 tergite_tuner/lib/nodes/readout/punchout/measurement.py: too-many-locals PunchoutMeasurement.schedule_function
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py: too-many-locals ResonatorSpectroscopyMeasurement.schedule_function
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py: too-many-locals ResonatorSpectroscopyBase.generate_dummy_dataset
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalRO2not2AmplitudeQubitAnalysis.analyse_qubit
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse_qubit
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot
@@ -72,5 +70,4 @@ tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary._
 tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots
 tergite_tuner/tests/test_dataset.py: too-many-locals test_save_dataset_with_working_points
 tergite_tuner/tuner.py: too-many-locals _set_output_attenuations
-tergite_tuner/utils/reanalysis.py: too-many-locals _classify_subfolders_by_hdf5
 tergite_tuner/utils/types/extended_transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__

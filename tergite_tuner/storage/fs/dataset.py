@@ -14,16 +14,13 @@
 # that they have been altered from the originals.
 
 import os.path
-import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import cf_xarray as cf
 import xarray
-
-from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -53,33 +50,6 @@ def create_node_data_path(session_config: "SessionContext", node_name: str) -> P
     )
     data_path = Path(os.path.join(session_config.data_dir, measurement_id))
     return data_path
-
-
-def scrape_and_copy_hdf5_files(
-    scrape_directory: Union[Path, str], target_directory: Union[Path, str]
-):
-    """
-    Find all measurement result files and copy them to the target directory.
-
-    Args:
-        scrape_directory: Folder with measurement result files.
-        target_directory: Target directory to copy files to.
-    """
-
-    # Find all data files
-    directory = Path(scrape_directory)
-    hdf5_files = list(directory.rglob("*.h5")) + list(directory.rglob("*.hdf5"))
-
-    # Ensure the target directory exists
-    os.makedirs(target_directory, exist_ok=True)
-
-    # Iterate over files and copy to the new folder
-    # Does not preserve any subfolder structures from the scrape directory
-    for file in hdf5_files:
-        destination_path = os.path.join(target_directory, file.name)
-        shutil.copy2(file, destination_path)
-
-    logger.info(f"Copied {len(hdf5_files)} files to {target_directory}.")
 
 
 def save_dataset(

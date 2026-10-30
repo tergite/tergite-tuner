@@ -22,17 +22,6 @@ class DataStatus(Enum):
 
     in_spec = 1
     out_of_spec = 2
-    bad_data = 3
-    undefined = 4
-
-
-class CalibrationResultStatus(Enum):
-    """
-    Used by check_data to indicate outcome
-    """
-
-    success = 1
-    failed = 2
 
 
 class MeasurementMode(Enum):
@@ -52,23 +41,6 @@ class SPIMode(Enum):
 
     real = 0
     dummy = 1
-
-
-class ApplicationStatus(Enum):
-    """
-    Used to check in which state the application is as a whole.
-    """
-
-    # The application is just started and running.
-    # This is the usual case in the beginning.
-    ACTIVE = "ACTIVE"
-
-    # The calibration has finished without software errors.
-    # There could be still errors in some analysis functions.
-    SUCCESS = "SUCCESS"
-
-    # Some kind of error occurred, the application has stopped.
-    FAILED = "FAILED"
 
 
 class QubitRole(Enum):

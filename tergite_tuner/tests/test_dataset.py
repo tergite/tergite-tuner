@@ -10,18 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os.path
-from pathlib import Path
 
 import pandas
 import xarray as xr
 
-import tergite_tuner.utils.reanalysis as ra_utils
 from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
     ResonatorSpectroscopyNode,
 )
-from tergite_tuner.storage.fs.dataset import save_dataset, scrape_and_copy_hdf5_files
+from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
@@ -31,57 +28,6 @@ from tergite_tuner.tests.utils.redis import loaded_redis
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
-
-
-def test_scrape_and_copy_hdf5_files(tmp_path):
-    """
-    Base case, copies all measurement files and counts whether they are in the target directory
-    """
-    scrape_directory = get_fixture_path(
-        "data",
-        "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
-    )
-    target_directory = os.path.join(
-        tmp_path,
-        "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
-    )
-
-    scrape_and_copy_hdf5_files(scrape_directory, target_directory)
-    assert os.path.exists(target_directory)
-
-    n_copied_files = os.listdir(target_directory)
-    assert len(n_copied_files) == 4
-
-
-def test_is_run_folder():
-    """Check that the standard run test fixture is a run folder"""
-    run_dir = get_fixture_path(
-        "data",
-        "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
-    )
-    assert ra_utils.is_run_folder(run_dir)
-
-
-def test_is_measurement_folder():
-    """Check that the standard run test fixture contains the correct measurement folders"""
-    run_dir = Path(
-        get_fixture_path(
-            "data",
-            "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
-        )
-    )
-    measurement_folders = set(
-        filter(lambda m: ra_utils.is_measurement_folder(m), run_dir.iterdir())
-    )
-    assert len(measurement_folders) == 4
-    measurement_folders = set(map(lambda m: m.name, measurement_folders))
-
-    assert measurement_folders == {
-        "20250728-165136-525-9c2f16-resonator_spectroscopy",
-        "20250728-165142-378-6c2eaa-qubit_01_spectroscopy",
-        "20250728-165219-145-8960cd-rabi_oscillations",
-        "20250728-165237-029-8e7bcc-ramsey_correction",
-    }
 
 
 def test_save_dataset(tmp_path, session_context):

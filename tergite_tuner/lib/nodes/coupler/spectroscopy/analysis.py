@@ -11,8 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import ast
-from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -171,27 +169,6 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
 
         qoi = QOI(analysis_result, analysis_succesful)
         return qoi
-
-    def _get_resonator_crossing_points(self, coupler, qubit) -> List[float]:
-        if self.session.redis.hexists(
-            f"couplers:{coupler}:{qubit}", "resonator_crossing_points"
-        ):
-            crossing_points_str = self.session.redis.hget(
-                f"couplers:{coupler}:{qubit}", "resonator_crossing_points"
-            )
-            try:
-                # Convert the string representation to a Python list of floats
-                crossing_points = list(
-                    map(float, ast.literal_eval(crossing_points_str))
-                )
-            except (ValueError, SyntaxError) as e:
-                raise ValueError(
-                    f"Invalid format for crossing points: {crossing_points_str}"
-                ) from e
-        else:
-            crossing_points = []
-
-        return crossing_points
 
     def plotter(self, figures_dictionary: dict[str, list]):
         """

@@ -231,9 +231,6 @@ private-helper-position: tergite_tuner/export.py::CalibrationResults
 private-helper-position: tergite_tuner/tuner.py::is_safe_path
 private-helper-position: tergite_tuner/utils/hardware/spi.py::OperatingSystem
 private-helper-position: tergite_tuner/utils/hardware/spi.py::SpiDAC
-private-helper-position: tergite_tuner/utils/reanalysis.py::get_day_infos
-private-helper-position: tergite_tuner/utils/reanalysis.py::get_run_infos
-private-helper-position: tergite_tuner/utils/reanalysis.py::search_all_runs_for_measurement
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_bool_fields
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_cluster_mode
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_comma_separated_to_list
@@ -357,7 +354,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibratio
 type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_points
 type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/node.py::CZCalibrationNode.working_points_fixed_duration
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.__init__
-type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_parabolic_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_sinusoidal_slices_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.processed_dataset
@@ -385,7 +381,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParame
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.parking_current
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.pre_measurement_operation
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis._find_crossing_currents
-type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis._get_resonator_crossing_points
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.analyze_coupler
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.detect_peaks
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
@@ -476,12 +471,6 @@ type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::Ramsey
 type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::RamseyFringesBase.generate_dummy_dataset
 type-hints: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py::RamseyFringesNode.__init__
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopy12MultidimAnalysis.analyse_qubit
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.__init__
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis._analyse_spectroscopy
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.analyse_qubit
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.has_peak
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.reject_outliers
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis._analyse_spectroscopy
@@ -516,10 +505,6 @@ type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::Reso
 type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopyBase.__init__
 type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopyBase.generate_dummy_dataset
 type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/node.py::ResonatorSpectroscopyNode.__init__
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.analyse_qubit
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.run_initial_fitting
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.classify_iq
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.plot
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.plot_iq_scatter
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.populate_coords
@@ -564,8 +549,6 @@ type-hints: tergite_tuner/lib/nodes/schedule_node.py::OuterScheduleNode.__init__
 type-hints: tergite_tuner/lib/nodes/schedule_node.py::OuterScheduleNode.measure_node
 type-hints: tergite_tuner/lib/nodes/schedule_node.py::ScheduleNode.__init__
 type-hints: tergite_tuner/lib/nodes/schedule_node.py::ScheduleNode.measure_node
-type-hints: tergite_tuner/lib/utils/analysis_models.py::CzChevronModel.__init__
-type-hints: tergite_tuner/lib/utils/analysis_models.py::CzChevronModel.guess
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ExpDecayModel.__init__
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ExpDecayModel.guess
 type-hints: tergite_tuner/lib/utils/analysis_models.py::QuadraticModel.__init__
@@ -583,7 +566,6 @@ type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_01
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_12
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_20
-type-hints: tergite_tuner/lib/utils/analysis_models.py::chevron_func
 type-hints: tergite_tuner/lib/utils/analysis_models.py::parabolic
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
@@ -597,9 +579,6 @@ type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.guess
 type-hints: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
 type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_order.filter_ancestors
 type-hints: tergite_tuner/lib/utils/schedule_execution.py::execute_schedule
-type-hints: tergite_tuner/lib/utils/validators.py::get_number_of_batches
-type-hints: tergite_tuner/lib/utils/validators.py::reduce_batch
-type-hints: tergite_tuner/storage/fs/dataset.py::scrape_and_copy_hdf5_files
 type-hints: tergite_tuner/storage/redis/utils.py::populate_initial_parameters
 type-hints: tergite_tuner/storage/redis/utils.py::populate_node_parameters
 type-hints: tergite_tuner/storage/redis/utils.py::revert_node_parameters
@@ -616,9 +595,7 @@ type-hints: tergite_tuner/utils/cliffords.py::y_PTM
 type-hints: tergite_tuner/utils/dicts.py::insert_nested_key
 type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.close_spi_rack
 type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.create_spi_dac
-type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.print_currents
 type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.ramp_current_serially
-type-hints: tergite_tuner/utils/hardware/spi.py::SpiDAC.ramp_current_simultaneusly
 type-hints: tergite_tuner/utils/hardware/spi.py::_find_and_validate_spi_port
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.__init__
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_console_handler
@@ -627,9 +604,6 @@ type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.log_dir
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 type-hints: tergite_tuner/utils/logging/visuals.py::draw_arrow_chart
 type-hints: tergite_tuner/utils/measurement.py::samplespace_dimensions
-type-hints: tergite_tuner/utils/reanalysis.py::is_day_folder
-type-hints: tergite_tuner/utils/reanalysis.py::is_measurement_folder
-type-hints: tergite_tuner/utils/reanalysis.py::is_run_folder
 type-hints: tergite_tuner/utils/types/extended_coupler_edge.py::ExtendedCompositeSquareEdge.__init__
 type-hints: tergite_tuner/utils/types/extended_transmon.py::ExtendedTransmon.__init__
 verb: tergite_tuner/config/session.py::_default_data_dir
@@ -692,9 +666,7 @@ verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametr
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.cz_parametrization
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.all_phase_paths
-verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.broad_samplespace_around
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.final_operation
-verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.fine_samplespace_around
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.initial_operation
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.parking_current
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/node.py::CZParametrizationNode.pre_measurement_operation
@@ -740,8 +712,6 @@ verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::NR
 verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::RabiOscillationsMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py::RamseyDetuningsBaseQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/measurement.py::RamseyDetuningsMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.has_peak
-verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyAnalysis.plotter
 verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.has_peak
 verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMultidimAnalysis.plotter
 verb: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesAmplitudeMeasurement.schedule_function
@@ -753,7 +723,6 @@ verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::Resona
 verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopy2QubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/analysis.py::ResonatorSpectroscopyQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::ResonatorSpectroscopyMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalRO2not2AmplitudeQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.IQ
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.primary_plotter
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.plotter
@@ -771,7 +740,6 @@ verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.boundary_li
 verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_I
 verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_Q
 verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
-verb: tergite_tuner/lib/utils/analysis_models.py::chevron_func
 verb: tergite_tuner/lib/utils/analysis_models.py::cos_func
 verb: tergite_tuner/lib/utils/analysis_models.py::parabolic
 verb: tergite_tuner/lib/utils/analysis_models.py::sin_func
@@ -783,7 +751,6 @@ verb: tergite_tuner/lib/utils/fitting_models.py::fft_freq_phase_guess
 verb: tergite_tuner/lib/utils/fitting_models.py::hanger_func_complex_SI
 verb: tergite_tuner/lib/utils/functions.py::exponential_decay_function
 verb: tergite_tuner/lib/utils/functions.py::isosceles_triangle
-verb: tergite_tuner/lib/utils/graph.py::range_dependencies_in_topological_order
 verb: tergite_tuner/lib/utils/samplespace.py::qubit_samples
 verb: tergite_tuner/lib/utils/samplespace.py::resonator_samples
 verb: tergite_tuner/tuner.py::NodeManager.topo_order

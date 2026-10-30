@@ -64,19 +64,6 @@ def execute_schedule(
     return raw_dataset
 
 
-def display_duration_information(
-    schedule_duration: float, schedule_keywords: dict, measurement: tuple
-) -> None:
-    if "loop_repetitions" in schedule_keywords:
-        schedule_duration *= schedule_keywords["loop_repetitions"]
-
-    measurement_message = ""
-    if measurement[1] > 1:
-        measurement_message = f". Measurement {measurement[0] + 1} of {measurement[1]}"
-    message = f"{schedule_duration:.2f} sec" + measurement_message
-    logger.info(f"schedule_duration = {message}")
-
-
 def compile_schedule(
     schedule: "Schedule", device: "QuantumDevice", name: str
 ) -> "CompiledSchedule":

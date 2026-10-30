@@ -197,11 +197,7 @@ tergite_tuner/lib/nodes/coupler/cz_calibration/node.py: RET504 Unnecessary assig
 tergite_tuner/lib/nodes/coupler/cz_calibration/node.py: RET504 Unnecessary assignment to `working_points_fixed_duration_array` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_calibration/tests/test_analysis.py: F401 `os` imported but unused
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: E722 Do not use bare `except`
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: E722 Do not use bare `except`
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: F841 Local variable `fit_is_good` is assigned to but never used
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: F841 Local variable `parabolic_fit_frequencies` is assigned to but never used
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: F841 Local variable `vertex_is_contained` is assigned to but never used
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: RET504 Unnecessary assignment to `parabolic_fit` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_chevron/node.py: RET504 Unnecessary assignment to `known_cz_frequency` before `return` statement
 tergite_tuner/lib/nodes/coupler/cz_chevron/tests/test_analysis.py: ARG001 Unused function argument: `session_context`
@@ -227,8 +223,6 @@ tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutabl
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutable data structures for argument defaults
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_coupler_anticrossing_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_qubit_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_res_spec_vs_current_coupler_analysis.py: ARG001 Unused function argument: `redis_connection`
@@ -344,9 +338,6 @@ tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: B007 Loop cont
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: F841 Local variable `fit_y` is assigned to but never used
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: F841 Local variable `min` is assigned to but never used
-tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `filtered_data` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
@@ -386,9 +377,7 @@ tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spec
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: F811 Redefinition of unused `node_data_dir` from line 17: `node_data_dir` redefined here
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: ARG002 Unused method argument: `amplitude_index`
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: B007 Loop control variable `ro_amplitude` not used within loop body
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: B007 Loop control variable `ro_amplitude` not used within loop body
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: E741 Ambiguous variable name: `I`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/node.py: F841 Local variable `shot_2` is assigned to but never used
@@ -422,35 +411,13 @@ tergite_tuner/lib/utils/fitting_models.py: UP006 Use `tuple` instead of `Tuple` 
 tergite_tuner/lib/utils/fitting_models.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/lib/utils/graph.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/lib/utils/graph.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/utils/graph.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/lib/utils/graph.py: UP035 Import from `collections.abc` instead: `Iterable`
 tergite_tuner/lib/utils/graph.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/lib/utils/graph.py: UP047 Generic function `get_dependencies_in_topological_order` should use type parameters
-tergite_tuner/lib/utils/graph.py: UP047 Generic function `range_dependencies_in_topological_order` should use type parameters
 tergite_tuner/lib/utils/tests/test_graph.py: UP006 Use `set` instead of `Set` for type annotation
 tergite_tuner/lib/utils/tests/test_graph.py: UP035 `typing.Set` is deprecated, use `set` instead
-tergite_tuner/lib/utils/validators.py: B007 Loop control variable `element` not used within loop body
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/lib/utils/validators.py: UP007 Use `X | Y` for type annotations
-tergite_tuner/lib/utils/validators.py: UP007 Use `X | Y` for type annotations
-tergite_tuner/lib/utils/validators.py: UP007 Use `X | Y` for type annotations
-tergite_tuner/lib/utils/validators.py: UP007 Use `X | Y` for type annotations
-tergite_tuner/lib/utils/validators.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/storage/fs/dataset.py: RET504 Unnecessary assignment to `data_path` before `return` statement
 tergite_tuner/storage/fs/dataset.py: RET504 Unnecessary assignment to `ds` before `return` statement
-tergite_tuner/storage/fs/dataset.py: UP007 Use `X | Y` for type annotations
-tergite_tuner/storage/fs/dataset.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/storage/redis/store.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/storage/redis/store.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/storage/redis/store.py: C408 Unnecessary `dict()` call (rewrite as a literal)
@@ -459,7 +426,6 @@ tergite_tuner/storage/redis/store.py: UP006 Use `dict` instead of `Dict` for typ
 tergite_tuner/storage/redis/store.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/storage/redis/store.py: UP006 Use `list` instead of `List` for type annotation
 tergite_tuner/storage/redis/store.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/storage/redis/store.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/storage/redis/store.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/storage/redis/store.py: UP007 Use `X | Y` for type annotations
 tergite_tuner/storage/redis/store.py: UP035 Import from `collections.abc` instead: `Iterator`, `Mapping`, `Sequence`
@@ -485,7 +451,6 @@ tergite_tuner/storage/redis/utils.py: SIM118 Use `key in dict` instead of `key i
 tergite_tuner/storage/redis/utils.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/storage/redis/utils.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/storage/redis/utils.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/tests/test_dataset.py: C417 Unnecessary `map()` usage (rewrite using a set comprehension)
 tergite_tuner/tests/test_dataset.py: F841 Local variable `conn` is assigned to but never used
 tergite_tuner/tests/test_export.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/tests/test_export.py: UP006 Use `dict` instead of `Dict` for type annotation
@@ -498,7 +463,6 @@ tergite_tuner/tests/test_export.py: UP035 Import from `collections.abc` instead:
 tergite_tuner/tests/test_export.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/tests/test_export.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/tests/test_precompile.py: SIM300 Yoda condition detected
-tergite_tuner/tests/test_reanalysis_utils.py: F401 `os` imported but unused
 tergite_tuner/tests/test_redis_store.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/tests/test_redis_store.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/tests/test_redis_store.py: UP006 Use `dict` instead of `Dict` for type annotation
@@ -573,19 +537,10 @@ tergite_tuner/utils/dicts.py: UP035 Import from `collections.abc` instead: `Mapp
 tergite_tuner/utils/dicts.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/utils/dicts.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/utils/dicts.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
-tergite_tuner/utils/hardware/spi.py: C419 Unnecessary list comprehension
 tergite_tuner/utils/hardware/spi.py: RET505 Unnecessary `elif` after `return` statement
 tergite_tuner/utils/logging/visuals.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/utils/logging/visuals.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/utils/measurement.py: UP035 Import from `collections.abc` instead: `Iterable`
-tergite_tuner/utils/reanalysis.py: F401 `tergite_tuner.utils.logging.logger` imported but unused
-tergite_tuner/utils/reanalysis.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/utils/reanalysis.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/utils/reanalysis.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/utils/reanalysis.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/utils/reanalysis.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/utils/reanalysis.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/utils/reanalysis.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/utils/types/extended_coupler_edge.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/utils/types/extended_coupler_edge.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/utils/types/extended_coupler_edge.py: ARG002 Unused method argument: `kwargs`
@@ -593,9 +548,6 @@ tergite_tuner/utils/types/extended_coupler_edge.py: RET504 Unnecessary assignmen
 tergite_tuner/utils/types/extended_coupler_edge.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/utils/types/extended_coupler_edge.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/utils/types/extended_coupler_edge.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
-tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
-tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
 tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
 tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
 tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
