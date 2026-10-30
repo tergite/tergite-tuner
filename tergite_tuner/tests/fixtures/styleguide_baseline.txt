@@ -25,7 +25,6 @@ boolean: tergite_tuner/tuner.py::run_node(refresh_session)
 boolean: tergite_tuner/tuner.py::tune_device(keep_data_files)
 boolean: tergite_tuner/tuner.py::tune_device(refresh_session)
 boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
-import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.nodes
 license-header: tergite_tuner/config/__init__.py
 license-header: tergite_tuner/config/tests/__init__.py
 license-header: tergite_tuner/lib/__init__.py

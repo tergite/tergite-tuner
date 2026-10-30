@@ -63,11 +63,6 @@ from tergite_tuner.config.types import (
     SpiConfig,
     load_config,
 )
-from tergite_tuner.lib.nodes import (
-    DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_DAG_EDGES,
-    NodeSpec,
-)
 from tergite_tuner.state import DeviceState
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -113,9 +108,9 @@ class SessionOptions(TypedDict, total=False):
     node_config: NodeConfig | Path | str
     spi_config: Optional[SpiConfig] | Path | str
     cluster_config: Optional[QbloxHardwareCompilationConfig] | Path | str
-    node_specs: Mapping[NodeEnum, NodeSpec]
-    ignored_nodes: Tuple[NodeEnum, ...]
-    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
+    node_specs: Mapping[NodeEnum, Any]
+    ignored_nodes: Tuple[NodeEnum, ...] | None
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] | None
     fixed_duration_couplers: Tuple[str, ...]
     reverse_phase_qubits: Tuple[str, ...]
 
@@ -177,10 +172,10 @@ class SessionContext(BaseSettings):
         save_plot: save the analysis plot (True) or not (False).
         node_dag_edges: the directed edges of the calibration Directed Acyclic Graph (DAG)
             with edges of format ``(parent, child)`` where ``child`` depends on ``parent``.
-            Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`
+            ``None`` means :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_DAG_EDGES`.
         ignored_nodes: the nodes that should not be included in the final DAG
-            even if there are nodes that depend on them. Defaults to
-            :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`
+            even if there are nodes that depend on them. ``None`` means
+            :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`.
         node_specs: nodes to run in place of the defaults in
             :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, or in addition to them.
             A node replaced here must keep its node's name.
@@ -219,9 +214,10 @@ class SessionContext(BaseSettings):
     node_config: Annotated[NodeConfig, NoDecode] = Field(default_factory=NodeConfig)
     spi_config: Annotated[Optional[SpiConfig], NoDecode] = None
     cluster_config: Annotated[Optional[QbloxHardwareCompilationConfig], NoDecode] = None
-    node_specs: Mapping[NodeEnum, NodeSpec] = {}
-    ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
-    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
+    # NodeSpecs, which config/ cannot import from lib/
+    node_specs: Mapping[NodeEnum, Any] = {}
+    ignored_nodes: Tuple[NodeEnum, ...] | None = None
+    node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] | None = None
     fixed_duration_couplers: Annotated[Tuple[str, ...], NoDecode] = ()
     reverse_phase_qubits: Annotated[Tuple[str, ...], NoDecode] = ()
     calibration: Annotated[dict | None, NoDecode] = None

@@ -28,6 +28,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - [BREAKING] Read the session with pydantic-settings, so an environment variable now wins over the `.env` file, as in Docker, and `SessionContext(...)` reads the environment too; `pydantic-settings` replaces `python-dotenv` as a dependency
 - [BREAKING] Kept the device's values and calibration statuses in the session, which starts from the device config with an earlier run's results, passed as `calibration`, over it; every run wrote the device config over Redis, so only values the config lacked carried over. `redis_url`, `RedisStore` and the `redis` dependency are gone
 - Marked a node `not_calibrated` on an element its analysis failed on, where it kept the element's earlier status
+- Defaulted `SessionContext.ignored_nodes` and `node_dag_edges` to `None`, which the run reads as the default graph's
 
 ### Fixed
 

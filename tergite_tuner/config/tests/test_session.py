@@ -39,6 +39,7 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_SPECS,
     NodeEnum,
 )
+from tergite_tuner.tuner import NodeManager
 from tergite_tuner.utils.types.enums import MeasurementMode
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -304,12 +305,13 @@ def test_session_loads_node_vars_from_py_objects():
     assert session.ignored_nodes == ignored_nodes
 
 
-def test_default_session_has_default_node_props():
-    """default session has the default node vars."""
+def test_a_default_session_runs_the_default_graph():
     session = SessionContext()
+    manager = NodeManager(None, session)
+
     assert session.node_specs == {}
-    assert session.ignored_nodes == DEFAULT_IGNORED_NODES
-    assert session.node_dag_edges == DEFAULT_NODE_DAG_EDGES
+    assert manager.ignored_nodes == DEFAULT_IGNORED_NODES
+    assert manager.node_dag_edges == DEFAULT_NODE_DAG_EDGES
 
 
 def test_session_options_match_session_context():

@@ -29,7 +29,11 @@ from tergite_tuner.backend import Hardware
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib import run
-from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
+from tergite_tuner.lib.nodes import (
+    DEFAULT_IGNORED_NODES,
+    DEFAULT_NODE_DAG_EDGES,
+    DEFAULT_NODE_SPECS,
+)
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import get_unique_data_path
 from tergite_tuner.utils.dicts import update_nested
@@ -60,8 +64,16 @@ class NodeManager:
         self.run_path = run_path or session.data_dir
 
         self.nodes = {**DEFAULT_NODE_SPECS, **session.node_specs}
-        self.ignored_nodes = session.ignored_nodes
-        self.node_dag_edges = session.node_dag_edges
+        self.ignored_nodes = (
+            DEFAULT_IGNORED_NODES
+            if session.ignored_nodes is None
+            else session.ignored_nodes
+        )
+        self.node_dag_edges = (
+            DEFAULT_NODE_DAG_EDGES
+            if session.node_dag_edges is None
+            else session.node_dag_edges
+        )
 
         # Build the calibration DAG from the dependency edges
         # excluding any given nodes of choice
