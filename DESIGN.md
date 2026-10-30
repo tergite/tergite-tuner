@@ -98,15 +98,14 @@ Each can also be passed as an object. The README shows both.
 
 ## 6. Testing
 
-`pytest tergite_tuner -n 4`, in parallel with pytest-xdist, as CI runs it. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
+`pytest tergite_tuner -n 4`, in parallel with pytest-xdist, as CI runs it. `-m 'not slow'` leaves out the dummy run of every node: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
 
 - Each node's tests live in its `tests/` folder, beside the recorded datasets they analyse (`tests/data/`); `tergite_tuner/tests/` holds the tests of the tuner as a whole.
 - Shared helpers live in `tergite_tuner/tests/utils/`, grouped by what they do: `datasets.py`, `fixtures.py`, `goldens.py`, `pytest.py`, `runs.py`, `state.py`. A test's device state is JSON that `DeviceState` takes as is, in the shape `results.json` has.
-- `tests/test_precompile.py` compiles every default node against the test cluster config.
 - `tests/test_public_api.py` calls `tune_device`, `run_node` (with a custom node class too) and `reanalyse` as the README does; `tests/test_export.py` covers `read_result` and the seed file.
 - `tests/test_schedule_goldens.py` pins a digest of every default node's compiled program in `tests/fixtures/goldens/schedules.json`, rewritten with `UPDATE_GOLDENS=1` when a change alters a program on purpose.
 - `tests/test_reanalysis_goldens.py` reruns 19 nodes' analyses on recorded datasets and compares the QOIs with `tests/fixtures/goldens/`. A change that moves a value on purpose rewrites its golden with `UPDATE_GOLDENS=1`, and its commit says why.
-- `tests/test_tune_up.py` runs every default node in dummy mode, end to end, on a calibrated device from `tests/fixtures/states/standard_state.json`. It is marked `slow`, with `test_precompile.py`'s compile of every outer-sweep point.
+- `tests/test_tune_up.py` runs every default node in dummy mode, end to end, on a calibrated device from `tests/fixtures/states/standard_state.json`. Its dummy runs compile every outer-sweep point, so no other test does; it is marked `slow`.
 
 A test that changes module state resets it: call `ExtendedTransmon.close_all()` before building a device, and restore a matplotlib backend you change.
 
