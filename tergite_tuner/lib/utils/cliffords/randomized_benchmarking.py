@@ -113,7 +113,7 @@ def randomized_benchmarking_sequence(
     apply_inverse: bool = True,
     clifford_group: Literal[1, 2] = 1,
     interleaved_clifford_idx: Optional[int] = None,
-    seed: Optional[int] = None,
+    seed: Optional[int | np.random.Generator] = None,
 ) -> np.ndarray:
     """
     Generates a randomized benchmarking sequence using the one- or two-qubit Clifford group.
@@ -124,7 +124,7 @@ def randomized_benchmarking_sequence(
         clifford_group (int): Specifies which Clifford group to use.
                               1 for single-qubit (24 elements), 2 for two-qubit (11,520 elements).
         interleaved_clifford_idx (Optional[int]): Optional ID for interleaving a specific Clifford gate.
-        seed (Optional[int]): Optional seed for reproducibility.
+        seed (Optional[int | np.random.Generator]): a seed, or a generator to keep drawing from.
 
     Returns:
         np.ndarray: Array of Clifford indices representing the randomized benchmarking sequence.

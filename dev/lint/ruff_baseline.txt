@@ -235,7 +235,6 @@ tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
 tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
 tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
 tergite_tuner/tuner.py: UP045 Use `X | None` for type annotations
-tergite_tuner/utils/cliffords.py: RET504 Unnecessary assignment to `rotation` before `return` statement
 tergite_tuner/utils/dicts.py: I001 Import block is un-sorted or un-formatted
 tergite_tuner/utils/dicts.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/utils/dicts.py: UP006 Use `dict` instead of `Dict` for type annotation

@@ -33,6 +33,19 @@ import numpy as np
 
 from .pauli_transfer_matrices import CZ, S2, H, I, S, X, Y, Z
 
+# each single-qubit gate as the (theta, phi) of an Rxy, in degrees
+RXY_ANGLES = {
+    "I": (0, 0),
+    "X180": (180, 0),
+    "Y180": (180, 90),
+    "X90": (90, 0),
+    "Y90": (90, 90),
+    "mX90": (-90, 0),
+    "mY90": (-90, 90),
+}
+# the single-qubit Cliffords RB can interleave, by gate
+INTERLEAVED_CLIFFORDS = {"X": 3, "Y": 6, "X90": 16, "Y90": 21}
+
 # The decomposition of the single qubit clifford group as per
 # Epstein et al. Phys. Rev. A 89, 062321 (2014)
 # Note: Explicitly reversing order because order of operators is order in time
@@ -610,3 +623,9 @@ class TwoQubitClifford(Clifford):
             + sq_swap_gates_2_q1
         )
         return gates
+
+
+def get_rxy_angles(clifford_idx: int) -> list[tuple[int, int]]:
+    """The (theta, phi) of each Rxy a single-qubit Clifford decomposes into, in time order."""
+    decomposition = SingleQubitClifford(clifford_idx).gate_decomposition
+    return [RXY_ANGLES[gate] for gate, _ in decomposition]

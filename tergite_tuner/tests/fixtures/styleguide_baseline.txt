@@ -4,7 +4,6 @@ banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ########################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ##################################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#
-banner: tergite_tuner/utils/cliffords.py: # ******************************************************
 boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
 boolean: tergite_tuner/config/session.py::SessionContext.save_plot
@@ -107,7 +106,6 @@ type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysi
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._identify_coords
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._process_and_normalize_data
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::PurityBenchmarkingMeasurement.schedule_function.apply_clifford_sequence
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
 type-hints: tergite_tuner/lib/nodes/characterization/t1/measurement.py::T1Measurement.single_qubit_T1
@@ -182,11 +180,6 @@ type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.guess
 type-hints: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
 type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_order.filter_ancestors
 type-hints: tergite_tuner/tuner.py::NodeManager.inspect_node
-type-hints: tergite_tuner/utils/cliffords.py::RXY
-type-hints: tergite_tuner/utils/cliffords.py::from_physical_decomp_to_PTM
-type-hints: tergite_tuner/utils/cliffords.py::reversing_XY_matrix
-type-hints: tergite_tuner/utils/cliffords.py::x_PTM
-type-hints: tergite_tuner/utils/cliffords.py::y_PTM
 type-hints: tergite_tuner/utils/dicts.py::insert_nested_key
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.__init__
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_console_handler
@@ -274,9 +267,5 @@ verb: tergite_tuner/lib/utils/functions.py::isosceles_triangle
 verb: tergite_tuner/lib/utils/samplespace.py::qubit_samples
 verb: tergite_tuner/lib/utils/samplespace.py::resonator_samples
 verb: tergite_tuner/tuner.py::NodeManager.topo_order
-verb: tergite_tuner/utils/cliffords.py::RXY
-verb: tergite_tuner/utils/cliffords.py::reversing_XY_matrix
-verb: tergite_tuner/utils/cliffords.py::x_PTM
-verb: tergite_tuner/utils/cliffords.py::y_PTM
 verb: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 verb: tergite_tuner/utils/measurement.py::samplespace_dimensions

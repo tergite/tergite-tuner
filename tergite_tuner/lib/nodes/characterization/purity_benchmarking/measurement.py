@@ -16,7 +16,6 @@ Module containing a schedule class for purity benchmarking measurement.
 
 import numpy as np
 
-import tergite_tuner.utils.cliffords as cliffords
 from tergite_tuner.backend import (
     X90,
     DRAGPulse,
@@ -29,6 +28,10 @@ from tergite_tuner.backend import (
     X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.cliffords.clifford_group import get_rxy_angles
+from tergite_tuner.lib.utils.cliffords.randomized_benchmarking import (
+    randomized_benchmarking_sequence,
+)
 
 
 class PurityBenchmarkingMeasurement(BaseMeasurement):
@@ -81,8 +84,6 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
             mw_ef_motzoi = this_transmon.r12.ef_motzoi()
             mw_pulse_port = this_transmon.ports.microwave()
             mw_ef_duration = this_transmon.r12.ef_duration()
-            # Get the total number of Clifford gate decompositions available
-            all_cliffords = len(cliffords.XY_decompositions)
             # Use the seed for reproducibility of random sequences
             seed = seeds[this_qubit]
             rng = np.random.default_rng(seed)
@@ -91,24 +92,15 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
             # The removal of the three last is because the calibration
             # Unique is because so we don't use the same number of cliffords twice
             for this_number_of_cliffords in np.unique(clifford_sequence_lengths[:-3]):
-                # Generate a random sequence of Clifford operations
-                random_sequence = rng.integers(
-                    all_cliffords, size=this_number_of_cliffords
+                random_sequence = randomized_benchmarking_sequence(
+                    this_number_of_cliffords, apply_inverse=False, seed=rng
                 )
-
-                def apply_clifford_sequence(schedule, qubit, random_sequence):
-                    # Apply a sequence of Clifford operations to the qubit
-                    for sequence_index in random_sequence:
-                        physical_gates = cliffords.XY_decompositions[sequence_index]
-                        for gate_angles in physical_gates.values():
-                            theta = gate_angles["theta"]
-                            phi = gate_angles["phi"]
-                            schedule.add(Rxy(qubit=qubit, theta=theta, phi=phi))
-                    return schedule
 
                 # Has to measure in every bases to be able to calculate purity
                 for basis in ["X", "Y", "Z"]:
-                    apply_clifford_sequence(schedule, this_qubit, random_sequence)
+                    for clifford_idx in random_sequence:
+                        for theta, phi in get_rxy_angles(clifford_idx):
+                            schedule.add(Rxy(qubit=this_qubit, theta=theta, phi=phi))
                     if basis == "X":  # Prepare for X basis measurement
                         schedule.add(H(this_qubit))
                     elif basis == "Y":  # Prepare for Y basis measurement
