@@ -561,9 +561,9 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
    - Keep `status` as a level.
    - Move `add_console_handler`/`add_file_handler` behind an explicit `setup_logging(stdout_level, file_level, log_dir)`, which the entry points call.
 6. **Match couplers by name.** `cz_calibration/node.py:153` checks `q in coupler` against the fixed-duration couplers; use `coupler in session.fixed_duration_couplers`.
-7. **Fix AllXY and Purity** (step 0.7), with a recorded dataset each, so a run that targets them completes.
+7. ~~Fix AllXY and Purity~~: purity benchmarking runs on the sweep layout its measurement and analysis share, and AllXY has an analysis; neither has a recorded dataset yet.
 8. **One name per node.** `NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT` and `COUPLER_ANTICROSSING` share the class named `coupler_anticrossing` (step 2.1), so the first is never marked calibrated. Give it its own node, or drop the alias from the graph. A test first: run it, then check `inspect_node` sees it in spec.
-9. **Qubit 01 spectroscopy's waveform memory** (step 2.1): on the testbed, check the spectroscopy duration the real node config uses, then switch to `long_square_pulse` at or below 6 µs, or sweep fewer amplitudes, and remove its `xfail`.
+9. ~~Qubit 01 spectroscopy's waveform memory~~: the node configs give it 3 µs pulses, which fit.
 10. ~~The CZ chevron analysis raised on data it could not fit~~: its `IndexError` came from a dead `np.linspace` over the working frequencies, removed in step 4.3.
 11. **The T2 and two-qubit RB analyses fail their QOI** on data they cannot fit, instead of raising: on some draws of random IQ points each raised `ZeroDivisionError` (step 3.5). A test with such data first.
 12. **One reset alignment.** Punchout, Motzoi and Ramsey align each qubit's reset to the end of the shared reset (`qubit_reset_ref_pt_new="end"`), the other five multiplexed schedules to its start, and Motzoi's shared reset lasts 4 ns where the others last the qubits' reset time. Each qubit gets at least one full reset before its sweep either way. Pick one, drop the two arguments from `get_multiplexed_schedule`, and update the three schedules' goldens.
