@@ -37,7 +37,7 @@ from tergite_tuner.lib.nodes import (
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import get_unique_data_path
 from tergite_tuner.utils.dicts import update_nested
-from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.logging import logger, setup_logging
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -248,8 +248,9 @@ def _tune(
     """
     if refresh_session:
         session.state.written_paths.clear()
-    hardware = Hardware(session)
     run_path = get_unique_data_path(session.data_dir, "run")
+    setup_logging(session.stdout_log_level, session.file_log_level, run_path)
+    hardware = Hardware(session)
     node_manager = NodeManager(hardware, session=session, run_path=run_path)
     qubits = session.qubits
     couplers = session.couplers
@@ -290,7 +291,9 @@ def _tune(
         (run_path / RESULTS_FILE).write_text(
             results.model_dump_json(by_alias=True, exclude_none=True, indent=2)
         )
-    elif run_path.exists():
+    else:
+        # closes the run's log file before its folder goes
+        setup_logging(session.stdout_log_level, session.file_log_level)
         shutil.rmtree(run_path)
 
 
@@ -306,6 +309,7 @@ def _reanalyse(
     """
     if refresh_session:
         session.state.written_paths.clear()
+    setup_logging(session.stdout_log_level, session.file_log_level)
 
     if session.cluster_mode != MeasurementMode.re_analyse:
         raise ValueError(

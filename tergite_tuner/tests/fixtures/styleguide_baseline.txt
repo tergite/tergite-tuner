@@ -179,11 +179,6 @@ type-hints: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
 type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_order.filter_ancestors
 type-hints: tergite_tuner/tuner.py::NodeManager.inspect_node
 type-hints: tergite_tuner/utils/dicts.py::insert_nested_key
-type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.__init__
-type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_console_handler
-type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.add_file_handler
-type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.log_dir
-type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 type-hints: tergite_tuner/utils/logging/visuals.py::draw_arrow_chart
 type-hints: tergite_tuner/utils/measurement.py::samplespace_dimensions
 verb: tergite_tuner/backend/pulse_factories.py::composite_soft_square_pulse

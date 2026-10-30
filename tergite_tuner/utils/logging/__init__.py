@@ -1,7 +1,7 @@
 # This code is part of Tergite
 #
 # (C) Copyright Eleftherios Moschandreou 2023
-# (C) Copyright Chalmers Next Labs AB 2024
+# (C) Copyright Chalmers Next Labs AB 2024, 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -11,87 +11,50 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import logging.handlers
-import os.path
+import logging
+from pathlib import Path
+
+# between INFO and WARNING, so the tuner's progress shows without third-party libraries' INFO
+STATUS_LEVEL = 25
+LOG_FILE = "tergite_tuner.log"
+FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 
 
 class ExtendedLogger(logging.Logger):
+    """A logger with a ``status`` level, between INFO and WARNING."""
+
+    def status(self, message: str, *args: object, **kwargs: object) -> None:
+        if self.isEnabledFor(STATUS_LEVEL):
+            self._log(STATUS_LEVEL, message, args, **kwargs)
+
+
+def setup_logging(
+    stdout_level: int, file_level: int, log_dir: Path | None = None
+) -> None:
+    """Logs to the console at ``stdout_level``, and to ``log_dir``'s log file at ``file_level``.
+
+    Replaces the handlers an earlier call added, as each run calls it.
     """
-    Adds a custom logger class
-    """
-
-    # This is to have a more distinguished logging level.
-    # Usually, third-party libraries would also log on logging.INFO, but we want to have some level in between
-    # logging.INFO and logging.WARNING, where we do not get spammed by unrelated information.
-    STATUS_LEVEL = 25
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        logging.addLevelName(self.STATUS_LEVEL, "STATUS")
-        self._log_file = "autocalibration.log"
-
-    @property
-    def log_dir(self):
-        return os.path.dirname(self._log_file)
-
-    def status(self, message, *args, **kwargs):
-        """
-        Adds a custom log level for the logger
-        This works similar to logging.info() or logging.debug(), just that the level is 25 in this case
-
-        Args:
-            message: Message to log
-
-        """
-        if self.isEnabledFor(self.STATUS_LEVEL):
-            self._log(self.STATUS_LEVEL, message, args, **kwargs)
-
-    def add_console_handler(self, log_level: int = STATUS_LEVEL):
-        """
-        Adds a console handler to the logger
-
-        Args:
-            log_level: Log level for the output on the console
-
-        """
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(log_level)
-
-        console_formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"
-        )
-        console_handler.setFormatter(console_formatter)
-
-        self.addHandler(console_handler)
-
-    def add_file_handler(
-        self, log_level: int = logging.DEBUG, log_file: str = "autocalibration.log"
-    ):
-        """
-        Adds a file handler to the logger
-
-        Args:
-            log_level: Log level for the file handler. Defaults to logging.DEBUG to have more granular information
-            log_file: Path to log file. Defaults to "autocalibration.log"
-
-        """
-        # Set the log file, so, we have an easier time later to find it, if we need it somewhere in the code
-        self._log_file = os.path.abspath(log_file)
-
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(log_level)
-
-        file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(file_formatter)
-
-        self.addHandler(file_handler)
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+        handler.close()
+    console = logging.StreamHandler()
+    console.setFormatter(logging.Formatter(FORMAT, datefmt="%H:%M:%S"))
+    console.setLevel(stdout_level)
+    logger.addHandler(console)
+    if log_dir is not None:
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
+        file = logging.FileHandler(Path(log_dir) / LOG_FILE)
+        file.setFormatter(logging.Formatter(FORMAT))
+        file.setLevel(file_level)
+        logger.addHandler(file)
 
 
-# Create a logger
-# This is right now an empty logger without handlers
-# To use the logger, attach handlers from the call site (e.g. inside the
-# ``CalibrationSupervisor`` startup or a CLI entry point).
+logging.addLevelName(STATUS_LEVEL, "STATUS")
+# made with ExtendedLogger without leaving it the class of every logger made after
+_logger_class = logging.getLoggerClass()
 logging.setLoggerClass(ExtendedLogger)
-logger = logging.getLogger(__name__)
-# The minimum log level is set here, handlers won't be able to log anything below
+logger: ExtendedLogger = logging.getLogger(__name__)
+logging.setLoggerClass(_logger_class)
+# the handlers filter by level, so the logger passes everything to them
 logger.setLevel(logging.DEBUG)
