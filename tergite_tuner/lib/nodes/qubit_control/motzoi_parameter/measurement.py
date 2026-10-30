@@ -25,11 +25,11 @@ from tergite_tuner.backend import (
     ExtendedTransmon,
     Measure,
     Measure_RO1,
-    Reset,
     Schedule,
     X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
 
 
 class MotzoiParameterMeasurement(BaseMeasurement):
@@ -56,110 +56,51 @@ class MotzoiParameterMeasurement(BaseMeasurement):
             measure_function = Measure_RO1
         else:
             raise ValueError(f"Invalid qubit state: {qubit_state}")
-        schedule = Schedule(schedule_title, repetitions)
+        phases = (0, 180, 90, 270) if qubit_state == 0 else (0, 180)
 
-        qubits = self.transmons.keys()
-
-        for this_qubit, this_transmon in self.transmons.items():
-            mw_01_frequency = this_transmon.clock_freqs.f01()
-            schedule.add_resource(
-                ClockResource(name=f"{this_qubit}.01", freq=mw_01_frequency)
-            )
-            if qubit_state == 1:
-                mw_12_frequency = this_transmon.clock_freqs.f12()
-                this_clock = f"{this_qubit}.12"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_12_frequency)
-                )
-
-        # This is the common reference operation so the qubits can be operated in parallel
-        root_relaxation = schedule.add(Reset(*qubits, duration=4e-9), label="Reset")
-
-        # The outer loop, iterates over all qubits
-        for this_qubit, X_values in X_repetitions.items():
-            this_transmon = self.transmons[this_qubit]
-            mw_amplitude = this_transmon.rxy.amp180()
-            mw_pulse_duration = this_transmon.rxy.duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-
-            this_clock = f"{this_qubit}.01"
-
-            motzoi_parameter_values = mw_motzois[this_qubit]
-            number_of_motzois = len(motzoi_parameter_values)
-
-            if qubit_state == 1:
-                mw_amplitude = this_transmon.r12.ef_amp180()
-                this_clock = f"{this_qubit}.12"
-                measure_function = Measure_RO1
-            elif qubit_state == 0:
-                measure_function = Measure
-                this_clock = f"{this_qubit}.01"
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            transmon = self.transmons[qubit]
+            if qubit_state == 0:
+                amplitude = transmon.rxy.amp180()
+                clock = f"{qubit}.01"
             else:
-                raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-            schedule.add(
-                Reset(*qubits), ref_op=root_relaxation, ref_pt_new="end"
-            )  # To enforce parallelism we refer to the root relaxation
-
-            # The intermediate loop iterates over all numbers of X pulses
-            for x_index, this_x in enumerate(X_values):
-                # The inner for loop iterates over all motzoi values
-                for motzoi_index, mw_motzoi in enumerate(motzoi_parameter_values):
-                    this_index = x_index * number_of_motzois + motzoi_index
-                    if qubit_state == 1:
-                        schedule.add(X(this_qubit))
-                    for _ in range(this_x):
-                        schedule.add(
-                            DRAGPulse(
-                                duration=mw_pulse_duration,
-                                G_amp=mw_amplitude,
-                                D_amp=mw_motzoi,
-                                port=mw_pulse_port,
-                                clock=this_clock,
-                                phase=0,
-                            ),
-                        )
-                        # inversion pulse requires 180 deg phase
-                        schedule.add(
-                            DRAGPulse(
-                                duration=mw_pulse_duration,
-                                G_amp=mw_amplitude,
-                                D_amp=mw_motzoi,
-                                port=mw_pulse_port,
-                                clock=this_clock,
-                                phase=180,
-                            ),
-                        )
-
-                        if qubit_state == 0:
-                            schedule.add(
-                                DRAGPulse(
-                                    duration=mw_pulse_duration,
-                                    G_amp=mw_amplitude,
-                                    D_amp=mw_motzoi,
-                                    port=mw_pulse_port,
-                                    clock=this_clock,
-                                    phase=90,
-                                ),
-                            )
-                            # inversion pulse requires 180 deg phase
-                            schedule.add(
-                                DRAGPulse(
-                                    duration=mw_pulse_duration,
-                                    G_amp=mw_amplitude,
-                                    D_amp=mw_motzoi,
-                                    port=mw_pulse_port,
-                                    clock=this_clock,
-                                    phase=270,
-                                ),
-                            )
-
+                amplitude = transmon.r12.ef_amp180()
+                clock = f"{qubit}.12"
+                schedule.add(X(qubit))
+            for _ in range(point["X_repetitions"]):
+                # each pulse is followed by its inverse, 180 degrees on
+                for phase in phases:
                     schedule.add(
-                        measure_function(
-                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
+                        DRAGPulse(
+                            duration=transmon.rxy.duration(),
+                            G_amp=amplitude,
+                            D_amp=point["mw_motzois"],
+                            port=transmon.ports.microwave(),
+                            clock=clock,
+                            phase=phase,
                         ),
                     )
+            schedule.add(
+                measure_function(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE),
+            )
 
-                    schedule.add(Reset(this_qubit))
-
+        schedule = get_multiplexed_schedule(
+            schedule_title,
+            self.transmons,
+            {"mw_motzois": mw_motzois, "X_repetitions": X_repetitions},
+            add_point,
+            repetitions,
+            qubit_reset_ref_pt_new="end",
+            root_reset_duration=4e-9,
+        )
+        for qubit, transmon in self.transmons.items():
+            frequency_01 = transmon.clock_freqs.f01()
+            schedule.add_resource(ClockResource(name=f"{qubit}.01", freq=frequency_01))
+            if qubit_state == 1:
+                frequency_12 = transmon.clock_freqs.f12()
+                schedule.add_resource(
+                    ClockResource(name=f"{qubit}.12", freq=frequency_12)
+                )
         return schedule

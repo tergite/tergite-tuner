@@ -312,7 +312,6 @@ tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: RET504 Unneces
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
-tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: B007 Loop control variable `acq_channel` not used within loop body
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/readout/punchout/analysis.py: B007 Loop control variable `i` not used within loop body

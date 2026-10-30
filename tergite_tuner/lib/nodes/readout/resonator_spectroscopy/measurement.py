@@ -21,7 +21,6 @@ from tergite_tuner.backend import (
     ClockResource,
     DRAGPulse,
     ExtendedTransmon,
-    Reset,
     Schedule,
     SetClockFrequency,
     SquarePulse,
@@ -29,6 +28,7 @@ from tergite_tuner.backend import (
     X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
 
 
 class ResonatorSpectroscopyMeasurement(BaseMeasurement):
@@ -61,11 +61,6 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
             An experiment schedule.
         """
 
-        schedule = Schedule("multiplexed_resonator_spectroscopy", repetitions)
-
-        qubits = self.transmons.keys()
-
-        # Initialize the clock for each qubit
         if qubit_state == 0:
             ro_str = "ro"
         elif qubit_state == 1:
@@ -74,89 +69,67 @@ class ResonatorSpectroscopyMeasurement(BaseMeasurement):
             ro_str = "ro2"
         else:
             raise ValueError("error state")
+        acq_channels = {qubit: channel for channel, qubit in enumerate(ro_frequencies)}
 
-        # Initialize ClockResource with the first frequency value
-        for this_qubit, ro_array_val in ro_frequencies.items():
-            this_ro_clock = f"{this_qubit}." + ro_str
-            schedule.add_resource(
-                ClockResource(name=this_ro_clock, freq=ro_array_val[0])
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            transmon = self.transmons[qubit]
+            ro_clock = f"{qubit}.{ro_str}"
+            ro_port = transmon.ports.readout()
+            schedule.add(
+                SetClockFrequency(
+                    clock=ro_clock, clock_freq_new=point["ro_frequencies"]
+                )
+            )
+            if qubit_state in (1, 2):
+                schedule.add(X(qubit))
+            if qubit_state == 2:
+                schedule.add(
+                    DRAGPulse(
+                        duration=transmon.r12.ef_duration(),
+                        G_amp=transmon.r12.ef_amp180(),
+                        D_amp=0,
+                        port=transmon.ports.microwave(),
+                        clock=f"{qubit}.12",
+                        phase=0,
+                    ),
+                )
+            ro_pulse = schedule.add(
+                SquarePulse(
+                    duration=transmon.measure.pulse_duration(),
+                    amp=transmon.measure.pulse_amp(),
+                    port=ro_port,
+                    clock=ro_clock,
+                ),
+            )
+            schedule.add(
+                SSBIntegrationComplex(
+                    duration=transmon.measure.integration_time(),
+                    port=ro_port,
+                    clock=ro_clock,
+                    acq_index=acq_index,
+                    acq_channel=acq_channels[qubit],
+                    bin_mode=BinMode.AVERAGE,
+                ),
+                ref_op=ro_pulse,
+                ref_pt="start",
+                rel_time=transmon.measure.acq_delay(),
             )
 
+        schedule = get_multiplexed_schedule(
+            "multiplexed_resonator_spectroscopy",
+            self.transmons,
+            {"ro_frequencies": ro_frequencies},
+            add_point,
+            repetitions,
+        )
+        for qubit, frequencies in ro_frequencies.items():
+            schedule.add_resource(
+                ClockResource(name=f"{qubit}.{ro_str}", freq=frequencies[0])
+            )
         if qubit_state == 2:
-            for this_qubit, this_transmon in self.transmons.items():
-                this_clock = f"{this_qubit}.12"
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_12)
-                )
-
-        root_relaxation = schedule.add(Reset(*qubits), label="Reset")
-
-        # The outer for loop iterates over all qubits:
-        for acq_cha, (this_qubit, ro_f_values) in enumerate(ro_frequencies.items()):
-            # unpack the static parameters
-            this_transmon = self.transmons[this_qubit]
-            ro_pulse_amplitude = this_transmon.measure.pulse_amp()
-            ro_pulse_duration = this_transmon.measure.pulse_duration()
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-            mw_ef_duration = this_transmon.r12.ef_duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-            acquisition_delay = this_transmon.measure.acq_delay()
-            integration_time = this_transmon.measure.integration_time()
-            ro_port = this_transmon.ports.readout()
-
-            # To enforce parallelism we refer to the root relaxation:
-            schedule.add(Reset(*qubits), ref_op=root_relaxation)
-
-            this_ro_clock = f"{this_qubit}." + ro_str
-            this_mw_clock = f"{this_qubit}.12"
-
-            # The second for loop iterates over all frequency values in the frequency batch:
-            for acq_index, ro_frequency in enumerate(ro_f_values):
-                schedule.add(
-                    SetClockFrequency(clock=this_ro_clock, clock_freq_new=ro_frequency)
-                )
-
-                if qubit_state == 0:
-                    pass
-                elif qubit_state == 1:
-                    schedule.add(X(this_qubit))
-                elif qubit_state == 2:
-                    schedule.add(X(this_qubit))
-                    schedule.add(
-                        DRAGPulse(
-                            duration=mw_ef_duration,
-                            G_amp=mw_ef_amp180,
-                            D_amp=0,
-                            port=mw_pulse_port,
-                            clock=this_mw_clock,
-                            phase=0,
-                        ),
-                    )
-
-                ro_pulse = schedule.add(
-                    SquarePulse(
-                        duration=ro_pulse_duration,
-                        amp=ro_pulse_amplitude,
-                        port=ro_port,
-                        clock=this_ro_clock,
-                    ),
-                )
-
-                schedule.add(
-                    SSBIntegrationComplex(
-                        duration=integration_time,
-                        port=ro_port,
-                        clock=this_ro_clock,
-                        acq_index=acq_index,
-                        acq_channel=acq_cha,
-                        bin_mode=BinMode.AVERAGE,
-                    ),
-                    ref_op=ro_pulse,
-                    ref_pt="start",
-                    rel_time=acquisition_delay,
-                )
-
-                schedule.add(Reset(this_qubit))
-
+            for qubit, transmon in self.transmons.items():
+                frequency = transmon.clock_freqs.f12()
+                schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
         return schedule

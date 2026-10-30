@@ -23,7 +23,6 @@ from tergite_tuner.backend import (
     ExtendedTransmon,
     Measure,
     Measure_RO1,
-    Reset,
     Schedule,
     SetClockFrequency,
     SoftSquarePulse,
@@ -31,6 +30,7 @@ from tergite_tuner.backend import (
     long_square_pulse,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
 from tergite_tuner.utils.logging import logger
 
 
@@ -64,110 +64,64 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
             An experiment schedule.
         """
 
-        schedule = Schedule("qubit_spectroscopy", repetitions)
-
-        # Initialize the clock for each qubit
-        # Initialize ClockResource with the first frequency value
-        for this_qubit, spec_array_val in spec_frequencies.items():
-            if qubit_state == 0:
-                schedule.add_resource(
-                    ClockResource(name=f"{this_qubit}.01", freq=spec_array_val[0])
-                )
-            elif qubit_state == 1:
-                schedule.add_resource(
-                    ClockResource(name=f"{this_qubit}.12", freq=spec_array_val[0])
-                )
-            else:
-                raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-        # This is the common reference operation so the qubits can be operated in parallel
-        qubits = self.transmons.keys()
-
         if qubit_state == 0:
             measure_function = Measure
+            clock_name = "01"
         elif qubit_state == 1:
             measure_function = Measure_RO1
+            clock_name = "12"
         else:
             raise ValueError(f"Invalid qubit state: {qubit_state}")
 
-        root_relaxation = schedule.add(Reset(*qubits), label="Reset")
+        if spec_pulse_amplitudes is None:
+            spec_pulse_amplitudes = {}
+            for qubit in spec_frequencies:
+                amplitude = self.transmons[qubit].spec.spec_ampl_optimal()
+                logger.info(f"setting optimal spec_amplitude for {qubit} {amplitude}")
+                spec_pulse_amplitudes[qubit] = [amplitude]
 
-        # The outer loop, iterates over all qubits
-        for this_qubit, spec_pulse_frequency_values in spec_frequencies.items():
-            # unpack the static parameters
-            this_transmon = self.transmons[this_qubit]
-            spec_pulse_duration = this_transmon.spec.spec_duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-
-            if spec_pulse_amplitudes is None:
-                spec_amplitude = this_transmon.spec.spec_ampl_optimal()
-                logger.info(
-                    f"setting optimal spec_amplitude for {this_qubit} {spec_amplitude}"
-                )
-                amplitude_values = [spec_amplitude]
-
-            else:
-                amplitude_values = spec_pulse_amplitudes[this_qubit]
-
-            # assign qubit spectroscopy pulse based on duration so long pulses can fit in memory
-            if spec_pulse_duration > 6e-6:
-                SpectroscopyPulse = long_square_pulse
-            else:
-                SpectroscopyPulse = SoftSquarePulse
-
-            if qubit_state == 0:
-                this_clock = f"{this_qubit}.01"
-            elif qubit_state == 1:
-                this_clock = f"{this_qubit}.12"
-            else:
-                raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-            number_of_ampls = len(amplitude_values)
-
-            schedule.add(
-                Reset(*qubits), ref_op=root_relaxation, ref_pt="end"
-            )  # To enforce parallelism we refer to the root relaxation
-
-            # The intermediate loop iterates over all frequency values in the frequency batch:
-            for freq_indx, spec_pulse_frequency in enumerate(
-                spec_pulse_frequency_values
-            ):
-                # reset the clock frequency for the qubit pulse
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            transmon = self.transmons[qubit]
+            duration = transmon.spec.spec_duration()
+            clock = f"{qubit}.{clock_name}"
+            # long pulses would not fit in the waveform memory
+            pulse = long_square_pulse if duration > 6e-6 else SoftSquarePulse
+            if acq_index % len(spec_pulse_amplitudes[qubit]) == 0:
                 schedule.add(
                     SetClockFrequency(
-                        clock=this_clock, clock_freq_new=spec_pulse_frequency
+                        clock=clock, clock_freq_new=point["spec_frequencies"]
                     ),
                 )
+            if qubit_state == 1:
+                schedule.add(X(qubit))
+            schedule.add(
+                pulse(
+                    duration=duration,
+                    amp=point["spec_pulse_amplitudes"],
+                    port=transmon.ports.microwave(),
+                    clock=clock,
+                ),
+            )
+            schedule.add(
+                measure_function(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE),
+            )
 
-                # The inner loop, iterates over all spec_amplitudes
-                for acq_index, spec_pulse_amplitude in enumerate(amplitude_values):
-                    this_index = freq_indx * number_of_ampls + acq_index
-
-                    if qubit_state == 0:
-                        pass
-                    elif qubit_state == 1:
-                        schedule.add(X(this_qubit))
-                    else:
-                        raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-                    schedule.add(
-                        SpectroscopyPulse(
-                            duration=spec_pulse_duration,
-                            amp=spec_pulse_amplitude,
-                            port=mw_pulse_port,
-                            clock=this_clock,
-                        ),
-                    )
-
-                    schedule.add(
-                        measure_function(
-                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
-                        ),
-                    )
-
-                    # update the relaxation for the next batch point
-                    schedule.add(Reset(this_qubit))
-
+        schedule = get_multiplexed_schedule(
+            "qubit_spectroscopy",
+            self.transmons,
+            {
+                "spec_pulse_amplitudes": spec_pulse_amplitudes,
+                "spec_frequencies": spec_frequencies,
+            },
+            add_point,
+            repetitions,
+        )
+        for qubit, frequencies in spec_frequencies.items():
+            schedule.add_resource(
+                ClockResource(name=f"{qubit}.{clock_name}", freq=frequencies[0])
+            )
         return schedule
 
 
@@ -181,68 +135,38 @@ class TwoTonesAmplitudeMeasurement(BaseMeasurement):
         spec_pulse_amplitudes: dict[str, float],
     ) -> Schedule:
 
-        schedule = Schedule("qubit_spectroscopy", repetitions=1024)
-
-        # Initialize the clock for each qubit
-        for this_qubit, spec_array_val in spec_frequencies.items():
-            schedule.add_resource(
-                ClockResource(name=f"{this_qubit}.01", freq=spec_array_val[0])
-            )
-
-        qubits = self.transmons.keys()
-
-        root_relaxation = schedule.add(Reset(*qubits), label="Reset")
-
-        # The outer loop, iterates over all qubits
-        for acq_channel, (this_qubit, spec_pulse_frequency_values) in enumerate(
-            spec_frequencies.items()
-        ):
-            # unpack the static parameters
-            this_transmon = self.transmons[this_qubit]
-            spec_pulse_duration = this_transmon.spec.spec_duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-
-            # long pulses require more efficient memory management
-            if spec_pulse_duration > 6.5e-6:
-                SpectroscopyPulse = long_square_pulse
-            else:
-                SpectroscopyPulse = SoftSquarePulse
-
-            spec_pulse_amplitude = spec_pulse_amplitudes[this_qubit]
-
-            this_clock = f"{this_qubit}.01"
-
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            transmon = self.transmons[qubit]
+            duration = transmon.spec.spec_duration()
+            clock = f"{qubit}.01"
+            # long pulses would not fit in the waveform memory
+            pulse = long_square_pulse if duration > 6.5e-6 else SoftSquarePulse
             schedule.add(
-                Reset(*qubits), ref_op=root_relaxation, ref_pt="end"
-            )  # To enforce parallelism we refer to the root relaxation
+                SetClockFrequency(
+                    clock=clock, clock_freq_new=point["spec_frequencies"]
+                ),
+            )
+            schedule.add(
+                pulse(
+                    duration=duration,
+                    amp=spec_pulse_amplitudes[qubit],
+                    port=transmon.ports.microwave(),
+                    clock=clock,
+                ),
+            )
+            schedule.add(Measure(qubit, acq_index=acq_index))
 
-            # The intermediate loop iterates over all frequency values
-            for this_index, spec_pulse_frequency in enumerate(
-                spec_pulse_frequency_values
-            ):
-                # reset the clock frequency for the qubit pulse
-                schedule.add(
-                    SetClockFrequency(
-                        clock=this_clock, clock_freq_new=spec_pulse_frequency
-                    ),
-                )
-
-                schedule.add(
-                    SpectroscopyPulse(
-                        duration=spec_pulse_duration,
-                        amp=spec_pulse_amplitude,
-                        port=mw_pulse_port,
-                        clock=this_clock,
-                    ),
-                )
-
-                schedule.add(
-                    Measure(
-                        this_qubit,
-                        acq_index=this_index,
-                    ),
-                )
-
-                schedule.add(Reset(this_qubit))
-
+        schedule = get_multiplexed_schedule(
+            "qubit_spectroscopy",
+            self.transmons,
+            {"spec_frequencies": spec_frequencies},
+            add_point,
+            repetitions=1024,
+        )
+        for qubit, frequencies in spec_frequencies.items():
+            schedule.add_resource(
+                ClockResource(name=f"{qubit}.01", freq=frequencies[0])
+            )
         return schedule

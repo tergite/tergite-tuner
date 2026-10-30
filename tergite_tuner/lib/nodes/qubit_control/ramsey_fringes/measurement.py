@@ -22,12 +22,12 @@ from tergite_tuner.backend import (
     ExtendedTransmon,
     Measure,
     Measure_RO1,
-    Reset,
     Rxy,
     Schedule,
     X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
+from tergite_tuner.lib.utils.schedules import get_multiplexed_schedule
 
 
 class RamseyDetuningsMeasurement(BaseMeasurement):
@@ -73,91 +73,50 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
         else:
             raise ValueError(f"Invalid qubit state: {qubit_state}")
 
-        schedule = Schedule(schedule_title, repetitions)
-
-        qubits = self.transmons.keys()
-
-        if qubit_state == 1:
-            for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12()
-                this_clock = f"{this_qubit}.12"
-                schedule.add_resource(
-                    ClockResource(name=this_clock, freq=mw_frequency_12)
+        def add_point(
+            schedule: Schedule, qubit: str, point: dict, acq_index: int
+        ) -> None:
+            delay = point["ramsey_delays"]
+            recovery_phase = np.rad2deg(
+                2 * np.pi * point["artificial_detunings"] * delay
+            )
+            if qubit_state == 0:
+                schedule.add(X90(qubit))
+                schedule.add(
+                    Rxy(theta=90, phi=recovery_phase, qubit=qubit), rel_time=delay
                 )
-
-        # This is the common reference operation so the qubits can be operated in parallel
-        root_relaxation = schedule.add(Reset(*qubits), label="Reset")
-
-        # The outer loop, iterates over all qubits
-        for this_qubit, artificial_detunings_values in artificial_detunings.items():
-            this_transmon = self.transmons[this_qubit]
-            mw_pulse_duration = this_transmon.rxy.duration()
-            mw_pulse_port = this_transmon.ports.microwave()
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-
-            if qubit_state == 1:
-                this_clock = f"{this_qubit}.12"
-                measure_function = Measure_RO1
-            elif qubit_state == 0:
-                measure_function = Measure
-                this_clock = f"{this_qubit}.01"
             else:
-                raise ValueError(f"Invalid qubit state: {qubit_state}")
-
-            schedule.add(
-                Reset(*qubits), ref_op=root_relaxation, ref_pt_new="end"
-            )  # To enforce parallelism we refer to the root relaxation
-
-            ramsey_delays_values = ramsey_delays[this_qubit]
-            number_of_delays = len(ramsey_delays_values)
-
-            # The intermediate loop, iterates over all detunings
-            for detuning_index, detuning in enumerate(artificial_detunings_values):
-                # The inner for loop iterates over all delays
-                for acq_index, ramsey_delay in enumerate(ramsey_delays_values):
-                    this_index = detuning_index * number_of_delays + acq_index
-
-                    recovery_phase = np.rad2deg(2 * np.pi * detuning * ramsey_delay)
-
-                    if qubit_state == 1:
-                        schedule.add(X(this_qubit))
-                        f12_amp = mw_ef_amp180
-                        schedule.add(
-                            DRAGPulse(
-                                duration=mw_pulse_duration,
-                                G_amp=f12_amp / 2,
-                                D_amp=0,
-                                port=mw_pulse_port,
-                                clock=this_clock,
-                                phase=0,
-                            ),
-                        )
-
-                        schedule.add(
-                            DRAGPulse(
-                                duration=mw_pulse_duration,
-                                G_amp=f12_amp / 2,
-                                D_amp=0,
-                                port=mw_pulse_port,
-                                clock=this_clock,
-                                phase=recovery_phase,
-                            ),
-                            rel_time=ramsey_delay,
-                        )
-
-                    if qubit_state == 0:
-                        schedule.add(X90(this_qubit))
-
-                        schedule.add(
-                            Rxy(theta=90, phi=recovery_phase, qubit=this_qubit),
-                            rel_time=ramsey_delay,
-                        )
-
+                transmon = self.transmons[qubit]
+                schedule.add(X(qubit))
+                for phase, rel_time in ((0, 0), (recovery_phase, delay)):
                     schedule.add(
-                        measure_function(
-                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
+                        DRAGPulse(
+                            duration=transmon.rxy.duration(),
+                            G_amp=transmon.r12.ef_amp180() / 2,
+                            D_amp=0,
+                            port=transmon.ports.microwave(),
+                            clock=f"{qubit}.12",
+                            phase=phase,
                         ),
+                        rel_time=rel_time,
                     )
+            schedule.add(
+                measure_function(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE),
+            )
 
-                    schedule.add(Reset(this_qubit))
+        schedule = get_multiplexed_schedule(
+            schedule_title,
+            self.transmons,
+            {
+                "ramsey_delays": ramsey_delays,
+                "artificial_detunings": artificial_detunings,
+            },
+            add_point,
+            repetitions,
+            qubit_reset_ref_pt_new="end",
+        )
+        if qubit_state == 1:
+            for qubit, transmon in self.transmons.items():
+                frequency = transmon.clock_freqs.f12()
+                schedule.add_resource(ClockResource(name=f"{qubit}.12", freq=frequency))
         return schedule
