@@ -13,8 +13,7 @@ A Python library (3.13+) that a program imports to tune up a chip: tergite-backe
 | Nodes | `tergite_tuner/lib/nodes/` | one package per calibration experiment |
 | Node machinery | `tergite_tuner/lib/base/`, `lib/nodes/{schedule_node,external_parameter_node}.py` | what every node inherits: measure, configure the dataset, analyse, store |
 | Storage | `tergite_tuner/storage/` | `redis/` holds the device's parameters; `fs/` writes each node's dataset |
-| Hardware | `tergite_tuner/utils/hardware/spi.py`, `tuner.py`'s `HardwareManager` | the Qblox cluster, through quantify-scheduler, and the SPI rack's current sources |
-| Device model | `tergite_tuner/utils/types/extended_*.py` | quantify-scheduler's transmon and edge, extended with our gates and parameters |
+| Backend | `tergite_tuner/backend/` | everything taken from quantify-scheduler and qblox-instruments: the operations, the device model (our transmon and edge, extended with our gates and parameters), compiling and running schedules, and `Hardware`: the Qblox cluster and the SPI rack's current sources |
 
 It depends on quantify-scheduler 0.22 and qblox-instruments 0.14, as tergite-backend does. The move to qblox-scheduler is step 11 of the refactor.
 
@@ -23,7 +22,7 @@ It depends on quantify-scheduler 0.22 and qblox-instruments 0.14, as tergite-bac
 ```mermaid
 flowchart TD
     E["tune_device / run_node / reanalyse"] --> S["SessionContext<br/>(.env + kwargs + config files)"]
-    S --> H["HardwareManager<br/>Cluster, InstrumentCoordinator, attenuations"]
+    S --> H["Hardware<br/>Cluster, InstrumentCoordinator, attenuations, SPI rack"]
     S --> M["NodeManager<br/>the node DAG, populate_initial_parameters"]
     M --> I["inspect_node, for each node up to target_node"]
     I -->|in spec| R["skip"]
@@ -55,9 +54,10 @@ flowchart TD
 ```
 tergite_tuner/
 ├── __init__.py            the public API
-├── tuner.py               tune_device, run_node, reanalyse; HardwareManager, NodeManager
+├── tuner.py               tune_device, run_node, reanalyse; NodeManager
 ├── export.py              read_result, generate_calib_seed_file, CalibrationResults
 ├── exc.py                 TunerError and its subclasses
+├── backend/               the only package that imports quantify-scheduler and qblox-instruments
 ├── config/
 │   ├── session.py         SessionContext, SessionOptions
 │   └── types/             DeviceConfig, NodeConfig, SpiConfig, ClusterConfig
@@ -65,11 +65,11 @@ tergite_tuner/
 │   ├── base/              BaseNode, QubitNode, CouplerNode; the analysis base classes
 │   ├── nodes/             readout/, qubit_control/, characterization/, coupler/: one package per node
 │   │   └── <group>/<node>/   node.py, measurement.py, analysis.py, tests/
-│   └── utils/             schedule compiling and execution, device building, fit models, the DAG
+│   └── utils/             the schedules' shared building blocks, fit models, the DAG
 ├── storage/
 │   ├── redis/             RedisStore, populate/revert node parameters
 │   └── fs/                datasets and node data folders
-├── utils/                 logging, enums, NodeEnum, the extended device types, the SPI rack
+├── utils/                 logging, enums, NodeEnum
 └── tests/                 cross-cutting tests; utils/ holds the shared test helpers
 conftest.py                the session_context, redis_connection and seeded_redis fixtures
 ```
@@ -192,5 +192,5 @@ The check fails on a finding the baseline lacks, and on an entry it no longer fi
 | --- | --- |
 | A new calibration node | a package under `lib/nodes/<group>/<node>/` with `node.py` (the class: name, `measurement_cls`, `analysis_cls`, `measurement_type_cls`, `qubit_qois` or `coupler_qois`, the samplespace), `measurement.py` (`schedule_function`), `analysis.py`, and `tests/` with a recorded dataset |
 | Run it in the default graph | a `NodeEnum` member, an entry in `DEFAULT_NODE_CLS_MAP`, and its edges in `DEFAULT_NODE_DAG_EDGES` |
-| A new device parameter | the extended transmon or edge in `utils/types/`, and its initial value in `device_config.example.toml` |
+| A new device parameter | the extended transmon or edge in `backend/transmon.py` or `backend/edge.py`, and its initial value in `device_config.example.toml` |
 | A new session option | a `SessionContext` field, `SessionOptions`, and `.example.env` |

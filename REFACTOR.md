@@ -358,11 +358,16 @@ Everything the scheduler gives us goes behind `tergite_tuner/backend/`:
 
 ```
 tergite_tuner/backend/
-├── __init__.py      re-exports, __all__ as strings
-├── operations.py    Schedule, ClockResource, the gates and pulses we use, SSBIntegrationComplex, long_square_pulse, our AcquisitionMode
-├── device.py        QuantumDevice, ExtendedTransmon, ExtendedCompositeSquareEdge, Measure_RO1/3state, configure_device, save_serial_device
-├── compile.py       compile_schedule(schedule, device) -> CompiledSchedule
-└── execute.py       Hardware (Cluster, InstrumentCoordinator), run_schedule(hardware, compiled) -> xr.Dataset
+├── __init__.py          re-exports, __all__ as strings: the scheduler's Schedule, ClockResource, gates, pulses, BinMode, and ours below
+├── device.py            QuantumDevice, configure_device, save_serial_device, close_device_resources
+├── transmon.py          ExtendedTransmon
+├── edge.py              ExtendedCompositeSquareEdge
+├── gates.py             Measure_RO1, Measure_RO_3state_Opt, and the transmon's R12, Spec and clock channels
+├── pulse_factories.py   composite_soft_square_pulse
+├── compile.py           compile_schedule(schedule, device, name) -> CompiledSchedule
+├── execute.py           run_schedule(coordinator, compiled, timeout) -> xr.Dataset
+├── hardware.py          Hardware (Cluster, InstrumentCoordinator, SPI rack), set_output_attenuations
+└── spi.py               SpiDAC
 ```
 
 1. **Move the device types.** `utils/types/extended_*.py` and `lib/utils/device.py` move to `backend/device.py`. Everything outside `backend/` imports from there.
@@ -379,6 +384,13 @@ tergite_tuner/backend/
    - It is a class, as it owns the Cluster connection, the instrument coordinator and the SPI rack. The entry point creates it and passes it to the node.
    - `set_output_attenuations` stays a function of `(cluster, connectivity, attenuations)`.
    - The dummy Cluster's modules come from `cluster_config.hardware_description`, not from a hard-coded 15 QCM_RF + 2 QRM_RF (`tuner.py:104`).
+
+**Built.** The device files moved whole rather than merging into one `device.py`, which keeps their history and headers and each file under pylint's 1,000 lines; the scheduler's operations are re-exported from `__init__.py` alone, since an `operations.py` repeating the list tripped pylint's duplicate-code check. No package code outside `backend/` imports quantify-scheduler or qblox-instruments; the style guide now confines `qblox_instruments` there too, and keeps `backend/` from importing `lib`, `tuner` and `export`. Two tests still import the scheduler. The shared schedule building blocks live in `lib/utils/schedules.py`, as they build our measurements from `backend`'s operations:
+- `get_multiplexed_schedule` carries 8 of the 10 schedules: RO amplitude and RO frequency optimization have another shape (shots in a loop; operations in a different order from their acquisition indices).
+- `get_drive_clock`, `get_measure_operation`, `prepare_state` and `add_12_clocks` carry the state dispatch of 7 measurements.
+- `add_cz_clock`, `get_cz_clock_frequency`, `add_pair_measurement` and `get_repeated_schedule` carry the 5 CZ measurements; `DOWNCONVERT_FREQUENCY` was defined in four places.
+
+The compiled-program goldens did not move. Two kinds of variation would have moved them, so they stay, as step 9.12 and 9.13. Step 5 took the package from 26,457 to 26,280 lines of Python, tests included: the nodes lost 416, and `lib/utils/schedules.py`, which replaces them, has 168.
 
 ## Step 6: a node is data
 
@@ -529,6 +541,8 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 9. **Qubit 01 spectroscopy's waveform memory** (step 2.1): on the testbed, check the spectroscopy duration the real node config uses, then switch to `long_square_pulse` at or below 6 µs, or sweep fewer amplitudes, and remove its `xfail`.
 10. ~~The CZ chevron analysis raised on data it could not fit~~: its `IndexError` came from a dead `np.linspace` over the working frequencies, removed in step 4.3.
 11. **The T2 and two-qubit RB analyses fail their QOI** on data they cannot fit, instead of raising: on some draws of random IQ points each raised `ZeroDivisionError` (step 3.5). A test with such data first.
+12. **One reset alignment.** Punchout, Motzoi and Ramsey align each qubit's reset to the end of the shared reset (`qubit_reset_ref_pt_new="end"`), the other five multiplexed schedules to its start, and Motzoi's shared reset lasts 4 ns where the others last the qubits' reset time. Each qubit gets at least one full reset before its sweep either way. Pick one, drop the two arguments from `get_multiplexed_schedule`, and update the three schedules' goldens.
+13. **Resonator spectroscopy prepares |2> without the ef motzoi**: its ef π pulse has `D_amp=0`, where `prepare_state`, used by both RO optimizations, uses `r12.ef_motzoi()`. Check on the testbed which is right, then use `prepare_state` there too.
 
 ## Step 10: tests in the right place
 
