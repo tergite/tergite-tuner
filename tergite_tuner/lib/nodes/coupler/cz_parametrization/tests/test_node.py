@@ -25,22 +25,32 @@ COUPLER = "q14_q15"
 
 
 @pytest.fixture
-def coupler_session(redis_connection, session_context):
-    redis_connection.hset(f"couplers:{COUPLER}", "initial_parking_current", "100e-6")
-    redis_connection.hset(f"couplers:{COUPLER}", "cz_phase_path", "via_20")
-    redis_connection.hset(f"couplers:{COUPLER}", "control_qubit", "q15")
-    redis_connection.hset(f"couplers:{COUPLER}", "target_qubit", "q14")
-    redis_connection.hset("transmons:q14", "clock_freqs:f01", "4.2e6")
-    redis_connection.hset("transmons:q14", "clock_freqs:f12", "4.0e6")
-    redis_connection.hset("transmons:q15", "clock_freqs:f01", "5.2e6")
-    redis_connection.hset("transmons:q15", "clock_freqs:f12", "5.0e6")
+def coupler_session(session_context):
+    session_context.state.load(
+        {
+            "couplers": {
+                COUPLER: {
+                    "initial_parking_current": 100e-6,
+                    "cz_phase_path": "via_20",
+                    "control_qubit": "q15",
+                    "target_qubit": "q14",
+                }
+            },
+            "transmons": {
+                "q14": {"clock_freqs:f01": 4.2e6, "clock_freqs:f12": 4.0e6},
+                "q15": {"clock_freqs:f01": 5.2e6, "clock_freqs:f12": 5.0e6},
+            },
+        }
+    )
     return session_context.model_copy(
         update={"couplers": [COUPLER], "user_samplespace": {}}
     )
 
 
-def test_a_missing_parking_current_raises(redis_connection, coupler_session):
-    redis_connection.hdel(f"couplers:{COUPLER}", "initial_parking_current")
+def test_a_missing_parking_current_raises(coupler_session):
+    coupler_session.state.load(
+        {"couplers": {COUPLER: {"initial_parking_current": None}}}
+    )
 
     with pytest.raises(TypeError):
         get_external_sweeps(SPEC, coupler_session)

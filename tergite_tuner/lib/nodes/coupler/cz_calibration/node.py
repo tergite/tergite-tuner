@@ -17,7 +17,7 @@
 
 import ast
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -60,10 +60,10 @@ def get_working_points(coupler: str, session: "SessionContext") -> np.ndarray:
             FIXED_DURATION_POINTS,
         )
         return np.array(list(zip(frequencies, [duration] * FIXED_DURATION_POINTS)))
-    frequencies = ast.literal_eval(
+    frequencies = _parse_list(
         get_coupler_value(coupler, "cz_working_frequencies", session)
     )
-    durations_in_ns = ast.literal_eval(
+    durations_in_ns = _parse_list(
         get_coupler_value(coupler, "cz_working_durations_in_ns", session)
     )
     return np.array(list(zip(frequencies, np.array(durations_in_ns) * 1e-9)))
@@ -98,3 +98,8 @@ CZ_CALIBRATION_SPECS = {
         save_details=save_coupler_figures,
     )
 }
+
+
+def _parse_list(value: Any) -> Any:
+    """A list as stored, or as written in a string by an earlier store."""
+    return ast.literal_eval(value) if isinstance(value, str) else value

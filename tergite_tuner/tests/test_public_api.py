@@ -29,7 +29,7 @@ from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.enums import MeasurementMode
 
 REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
@@ -51,13 +51,11 @@ def _work_in_tmp_path(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
 
-def test_tune_device_calibrates_up_to_the_target_node(
-    redis_connection, session_context, tmp_path
-):
+def test_tune_device_calibrates_up_to_the_target_node(session_context, tmp_path):
     session = _get_dummy_session(
         session_context, tmp_path, target_node=NodeEnum.RESONATOR_SPECTROSCOPY
     )
-    with loaded_redis(redis_connection, REDIS_VALUES):
+    with loaded_state(session, REDIS_VALUES):
         ExtendedTransmon.close_all()
         returned_session, results = tune_device(session=session, refresh_session=False)
 
@@ -66,9 +64,9 @@ def test_tune_device_calibrates_up_to_the_target_node(
     assert list(tmp_path.glob("*-run/dataset_resonator_spectroscopy.hdf5"))
 
 
-def test_run_node_runs_only_that_node(redis_connection, session_context, tmp_path):
+def test_run_node_runs_only_that_node(session_context, tmp_path):
     session = _get_dummy_session(session_context, tmp_path)
-    with loaded_redis(redis_connection, REDIS_VALUES):
+    with loaded_state(session, REDIS_VALUES):
         ExtendedTransmon.close_all()
         _, results = run_node(
             NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
@@ -80,7 +78,7 @@ def test_run_node_runs_only_that_node(redis_connection, session_context, tmp_pat
     ]
 
 
-def test_run_node_uses_a_custom_node_spec(redis_connection, session_context, tmp_path):
+def test_run_node_uses_a_custom_node_spec(session_context, tmp_path):
     analysed_qubits = []
     spec = DEFAULT_NODE_SPECS[NodeEnum.RESONATOR_SPECTROSCOPY]
 
@@ -94,7 +92,7 @@ def test_run_node_uses_a_custom_node_spec(redis_connection, session_context, tmp
         tmp_path,
         node_specs={NodeEnum.RESONATOR_SPECTROSCOPY: custom_spec},
     )
-    with loaded_redis(redis_connection, REDIS_VALUES):
+    with loaded_state(session, REDIS_VALUES):
         ExtendedTransmon.close_all()
         run_node(
             NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
@@ -103,19 +101,17 @@ def test_run_node_uses_a_custom_node_spec(redis_connection, session_context, tmp
     assert analysed_qubits == sorted(session.qubits)
 
 
-def test_reanalyse_analyses_a_recorded_dataset(
-    redis_connection, session_context, tmp_path
-):
+def test_reanalyse_analyses_a_recorded_dataset(session_context, tmp_path):
     shutil.copy(STANDARD_RUN_RESONATOR, tmp_path)
     session = _get_dummy_session(
         session_context, tmp_path, target_node=NodeEnum.RESONATOR_SPECTROSCOPY
     )
-    with loaded_redis(redis_connection, REDIS_VALUES):
+    with loaded_state(session, REDIS_VALUES):
         ExtendedTransmon.close_all()
         returned_session, results = reanalyse(session=session, refresh_session=False)
 
         statuses = [
-            redis_connection.hget(f"cs:{q}", "resonator_spectroscopy")
+            session.state.read("cs", q, "resonator_spectroscopy")
             for q in ("q06", "q07")
         ]
 
@@ -137,11 +133,9 @@ def _get_dummy_session(session: SessionContext, data_dir, **updates) -> SessionC
     )
 
 
-def test_run_node_logs_how_long_each_phase_took(
-    redis_connection, session_context, tmp_path, caplog
-):
+def test_run_node_logs_how_long_each_phase_took(session_context, tmp_path, caplog):
     session = _get_dummy_session(session_context, tmp_path)
-    with loaded_redis(redis_connection, REDIS_VALUES), caplog.at_level("INFO"):
+    with loaded_state(session, REDIS_VALUES), caplog.at_level("INFO"):
         ExtendedTransmon.close_all()
         run_node(
             NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False

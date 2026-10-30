@@ -34,7 +34,7 @@ def test_the_correction_is_the_detuning_the_fringes_vanish_at(session_context):
     qubit = session.qubits[0]
     s21: xr.DataArray = dataset[f"y{qubit}"]
     s21.attrs["qubit"] = qubit
-    session.redis.hset(f"transmons:{qubit}", "clock_freqs:f01", 4.5e9)
+    session.state.load({"transmons": {qubit: {"clock_freqs:f01": 4.5e9}}})
 
     fits = analyse_ramsey(s21, session, frequency_field="clock_freqs:f01")
 

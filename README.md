@@ -31,13 +31,6 @@ If you are reading this on GitHub, then you are looking at a mirror.
 ### Requirements
 
 - Python ≥ 3.13 (a fresh `conda` or `venv` environment is fine).
-- A reachable redis server. The default URL is
-  `redis://127.0.0.1:6379/0`; override via the `REDIS_URL` env var or
-  the `redis_url` keyword argument when calling the public API.
-
-```shell
-redis-server
-```
 
 ### Installation
 
@@ -47,7 +40,7 @@ pip install tergite-tuner
 
 Copy the [example environment file](./.example.env) and edit it as needed.  
 
-The `.env` file controls the cluster IP, redis URL, target node,
+The `.env` file controls the cluster IP, target node,
 qubits/couplers under calibration, and so on.   
 
 Every field on `SessionContext` can be set in the `.env` or as an environment variable
@@ -135,7 +128,7 @@ _, results = tune_device(
 
 #### Customization of Nodes
 
-A node is a `NodeSpec`: its schedule, sweeps, analysis and the Redis fields it stores.
+A node is a `NodeSpec`: its schedule, sweeps, analysis and the device state's fields it sets.
 You can pass in your own specs, to replace a default node or add one, with `node_specs`.
 
 You can also change the order in which the nodes run or even choose to skip some of them
@@ -215,10 +208,9 @@ in spec.
 
 #### Recalibrate the device
 
-First ensure your `device_config.toml` has the latest device values or if you have already run the tuneup using the 
-same redis database, the old values should still be there so have a `device_config.toml` without initial values.  
-Note that this may mean you have two `device_config.toml`'s, one for the first run and the other for subsequent runs.  
-Do the same with `node_config.toml`.  
+A session's device state starts from `device_config.toml`, and nothing carries over from an earlier run
+unless you pass it in: give an earlier calibration's results, as `tune_device` returns them, as `calibration`.
+A session keeps its state across the calls you pass it to.
 
 ```python
 from tergite_tuner import tune_device, NodeEnum
@@ -291,18 +283,16 @@ _, results = reanalyse(
 #### Generate a BCC calibration seed
 
 ```python
-from tergite_tuner import generate_calib_seed_file, SessionContext
+from tergite_tuner import generate_calib_seed_file, tune_device
 
-# Reads qubits / couplers / redis_url from the .env file. 
-# Creates the file as 'calibration.seed.toml' by default
-generate_calib_seed_file(env_file=".env")
+# From a session a run calibrated, as 'calibration.seed.toml' by default
+session, _ = tune_device(env_file=".env")
+generate_calib_seed_file(session=session)
 
-# Or override individual SessionContext fields inline:
-generate_calib_seed_file(couplers=["q12_q13", "q56_q67"], qubits=["q12"], path="/path/to/destination/toml/file")
-
-# Or pass in a session from somewhere else:
-session = SessionContext()
-generate_calib_seed_file(session)
+# Or from earlier results, with the qubits and couplers from the .env file
+generate_calib_seed_file(
+    env_file=".env", calibration=results, path="/path/to/destination/toml/file"
+)
 ```
 
 ### Samples

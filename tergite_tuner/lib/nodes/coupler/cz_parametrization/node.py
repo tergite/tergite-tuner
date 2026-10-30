@@ -84,7 +84,7 @@ def get_dummy_s21(
     is_first = any(coupler.split("_")[0] == qubit for coupler in session.couplers)
     probabilities = [peaks, 1 - peaks, zeros] if is_first else [zeros, 1 - peaks, peaks]
     return np.ravel(
-        generate_iq_shots(np.array(probabilities), qubit, LOOPS, session.redis)
+        generate_iq_shots(np.array(probabilities), qubit, LOOPS, session.state)
     )
 
 

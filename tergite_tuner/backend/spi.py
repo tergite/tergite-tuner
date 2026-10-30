@@ -130,22 +130,19 @@ class SpiDAC:
         return
 
     def set_initial_parking_currents(self, couplers: list[str]) -> None:
-        redis_connection = self.session.redis
         parking_currents = {}
         for coupler in couplers:
-            key = f"couplers:{coupler}"
-            if not redis_connection.hexists(key, "initial_parking_current"):
+            parking_current = self.session.state.read(
+                "couplers", coupler, "initial_parking_current"
+            )
+            if parking_current is None:
                 message = (
-                    "initial parking current is not present on redis."
-                    "If you intend to operate at zero DC current, set a zero value at your device_config.toml"
+                    f"{coupler} has no initial parking current. If you intend to operate "
+                    "at zero DC current, set a zero value at your device_config.toml"
                 )
                 logger.warning(message)
                 raise ValueError(message)
-            parking_current = float(
-                redis_connection.hget(key, "initial_parking_current")
-            )
-
-            parking_currents[coupler] = parking_current
+            parking_currents[coupler] = float(parking_current)
 
         self.set_dac_current(parking_currents)
         return

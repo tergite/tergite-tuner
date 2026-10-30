@@ -25,7 +25,6 @@ boolean: tergite_tuner/tuner.py::run_node(refresh_session)
 boolean: tergite_tuner/tuner.py::tune_device(keep_data_files)
 boolean: tergite_tuner/tuner.py::tune_device(refresh_session)
 boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
-confined-import: tergite_tuner/config/session.py::import redis
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.nodes
 license-header: tergite_tuner/config/__init__.py
 license-header: tergite_tuner/config/tests/__init__.py
@@ -87,7 +86,6 @@ license-header: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/
 license-header: tergite_tuner/lib/utils/__init__.py
 license-header: tergite_tuner/lib/utils/analysis_models.py
 license-header: tergite_tuner/lib/utils/fitting_models.py
-license-header: tergite_tuner/storage/redis/__init__.py
 license-header: tergite_tuner/tests/__init__.py
 license-header: tergite_tuner/tests/utils/__init__.py
 license-header: tergite_tuner/utils/__init__.py
@@ -98,10 +96,7 @@ private-helper-position: tergite_tuner/export.py::CalibrationResults
 private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
 private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_target_node
-type-hints: tergite_tuner/config/session.py::SessionContext.refresh_redis_fields_log
-type-hints: tergite_tuner/config/session.py::SessionContext.update_redis_fields_log
 type-hints: tergite_tuner/export.py::generate_calib_seed_file
-type-hints: tergite_tuner/export.py::read_result.query_func
 type-hints: tergite_tuner/lib/base/measurement.py::BaseMeasurement.__init__
 type-hints: tergite_tuner/lib/base/utils/figure_utils.py::create_figure_with_top_band
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::ExpDecayModel.__init__
@@ -197,10 +192,8 @@ type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_01
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_12
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_20
-type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
 type-hints: tergite_tuner/lib/utils/classification_functions.py::calculate_probabilities
-type-hints: tergite_tuner/lib/utils/classification_functions.py::generate_iq_shots
 type-hints: tergite_tuner/backend/device.py::close_device_resources
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.__init__
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.guess
@@ -208,9 +201,6 @@ type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.__init__
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.guess
 type-hints: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
 type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_order.filter_ancestors
-type-hints: tergite_tuner/storage/redis/utils.py::populate_initial_parameters
-type-hints: tergite_tuner/storage/redis/utils.py::populate_node_parameters
-type-hints: tergite_tuner/storage/redis/utils.py::revert_node_parameters
 type-hints: tergite_tuner/tuner.py::NodeManager.inspect_node
 type-hints: tergite_tuner/utils/cliffords.py::RXY
 type-hints: tergite_tuner/utils/cliffords.py::from_physical_decomp_to_PTM

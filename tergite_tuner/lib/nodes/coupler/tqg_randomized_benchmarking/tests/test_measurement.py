@@ -24,12 +24,12 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement imp
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 
-def test_align_cliffords(redis_connection, session_context, node_data_dir):
+def test_align_cliffords(session_context, node_data_dir):
     redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q13", "q14"]
         couplers = ["q13_q14"]
@@ -72,9 +72,9 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
         ]
 
 
-def _get_rb_measurement(redis_connection, session_context, node_data_dir, couplers):
+def _get_rb_measurement(session_context, node_data_dir, couplers):
     redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         ExtendedTransmon.close_all()
         qubits = sorted({q for coupler in couplers for q in coupler.split("_")})
         device = configure_device("cz_rb", qubits, couplers, session_context)
@@ -84,12 +84,10 @@ def _get_rb_measurement(redis_connection, session_context, node_data_dir, couple
 
 
 def test_only_interleaved_modes_interleave_the_cz(
-    redis_connection, session_context, node_data_dir, monkeypatch
+    session_context, node_data_dir, monkeypatch
 ):
     coupler = "q13_q14"
-    measurement = _get_rb_measurement(
-        redis_connection, session_context, node_data_dir, [coupler]
-    )
+    measurement = _get_rb_measurement(session_context, node_data_dir, [coupler])
     interleaved_ids = []
 
     def _record_sequence(*args, interleaved_clifford_idx=None, **kwargs):
@@ -111,13 +109,9 @@ def test_only_interleaved_modes_interleave_the_cz(
     assert interleaved_ids == [4368, 4368, None, None]
 
 
-def test_rb_rejects_more_than_one_coupler(
-    redis_connection, session_context, node_data_dir
-):
+def test_rb_rejects_more_than_one_coupler(session_context, node_data_dir):
     couplers = ["q13_q14", "q15_q16"]
-    measurement = _get_rb_measurement(
-        redis_connection, session_context, node_data_dir, couplers
-    )
+    measurement = _get_rb_measurement(session_context, node_data_dir, couplers)
 
     with pytest.raises(ValueError, match="one coupler"):
         measurement.ro_shot(

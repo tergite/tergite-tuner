@@ -35,7 +35,7 @@ def test_instantiate_calibration_config(session_context):
     assert session_context.target_node_name == "ro_amplitude_two_state_optimization"
 
 
-def test_instantiate_calibration_supervisor(session_context, redis_connection):
+def test_instantiate_calibration_supervisor(session_context):
     node_manager = NodeManager(None, session=session_context)
 
     topo_order = node_manager.topo_order(session_context.target_node)

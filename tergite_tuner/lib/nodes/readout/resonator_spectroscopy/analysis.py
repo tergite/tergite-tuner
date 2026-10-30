@@ -105,8 +105,8 @@ def plot_resonator(
         label = f"f = {frequency:.6E}" if state == 0 else f"frequency |{state}>"
         axis.axvline(frequency, c=STATE_COLOURS[state], ls="solid", label=label)
         for lower_state in reversed(range(state)):
-            lower_frequency = session.redis.hget(
-                f"transmons:{s21.attrs['qubit']}", READOUT_FIELDS[lower_state]
+            lower_frequency = session.state.read(
+                "transmons", s21.attrs["qubit"], READOUT_FIELDS[lower_state]
             )
             if lower_frequency is None:
                 continue

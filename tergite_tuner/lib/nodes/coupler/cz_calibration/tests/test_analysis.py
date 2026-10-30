@@ -22,14 +22,14 @@ from tergite_tuner.lib.nodes.coupler.cz_calibration.analysis import (
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 _REDIS_DATA_FILENAME = "redis-coupler-run-2026-02.json"
 
 
-def test_cz_calibration_success(redis_connection, session_context, node_data_dir):
+def test_cz_calibration_success(session_context, node_data_dir):
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         file_path = node_data_dir / "dataset_cz_calibration.hdf5"
         with xr.open_dataset(file_path) as dataset:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
@@ -50,23 +50,21 @@ def test_cz_calibration_success(redis_connection, session_context, node_data_dir
             assert pytest.approx(cz_phase) == 181.450086
 
 
-def test_decode_multi_index(redis_connection, node_data_dir):
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
-        dataset = load_dataset("cz_calibration", node_data_dir)
+def test_decode_multi_index(node_data_dir):
+    dataset = load_dataset("cz_calibration", node_data_dir)
 
-        assert "l1" in dataset.working_points.coords
-        assert "l2" in dataset.working_points.coords
-        assert "working_points" in dataset.working_points.coords
-        assert dataset.working_points.size == 11
+    assert "l1" in dataset.working_points.coords
+    assert "l2" in dataset.working_points.coords
+    assert "working_points" in dataset.working_points.coords
+    assert dataset.working_points.size == 11
 
 
-def test_plotting(redis_connection, session_context, node_data_dir):
+def test_plotting(session_context, node_data_dir):
     """
     Test that the plotter produces a figure with the right number of axes
     """
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         file_path = node_data_dir / "dataset_cz_calibration.hdf5"
         with xr.open_dataset(file_path) as dataset:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")

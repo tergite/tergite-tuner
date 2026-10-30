@@ -19,7 +19,7 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.goldens import get_dataset_builder
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 _REDIS_FILE = get_fixture_path("redis", "standard_redis_mock.json")
 
@@ -36,11 +36,11 @@ def test_save_dataset(tmp_path, session_context):
         results_file.unlink(missing_ok=True)
 
 
-def test_save_dataset_with_working_points(tmp_path, redis_connection, session_context):
+def test_save_dataset_with_working_points(tmp_path, session_context):
     """
     for nodes like cz calibration where two coords are packed into a Multindex object
     """
-    with loaded_redis(redis_connection, _REDIS_FILE):
+    with loaded_state(session_context, _REDIS_FILE):
         build_dataset = get_dataset_builder("cz_calibration", session_context)
         result_dataset_1 = build_dataset()
         multi_index = pandas.MultiIndex.from_tuples([(7e8, 200e-9)], names=["l1", "l2"])

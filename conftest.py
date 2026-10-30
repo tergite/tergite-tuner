@@ -19,8 +19,6 @@ built wheel.
 
 The fixtures below build everything a calibration run needs:
 
-* a fakeredis-backed ``redis_connection`` that stands in for a live
-  Redis server,
 * a :class:`Configuration` loaded from the bundled
   ``default_device_under_test`` template, and
 * a :class:`SessionContext` that bundles the two together and points
@@ -29,16 +27,12 @@ The fixtures below build everything a calibration run needs:
 
 from pathlib import Path
 
-import fakeredis
 import numpy as np
 import pytest
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.tests.utils.fixtures import get_fixture_path, load_fixture
-from tergite_tuner.tests.utils.redis import (
-    dump_redis,
-    load_redis,
-)
+from tergite_tuner.tests.utils.state import get_state
 from tergite_tuner.utils.types.enums import MeasurementMode
 
 _FIXTURE_CONFIGS_DIR = Path(get_fixture_path("configs"))
@@ -46,29 +40,11 @@ _PROJECT_ROOT = Path(__file__).parent
 _SINGLE_RUN_REDIS_JSON = load_fixture("redis/single-run-redis-data.json")
 
 
-@pytest.fixture(autouse=True)
-def redis_connection(monkeypatch):
-    """A fakeredis-backed connection used by every test."""
-    fake_redis = fakeredis.FakeRedis(decode_responses=True)
-
-    # mock Redis calls to return this connection. ``from_url`` must be
-    # patched first because once ``redis.Redis`` is replaced with a
-    # lambda, attribute lookup for ``from_url`` would fail.
-    monkeypatch.setattr("redis.Redis.from_url", lambda *args, **kwargs: fake_redis)
-    monkeypatch.setattr("redis.Redis", lambda *args, **kwargs: fake_redis)
-
-    yield fake_redis
-    fake_redis.flushall()
-
-
 @pytest.fixture
-def session_context(redis_connection) -> SessionContext:
+def session_context() -> SessionContext:
     """A :class:`SessionContext` for the bundled fixture device.
 
-    Function-scoped because it depends on the (function-scoped)
-    ``redis_connection`` fixture; this also keeps the lazy
-    ``session.redis`` cache from leaking a stale fakeredis client
-    across tests.
+    Function-scoped, so each test gets its own device state.
 
     The ``config_dir`` is pointed at the bundled fixture device so
     ``session.config`` loads the test configuration package.
@@ -114,13 +90,7 @@ def node_data_dir(request, tmp_path):
 
 
 @pytest.fixture
-def seeded_redis(redis_connection):
-    """Redis connection with seed data"""
-    redis_backup = dump_redis(redis_connection)
-    redis_connection.flushall()
-    load_redis(_SINGLE_RUN_REDIS_JSON, redis_connection)
-    try:
-        yield redis_connection
-    finally:
-        redis_connection.flushall()
-        load_redis(redis_backup, redis_connection)
+def seeded_state(session_context):
+    """The session's state as one recorded run left it."""
+    session_context.state = get_state(_SINGLE_RUN_REDIS_JSON)
+    return session_context.state

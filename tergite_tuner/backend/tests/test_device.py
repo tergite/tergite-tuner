@@ -25,13 +25,13 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 
 
-def test_create_serial_device(redis_connection, session_context):
-    with loaded_redis(redis_connection, redis_mock):
+def test_create_serial_device(session_context):
+    with loaded_state(session_context, redis_mock):
         # ensure no other transmon objects are instantiated
         # this is because some other test doesn't close the device properly
         ExtendedTransmon.close_all()
@@ -59,8 +59,8 @@ def test_create_serial_device(redis_connection, session_context):
         close_device_resources(test_device)
 
 
-def test_save_serial_device(tmp_path, redis_connection, session_context):
-    with loaded_redis(redis_connection, redis_mock):
+def test_save_serial_device(tmp_path, session_context):
+    with loaded_state(session_context, redis_mock):
         # ensure no other transmon objects are instantiated
         # this is because some other test doesn't close the device properly
         ExtendedTransmon.close_all()

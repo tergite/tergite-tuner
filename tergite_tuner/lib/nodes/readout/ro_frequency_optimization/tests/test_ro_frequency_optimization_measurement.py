@@ -22,7 +22,8 @@ from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node import (
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
-def test_three_states_are_prepared_with_the_ef_pulse(seeded_redis, session_context):
+@pytest.mark.usefixtures("seeded_state")
+def test_three_states_are_prepared_with_the_ef_pulse(session_context):
     ExtendedTransmon.close_all()
     qubits = ["q13", "q14", "q15"]
     device = configure_device("ro", qubits, ["q13_q14"], session_context)

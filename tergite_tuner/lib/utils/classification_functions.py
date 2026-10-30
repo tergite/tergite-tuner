@@ -11,18 +11,21 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray as xr
 
+if TYPE_CHECKING:
+    from tergite_tuner.state import DeviceState
 
-def assign_state(iq_values: xr.DataArray, redis_connection) -> xr.DataArray:
-    qubit = iq_values.attrs["qubit"]
-    redis_key = f"transmons:{qubit}"
-    centroid_i = float(redis_connection.hget(f"{redis_key}", "centroid_I"))
-    centroid_q = float(redis_connection.hget(f"{redis_key}", "centroid_Q"))
-    omega_01 = float(redis_connection.hget(f"{redis_key}", "omega_01"))
-    omega_12 = float(redis_connection.hget(f"{redis_key}", "omega_12"))
-    omega_20 = float(redis_connection.hget(f"{redis_key}", "omega_20"))
+DISCRIMINATOR_FIELDS = ("centroid_I", "centroid_Q", "omega_01", "omega_12", "omega_20")
+
+
+def assign_state(iq_values: xr.DataArray, state: "DeviceState") -> xr.DataArray:
+    centroid_i, centroid_q, omega_01, omega_12, omega_20 = _get_discriminator(
+        iq_values.attrs["qubit"], state
+    )
     state_boundaries = {"01": omega_01, "12": omega_12, "20": omega_20}
     sorted_state_boundaries_dict = {
         k: v for k, v in sorted(state_boundaries.items(), key=lambda item: item[1])
@@ -57,10 +60,10 @@ def assign_state(iq_values: xr.DataArray, redis_connection) -> xr.DataArray:
     return assigned_states
 
 
-def calculate_probabilities(iq_data_var: xr.DataArray, redis_connection):
+def calculate_probabilities(iq_data_var: xr.DataArray, state: "DeviceState"):
     if "loops" not in iq_data_var.coords:
         raise ValueError("Dataarray does not contain loop coordinate")
-    states_array = assign_state(iq_data_var, redis_connection)
+    states_array = assign_state(iq_data_var, state)
     qubit = iq_data_var.attrs["qubit"]
     loops_coord = iq_data_var.loops.name
     number_of_loops = iq_data_var.loops.size
@@ -91,7 +94,7 @@ def calculate_probabilities(iq_data_var: xr.DataArray, redis_connection):
 
 
 def generate_iq_shots(
-    probabilities: np.ndarray, qubit: str, loops: int, redis_connection
+    probabilities: np.ndarray, qubit: str, loops: int, state: "DeviceState"
 ) -> np.ndarray:
     """
     given the probabilities array, generate an array of IQ points
@@ -100,12 +103,9 @@ def generate_iq_shots(
     calculate_probabilities and is used to create dummy datasets.
     Example of probabilities array: [0.2, 0.3, 0.5]
     """
-    redis_key = f"transmons:{qubit}"
-    centroid_i = float(redis_connection.hget(f"{redis_key}", "centroid_I"))
-    centroid_q = float(redis_connection.hget(f"{redis_key}", "centroid_Q"))
-    omega_01 = float(redis_connection.hget(f"{redis_key}", "omega_01"))
-    omega_12 = float(redis_connection.hget(f"{redis_key}", "omega_12"))
-    omega_20 = float(redis_connection.hget(f"{redis_key}", "omega_20"))
+    centroid_i, centroid_q, omega_01, omega_12, omega_20 = _get_discriminator(
+        qubit, state
+    )
 
     state_boundaries = {"01": omega_01, "12": omega_12, "20": omega_20}
     sorted_state_boundaries_dict = {
@@ -161,3 +161,10 @@ def generate_iq_shots(
     iq_points = complex_iq + centroid_i + 1j * centroid_q
 
     return iq_points
+
+
+def _get_discriminator(qubit: str, state: "DeviceState") -> tuple[float, ...]:
+    """The qubit's three-state discriminator: its centroid's I and Q, and its boundaries' angles."""
+    return tuple(
+        float(state.read("transmons", qubit, field)) for field in DISCRIMINATOR_FIELDS
+    )

@@ -24,7 +24,8 @@ environment, or with :meth:`SessionContext.from_env`, which also reads a
 ``.env`` file.
 """
 
-from collections.abc import Iterable
+import copy
+import json
 from datetime import datetime
 from functools import cached_property
 from ipaddress import IPv4Address
@@ -33,7 +34,6 @@ from pathlib import Path
 from typing import (
     Annotated,
     Any,
-    Dict,
     List,
     Mapping,
     Optional,
@@ -44,16 +44,15 @@ from typing import (
 )
 
 from pydantic import (
+    BaseModel,
     Field,
     PrivateAttr,
-    RedisDsn,
     ValidationInfo,
     computed_field,
     field_validator,
     model_validator,
 )
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
-from redis import Redis
 
 from tergite_tuner.backend import QbloxHardwareCompilationConfig
 from tergite_tuner.config.types import (
@@ -69,8 +68,7 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_DAG_EDGES,
     NodeSpec,
 )
-from tergite_tuner.storage import Store
-from tergite_tuner.storage.redis import RedisStore
+from tergite_tuner.state import DeviceState
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -106,7 +104,7 @@ class SessionOptions(TypedDict, total=False):
     stdout_log_level: int
     file_log_level: int
     spi_serial_port: str
-    redis_url: RedisDsn
+    calibration: dict | None | Path | str
     is_recalibration: bool
     ignore_spec: bool
     save_plot: bool
@@ -131,10 +129,6 @@ class SessionContext(BaseSettings):
     and lists as comma-separated values.
 
     Attributes:
-        _redis: an active Redis client used by
-            the calibration. ``None`` until injected at the start of a
-            run. Carried on the session so it can flow alongside the
-            rest of the run state.
         cluster_ip: IP address of the Qblox cluster being used.
         target_node: the calibration node on which to stop. Stored as a
             :class:`NodeEnum`; the lower-case string form is exposed via
@@ -156,8 +150,9 @@ class SessionContext(BaseSettings):
         file_log_level: file logger level. Defaults to ``10`` so that
             all debug information is captured in log files.
         spi_serial_port: serial port on which the SPI rack is connected.
-        redis_url: the URL to the redis server that is to be used effectively
-            as RAM for this calibration.
+        calibration: the results of an earlier calibration, which the device state
+            starts from over the device config: as ``read_result`` returns them, or the
+            ``results.json`` a run wrote.
         id: stable identifier of this session, derived from the
             timestamp.
         cluster_config: config that QBlox needs to compile schedules on the
@@ -213,7 +208,6 @@ class SessionContext(BaseSettings):
     stdout_log_level: int = 25
     file_log_level: int = 10
     spi_serial_port: str = "/dev/ttyACM0"
-    redis_url: RedisDsn = "redis://127.0.0.1:6379/0"
     is_recalibration: bool = True
     ignore_spec: bool = True
     save_plot: bool = False
@@ -230,11 +224,10 @@ class SessionContext(BaseSettings):
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
     fixed_duration_couplers: Annotated[Tuple[str, ...], NoDecode] = ()
     reverse_phase_qubits: Annotated[Tuple[str, ...], NoDecode] = ()
-    _redis_fields_touched: Dict[str, int] = {}
+    calibration: Annotated[dict | None, NoDecode] = None
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
-    _redis: Optional[Redis] = PrivateAttr(default=None)
-    _redis_store: Store | None = PrivateAttr(default=None)
+    _state: DeviceState | None = PrivateAttr(default=None)
 
     @field_validator(
         "device_config", "node_config", "spi_config", "cluster_config", mode="before"
@@ -259,6 +252,16 @@ class SessionContext(BaseSettings):
         """Splits a comma-separated string, as the environment gives lists."""
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
+        return value
+
+    @field_validator("calibration", mode="before")
+    @classmethod
+    def load_calibration(cls, value: Any) -> Any:
+        """Reads results given as a JSON file or as ``CalibrationResults``."""
+        if isinstance(value, (str, Path)):
+            return json.loads(Path(value).read_text())
+        if isinstance(value, BaseModel):
+            return value.model_dump(exclude_none=True)
         return value
 
     @field_validator("target_node", mode="before")
@@ -296,34 +299,36 @@ class SessionContext(BaseSettings):
         return self.target_node.value
 
     @property
-    def redis(self) -> Redis:
-        """The redis connection where data is being saved"""
-        if self._redis is None:
-            self._redis = Redis.from_url(str(self.redis_url), decode_responses=True)
-        return self._redis
+    def state(self) -> DeviceState:
+        """The run's device state: the device config's qubits and couplers, with ``calibration`` over them."""
+        if self._state is None:
+            config = self.device_config
+            self._state = DeviceState(
+                {
+                    "transmons": {
+                        qubit: config.qubits[qubit]
+                        for qubit in self.qubits
+                        if qubit in config.qubits
+                    },
+                    "couplers": {
+                        coupler: config.couplers[coupler]
+                        for coupler in self.couplers
+                        if coupler in config.couplers
+                    },
+                }
+            )
+            self._state.load(self.calibration or {})
+        return self._state
 
-    @property
-    def redis_store(self) -> Store:
-        """The redis store instance that handles data persistence"""
-        if self._redis_store is None:
-            self._redis_store = RedisStore(self.redis)
-        return self._redis_store
+    @state.setter
+    def state(self, state: DeviceState) -> None:
+        self._state = state
 
-    @computed_field
-    @property
-    def redis_fields_touched(self) -> Dict[str, int]:
-        """The redis fields that might have been touched by the calibration"""
-        return self._redis_fields_touched
-
-    def update_redis_fields_log(self, fields: Iterable[str]):
-        """Counts ``fields`` as touched in this session."""
-        for field in fields:
-            old_count = self._redis_fields_touched.setdefault(field, 0)
-            self._redis_fields_touched[field] = old_count + 1
-
-    def refresh_redis_fields_log(self):
-        """Refreshes the log that tracks the fields that have been touched in the session"""
-        self._redis_fields_touched.clear()
+    def __copy__(self) -> Self:
+        session = super().__copy__()
+        # a copy gets its own state, as model_copy shares private attributes
+        session._state = copy.deepcopy(self._state)
+        return session
 
     @classmethod
     def from_env(

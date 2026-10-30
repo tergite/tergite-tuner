@@ -52,10 +52,10 @@ class CZParametrizationAnalysis(CouplerAnalysis):
                 self.dc_currents = dataset[self.dc_currents_coord].values
 
         control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.redis
+            self.control_qubit_data_var, self.session.state
         )
         target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.redis
+            self.target_qubit_data_var, self.session.state
         )
 
         self.probabilities = xr.concat(

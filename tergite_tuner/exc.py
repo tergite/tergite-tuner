@@ -17,7 +17,3 @@ class TunerError(Exception):
 
 class ClusterUnreachableError(TunerError):
     """The Qblox cluster refused the connection."""
-
-
-class MissingCalibrationStatusError(TunerError, ValueError):
-    """Redis has no calibration status for a node on one of its elements."""

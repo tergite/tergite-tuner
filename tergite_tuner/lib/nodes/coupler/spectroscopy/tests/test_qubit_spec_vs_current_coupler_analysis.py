@@ -23,7 +23,7 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingAnalysis,
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.lib.run import get_redis_record
+from tergite_tuner.lib.run import get_qoi_values
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 
 _RES_COUPLER_QOIS = [
@@ -58,15 +58,16 @@ def test_get_crossings(
 ):
     ds_qu, ds_res = _get_dataset_for_coupler(coupler, node_data_dir)
     q1, q2 = coupler.split("_")
-    session_context.redis.hset(f"couplers:{coupler}", "control_qubit", q1)
-    session_context.redis.hset(f"couplers:{coupler}", "target_qubit", q2)
+    session_context.state.load(
+        {"couplers": {coupler: {"control_qubit": q1, "target_qubit": q2}}}
+    )
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
         get_coupler_dataset(ds_res, coupler, "resonator_spectroscopy_vs_current"),
         session_context,
     )
     qoi = a.analyse()
-    record = get_redis_record({field: field for field in _RES_COUPLER_QOIS}, qoi)
-    session_context.redis_store.save_many(
+    record = get_qoi_values({field: field for field in _RES_COUPLER_QOIS}, qoi)
+    session_context.state.write(
         {
             "couplers": {coupler: record},
             "cs": {coupler: {"resonator_spectroscopy_vs_current": "calibrated"}},
@@ -94,10 +95,10 @@ def test_coupler_plot_is_created(session_context, node_data_dir):
         get_coupler_dataset(ds_res, coupler, "name"), session_context
     )
     qoi = a.analyse()
-    redis_value = get_redis_record({field: field for field in _RES_COUPLER_QOIS}, qoi)
-    session_context.redis_store.save_many(
+    values = get_qoi_values({field: field for field in _RES_COUPLER_QOIS}, qoi)
+    session_context.state.write(
         {
-            "couplers": {coupler: {name: redis_value}},
+            "couplers": {coupler: {name: values}},
             "cs": {coupler: {name: "calibrated"}},
         }
     )

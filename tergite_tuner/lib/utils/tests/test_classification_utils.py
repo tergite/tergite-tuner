@@ -16,15 +16,14 @@ import xarray
 from numpy import exp, pi
 
 from tergite_tuner.lib.utils.classification_functions import assign_state
+from tergite_tuner.state import DeviceState
 
 
-def test_assign_state(redis_connection):
+def test_assign_state():
     qubit = "q06"
-    redis_connection.hset(f"transmons:{qubit}", "centroid_I", "1")
-    redis_connection.hset(f"transmons:{qubit}", "centroid_Q", "0")
-    redis_connection.hset(f"transmons:{qubit}", "omega_01", "330")
-    redis_connection.hset(f"transmons:{qubit}", "omega_12", "180")
-    redis_connection.hset(f"transmons:{qubit}", "omega_20", "90")
+    discriminator = {"centroid_I": 1, "centroid_Q": 0, "omega_01": 330}
+    discriminator |= {"omega_12": 180, "omega_20": 90}
+    state = DeviceState({"transmons": {qubit: discriminator}})
 
     iq_points = np.array(
         [
@@ -37,5 +36,5 @@ def test_assign_state(redis_connection):
     )
     iq_points_array = xarray.DataArray(iq_points).assign_attrs(qubit=qubit)
     assert xarray.DataArray([0, 1, 0, 2, 1]).equals(
-        assign_state(iq_points_array, redis_connection)
+        assign_state(iq_points_array, state)
     )

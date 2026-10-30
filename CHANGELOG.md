@@ -20,11 +20,13 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Replaced `tergite_tuner.tuner.HardwareManager` and the nodes' `lab_instr_coordinator` and `spi_manager` with `tergite_tuner.backend.Hardware`, which a node reaches as `node.hardware`
 - Gave the dummy cluster the modules in the cluster config's `hardware_description`; it had 15 QCM-RF and 2 QRM-RF modules whatever the config said
 - [BREAKING] Defined each node as a `NodeSpec` in `tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, replacing the node classes, `BaseNode`, `QubitNode`, `CouplerNode`, the analysis base classes and `DEFAULT_NODE_CLS_MAP`; custom nodes go in the session's `node_specs`, which replaces `node_cls_map`
-- Raised `MissingCalibrationStatusError`, a `ValueError`, for a node with no calibration status, and skipped the pause between T1 and T2 repetitions on a dummy cluster
+- Skipped the pause between T1 and T2 repetitions on a dummy cluster
 - [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 - [BREAKING] Loaded every config file with `tergite_tuner.config.types.load_config(model, path)`, replacing `from_toml` and `from_json`; `NodeConfig` and `SpiConfig` are read through `.root`, as they no longer index like dicts
 - [BREAKING] Wrote each run's node folders, or a recalibration's files, into a folder of the run's own in `data_dir`, which `keep_data_files=False` deletes; it deleted all of `data_dir`, and `reanalyse` deleted the dataset it re-analysed, so `reanalyse` no longer takes `keep_data_files`
 - [BREAKING] Read the session with pydantic-settings, so an environment variable now wins over the `.env` file, as in Docker, and `SessionContext(...)` reads the environment too; `pydantic-settings` replaces `python-dotenv` as a dependency
+- [BREAKING] Kept the device's values and calibration statuses in the session, which starts from the device config with an earlier run's results, passed as `calibration`, over it; every run wrote the device config over Redis, so only values the config lacked carried over. `redis_url`, `RedisStore` and the `redis` dependency are gone
+- Marked a node `not_calibrated` on an element its analysis failed on, where it kept the element's earlier status
 
 ### Fixed
 

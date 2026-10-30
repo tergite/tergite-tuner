@@ -69,7 +69,7 @@ def clean_environ(monkeypatch):
         "FILE_LOG_LEVEL",
         "CLUSTER_IP",
         "SPI_SERIAL_PORT",
-        "REDIS_URL",
+        "SPI_SERIAL_PORT",
         "DATA_DIR",
         "CONFIG_DIR",
         "TARGET_NODE",
@@ -92,7 +92,6 @@ def test_session_loads_example_env(clean_environ):
     assert session.file_log_level == 10
     assert str(session.cluster_ip) == "192.14.2.1"
     assert session.spi_serial_port == "/dev/ttyACM0"
-    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.cluster_timeout == 222
     assert session.is_recalibration is True
 
@@ -102,7 +101,6 @@ def test_session_uses_documented_defaults_for_commented_vars(clean_environ):
     session = SessionContext.from_env(_EXAMPLE_ENV_PATH)
 
     assert session.cluster_mode == MeasurementMode.real
-    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.data_dir == Path("out")
 
 
@@ -111,44 +109,38 @@ def test_session_constructs_with_no_args(clean_environ):
     session = SessionContext()
 
     assert session.stdout_log_level == 25
-    assert str(session.redis_url) == "redis://127.0.0.1:6379/0"
     assert session.is_recalibration is True
 
 
 def test_session_overrides_optional_vars(tmp_path, clean_environ):
     """Explicit values for the optional commented-out vars take precedence."""
     sample = tmp_path / ".env"
-    sample.write_text(
-        f"CLUSTER_MODE='dummy'\n" f"REDIS_URL='redis://127.0.0.1:6378/4'\n"
-    )
+    sample.write_text("CLUSTER_MODE='dummy'\nSPI_SERIAL_PORT='/dev/ttyUSB4'\n")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6378/4"
+    assert session.spi_serial_port == "/dev/ttyUSB4"
     assert session.cluster_mode == MeasurementMode.dummy
 
 
 def test_session_coerces_string_values(tmp_path, clean_environ):
     """Values from the ``.env`` file (always strings) are coerced to the field type."""
     sample = tmp_path / ".env"
-    sample.write_text(
-        "REDIS_URL='redis://127.0.0.1:6380/0'\n" "STDOUT_LOG_LEVEL='30'\n"
-    )
+    sample.write_text("SPI_SERIAL_PORT='/dev/ttyUSB0'\n" "STDOUT_LOG_LEVEL='30'\n")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
+    assert session.spi_serial_port == "/dev/ttyUSB0"
     assert session.stdout_log_level == 30
 
 
-def test_session_rejects_non_integer_port(tmp_path, clean_environ):
-    """Malformed Redis URLs fail validation."""
+def test_session_rejects_an_invalid_cluster_ip(tmp_path, clean_environ):
     sample = tmp_path / ".env"
-    sample.write_text("REDIS_URL='not-a-url'\n")
+    sample.write_text("CLUSTER_IP='not-an-ip'\n")
 
     with pytest.raises(ValidationError) as excinfo:
         SessionContext.from_env(sample)
 
     locs = [err["loc"] for err in excinfo.value.errors()]
-    assert ("redis_url",) in locs
+    assert ("cluster_ip",) in locs
 
 
 def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
@@ -156,28 +148,28 @@ def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
     sample = tmp_path / ".env"
     sample.write_text("STDOUT_LOG_LEVEL='30'\n")  # some value in the file
 
-    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
+    monkeypatch.setenv("SPI_SERIAL_PORT", "/dev/ttyUSB5")
     monkeypatch.setenv("QUBITS", "q00,q01")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"  # from os.environ
+    assert session.spi_serial_port == "/dev/ttyUSB5"  # from os.environ
     assert session.qubits == ["q00", "q01"]  # csv-coerced
 
 
 def test_session_os_environ_wins_over_env_file(tmp_path, monkeypatch, clean_environ):
     sample = tmp_path / ".env"
-    sample.write_text("REDIS_URL='redis://127.0.0.1:6380/0'\n")
-    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
+    sample.write_text("SPI_SERIAL_PORT='/dev/ttyUSB0'\n")
+    monkeypatch.setenv("SPI_SERIAL_PORT", "/dev/ttyUSB5")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"
+    assert session.spi_serial_port == "/dev/ttyUSB5"
 
 
 def test_session_from_env_without_file(monkeypatch, clean_environ):
     """``from_env(None)`` reads ``os.environ`` and uses class defaults."""
-    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
+    monkeypatch.setenv("SPI_SERIAL_PORT", "/dev/ttyUSB5")
     session = SessionContext.from_env()
-    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"
+    assert session.spi_serial_port == "/dev/ttyUSB5"
 
 
 def test_session_from_env_raises_for_missing_file(tmp_path):
@@ -338,6 +330,7 @@ def test_session_options_match_session_context():
                 NodeConfig,
                 Optional[SpiConfig],
                 Optional[QbloxHardwareCompilationConfig],
+                dict | None,
             ):
                 assert options_type == context_type | Path | str
             else:

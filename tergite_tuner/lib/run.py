@@ -33,11 +33,9 @@ from tergite_tuner.backend import (
     run_schedule,
     save_serial_device,
 )
-from tergite_tuner.exc import MissingCalibrationStatusError
 from tergite_tuner.lib.base.utils.figure_utils import create_figure_with_top_band
 from tergite_tuner.lib.spec import Fits, NodeSpec, get_coord_name, is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset, save_dataset
-from tergite_tuner.utils.dicts import insert_nested_key
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import print_measurement_info
 from tergite_tuner.utils.measurement import samplespace_dimensions
@@ -244,7 +242,7 @@ def get_dataset(
 def analyse_node(
     spec: NodeSpec, data_path: Path, session: "SessionContext", should_save_plot: bool
 ) -> dict[str, Fits | None]:
-    """Analyses the node's saved dataset in ``data_path`` and stores the fits in Redis."""
+    """Analyses the node's saved dataset in ``data_path`` and writes the fits into the session's state."""
     data_path = Path(data_path)
     start = time.perf_counter()
     dataset = load_dataset(spec.name.value, data_path)
@@ -334,62 +332,34 @@ def plot_elements(
 def store_fits(
     spec: NodeSpec, fits: Mapping[str, Fits | None], session: "SessionContext"
 ) -> None:
-    """Stores the fits ``spec`` names in each element's Redis record, and marks the elements calibrated."""
+    """Writes the fits ``spec`` names into the session's state, with each element's status."""
     collection = "couplers" if spec.element == "coupler" else "transmons"
-    redis_data = {}
+    records = {collection: {}, "cs": {}}
     for element, element_fits in fits.items():
         if is_failed(element_fits):
             logger.warning(f"Analysis failed for {element}")
+            records["cs"][element] = {spec.name.value: "not_calibrated"}
             continue
-        insert_nested_key(
-            redis_data,
-            path=(collection, element),
-            value=get_redis_record(spec.qois, element_fits),
-        )
-        insert_nested_key(
-            redis_data, path=("cs", element, spec.name.value), value="calibrated"
-        )
-    session.redis_store.save_many(redis_data)
-    session.update_redis_fields_log(spec.qois.values())
+        records[collection][element] = get_qoi_values(spec.qois, element_fits)
+        records["cs"][element] = {spec.name.value: "calibrated"}
+    session.state.write(records)
 
 
-def get_redis_record(qois: Mapping[str, str], fits: Fits) -> dict[str, object]:
-    record = {}
+def get_qoi_values(qois: Mapping[str, str], fits: Fits) -> dict[str, object]:
+    """Each fit ``qois`` names, and its error, by the field it is stored in."""
+    values = {}
     for name, fit in fits.items():
         if name in qois:
-            record[qois[name]] = fit.value
-            record[f"{qois[name]}_error"] = fit.error
-    return record
-
-
-def mark_not_calibrated(
-    name: str, elements: Iterable[str], session: "SessionContext"
-) -> None:
-    """Marks node ``name`` not calibrated on each of ``elements`` that has no status yet."""
-    elements = list(elements)
-    statuses = session.redis_store.find_many("cs", pks=elements).get("cs", {})
-    session.redis_store.save_many(
-        {
-            "cs": {
-                element: {name: "not_calibrated"}
-                for element in elements
-                if name not in statuses.get(element, {})
-            }
-        }
-    )
+            values[qois[name]] = fit.value
+            values[f"{qois[name]}_error"] = fit.error
+    return values
 
 
 def is_in_spec(name: str, elements: Iterable[str], session: "SessionContext") -> bool:
     """Whether node ``name`` is calibrated on every one of ``elements``."""
-    for element in elements:
-        status = session.redis.hget(f"cs:{element}", name)
-        if status == "not_calibrated":
-            return False
-        if status != "calibrated":
-            raise MissingCalibrationStatusError(
-                f"No calibration status of {name} for {element}"
-            )
-    return True
+    return all(
+        session.state.read("cs", element, name) == "calibrated" for element in elements
+    )
 
 
 def validate_couplers(couplers: list[str]) -> None:
@@ -401,15 +371,13 @@ def validate_couplers(couplers: list[str]) -> None:
 
 
 def set_parking_currents(hardware: Hardware, session: "SessionContext") -> None:
-    """Sets each coupler's stored parking current, which CZ parametrization may have updated; not when recalibrating."""
-    records = session.redis_store.find_many(collection="couplers", pks=session.couplers)
-    try:
-        currents = {
-            coupler: record["parking_current"]
-            for coupler, record in records["couplers"].items()
-        }
-    except KeyError:
-        logger.error(f"Some couplers are missing currents: {records}")
+    """Sets each coupler's parking current, which CZ parametrization may have updated; not when recalibrating."""
+    currents = {
+        coupler: session.state.read("couplers", coupler, "parking_current")
+        for coupler in session.couplers
+    }
+    if None in currents.values():
+        logger.error(f"Some couplers are missing currents: {currents}")
         return
     if session.is_recalibration:
         logger.debug("Skipping setting DC currents")

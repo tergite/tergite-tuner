@@ -203,7 +203,9 @@ BOOLEAN_PREFIXES = ("is_", "should_")
 BOOLEAN_ANNOTATIONS = frozenset(
     {"bool", "Optional[bool]", "bool | None", "None | bool"}
 )
-VALUE_DECORATORS = frozenset({"property", "cached_property", "computed_field"})
+VALUE_DECORATORS = frozenset(
+    {"property", "setter", "cached_property", "computed_field"}
+)
 LICENSE_MARKERS = (
     "# This code is part of Tergite",
     "This code is licensed under the Apache License, Version 2.0",

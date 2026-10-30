@@ -16,10 +16,11 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import copy
 import shutil
 from os import PathLike
 from pathlib import Path
-from typing import List, Optional, Tuple, TypeVar, Union, Unpack
+from typing import Any, List, Optional, Tuple, TypeVar, Union, Unpack
 
 import networkx as nx
 
@@ -31,11 +32,7 @@ from tergite_tuner.lib import run
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import get_unique_data_path
-from tergite_tuner.storage.redis.utils import (
-    populate_initial_parameters,
-    populate_node_parameters,
-    revert_node_parameters,
-)
+from tergite_tuner.utils.dicts import update_nested
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import draw_arrow_chart
 from tergite_tuner.utils.types.enums import MeasurementMode, SPIMode
@@ -72,8 +69,6 @@ class NodeManager:
             if member not in self.node_graph:
                 self.node_graph.add_node(member)
 
-        populate_initial_parameters(self.session)
-
     def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
         """Return ``target_node``'s ancestors in topological order plus itself."""
         order = get_dependencies_in_topological_order(
@@ -90,42 +85,35 @@ class NodeManager:
         node_name = node.value
         elements = run.get_elements(node_spec, self.session)
         logger.info(f"Inspecting node {node_name}")
-        run.mark_not_calibrated(node_name, elements, self.session)
 
-        # Check Redis if node is calibrated
         if ignore_spec:
-            is_node_calibrated = False
             logger.info(f"Ignoring calibration status for {node_name}")
-        else:
-            is_node_calibrated = run.is_in_spec(node_name, elements, self.session)
-
-        populate_node_parameters(
-            node_name,
-            is_node_calibrated=is_node_calibrated,
-            session=self.session,
-        )
-
-        # Log status
-        if is_node_calibrated:
+        elif run.is_in_spec(node_name, elements, self.session):
             logger.info(f" ✔ Node {node_name} in spec")
+            return
+
+        logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
+        logger.info(f"Calibrating node {node_name}")
+        # re-analysis reads the datasets already in data_dir; a recalibration
+        # writes into the run's folder, so repeated ones need no folder per node
+        if self.session.cluster_mode == MeasurementMode.re_analyse:
+            data_path = self.session.data_dir
+        elif self.session.is_recalibration:
+            data_path = self.run_path
         else:
-            logger.warning(f"⚑⚑⚑ Calibration required for Node {node_name}")
+            data_path = get_unique_data_path(self.run_path, node_name)
 
-            logger.info(f"Calibrating node {node_name}")
-            # re-analysis reads the datasets already in data_dir; a recalibration
-            # writes into the run's folder, so repeated ones need no folder per node
-            if self.session.cluster_mode == MeasurementMode.re_analyse:
-                data_path = self.session.data_dir
-            elif self.session.is_recalibration:
-                data_path = self.run_path
-            else:
-                data_path = get_unique_data_path(self.run_path, node_name)
-
+        overrides = _get_node_overrides(node_name, self.session)
+        state = self.session.state
+        # a recalibration keeps each node's overrides for the nodes after it
+        if self.session.is_recalibration:
+            state.load(overrides)
+        else:
+            state.add_overrides(overrides)
+        try:
             run.calibrate(node_spec, self.session, self.hardware, data_path, save_plot)
-
-        # if we are in recalibration, we should not revert node parameters
-        if not self.session.is_recalibration:
-            revert_node_parameters(self.session, node_name=node_name)
+        finally:
+            state.clear_overrides()
 
 
 def run_node(
@@ -242,7 +230,7 @@ def _tune(
         the current affected state of the device after the tuning
     """
     if refresh_session:
-        session.refresh_redis_fields_log()
+        session.state.written_paths.clear()
     hardware = Hardware(session)
     run_path = get_unique_data_path(session.data_dir, "run")
     node_manager = NodeManager(hardware, session=session, run_path=run_path)
@@ -294,7 +282,7 @@ def _reanalyse(
         refresh_session: whether to refresh the session before tuning.
     """
     if refresh_session:
-        session.refresh_redis_fields_log()
+        session.state.written_paths.clear()
 
     if session.cluster_mode != MeasurementMode.re_analyse:
         raise ValueError(
@@ -312,3 +300,25 @@ def _reanalyse(
         should_save_plot=False,
     )
     logger.status("Analysis completed.")
+
+
+def _get_node_overrides(node_name: str, session: SessionContext) -> dict:
+    """The node config's values for ``node_name`` on the session's qubits and couplers."""
+    section = session.node_config.root.get(node_name, {})
+    return {
+        "transmons": {
+            qubit: _get_qubit_node_config(section, qubit) for qubit in session.qubits
+        },
+        "couplers": {
+            coupler: section[coupler]
+            for coupler in session.couplers
+            if coupler in section
+        },
+    }
+
+
+def _get_qubit_node_config(node_section: dict[str, Any], qubit: str) -> dict[str, Any]:
+    """The qubit's own section of a node's config, falling back to its 'all' section."""
+    qubit_config = copy.deepcopy(node_section.get(qubit, {}))
+    update_nested(qubit_config, node_section.get("all", {}))
+    return qubit_config

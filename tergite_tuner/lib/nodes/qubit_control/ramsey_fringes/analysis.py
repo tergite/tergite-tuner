@@ -46,7 +46,7 @@ def analyse_ramsey(
     signed_detunings = _get_signed_detunings(s21, artificial_detunings)
     slope, intercept = np.polyfit(artificial_detunings, signed_detunings, 1)
     correction = -intercept / slope
-    frequency = float(session.redis.hget(f"transmons:{qubit}", frequency_field))
+    frequency = float(session.state.read("transmons", qubit, frequency_field))
     return {
         "frequency": Fit(frequency + correction),
         "correction": Fit(correction),

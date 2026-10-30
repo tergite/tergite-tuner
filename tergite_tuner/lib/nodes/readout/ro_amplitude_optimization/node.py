@@ -73,20 +73,13 @@ def get_amplitudes(
     qubit: str, session: "SessionContext", low: float, high: float, points: int
 ) -> np.ndarray:
     """``points`` amplitudes from ``low`` to ``high`` times the qubit's punchout amplitude."""
-    punchout = float(
-        session.redis_store.read_field("transmons", qubit, "measure:pulse_amp")
-    )
+    punchout = float(session.state.read("transmons", qubit, "measure:pulse_amp"))
     return np.linspace(punchout * low, punchout * high, points)
 
 
 def get_optimal_amplitude(qubit: str, session: "SessionContext") -> np.ndarray:
-    return np.array(
-        [
-            float(
-                session.redis.hget(f"transmons:{qubit}", "measure_3state_opt:pulse_amp")
-            )
-        ]
-    )
+    amplitude = session.state.read("transmons", qubit, "measure_3state_opt:pulse_amp")
+    return np.array([float(amplitude)])
 
 
 def get_dummy_s21(

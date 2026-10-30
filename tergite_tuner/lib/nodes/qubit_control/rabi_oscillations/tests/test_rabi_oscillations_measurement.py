@@ -38,10 +38,9 @@ def test_dummy_n_rabi_is_least_at_its_correction(session_context):
     assert corrections == pytest.approx([-0.01, -0.01], abs=1e-3)
 
 
+@pytest.mark.usefixtures("seeded_state")
 @pytest.mark.parametrize("state", [0, 1])
-def test_each_qubit_is_driven_with_its_own_pulse_duration(
-    seeded_redis, session_context, state
-):
+def test_each_qubit_is_driven_with_its_own_pulse_duration(session_context, state):
     ExtendedTransmon.close_all()
     durations = {"q13": 40e-9, "q14": 60e-9, "q15": 80e-9}
     device = configure_device("rabi", QUBITS, ["q13_q14"], session_context)

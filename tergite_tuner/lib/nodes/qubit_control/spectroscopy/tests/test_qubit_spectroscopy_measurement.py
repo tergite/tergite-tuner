@@ -12,6 +12,7 @@
 # that they have been altered from the originals.
 
 import numpy as np
+import pytest
 
 from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
@@ -19,9 +20,8 @@ from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
 )
 
 
-def test_amplitude_spectroscopy_accepts_long_spectroscopy_pulses(
-    seeded_redis, session_context
-):
+@pytest.mark.usefixtures("seeded_state")
+def test_amplitude_spectroscopy_accepts_long_spectroscopy_pulses(session_context):
     ExtendedTransmon.close_all()
     qubits = ["q13", "q14"]
     device = configure_device("spectroscopy", qubits, ["q13_q14"], session_context)

@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Export calibrated parameter values from Redis as a BCC calibration seed."""
+"""Export a session's calibrated parameter values, and as a BCC calibration seed."""
 
 import ast
 import re
@@ -33,7 +33,6 @@ import tomlkit
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
 from tergite_tuner.config.session import SessionContext, SessionOptions
-from tergite_tuner.storage import QueryOptions
 
 _CalibValueType = TypeVar("_CalibValueType", int, float, str)
 _NodeState = Literal["calibrated", "not_calibrated"]
@@ -44,30 +43,27 @@ _NUMPY_FLOAT_PATTERN = re.compile(r"np\.float\d*")
 def read_result(
     session: SessionContext, session_only: bool = True
 ) -> "CalibrationResults":
-    """Retrieves the results after tuneup
+    """The session's device state on its qubits and couplers.
 
     Args:
-        session: the session context to use
-        session_only: if True, retrieves results created by current session.
-            Else, all available results will be returned. Default is True.
-
-    Returns:
-        the results in redis for the current session
+        session: the session to read.
+        session_only: keep only the fields this session's nodes wrote: each written
+            path's group (``rxy`` for ``rxy:amp180``), the path itself, or its ``_error``.
     """
-    pks = session.qubits + session.couplers
-    affected_fields = session.redis_fields_touched.keys()
-    query_func = None
-
+    should_keep_field = None
     if session_only:
+        written_paths = session.state.written_paths
 
-        def query_func(opts: QueryOptions):
+        def should_keep_field(field: str) -> bool:
             return any(
-                opts["field"] in (k.split(":")[0], k, f"{k}_error")
-                for k in affected_fields
+                field in (path.split(":")[0], path, f"{path}_error")
+                for path in written_paths
             )
 
-    data = session.redis_store.find_many(pks=pks, query=query_func)
-    return CalibrationResults.model_validate(data)
+    records = session.state.get_records(
+        session.qubits + session.couplers, should_keep_field
+    )
+    return CalibrationResults.model_validate(records)
 
 
 def generate_calib_seed_file(
@@ -77,16 +73,16 @@ def generate_calib_seed_file(
     coupler_name_map: Optional[Dict[str, str]] = None,
     **session_options: Unpack[SessionOptions],
 ):
-    """Writes the calibration seed tergite-backend reads, from the values in Redis, as TOML to ``path``.
+    """Writes the calibration seed tergite-backend reads, from the session's device state, as TOML to ``path``.
 
     Args:
         path: the file to write; defaults to ``calibration.seed.toml``.
         session: the session to read; built from ``env_file`` and ``session_options`` if not given.
         env_file: an optional ``.env`` file for that session.
-        coupler_name_map: each coupler's name in Redis mapped to its name in the backend;
+        coupler_name_map: each coupler's name in the session mapped to its name in the backend;
             defaults to the same names.
         **session_options: any ``SessionContext`` field, most usefully ``qubits``,
-            ``couplers`` and ``redis_url``, overriding ``env_file`` and ``os.environ``.
+            ``couplers`` and ``calibration``, overriding ``env_file`` and ``os.environ``.
     """
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)
@@ -206,6 +202,16 @@ NumpyFloatTuple = Annotated[
 ]
 
 
+def _parse_list_string(v: Any) -> Any:
+    """Parses a list an analysis wrote as a string, as ``str(values)``."""
+    if isinstance(v, str):
+        return ast.literal_eval(_NUMPY_FLOAT_PATTERN.sub("", v))
+    return v
+
+
+NumberList = Annotated[List[float], BeforeValidator(_parse_list_string)]
+
+
 class _RedisDict(BaseModel):
     """A representation of dictionaries in redis"""
 
@@ -287,7 +293,9 @@ class _QubitInRedis(_RedisDict):
     VNA_f12_frequency: float | None = None
     fidelity: float | None = None
     reset: Optional["_ResetInRedis"] = None
-    readout_matrix: Optional[List[List[float]]] | None = None
+    readout_matrix: (
+        Annotated[List[List[float]], BeforeValidator(_parse_list_string)] | None
+    ) = None
 
 
 class _CouplerInRedis(_RedisDict):
@@ -300,16 +308,16 @@ class _CouplerInRedis(_RedisDict):
     cz_dynamic_control: float | None = None
     cz_dynamic_target: float | None = None
     target_local_phase: float | None = None
-    qubit_crossing_points: List[float] | None = None
+    qubit_crossing_points: NumberList | None = None
     cz_pulse_frequency_error: float | None = None
     cz_fidelity: float | None = None
     cz_dynamic_amplitude: float | None = None
-    cz_working_durations_in_ns: List[float] | None = None
+    cz_working_durations_in_ns: NumberList | None = None
     cz_dynamic_control_error: float | None = None
     control_local_phase: float | None = None
     cz_working_frequencies_error: float | None = None
     spec: Optional["_CouplerSpecInRedis"] = None
-    cz_working_frequencies: List[float] | None = None
+    cz_working_frequencies: NumberList | None = None
     cz_pulse_duration_error: float | None = None
     cz_working_durations_in_ns_error: float | None = None
     reset: Optional["_ResetInRedis"] = None

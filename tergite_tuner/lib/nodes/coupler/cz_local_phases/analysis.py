@@ -65,10 +65,10 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
                 raise ValueError
 
         self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.redis
+            self.control_qubit_data_var, self.session.state
         )
         self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.redis
+            self.target_qubit_data_var, self.session.state
         )
 
         self.fit_plot_phases = np.linspace(

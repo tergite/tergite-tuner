@@ -21,7 +21,8 @@ from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.node import (
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
-def test_each_qubit_gets_its_own_12_pulse_duration(seeded_redis, session_context):
+@pytest.mark.usefixtures("seeded_state")
+def test_each_qubit_gets_its_own_12_pulse_duration(session_context):
     ExtendedTransmon.close_all()
     qubits = ["q13", "q14", "q15"]
     durations = {"q13": 40e-9, "q14": 60e-9, "q15": 80e-9}

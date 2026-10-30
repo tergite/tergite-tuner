@@ -19,7 +19,7 @@ from tergite_tuner.lib import run
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import get_compiler
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
@@ -34,10 +34,10 @@ _OUTER_NODES = [
 # every outer-sweep point: test_schedule_goldens.py compiles the first one on every run
 @pytest.mark.slow
 @pytest.mark.parametrize("node", _OUTER_NODES, ids=lambda node: node.value)
-def test_every_outer_point_compiles(node, redis_connection, session_context):
+def test_every_outer_point_compiles(node, session_context):
     spec = DEFAULT_NODE_SPECS[node]
     session = session_context.model_copy(update={"user_samplespace": {}})
-    with loaded_redis(redis_connection, _redis_values):
+    with loaded_state(session, _redis_values):
         ExtendedTransmon.close_all()
         device = configure_device(
             node.value, run.get_qubits(spec, session), session.couplers, session
@@ -47,9 +47,9 @@ def test_every_outer_point_compiles(node, redis_connection, session_context):
             run.compile_node(spec, device, sweeps | point, session)
 
 
-def test_precompile_restores_the_grid_time_tolerance(redis_connection, session_context):
+def test_precompile_restores_the_grid_time_tolerance(session_context):
     default_tolerance = qblox_constants.GRID_TIME_TOLERANCE_TIME
-    with loaded_redis(redis_connection, _redis_values):
+    with loaded_state(session_context, _redis_values):
         get_compiler("punchout", session_context)()
 
     assert qblox_constants.GRID_TIME_TOLERANCE_TIME == default_tolerance

@@ -25,20 +25,17 @@ if TYPE_CHECKING:
 
 def get_coupler_roles(session: "SessionContext") -> dict[str, dict[str, str]]:
     """Each coupler's control and target qubits, as the CZ schedules' ``coupler_dict``."""
-    records = session.redis_store.find_many(collection="couplers", pks=session.couplers)
-    try:
-        return {
-            coupler: {
-                "control_qubit": record["control_qubit"],
-                "target_qubit": record["target_qubit"],
-            }
-            for coupler, record in records["couplers"].items()
+    roles = {
+        coupler: {
+            role: session.state.read("couplers", coupler, role)
+            for role in ("control_qubit", "target_qubit")
         }
-    except KeyError:
-        logger.warning(
-            f"Some couplers control and target qubits are missing: {records}"
-        )
-        raise
+        for coupler in session.couplers
+    }
+    if any(None in coupler_roles.values() for coupler_roles in roles.values()):
+        logger.warning(f"Some couplers control and target qubits are missing: {roles}")
+        raise KeyError("control_qubit or target_qubit")
+    return roles
 
 
 def get_coupler_keywords(session: "SessionContext") -> dict[str, Any]:
@@ -46,7 +43,7 @@ def get_coupler_keywords(session: "SessionContext") -> dict[str, Any]:
 
 
 def get_coupler_value(coupler: str, field: str, session: "SessionContext") -> Any:
-    return session.redis.hget(f"couplers:{coupler}", field)
+    return session.state.read("couplers", coupler, field)
 
 
 def get_phase_path(
@@ -58,8 +55,8 @@ def get_phase_path(
 def get_transition_frequency(coupler: str, session: "SessionContext") -> float:
     """The CZ's AC frequency on the coupler's phase path, rounded down to 10 kHz."""
     roles = get_coupler_roles(session)[coupler]
-    control = session.redis_store.find_one("transmons", roles["control_qubit"])
-    target = session.redis_store.find_one("transmons", roles["target_qubit"])
+    control = session.state.get_record("transmons", roles["control_qubit"])
+    target = session.state.get_record("transmons", roles["target_qubit"])
     control_f01 = float(control["clock_freqs"]["f01"])
     target_f01 = float(target["clock_freqs"]["f01"])
     phase_path = get_phase_path(coupler, session)

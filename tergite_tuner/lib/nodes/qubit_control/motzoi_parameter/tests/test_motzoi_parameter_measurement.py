@@ -20,7 +20,8 @@ from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node import MOTZOI_S
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 
-def test_motzoi_12_drives_with_the_01_pulse_duration(seeded_redis, session_context):
+@pytest.mark.usefixtures("seeded_state")
+def test_motzoi_12_drives_with_the_01_pulse_duration(session_context):
     ExtendedTransmon.close_all()
     qubits = ["q13", "q14", "q15"]
     device = configure_device("motzoi", qubits, ["q13_q14"], session_context)

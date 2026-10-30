@@ -29,7 +29,7 @@ from tergite_tuner.tests.utils.goldens import (
     get_analyser,
     get_redis_file,
 )
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 GOLDENS_DIR = Path(get_fixture_path("goldens"))
 # relative tolerance across platforms' floating point and fitting libraries
@@ -37,12 +37,10 @@ TOLERANCE = 1e-6
 
 
 @pytest.mark.parametrize("case", RECORDED_DATASETS)
-def test_reanalysis_gives_the_golden_qois(
-    case, redis_connection, session_context, tmp_path
-):
+def test_reanalysis_gives_the_golden_qois(case, session_context, tmp_path):
     golden_case = RECORDED_DATASETS[case]
     analyse = get_analyser(golden_case, tmp_path, session_context)
-    with loaded_redis(redis_connection, get_redis_file(golden_case)):
+    with loaded_state(session_context, get_redis_file(golden_case)):
         qois = analyse()
 
     values = _get_flat_values(qois)

@@ -72,9 +72,7 @@ def analyse_n_rabi(
     qubit = s21.attrs["qubit"]
     sums = np.abs(s21).sum(get_coord_name("X_repetitions", qubit))
     correction = sums.idxmin().item()
-    previous_amplitude = session.redis_store.read_field(
-        "transmons", pk=qubit, field_path=amp180_field
-    )
+    previous_amplitude = session.state.read("transmons", qubit, amp180_field)
     return {
         "amp180": Fit(correction + previous_amplitude),
         "correction": Fit(correction),

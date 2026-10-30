@@ -23,7 +23,7 @@ from tergite_tuner.export import (
     read_result,
 )
 from tergite_tuner.tests.utils.fixtures import get_fixture_path, load_fixture
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 _REDIS_DATA_FILE = get_fixture_path("redis", "export_bcc_script.json")
 _REDIS_DATA = load_fixture("redis/export_bcc_script.json")
@@ -31,7 +31,7 @@ _CALIB_SEED = load_fixture("data/calib.seed.json")
 _CALIB_CONTENT = _CALIB_SEED["calibration_config"]
 
 
-def test_read_results_default(redis_connection):
+def test_read_results_default():
     """Returns the calibration results saved in the session"""
     touched_fields = (
         # qubits/resonators
@@ -139,35 +139,34 @@ def test_read_results_default(redis_connection):
             },
         },
     }
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
-        session._redis_fields_touched = {k: 1 for k in touched_fields}
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _REDIS_DATA_FILE) as state:
+        state.written_paths.update(touched_fields)
         result = read_result(session)
 
     got = result.model_dump(exclude_none=True)
     assert got == expected_result
 
 
-def test_read_results_session_only_false(redis_connection):
-    """Returns all the calibration results in redis when session_only=False"""
+def test_read_results_session_only_false():
+    """Returns all the session's results when session_only=False"""
     expected_result_dict = _redis_to_nested_dict(_REDIS_DATA)
     expected_result = CalibrationResults.model_validate(expected_result_dict)
 
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _REDIS_DATA_FILE):
         result = read_result(session, session_only=False)
 
     assert result == expected_result
 
 
-def test_generate_calib_seed_file_writes_toml(tmp_path, redis_connection):
+def test_generate_calib_seed_file_writes_toml(tmp_path):
     """``path=...`` writes the same payload to disk in TOML form."""
     output_path = tmp_path / "calibration_seed.toml"
 
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        generate_calib_seed_file(
-            path=output_path, couplers=["q11_q12"], qubits=["q11", "q12"]
-        )
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _REDIS_DATA_FILE):
+        generate_calib_seed_file(path=output_path, session=session)
 
     with open(output_path, "rb") as f:
         got = tomllib.load(f)
@@ -175,11 +174,12 @@ def test_generate_calib_seed_file_writes_toml(tmp_path, redis_connection):
     assert got == _CALIB_SEED
 
 
-def test_generate_calib_seed_file_partial(tmp_path, redis_connection):
+def test_generate_calib_seed_file_partial(tmp_path):
     """When no couplers are requested the coupler list is empty."""
     output_path = tmp_path / "calibration_seed.toml"
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        generate_calib_seed_file(path=output_path, couplers=[], qubits=["q12"])
+    session = SessionContext.from_env(qubits=["q12"], couplers=[])
+    with loaded_state(session, _REDIS_DATA_FILE):
+        generate_calib_seed_file(path=output_path, session=session)
 
     with open(output_path, "rb") as f:
         got = tomllib.load(f)
@@ -197,15 +197,13 @@ def test_generate_calib_seed_file_partial(tmp_path, redis_connection):
     }
 
 
-def test_generate_calib_seed_file_coupler_map(tmp_path, redis_connection):
+def test_generate_calib_seed_file_coupler_map(tmp_path):
     """When coupler_name_map is passed, coupler names are changed."""
     output_path = tmp_path / "calibration_seed.toml"
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
+    session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
+    with loaded_state(session, _REDIS_DATA_FILE):
         generate_calib_seed_file(
-            path=output_path,
-            couplers=["q11_q12"],
-            qubits=["q11", "q12"],
-            coupler_name_map={"q11_q12": "u24"},
+            path=output_path, session=session, coupler_name_map={"q11_q12": "u24"}
         )
 
     with open(output_path, "rb") as f:
@@ -269,11 +267,11 @@ def _insert_nested_key(data: Dict[str, Any], path: List[str], value: Any):
     inner_record[path[-1]] = value
 
 
-def test_read_results_matches_touched_fields_exactly(redis_connection):
-    with loaded_redis(redis_connection, _REDIS_DATA_FILE):
-        redis_connection.hset("transmons:q11", "fidelity", "0.99")
-        session = SessionContext.from_env(qubits=["q11"], couplers=[])
-        session._redis_fields_touched = {"t1_time": 1, "purity_fidelity": 1}
+def test_read_results_matches_touched_fields_exactly():
+    session = SessionContext.from_env(qubits=["q11"], couplers=[])
+    with loaded_state(session, _REDIS_DATA_FILE) as state:
+        state.load({"transmons": {"q11": {"fidelity": 0.99}}})
+        state.written_paths.update({"t1_time", "purity_fidelity"})
         result = read_result(session)
 
     got = result.model_dump(exclude_none=True)["transmons"]["q11"]

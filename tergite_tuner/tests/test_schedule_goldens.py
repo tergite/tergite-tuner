@@ -27,7 +27,7 @@ import pytest
 
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import DEFAULT_NODE_NAMES, get_compiler
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 GOLDEN_FILE = Path(get_fixture_path("goldens")) / "schedules.json"
 REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
@@ -38,10 +38,8 @@ NODE_NAMES = [name for name in DEFAULT_NODE_NAMES if name != "purity_benchmarkin
 
 
 @pytest.mark.parametrize("node_name", NODE_NAMES)
-def test_compiled_program_matches_its_golden(
-    node_name, redis_connection, session_context
-):
-    with loaded_redis(redis_connection, REDIS_VALUES):
+def test_compiled_program_matches_its_golden(node_name, session_context):
+    with loaded_state(session_context, REDIS_VALUES):
         compiled = get_compiler(node_name, session_context)()
 
     digest = _get_digest(compiled.compiled_instructions)

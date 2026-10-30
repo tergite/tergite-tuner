@@ -40,11 +40,11 @@ _DEFAULT_NODES = [
 @pytest.mark.slow
 @pytest.mark.parametrize("node", _DEFAULT_NODES)
 def test_every_default_node_runs_in_dummy_mode(
-    node, redis_connection, session_context, tmp_path, monkeypatch
+    node, session_context, tmp_path, monkeypatch
 ):
     # the dummy cluster assembles in the working directory, which workers would share
     monkeypatch.chdir(tmp_path)
-    run_dummy_node(node, redis_connection, session_context, tmp_path)
+    run_dummy_node(node, session_context, tmp_path)
 
     # analyses of random IQ points may fail; reaching them without raising is the check
     # a node may save under another node's name (step 9.8)
@@ -53,7 +53,7 @@ def test_every_default_node_runs_in_dummy_mode(
 
 
 def test_unkept_data_files_delete_only_the_runs_folder(
-    redis_connection, session_context, tmp_path, monkeypatch
+    session_context, tmp_path, monkeypatch
 ):
     monkeypatch.chdir(tmp_path)
     data_dir = tmp_path / "out"
@@ -63,7 +63,6 @@ def test_unkept_data_files_delete_only_the_runs_folder(
 
     run_dummy_node(
         NodeEnum.RESONATOR_SPECTROSCOPY,
-        redis_connection,
         session_context,
         data_dir,
         keep_data_files=False,

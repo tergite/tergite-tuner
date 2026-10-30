@@ -24,7 +24,7 @@ from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
     RESONATOR_SPECTROSCOPY_SPECS,
 )
-from tergite_tuner.lib.run import get_redis_record
+from tergite_tuner.lib.run import get_qoi_values
 from tergite_tuner.tests.utils.datasets import get_s21
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -53,7 +53,7 @@ def test_a_fit_that_raises_fails_the_element(node_data_dir, monkeypatch):
 def test_each_state_stores_its_own_fields(node_data_dir):
     fits = analyse_resonator(_get_s21(node_data_dir), None)
     records = {
-        node: get_redis_record(spec.qois, fits)
+        node: get_qoi_values(spec.qois, fits)
         for node, spec in RESONATOR_SPECTROSCOPY_SPECS.items()
     }
 

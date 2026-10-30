@@ -1,6 +1,6 @@
 # Tergite Tuner — Design
 
-This document describes the architecture of `tergite-tuner`, a library that calibrates the WACQT quantum computers: how a calibration run flows from an entry point to the hardware and back to Redis, where each kind of code lives, how it is configured and tested, and the conventions a contributor is expected to follow. [REFACTOR.md](REFACTOR.md) is the plan that is moving the code towards these conventions; where the two differ, the code is mid-refactor and this document describes what is there.
+This document describes the architecture of `tergite-tuner`, a library that calibrates the WACQT quantum computers: how a calibration run flows from an entry point to the hardware and back into the session, where each kind of code lives, how it is configured and tested, and the conventions a contributor is expected to follow. [REFACTOR.md](REFACTOR.md) is the plan that is moving the code towards these conventions; where the two differ, the code is mid-refactor and this document describes what is there.
 
 ## 1. What this repo is
 
@@ -12,7 +12,7 @@ A Python library (3.13+) that a program imports to tune up a chip: tergite-backe
 | Configuration | `tergite_tuner/config/` | `SessionContext` and the four config files' models |
 | Nodes | `tergite_tuner/lib/nodes/` | one package per calibration experiment |
 | Node machinery | `tergite_tuner/lib/spec.py`, `lib/run.py` | a node as a `NodeSpec`, and running one: sweep, measure, shape the dataset, analyse, plot, store |
-| Storage | `tergite_tuner/storage/` | `redis/` holds the device's parameters; `fs/` writes each node's dataset |
+| Device state | `tergite_tuner/state.py`, `storage/fs/` | the session's `DeviceState` holds the device's parameters and calibration statuses; `fs/` writes each node's dataset |
 | Backend | `tergite_tuner/backend/` | everything taken from quantify-scheduler and qblox-instruments: the operations, the device model (our transmon and edge, extended with our gates and parameters), compiling and running schedules, and `Hardware`: the Qblox cluster and the SPI rack's current sources |
 
 It depends on quantify-scheduler 0.22 and qblox-instruments 0.14, as tergite-backend does. The move to qblox-scheduler is step 11 of the refactor.
@@ -31,17 +31,17 @@ flowchart TD
     C --> X["run_schedule on the InstrumentCoordinator, per external point<br/>(or spec.get_dummy_s21 in dummy mode)"]
     X --> D["get_dataset → save_dataset (data_dir/&lt;run&gt;/&lt;timestamp&gt;-&lt;node&gt;/)"]
     D --> A["spec.analyse, per element → fits"]
-    A --> Q["store_fits: the fits spec.qois names → Redis transmons / couplers, cs = calibrated"]
+    A --> Q["store_fits: the fits spec.qois names → state transmons / couplers, cs = calibrated"]
 ```
 
-1. **The session.** `SessionContext.from_env` reads the `.env` file, then the environment variables that name a field, then the keyword arguments, and loads `device_config`, `node_config`, `spi_config` and `cluster_config` from their paths. It carries the Redis connection and `RedisStore` with it.
+1. **The session.** `SessionContext.from_env` reads the `.env` file, then the environment variables that name a field, then the keyword arguments, and loads `device_config`, `node_config`, `spi_config` and `cluster_config` from their paths. It is the run's context, and carries the run's `DeviceState` with it.
 2. **The graph.** `DEFAULT_NODE_DAG_EDGES` in `lib/nodes/__init__.py` lists `(parent, child)` edges, and `DEFAULT_NODE_SPECS` maps each `NodeEnum` to its `NodeSpec`, which the session's `node_specs` can replace or add to. `NodeManager.topo_order` walks the ancestors of `target_node` in topological order, leaving out `ignored_nodes`.
-3. **Each node.** `inspect_node` reads the node's status in `cs:<element>`. A node in spec is skipped. Otherwise it is built, its `node_config` section is written to Redis, and it is measured, saved and analysed. After that, the node-config values are reverted to the device config's (unless `is_recalibration`).
+3. **Each node.** `inspect_node` reads the node's status in the state's `cs`. A node in spec is skipped. Otherwise its `node_config` section goes over the state while it is built, measured, saved and analysed; a recalibration keeps it for the nodes after.
 4. **Measuring.** `run.measure` compiles the spec's schedule over its `sweeps`, and runs it once per point of its `outer_sweeps` (compiled again per point, for sweeps too large for the instrument's memory) and of its `external_sweeps` (calling `set_external` before each, to set an SPI current or to wait, and `reset_external` after). Each run's dataset gains a dimension per outer or external setting.
 5. **Analysing.**
    - `run.analyse_node` gives each element its data: a qubit node's `analyse` gets the qubit's complex S21, a coupler node's the coupler's variables.
-   - `analyse` returns the element's fits, each a `Fit(value, error)`, or None, or fits marked `failed`, when the element failed. The spec's `qois` names the Redis field each stored fit goes to.
-   - `store_fits` writes the successful ones to Redis and marks the element `calibrated`; `plot_elements` plots when `save_plot` is set.
+   - `analyse` returns the element's fits, each a `Fit(value, error)`, or None, or fits marked `failed`, when the element failed. The spec's `qois` names the state's field each stored fit goes to.
+   - `store_fits` writes the successful ones into the state and marks each element `calibrated`, or `not_calibrated` where it failed; `plot_elements` plots when `save_plot` is set.
 
 **Modes.** `cluster_mode` is `real`, `dummy` (a dummy cluster, and each node's `generate_dummy_dataset` in place of acquisitions) or `re_analyse` (no hardware; `reanalyse` runs the target node's analysis on `data_dir`). `spi_mode` is `real` or `dummy`.
 
@@ -62,25 +62,25 @@ tergite_tuner/
 │   ├── nodes/             readout/, qubit_control/, characterization/, coupler/: one package per node
 │   │   └── <group>/<node>/   node.py, measurement.py, analysis.py, tests/
 │   └── utils/             the schedules' shared building blocks, fit models, the DAG
+├── state.py               DeviceState: the run's device values and calibration statuses
 ├── storage/
-│   ├── redis/             RedisStore, populate/revert node parameters
 │   └── fs/                datasets and node data folders
 ├── utils/                 logging, enums, NodeEnum
 └── tests/                 cross-cutting tests; utils/ holds the shared test helpers
-conftest.py                the session_context, redis_connection and seeded_redis fixtures
+conftest.py                the session_context and seeded_state fixtures
 ```
 
 ## 4. Data
 
-Redis holds the device as the tuner knows it, one hash per element, and fakeredis stands in for it in the tests.
+The session's `DeviceState` holds the device as the run knows it. It starts from `device_config`'s values for the session's qubits and couplers, with the session's `calibration`, an earlier run's results, over them. Nothing else carries over between sessions.
 
-| Key | Holds |
+| Collection | Holds |
 | --- | --- |
-| `transmons:<qubit>` | the transmon's parameters, nested paths joined by `:` (`rxy:amp180`, `clock_freqs:f01`), each stored fit beside its `_error` |
-| `couplers:<coupler>` | the coupler's parameters (`parking_current`, `cz_pulse_amplitude`, …) |
-| `cs:<element>` | the calibration status per node: `calibrated` or `not_calibrated` |
+| `transmons` | each qubit's parameters, nested; read by colon-separated path (`rxy:amp180`, `clock_freqs:f01`), each stored fit beside its `_error` |
+| `couplers` | each coupler's parameters (`parking_current`, `cz_pulse_amplitude`, …) |
+| `cs` | each element's calibration status per node: `calibrated` or `not_calibrated` |
 
-`RedisStore` serialises each value with its type, so it reads back as written. `populate_initial_parameters` seeds the hashes from `device_config` at the start of a run. `read_result` returns what the session touched, or everything, as `CalibrationResults`. `generate_calib_seed_file` turns that into the TOML seed tergite-backend reads.
+`read_result` returns the fields the session's nodes wrote, or everything, as `CalibrationResults`. `generate_calib_seed_file` turns that into the TOML seed tergite-backend reads.
 
 Each run writes a folder under `data_dir`, and each measured node a folder in it: the dataset (`dataset_<node>.hdf5`), the device's serialised elements (`<node>.json`), and its plots. A recalibration's nodes write straight into the run's folder. `keep_data_files=False` deletes the run's folder, and nothing else in `data_dir`.
 
@@ -88,9 +88,9 @@ Each run writes a folder under `data_dir`, and each measured node a folder in it
 
 | Source | Holds |
 | --- | --- |
-| `.env` / `SessionContext` fields | cluster IP and mode, SPI port and mode, Redis URL, qubits, couplers, target node, flags, the paths below. See [.example.env](.example.env) |
+| `.env` / `SessionContext` fields | cluster IP and mode, SPI port and mode, qubits, couplers, target node, flags, an earlier `calibration`, the paths below. See [.example.env](.example.env) |
 | `device_config.toml` | the chip: initial qubit, resonator and coupler values, under `all` or per element |
-| `node_config.toml` | per-node overrides written to Redis while the node runs, under `all` or per qubit |
+| `node_config.toml` | per-node overrides that sit over the state while the node runs, under `all` or per qubit |
 | `spi_config.toml` | which SPI module and DAC drives each coupler |
 | `cluster_config.json` | quantify-scheduler's hardware compilation config |
 
@@ -98,15 +98,15 @@ Each can also be passed as an object. The README shows both.
 
 ## 6. Testing
 
-`pytest tergite_tuner -n auto`, in parallel with pytest-xdist and with fakeredis, so no Redis server is needed. CI runs it serially: in its containers, parallel runs were slower. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
+`pytest tergite_tuner -n auto`, in parallel with pytest-xdist. CI runs it serially: in its containers, parallel runs were slower. `-m 'not slow'` leaves out the dummy run of every node and the compile of every outer-sweep point: about 35 s against 1 m 45 s for everything, on a 12-core MacBook. `conftest.py` at the repository root builds the session from the test configs in `tergite_tuner/tests/fixtures/`.
 
 - Each node's tests live in its `tests/` folder, beside the recorded datasets they analyse (`tests/data/`).
-- Shared helpers live in `tergite_tuner/tests/utils/`, grouped by what they do: `fixtures.py`, `redis.py`, `pytest.py`.
+- Shared helpers live in `tergite_tuner/tests/utils/`, grouped by what they do: `fixtures.py`, `state.py`, `runs.py`, `pytest.py`.
 - `tests/test_precompile.py` compiles every default node against the test cluster config.
 - `tests/test_public_api.py` calls `tune_device`, `run_node` (with a custom node class too) and `reanalyse` as the README does; `tests/test_export.py` covers `read_result` and the seed file.
 - `tests/test_schedule_goldens.py` pins a digest of every default node's compiled program in `tests/fixtures/goldens/schedules.json`, rewritten with `UPDATE_GOLDENS=1` when a change alters a program on purpose.
 - `tests/test_reanalysis_goldens.py` reruns 19 nodes' analyses on recorded datasets and compares the QOIs with `tests/fixtures/goldens/`. A change that moves a value on purpose rewrites its golden with `UPDATE_GOLDENS=1`, and its commit says why.
-- `tests/test_tune_up.py` runs every default node in dummy mode, end to end, on a calibrated device from `standard_redis_mock.json`. It is marked `slow`, with `test_precompile.py`'s compile of every outer-sweep point.
+- `tests/test_tune_up.py` runs every default node in dummy mode, end to end, on a calibrated device from the Redis dump `standard_redis_mock.json`, which `tests/utils/state.py` reads into a state. It is marked `slow`, with `test_precompile.py`'s compile of every outer-sweep point.
 
 A test that changes module state resets it: call `ExtendedTransmon.close_all()` before building a device, and restore a matplotlib backend you change.
 
@@ -149,11 +149,11 @@ The conventions are tergite-frontend's, so the two read alike. Code reads like a
 1. **A function is a composition of functions.** A public function's body is a short sequence of calls, each to a function that does one thing and is named for it. Do not extract a step that would be a one-line function.
 2. **Callees sit below their callers.** A file runs: constants, public functions in the order a caller uses them, then private helpers in the order they are first called.
 3. **A comment that labels a phase is a missing function.**
-4. **Data is a struct; state gets a class.** A node definition, a sweep, a fit or a config is a Pydantic model, frozen dataclass or named tuple. The Cluster connection, the SPI rack and the Redis connection are classes. A class that holds only what its single method needs is a function.
+4. **Data is a struct; state gets a class.** A node definition, a sweep, a fit or a config is a Pydantic model, frozen dataclass or named tuple. The Cluster connection, the SPI rack and the device state are classes. A class that holds only what its single method needs is a function.
 5. **Stateless behaviour is a module-level function**, taking explicit arguments. No inheritance used only to share behaviour, no ABC with one implementation.
 6. **Dependencies arrive as arguments.** Only the entry points turn configuration into instances. A function is given the store, the cluster or the value it needs, not the whole session.
 7. **A library never takes over its host.** No `quit()`, no `matplotlib.use()`, no write to another package's globals that outlives the call, no write into the installed package. Errors are `TunerError`s from `exc.py`.
-8. **One home per kind of thing.** The scheduler is imported in one package (from refactor step 5), Redis only through `RedisStore`, tooling in `dev/`, shared test helpers in `tests/utils/`.
+8. **One home per kind of thing.** The scheduler is imported in one package (from refactor step 5), device values are read from the session's state, tooling in `dev/`, shared test helpers in `tests/utils/`.
 9. **Physics constants are named once**, at the top of the module that owns them.
 10. **A reputable library beats our own code.** Write our own only where no library does the job, or where getting the behaviour would mean fighting it; the commit says which.
 11. **A name says what the thing is.** Variables are nouns, functions verbs, booleans `is_`/`should_`. No `build_*`: a constructed thing is a class's constructor, anything else is a `get_*`.

@@ -45,7 +45,6 @@ _COUPLER_CROSSINGS = [
 @pytest.mark.parametrize("coupler, q1_crossings, q2_crossings", _COUPLER_CROSSINGS)
 def test_get_crossings(
     session_context,
-    redis_connection,
     node_data_dir,
     coupler,
     q1_crossings,
@@ -67,7 +66,7 @@ def test_get_crossings(
         assert q2_crossings == pytest.approx(q2_crossings, abs=1e-6)
 
 
-def test_coupler_plot_is_created(node_data_dir, session_context, redis_connection):
+def test_coupler_plot_is_created(node_data_dir, session_context):
     matplotlib.use("Agg")
     dataset_path = node_data_dir / "dataset_coupler_resonator_spectroscopy_0.hdf5"
     with xr.open_dataset(dataset_path) as ds:

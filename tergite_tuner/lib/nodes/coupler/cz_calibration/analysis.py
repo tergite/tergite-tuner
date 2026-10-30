@@ -65,10 +65,10 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
                 self.loops_coord = coord
 
         self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.redis
+            self.control_qubit_data_var, self.session.state
         )
         self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.redis
+            self.target_qubit_data_var, self.session.state
         )
 
         data_target_0 = self.target_qubit_probabilities.sel({"state": 0})

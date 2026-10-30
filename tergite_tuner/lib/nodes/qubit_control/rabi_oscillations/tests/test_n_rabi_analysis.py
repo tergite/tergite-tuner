@@ -21,7 +21,7 @@ from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.analysis import (
 from tergite_tuner.tests.utils.datasets import get_s21
 
 
-@pytest.mark.usefixtures("seeded_redis")
+@pytest.mark.usefixtures("seeded_state")
 @pytest.mark.parametrize(
     "name, amp180_field, expected",
     [
@@ -48,7 +48,7 @@ def test_n_rabi_corrects_the_stored_amplitude(
         assert fits["amp180"].value == pytest.approx(amp180)
 
 
-@pytest.mark.usefixtures("seeded_redis")
+@pytest.mark.usefixtures("seeded_state")
 def test_plot_n_rabi_marks_the_correction(session_context, node_data_dir):
     s21 = get_s21(node_data_dir / "dataset_n_rabi_oscillations.hdf5", "q13")
     fits = analyse_n_rabi(s21, session_context, amp180_field="rxy:amp180")

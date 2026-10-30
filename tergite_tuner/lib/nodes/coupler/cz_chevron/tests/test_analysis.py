@@ -18,20 +18,18 @@ from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCoupler
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.pytest import is_headless, is_work_in_progress
-from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.tests.utils.state import loaded_state
 
 _REDIS_DATA_FILENAME = "redis-export-2025-12-21.json"
 
 
 @pytest.mark.skipif(is_work_in_progress(), reason="Currently work in progress")
-def test_cz_chevron_analysis_good_data(
-    redis_connection, session_context, node_data_dir
-):
+def test_cz_chevron_analysis_good_data(session_context, node_data_dir):
     """
     Test whether single coupler analysis outputs right QOIs
     """
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
@@ -54,12 +52,12 @@ def test_cz_chevron_analysis_good_data(
 
 
 @pytest.mark.skip
-def test_cz_chevron_analysis_bad_data(redis_connection, session_context, node_data_dir):
+def test_cz_chevron_analysis_bad_data(session_context, node_data_dir):
     """
     Test whether single coupler analysis outputs that the analysis fails on bad data
     """
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
@@ -80,12 +78,12 @@ def test_cz_chevron_analysis_bad_data(redis_connection, session_context, node_da
     is_headless(),
     reason="Skipped in headless/CI environment: requires a display for matplotlib FacetGrid",
 )
-def test_plotting(redis_connection, session_context, node_data_dir):
+def test_plotting(session_context, node_data_dir):
     """
     Test that the plotter produces a faceted figure
     """
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_redis(redis_connection, redis_data_file):
+    with loaded_state(session_context, redis_data_file):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
