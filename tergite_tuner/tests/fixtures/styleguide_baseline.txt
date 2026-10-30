@@ -110,7 +110,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py::CZCalibr
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_sinusoidal_slices_fit
 type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py::CZLocalPhasesCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.ro_shot
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationAnalysis.calculate_probabilities
 type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.detect_peaks
