@@ -155,13 +155,12 @@ class CouplerAnalysis:
 
 
 def get_fits_from_result(
-    result: Mapping[str, Mapping[str, Any]], is_successful: bool, analysis: Any
+    result: Mapping[str, Mapping[str, Any]], is_successful: bool
 ) -> Fits | None:
-    """The fits of an analysis reporting ``{field: {"value": ..., "error": ...}}``, with the analysis itself."""
+    """The fits of an analysis reporting ``{field: {"value": ..., "error": ...}}``."""
     fits = {name: Fit(item["value"], item["error"]) for name, item in result.items()}
-    fits["analysis"] = Fit(analysis)
     if not is_successful:
-        # failed fits keep their values and analysis, to plot and inspect, but are not stored
+        # failed fits keep their values, to plot and inspect, but are not stored
         fits["failed"] = Fit(True)
     return fits
 
@@ -174,22 +173,36 @@ def is_failed(fits: Fits | None) -> bool:
 def get_coupler_analyser(
     analysis_cls: type[CouplerAnalysis],
 ) -> Callable[..., Fits | None]:
-    """An ``analyse`` that builds an ``analysis_cls`` for the coupler, with its analysis keywords."""
-    return lambda dataset, session, **keywords: analysis_cls(
-        dataset, session, **keywords
-    ).analyse()
+    """An ``analyse`` that builds an ``analysis_cls`` for the coupler and keeps its figures in the fits.
+
+    The figures are drawn here so the analysis, as large as the dataset, is freed before they are saved.
+    """
+
+    def analyse(
+        dataset: xr.Dataset, session: "SessionContext", **keywords: Any
+    ) -> Fits | None:
+        analysis = analysis_cls(dataset, session, **keywords)
+        fits = analysis.analyse()
+        if fits is None:
+            return None
+        figures = {}
+        analysis.plotter(figures_dictionary=figures)
+        for figure in figures.get(analysis.coupler, []):
+            # out of pyplot's registry, so a run that saves no plots does not keep them open
+            plt.close(figure)
+        return {**fits, "figures": Fit(figures.get(analysis.coupler, []))}
+
+    return analyse
 
 
 def save_coupler_figures(
-    _dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
+    dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
 ) -> None:
-    """Saves the figures a ``CouplerAnalysis`` in the fits draws, as ``<node>_<coupler>_<index>_preview.png``."""
+    """Saves the figures in the fits as ``<node>_<coupler>_<index>_preview.png``."""
     if not fits:
         return
-    analysis = fits["analysis"].value
-    figures = {}
-    analysis.plotter(figures_dictionary=figures)
-    for index, figure in enumerate(figures.get(analysis.coupler, [])):
+    name, coupler = dataset.attrs["node"], dataset.attrs["coupler"]
+    for index, figure in enumerate(fits["figures"].value):
         geometry = figure.axes[0].get_gridspec().get_geometry()
         nrows, ncols = geometry
         if geometry == (2, 3):
@@ -200,9 +213,8 @@ def save_coupler_figures(
             figure.set_size_inches(12, 8)
         else:
             figure.set_size_inches(ncols * 6, nrows * 4)
-        path = data_path / f"{analysis.name}_{analysis.coupler}_{index}_preview.png"
+        path = data_path / f"{name}_{coupler}_{index}_preview.png"
         figure.savefig(path, bbox_inches="tight", dpi=100)
-        plt.close(figure)
 
 
 def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:

@@ -140,7 +140,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
                 "error": 0,
             },
         }
-        return get_fits_from_result(analysis_result, analysis_succesful, self)
+        return get_fits_from_result(analysis_result, analysis_succesful)
 
     def plotter(self, figures_dictionary):
 

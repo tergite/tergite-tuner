@@ -157,7 +157,7 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
                 "error": 0,
             },
         }
-        return get_fits_from_result(analysis_result, self.analysis_succesful, self)
+        return get_fits_from_result(analysis_result, self.analysis_succesful)
 
     def plotter(self, figures_dictionary: dict[str, list]):
         figures_list = []
