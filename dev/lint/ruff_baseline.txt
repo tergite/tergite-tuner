@@ -286,20 +286,8 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clif
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_01_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_01_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_01_analysis.py: F541 f-string without any placeholders
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_12_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_12_analysis.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_parameter_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_rabi_oscillations_measurement.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: B007 Loop control variable `detuning` not used within loop body
-tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: ARG001 Unused function argument: `seeded_redis`

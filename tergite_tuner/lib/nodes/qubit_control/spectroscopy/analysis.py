@@ -18,13 +18,20 @@ Module containing classes that model, fit and plot data
 from a qubit (two tone) spectroscopy experiment.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import xarray as xr
+from matplotlib.axes import Axes
 from scipy import signal
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
+from tergite_tuner.lib.spec import Fit, Fits, get_coord_name
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.types.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 # TODO: this is flagged for removal
 
@@ -158,27 +165,27 @@ class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
         ax.scatter(self.qubit_freq, self.spec_ampl, s=52, c="red")
 
 
-class QubitSpectroscopy12MultidimAnalysis(QubitSpectroscopyMultidimAnalysis):
-    def analyse_qubit(self):
-        self._analyse_spectroscopy()
-        analysis_successful = True
-        analysis_result = {
-            "clock_freqs:f12": {
-                "value": self.qubit_freq,
-                "error": 0,
-            },
-            "spec:spec_ampl_12_optimal": {
-                "value": self.spec_ampl,
-                "error": 0,
-            },
-        }
-        qoi = QOI(analysis_result, analysis_successful)
-        return qoi
-
-
-class QubitSpectroscopy12NodeAnalysis(BaseAllQubitsAnalysis):
-    single_qubit_analysis_cls = QubitSpectroscopy12MultidimAnalysis
-
-
 class QubitSpectroscopyNodeAnalysis(BaseAllQubitsAnalysis):
     single_qubit_analysis_cls = QubitSpectroscopyMultidimAnalysis
+
+
+def analyse_qubit_spectroscopy(s21: xr.DataArray, _session: "SessionContext") -> Fits:
+    """The ``frequency`` and spectroscopy ``amplitude`` of the strongest peak over all amplitudes."""
+    qubit = s21.attrs["qubit"]
+    frequency_coord = get_coord_name("spec_frequencies", qubit)
+    amplitude_coord = get_coord_name("spec_pulse_amplitudes", qubit)
+    magnitudes = np.abs(s21).transpose(amplitude_coord, frequency_coord)
+    strongest = int(magnitudes.max(frequency_coord).argmax())
+    peak = int(magnitudes.isel({amplitude_coord: strongest}).argmax())
+    return {
+        "frequency": Fit(s21.coords[frequency_coord].values[peak]),
+        "amplitude": Fit(s21.coords[amplitude_coord].values[strongest]),
+    }
+
+
+def plot_qubit_spectroscopy(
+    axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    np.abs(s21).plot(ax=axis, x=get_coord_name("spec_frequencies", s21.attrs["qubit"]))
+    if fits:
+        axis.scatter(fits["frequency"].value, fits["amplitude"].value, s=52, c="red")

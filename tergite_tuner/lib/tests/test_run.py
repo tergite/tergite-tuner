@@ -10,6 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import math
+
 import pytest
 
 from tergite_tuner.exc import MissingCalibrationStatusError
@@ -51,6 +53,20 @@ def test_plot_elements_saves_the_preview_and_the_full_plot(
 
     assert (tmp_path / f"{spec.name.value}_preview.png").exists()
     assert (tmp_path / f"{spec.name.value}.png").exists()
+
+
+@pytest.mark.parametrize("node", list(DEFAULT_NODE_SPECS))
+def test_dummy_data_has_a_point_per_sweep_point(node, session_context):
+    spec = DEFAULT_NODE_SPECS[node]
+    session = session_context.model_copy(update={"user_samplespace": {}})
+    sweeps = run.get_sweeps(spec, session)
+
+    dataset = run.get_dummy_dataset(spec, sweeps, session)
+
+    qubit = session.qubits[0]
+    points = math.prod(len(values[qubit]) for values in sweeps.values())
+    assert len(dataset.data_vars) == len(session.qubits)
+    assert dataset[0].size == points
 
 
 def test_mark_not_calibrated_keeps_existing_statuses(redis_connection, session_context):

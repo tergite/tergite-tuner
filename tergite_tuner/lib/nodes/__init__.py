@@ -53,21 +53,18 @@ from tergite_tuner.lib.nodes.coupler.spectroscopy.node import (
 )
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node import (
-    MotzoiParameter12Node,
-    MotzoiParameterNode,
+    MOTZOI_SPECS,
 )
 from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
     N_RABI_SPECS,
     RABI_SPECS,
 )
 from tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node import (
-    RamseyFringes12Node,
-    RamseyFringesNode,
+    RAMSEY_SPECS,
 )
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.node import (
+    QUBIT_SPECTROSCOPY_SPECS,
     Qubit01SpectroscopyAmplitudeNode,
-    Qubit01SpectroscopyNode,
-    Qubit12SpectroscopyNode,
 )
 from tergite_tuner.lib.nodes.readout.punchout.node import PunchoutNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
@@ -90,6 +87,9 @@ DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
     **RESONATOR_SPECTROSCOPY_SPECS,
     **RABI_SPECS,
     **N_RABI_SPECS,
+    **RAMSEY_SPECS,
+    **MOTZOI_SPECS,
+    **QUBIT_SPECTROSCOPY_SPECS,
 }
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
@@ -98,12 +98,6 @@ DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
     NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
     NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
-    NodeEnum.QUBIT_01_SPECTROSCOPY: Qubit01SpectroscopyNode,
-    NodeEnum.QUBIT_12_SPECTROSCOPY: Qubit12SpectroscopyNode,
-    NodeEnum.RAMSEY_CORRECTION: RamseyFringesNode,
-    NodeEnum.RAMSEY_CORRECTION_12: RamseyFringes12Node,
-    NodeEnum.MOTZOI_PARAMETER: MotzoiParameterNode,
-    NodeEnum.MOTZOI_12_PARAMETER: MotzoiParameter12Node,
     NodeEnum.RO_FREQUENCY_TWO_STATE_OPTIMIZATION: ROFrequencyTwoStateOptimizationNode,
     NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION: ROFrequencyThreeStateOptimizationNode,
     NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION: ROAmplitudeTwoStateOptimizationNode,

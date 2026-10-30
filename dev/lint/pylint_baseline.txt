@@ -4,7 +4,6 @@ duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.util
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
-duplicate-code: tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node
 duplicate-code: tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.analysis
 tergite_tuner/backend/transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__
 tergite_tuner/lib/base/node.py: too-many-locals BaseNode.configure_dataset
@@ -36,10 +35,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py: too-many-locals MotzoiParameter12Node.generate_dummy_dataset
-tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py: too-many-locals MotzoiParameterNode.generate_dummy_dataset
-tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: too-many-locals RamseyDetuningsBaseQubitAnalysis._analyse_ramsey
-tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py: too-many-locals RamseyFringesBase.generate_dummy_dataset
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse_qubit
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot

@@ -20,23 +20,9 @@ from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
     N_RABI_SPECS,
     RABI_SPECS,
 )
-from tergite_tuner.lib.run import get_dummy_dataset, get_sweeps
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 QUBITS = ["q13", "q14", "q15"]
-
-
-@pytest.mark.parametrize("spec", [*RABI_SPECS.values(), *N_RABI_SPECS.values()])
-def test_dummy_data_has_a_point_per_sweep_point(spec, session_context):
-    session = session_context.model_copy(update={"user_samplespace": {}})
-    sweeps = get_sweeps(spec, session)
-
-    dataset = get_dummy_dataset(spec, sweeps, session)
-
-    qubit = session.qubits[0]
-    points = np.prod([len(values[qubit]) for values in sweeps.values()])
-    assert len(dataset.data_vars) == len(session.qubits)
-    assert dataset[0].size == points
 
 
 def test_dummy_n_rabi_is_least_at_its_correction(session_context):

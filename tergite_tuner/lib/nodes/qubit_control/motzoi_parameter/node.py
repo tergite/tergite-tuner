@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2024
 # (C) Copyright Michele Faucci Giannelli 2024
 # (C) Copyright Abdullah Al Amin 2026
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,115 +13,80 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""DRAG motzoi calibration, from 0 and from 1."""
+
+from collections.abc import Mapping
+from functools import partial
+from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray
 
-from tergite_tuner.lib.base.node import QubitNode
+from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.analysis import (
-    Motzoi01NodeAnalysis,
-    Motzoi12NodeAnalysis,
+    analyse_motzoi,
+    plot_motzoi,
 )
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.measurement import (
     MotzoiParameterMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
 from tergite_tuner.lib.utils.analysis_models import RabiModel
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
+
+MOTZOI_FIELDS = ("rxy:motzoi", "r12:ef_motzoi")
+MOTZOIS = (np.linspace(-0.4, 0.1, 40), np.linspace(-0.2, 0.4, 41))
+REPETITIONS = (np.arange(1, 19, 6), np.arange(1, 13, 4))
+DUMMY_MOTZOI = -0.1
 
 rabi = RabiModel()
 
 
-class MotzoiParameterNode(QubitNode):
-    name: str = "motzoi_parameter"
-    measurement_cls = MotzoiParameterMeasurement
-    analysis_cls = Motzoi01NodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = ["rxy:motzoi"]
-
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.qubit_state = 0
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-        self.schedule_samplespace = {
-            "mw_motzois": {
-                qubit: np.linspace(-0.4, 0.1, 40) for qubit in self.all_qubits
-            },
-            "X_repetitions": {qubit: np.arange(1, 19, 6) for qubit in self.all_qubits},
-        }
-
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-        real_motzoi = -0.1
-        first_qubit = self.all_qubits[0]
-        x_repetitions = self.schedule_samplespace["X_repetitions"][first_qubit]
-        for index, _ in enumerate(self.all_qubits):
-            data_array = np.array([])
-            for number_of_Xs in x_repetitions:
-                this_frequency = number_of_Xs / 2
-                # find the phase that produces minimum at the real_motzoi
-                this_phase = np.pi - 2 * np.pi * this_frequency * real_motzoi
-                true_params = rabi.make_params(
-                    amplitude=0.2,
-                    frequency=this_frequency,
-                    offset=0.2,
-                    phase=this_phase,
-                )
-                samples = self.schedule_samplespace["mw_motzois"][first_qubit]
-                number_of_samples = len(samples)
-                fit_samples = np.linspace(samples[0], samples[-1], number_of_samples)
-                true_s21 = rabi.eval(params=true_params, drive_amp=fit_samples)
-
-                measured_s21 = true_s21
-                data_array = np.concatenate((data_array, measured_s21))
-
-            # Add the DataArray to the Dataset with an integer name (converted to string)
-            dataset[index] = xarray.DataArray(data_array)
-        return dataset
+def get_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    mw_motzois: dict[str, np.ndarray],
+    X_repetitions: dict[str, np.ndarray],
+    state: int,
+) -> Schedule:
+    return MotzoiParameterMeasurement(transmons).schedule_function(
+        mw_motzois, X_repetitions, qubit_state=state
+    )
 
 
-class MotzoiParameter12Node(QubitNode):
-    name: str = "motzoi_12_parameter"
-    measurement_cls = MotzoiParameterMeasurement
-    analysis_cls = Motzoi12NodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = ["r12:ef_motzoi"]
+def get_dummy_s21(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    """Oscillations whose minimum is at ``DUMMY_MOTZOI`` for every number of repetitions."""
+    columns = []
+    for repetitions in sweeps["X_repetitions"]:
+        frequency = repetitions / 2
+        params = rabi.make_params(
+            amplitude=0.2,
+            frequency=frequency,
+            offset=0.2,
+            phase=np.pi - 2 * np.pi * frequency * DUMMY_MOTZOI,
+        )
+        columns.append(rabi.eval(params=params, drive_amp=sweeps["mw_motzois"]))
+    return np.stack(columns, axis=1)
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.qubit_state = 1
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-        self.schedule_samplespace = {
-            "mw_motzois": {
-                qubit: np.linspace(-0.2, 0.4, 41) for qubit in self.all_qubits
-            },
-            "X_repetitions": {qubit: np.arange(1, 13, 4) for qubit in self.all_qubits},
-        }
 
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-        real_motzoi = -0.1
-        first_qubit = self.all_qubits[0]
-        x_repetitions = self.schedule_samplespace["X_repetitions"][first_qubit]
-        for index, _ in enumerate(self.all_qubits):
-            data_array = np.array([])
-            for number_of_Xs in x_repetitions:
-                this_frequency = number_of_Xs / 2
-                # find the phase that produces minimum at the real_motzoi
-                this_phase = np.pi - 2 * np.pi * this_frequency * real_motzoi
-                true_params = rabi.make_params(
-                    amplitude=0.2,
-                    frequency=this_frequency,
-                    offset=0.2,
-                    phase=this_phase,
-                )
-                samples = self.schedule_samplespace["mw_motzois"][first_qubit]
-                number_of_samples = len(samples)
-                fit_samples = np.linspace(samples[0], samples[-1], number_of_samples)
-                true_s21 = rabi.eval(params=true_params, drive_amp=fit_samples)
-
-                measured_s21 = true_s21
-                data_array = np.concatenate((data_array, measured_s21))
-
-            # Add the DataArray to the Dataset with an integer name (converted to string)
-            dataset[index] = xarray.DataArray(data_array)
-        return dataset
+MOTZOI_SPECS = {
+    name: NodeSpec(
+        name=name,
+        element="qubit",
+        get_schedule=partial(get_schedule, state=state),
+        analyse=analyse_motzoi,
+        qois={"motzoi": MOTZOI_FIELDS[state]},
+        sweeps={
+            "mw_motzois": get_fixed_sweep(MOTZOIS[state]),
+            "X_repetitions": get_fixed_sweep(REPETITIONS[state]),
+        },
+        get_dummy_s21=get_dummy_s21,
+        plot=plot_motzoi,
+    )
+    for state, name in enumerate(
+        (NodeEnum.MOTZOI_PARAMETER, NodeEnum.MOTZOI_12_PARAMETER)
+    )
+}
