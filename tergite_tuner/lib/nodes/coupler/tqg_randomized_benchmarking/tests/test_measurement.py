@@ -21,7 +21,7 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking import (
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
+from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group import (
     TwoQubitClifford,
 )
 from tergite_tuner.tests.utils.state import loaded_state

@@ -1,9 +1,3 @@
-duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_decomposition, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group
-duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
-duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
-duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
-duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
-duplicate-code: tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.clifford_group, tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group
 tergite_tuner/backend/transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__
 tergite_tuner/lib/base/utils/figure_utils.py: too-many-locals create_figure_with_top_band
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: too-many-locals PurityBenchmarkingQubitAnalysis._process_and_normalize_data
@@ -27,8 +21,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-man
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: too-many-locals CZRBMeasurement.ro_shot
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.SWAP_like_gates
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot

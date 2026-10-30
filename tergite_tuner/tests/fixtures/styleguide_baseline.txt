@@ -3,7 +3,6 @@ banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ########################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ##################################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#
-banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: ##############################################################################
 banner: tergite_tuner/utils/cliffords.py: # ******************************************************
 banner: tergite_tuner/backend/transmon.py: ############################
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
@@ -58,12 +57,9 @@ license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/test
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_clifford_group.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/__init__.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_decomposition.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py
 license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py
-license-header: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py
 license-header: tergite_tuner/lib/nodes/qubit_control/__init__.py
 license-header: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/__init__.py
 license-header: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/__init__.py
@@ -137,26 +133,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/cl
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.SWAP_like_gates
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.gate_decomposition
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py::TwoQubitClifford.iSWAP_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py::construct_clifford_lookuptable
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py::generate_hash_tables
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford.__repr__
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford.__str__
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford._get_clifford_id
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::Clifford.get_inverse
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::SingleQubitClifford._get_clifford_id
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::SingleQubitClifford.gate_decomposition
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_PTM
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.SWAP_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford._get_clifford_id
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.gate_decomposition
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.pauli_transfer_matrix
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_gates
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::get_single_qubit_clifford_hash_table
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::get_two_qubit_clifford_hash_table
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesMultidimMeasurement.__init__
@@ -265,14 +241,6 @@ verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py::X_theta
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py::Y_theta
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py::randomized_benchmarking_sequence
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.CNOT_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.SWAP_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.SWAP_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.iSWAP_like_gates
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_PTM
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py::TwoQubitClifford.single_qubit_like_gates
 verb: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::MotzoiParameterMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::NRabiOscillationsMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/measurement.py::RabiOscillationsMeasurement.schedule_function

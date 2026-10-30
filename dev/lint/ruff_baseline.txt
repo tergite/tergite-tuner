@@ -156,7 +156,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_measureme
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py: ARG001 Unused function argument: `interleaved_clifford_idx`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/tests/test_randomized_benchmarking.py: RET507 Unnecessary `elif` after `continue` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_decomposition.py: B007 Loop control variable `i` not used within loop body
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gate_decomp` before `return` statement
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
@@ -175,7 +174,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP035 `typing.List` is deprecated, use `list` instead
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/clifford_group.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/generate_clifford_hash_tables.py: SIM105 Use `contextlib.suppress(FileExistsError)` instead of `try`-`except`-`pass`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py: E741 Ambiguous variable name: `I`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py: RET504 Unnecessary assignment to `X` before `return` statement
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/pauli_transfer_matrices.py: RET504 Unnecessary assignment to `Y` before `return` statement
@@ -184,25 +182,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_ben
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP035 `typing.Type` is deprecated, use `type` instead
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/randomized_benchmarking.py: UP045 Use `X | None` for type annotations
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `gates` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `hash_table` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `hash_table` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `idx` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `idx` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: RET504 Unnecessary assignment to `pauli_transfer_matrix` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: SIM115 Use a context manager for opening files
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP015 Unnecessary mode argument
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP015 Unnecessary mode argument
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP015 Unnecessary mode argument
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP035 `typing.List` is deprecated, use `list` instead
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py: ARG002 Unused method argument: `args`
