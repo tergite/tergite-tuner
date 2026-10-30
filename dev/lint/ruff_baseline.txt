@@ -139,7 +139,6 @@ tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutabl
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutable data structures for argument defaults
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_qubit_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_res_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: ARG005 Unused lambda argument: `q`
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: B007 Loop control variable `qubit` not used within loop body
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: UP045 Use `X | None` for type annotations
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: UP045 Use `X | None` for type annotations

@@ -1,5 +1,4 @@
 # Violations that predate the style-guide test. Delete a line when you fix it; never add one.
-banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#
 boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
 boolean: tergite_tuner/config/session.py::SessionContext.save_plot
@@ -124,7 +123,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorS
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.align_cliffords.pad_operations
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot.add_single_qubits_operations_dict
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesMultidimMeasurement.__init__
