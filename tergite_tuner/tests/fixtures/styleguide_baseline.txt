@@ -130,11 +130,9 @@ type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.p
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.plot_iq_scatter
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.populate_coords
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.primary_plotter
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plot_classified_IQ_points
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.three_state_classification
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.ro_shot
 type-hints: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py::align_on_y_axis
 type-hints: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.measure
@@ -217,7 +215,6 @@ verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::Opt
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROAmplitudeQubitAnalysis.primary_plotter
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::OptimalROTwoStateAmplitudeQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.plotter
-verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py::ROThreeStateAmplitudeQubitAnalysis.three_state_classification
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::ROAmplitudeOptimizationMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::ROFrequencyOptimizationMeasurement.schedule_function

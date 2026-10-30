@@ -57,82 +57,19 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
         Q = IQ_complex.imag.values
         return np.array([I, Q]).T
 
-    def run_initial_fitting(self):
-        """
-        Classify all iq points for all amplitudes and store them in
-        corresponding dataArrays.
-        """
-        # TODO: replace the amplitude for loop with a dataset mask
+    def classify_amplitudes(self) -> None:
+        """Classifies each amplitude's shots; the best amplitude has the highest assignment fidelity."""
+        self.lda = LinearDiscriminantAnalysis(solver="svd", store_covariance=True)
         self.fidelities = []
         self.cms = []
-
-        states_sent = self.qubit_states
-
-        self.lda = LinearDiscriminantAnalysis(solver="svd", store_covariance=True)
-
-        array_iq0_tp = xr.DataArray().expand_dims({self.amplitude_coord: []})
-        array_iq0_fp = xr.DataArray().expand_dims({self.amplitude_coord: []})
-        array_iq1_tp = xr.DataArray().expand_dims({self.amplitude_coord: []})
-        array_iq1_fp = xr.DataArray().expand_dims({self.amplitude_coord: []})
-        for index, ro_amplitude in enumerate(self.amplitudes):
-            iq = self.IQ(index)
-            classified_states, cm_norm, assignment = classify_shots(
-                iq, states_sent, self.lda
+        for index in range(len(self.amplitudes)):
+            _, cm_norm, assignment = classify_shots(
+                self.IQ(index), self.qubit_states, self.lda
             )
-
-            true_positives = states_sent == classified_states
-            tp0 = true_positives[states_sent == 0]
-            tp1 = true_positives[states_sent == 1]
-            IQ0 = iq[states_sent == 0]  # IQ when sending 0
-            IQ1 = iq[states_sent == 1]  # IQ when sending 1
-
-            IQ0_tp = xr.DataArray(
-                IQ0[tp0],
-                name="IQ0_tp",
-                coords={"shots": np.arange(len(IQ0[tp0])), "re_im": ["re", "im"]},
-            ).expand_dims(
-                {self.amplitude_coord: [ro_amplitude]}
-            )  # True Positive when sending 0
-
-            IQ0_fp = xr.DataArray(
-                IQ0[~tp0],
-                name="IQ0_fp",
-                coords={"shots": np.arange(len(IQ0[~tp0])), "re_im": ["re", "im"]},
-            ).expand_dims({self.amplitude_coord: [ro_amplitude]})
-
-            IQ1_tp = xr.DataArray(
-                IQ1[tp1],
-                name="IQ1_tp",
-                coords={"shots": np.arange(len(IQ1[tp1])), "re_im": ["re", "im"]},
-            ).expand_dims(
-                {self.amplitude_coord: [ro_amplitude]}
-            )  # True Positive when sending 1
-
-            IQ1_fp = xr.DataArray(
-                IQ1[~tp1],
-                name="IQ1_fp",
-                coords={"shots": np.arange(len(IQ1[~tp1])), "re_im": ["re", "im"]},
-            ).expand_dims({self.amplitude_coord: [ro_amplitude]})
-            array_iq0_tp = xr.concat(
-                [IQ0_tp, array_iq0_tp], dim=self.amplitude_coord, join="outer"
-            )
-            array_iq0_fp = xr.concat(
-                [IQ0_fp, array_iq0_fp], dim=self.amplitude_coord, join="outer"
-            )
-            array_iq1_tp = xr.concat(
-                [IQ1_tp, array_iq1_tp], dim=self.amplitude_coord, join="outer"
-            )
-            array_iq1_fp = xr.concat(
-                [IQ1_fp, array_iq1_fp], dim=self.amplitude_coord, join="outer"
-            )
-
             self.fidelities.append(assignment)
             self.cms.append(cm_norm)
-
         self.optimal_index = np.argmax(self.fidelities)
         self.optimal_amplitude = self.amplitudes.values[self.optimal_index]
-
-        return
 
     def plot_iq_scatter(
         self, ax, iq_points: np.ndarray, marker: str, color: str, label: str = ""
@@ -163,18 +100,11 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
 class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
     def analyse(self) -> Fits:
         self.populate_coords()
-        self.run_initial_fitting()
+        self.classify_amplitudes()
 
         states = self.qubit_states
-
         optimal_IQ = self.IQ(self.optimal_index)
         classified_states = self.lda.fit(optimal_IQ, states).predict(optimal_IQ)
-
-        true_positives = states == classified_states
-        tp0 = true_positives[states == 0]
-        tp1 = true_positives[states == 1]
-        IQ0 = optimal_IQ[states == 0]  # IQ when sending 0
-        IQ1 = optimal_IQ[states == 1]  # IQ when sending 1
 
         boundary = TwoClassBoundary(self.lda)
         self.theta_rad = boundary.theta_rad
@@ -182,45 +112,27 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.absolute_threshold = boundary.threshold
         self.centers = boundary.centers
         self.lamda = boundary.lamda
-        boundary_angle_rad = self.theta_rad
 
-        aligned_IQ, rotation_angle_rad, threshold = align_on_y_axis(
-            optimal_IQ, classified_states, boundary_angle_rad, self.absolute_threshold
+        aligned_IQ, rotation_angle_rad, self.threshold = align_on_y_axis(
+            optimal_IQ, classified_states, self.theta_rad, self.absolute_threshold
         )
-        self.threshold = threshold
+        self.rotation_angle_degrees = np.rad2deg(rotation_angle_rad)
 
-        aligned_IQ0 = aligned_IQ[states == 0]
-        aligned_IQ1 = aligned_IQ[states == 1]
-        self.rotated_IQ0_tp = aligned_IQ0[tp0]  # True Positive when sending 0
-        self.rotated_IQ0_fp = aligned_IQ0[~tp0]
-        self.rotated_IQ1_tp = aligned_IQ1[tp1]  # True Positive when sending 1
-        self.rotated_IQ1_fp = aligned_IQ1[~tp1]
-
-        self.IQ0_tp = IQ0[tp0]  # True Positive when sending 0
-        self.IQ0_fp = IQ0[~tp0]
-        self.IQ1_tp = IQ1[tp1]  # True Positive when sending 1
-        self.IQ1_fp = IQ1[~tp1]
+        self.IQ0_tp, self.IQ0_fp = _split_by_outcome(
+            optimal_IQ, states, classified_states, 0
+        )
+        self.IQ1_tp, self.IQ1_fp = _split_by_outcome(
+            optimal_IQ, states, classified_states, 1
+        )
+        self.rotated_IQ0_tp, self.rotated_IQ0_fp = _split_by_outcome(
+            aligned_IQ, states, classified_states, 0
+        )
+        self.rotated_IQ1_tp, self.rotated_IQ1_fp = _split_by_outcome(
+            aligned_IQ, states, classified_states, 1
+        )
 
         self.x_space = np.linspace(optimal_IQ[:, 0].min(), optimal_IQ[:, 0].max(), 100)
-        x_min = min(optimal_IQ[:, 0].min(), 0)
-        x_max = max(optimal_IQ[:, 0].max(), 0)
-        y_min = min(optimal_IQ[:, 1].min(), 0)
-        y_max = max(optimal_IQ[:, 1].max(), 0)
-        delta_x = x_max - x_min
-        delta_y = y_max - y_min
-
-        delta = max(delta_x, delta_y)
-        center_distance = np.linalg.norm(self.centers[0] - self.centers[1])
-        self.x_limits = (
-            x_min - center_distance / 2,
-            x_min + delta + center_distance / 2,
-        )
-        self.y_limits = (
-            y_min - center_distance / 2,
-            y_min + delta + center_distance / 2,
-        )
-
-        self.rotation_angle_degrees = np.rad2deg(rotation_angle_rad)
+        self.x_limits, self.y_limits = get_iq_limits(optimal_IQ, self.centers)
 
         return {
             "measure_2state_opt:pulse_amp": Fit(self.optimal_amplitude),
@@ -294,59 +206,14 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 
 
 class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
-    def three_state_classification(self):
-        """
-        Classify all iq points for all amplitudes and store them in
-        corresponding dataArrays.
-        """
-        # TODO: replace the amplitude for loop with a dataset mask
-        self.fidelities = []
-        self.cms = []
-
-        states_sent = self.qubit_states
-
-        self.lda = LinearDiscriminantAnalysis(solver="svd")
-
-        for index, ro_amplitude in enumerate(self.amplitudes):
-            _, cm_norm, assignment = classify_shots(
-                self.IQ(index), states_sent, self.lda
-            )
-            self.fidelities.append(assignment)
-            self.cms.append(cm_norm)
-
-        self.optimal_index = np.argmax(self.fidelities)
-        self.optimal_amplitude = self.amplitudes.values[self.optimal_index]
-        return
-
     def analyse(self) -> Fits:
-        """
-        classify the three states for each RO amplitude
-        and return the RO amplitude that gives the maximum three state classification fidelity
-        as well as the defining parameters for the optimal three state boundary
-        returns
-        -------
-        optimal_amplitude: float
-            amplitude of the RO pulse that gives optimal fidelity
-        centroid_I: float
-            I coordinate of the centroid defined by the class boundaries
-        centroid_Q: float
-            Q coordinate of the centroid defined by the class boundaries
-        omega_01: float \\in [0,360) degrees
-            defining angle for the |0> - |1> boundary
-        omega_12: float \\in [0,360) degrees
-            defining angle for the |1> - |2> boundary
-        omega_20 \\in [0,360) degrees,
-            defining angle for the |2> - |0> boundary
-        inv_cm_str: str
-            string encoding of the confusion matrix
-        """
+        """The best amplitude's three-state boundaries: their centroid and the angle of each pair's boundary."""
         self.populate_coords()
-        self.three_state_classification()
+        self.classify_amplitudes()
 
-        y = self.qubit_states
-
+        states = self.qubit_states
         optimal_IQ = self.IQ(self.optimal_index)
-        optimal_y = self.lda.fit(optimal_IQ, y).predict(optimal_IQ)
+        classified_states = self.lda.fit(optimal_IQ, states).predict(optimal_IQ)
 
         self.boundary = ThreeClassBoundary(self.lda)
         self.centroid_I = self.boundary.centroid[0]
@@ -355,19 +222,15 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.omega_12 = self.boundary.omega_12
         self.omega_20 = self.boundary.omega_20
 
-        true_positives = y == optimal_y
-        tp0 = true_positives[y == 0]
-        tp1 = true_positives[y == 1]
-        tp2 = true_positives[y == 2]
-        IQ0 = optimal_IQ[y == 0]  # IQ when sending 0
-        IQ1 = optimal_IQ[y == 1]  # IQ when sending 1
-        IQ2 = optimal_IQ[y == 2]  # IQ when sending 2
-        self.IQ0_tp = IQ0[tp0]  # True Positive when sending 0
-        self.IQ0_fp = IQ0[~tp0]
-        self.IQ1_tp = IQ1[tp1]  # True Positive when sending 1
-        self.IQ1_fp = IQ1[~tp1]
-        self.IQ2_tp = IQ2[tp2]  # True Positive when sending 2
-        self.IQ2_fp = IQ2[~tp2]
+        self.IQ0_tp, self.IQ0_fp = _split_by_outcome(
+            optimal_IQ, states, classified_states, 0
+        )
+        self.IQ1_tp, self.IQ1_fp = _split_by_outcome(
+            optimal_IQ, states, classified_states, 1
+        )
+        self.IQ2_tp, self.IQ2_fp = _split_by_outcome(
+            optimal_IQ, states, classified_states, 2
+        )
 
         return {
             "measure_3state_opt:pulse_amp": Fit(self.optimal_amplitude),
@@ -452,3 +315,22 @@ def plot_ro_amplitude(
     """The fidelity per amplitude, then the best amplitude's shots, on three axes."""
     if fits:
         fits["analysis"].value.plot(axes[0], list(axes[1:]))
+
+
+def get_iq_limits(
+    iq: np.ndarray, centers: np.ndarray
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Square I and Q limits that hold the shots and the origin, padded by half the centres' distance."""
+    lower = np.minimum(iq.min(axis=0), 0)
+    span = (np.maximum(iq.max(axis=0), 0) - lower).max()
+    padding = np.linalg.norm(centers[0] - centers[1]) / 2
+    return tuple((low - padding, low + span + padding) for low in lower)
+
+
+def _split_by_outcome(
+    iq: np.ndarray, states: np.ndarray, classified_states: np.ndarray, state: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """The shots prepared in ``state`` that were read as it, and those that were not."""
+    is_sent = states == state
+    is_read = classified_states[is_sent] == state
+    return iq[is_sent][is_read], iq[is_sent][~is_read]

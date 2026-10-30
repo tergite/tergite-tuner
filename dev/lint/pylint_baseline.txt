@@ -10,8 +10,6 @@ tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py: too-many-locals 
 tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py: too-many-locals CZParametrizationMeasurement.cz_parametrization
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_qubit_spec_vs_current_coupler_analysis.py: too-many-locals test_coupler_plot_is_created
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: too-many-locals CZRBMeasurement.ro_shot
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py: too-many-locals ROAmplitudeOptimizationMeasurement.ro_shot
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/utils.py: too-many-locals align_on_y_axis
 tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py: too-many-locals ROFrequencyOptimizationMeasurement.schedule_function

@@ -11,11 +11,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
 import pytest
 from matplotlib import pyplot as plt
 
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis import (
     analyse_three_state_ro_amplitude,
+    get_iq_limits,
     plot_ro_amplitude,
 )
 from tergite_tuner.tests.utils.datasets import get_s21
@@ -60,3 +62,9 @@ def test_plot_draws_fidelity_shots_and_confusion_matrix(node_data_dir):
 
     assert axes[0].lines and axes[1].collections and axes[2].images
     plt.close(figure)
+
+
+def test_iq_limits_are_square_hold_the_origin_and_pad_by_half_the_centres_distance():
+    iq = np.array([[1.0, 2.0], [3.0, 3.0]])
+    centers = np.array([[0.0, 0.0], [0.0, 2.0]])
+    assert np.ravel(get_iq_limits(iq, centers)) == pytest.approx([-1, 4, -1, 4])
