@@ -27,11 +27,11 @@ from tergite_tuner.backend import (
     close_device_resources,
     compile_schedule,
     configure_device,
+    run_schedule,
     save_serial_device,
 )
 from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
 from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
-from tergite_tuner.lib.utils.schedule_execution import execute_schedule
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.utils.dicts import insert_nested_key
 from tergite_tuner.utils.hardware.spi import SpiDAC
@@ -140,11 +140,10 @@ class BaseNode(ABC):
         print_measurement_info(schedule_duration, measurement)
 
         start = time.perf_counter()
-        raw_dataset = execute_schedule(
-            compiled_schedule,
-            schedule_duration,
+        raw_dataset = run_schedule(
             self.lab_instr_coordinator,
-            measurement_mode,
+            compiled_schedule,
+            timeout=schedule_duration + self.session.cluster_timeout,
         )
         logger.info(f"Measured {self.name} in {time.perf_counter() - start:.2f} s")
 

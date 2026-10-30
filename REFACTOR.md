@@ -369,7 +369,7 @@ tergite_tuner/backend/
 2. **`compile_schedule`** replaces the two copies of `precompile` in `QubitNode` and `CouplerNode` (`base/node.py:316, 530`), which differ only in the edges.
 3. **`run_schedule`** replaces `execute_schedule`:
    - It drops the fake progress thread (`schedule_execution.py:37-49`), which only sleeps for the estimated duration. Log the estimate instead, or use the coordinator's real progress if it reports any.
-   - The hard-coded 3600 s wait becomes the session's `cluster_timeout`.
+   - The hard-coded 3600 s wait becomes the schedule's estimated duration plus the session's `cluster_timeout`. `cluster_timeout` alone (222 s by default) is shorter than punchout's 264 s schedule.
 4. **`AcquisitionMode`**, our own enum, replaces `BinMode` (22 uses). It is mapped to the scheduler's own setting in one place.
 5. **Shared schedule building blocks**, one commit each, moving every measurement onto them:
    - `get_multiplexed_schedule(name, transmons, sweeps, add_point, repetitions)` replaces the skeleton all 10 readout and qubit-control schedules copy: root reset, per-qubit reset, the nested sweep with its `acq_index` arithmetic, measure, reset. It iterates in the order `configure_dataset` reshapes (`order="F"`), so that ordering lives in one place.

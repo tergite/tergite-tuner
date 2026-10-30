@@ -3143,7 +3143,6 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "tomlkit" },
-    { name = "tqdm" },
     { name = "xarray" },
 ]
 
@@ -3179,7 +3178,6 @@ requires-dist = [
     { name = "scikit-learn", specifier = "~=1.5.2" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "tomlkit", specifier = ">=0.13.2" },
-    { name = "tqdm", specifier = ">=4.66.0" },
     { name = "xarray", specifier = ">=2024.11.0" },
 ]
 

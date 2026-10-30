@@ -51,7 +51,6 @@ confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.
 confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.enums
-confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
 confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator
 confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator.components.qblox
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.base.node
@@ -471,7 +470,6 @@ type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.__init__
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.guess
 type-hints: tergite_tuner/lib/utils/fitting_models.py::exp_damp_osc_func
 type-hints: tergite_tuner/lib/utils/graph.py::get_dependencies_in_topological_order.filter_ancestors
-type-hints: tergite_tuner/lib/utils/schedule_execution.py::execute_schedule
 type-hints: tergite_tuner/storage/redis/utils.py::populate_initial_parameters
 type-hints: tergite_tuner/storage/redis/utils.py::populate_node_parameters
 type-hints: tergite_tuner/storage/redis/utils.py::revert_node_parameters

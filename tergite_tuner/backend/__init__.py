@@ -46,6 +46,7 @@ from .device import (
     save_serial_device,
 )
 from .edge import ExtendedCompositeSquareEdge
+from .execute import run_schedule
 from .gates import Measure_RO1, Measure_RO_3state_Opt
 from .transmon import ExtendedTransmon
 
@@ -80,5 +81,6 @@ __all__ = [
     "compile_schedule",
     "configure_device",
     "long_square_pulse",
+    "run_schedule",
     "save_serial_device",
 ]
