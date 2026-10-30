@@ -22,9 +22,9 @@ Every node in the default map builds a dummy dataset that `configure_dataset` ac
 
 A standalone `run_node` in dummy mode still needs the device values that earlier nodes write (f01 and others) and qubits that the configs define. So a dummy tune-up of the whole graph is step 2.1's test, not this sign-off.
 
-## 3. On the testbed
+## 3. On real hardware
 
-On the testbed, with `CLUSTER_MODE='real'`, check these. Each one exercises a fix that a dummy run cannot:
+On a real device, with `CLUSTER_MODE='real'`, check these. Each one exercises a fix that a dummy run cannot:
 
 | Fix | Run | Expected |
 | --- | --- | --- |
@@ -37,4 +37,4 @@ On the testbed, with `CLUSTER_MODE='real'`, check these. Each one exercises a fi
 | 0.23 | Two-qubit RB on one coupler | Same fidelity as on `main`; on two couplers it raises `ValueError` |
 | 0.3 | Punchout | Compiles; afterwards `quantify_scheduler.backends.qblox.constants.GRID_TIME_TOLERANCE_TIME` is back to `0.0011` |
 
-The values for the testbed decisions in `REFACTOR.md` step 0 (peak detection, Rabi uncertainty, the 1–2 durations, the CZ phase) are best recorded from this same session, to decide them.
+The values for the hardware decisions in `REFACTOR.md` step 0 (peak detection, Rabi uncertainty, the 1–2 durations, the CZ phase) are best recorded from this same session, to decide them.

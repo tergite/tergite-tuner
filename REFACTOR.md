@@ -84,9 +84,9 @@ def run_node(node: NodeEnum, session: SessionContext, hardware: Hardware) -> Cal
 - the dummy tune-up of step 2.1;
 - the reanalysis of step 2.2's recorded datasets;
 - the step 3 performance comparison;
-- at the end of steps 5, 6, 9 and 11, one real run on the testbed: resonator spectroscopy → Rabi → T1, and the coupler spectroscopy → CZ chain where couplers are wired.
+- at the end of steps 5, 6, 9 and 11, one run on a real device: resonator spectroscopy → Rabi → T1, and the coupler spectroscopy → CZ chain where couplers are wired.
 
-Someone with testbed access runs it and gives the go-ahead before the next step.
+Someone with access to a real device runs it and gives the go-ahead before the next step.
 
 ## Step 0: fix the bugs
 
@@ -111,12 +111,12 @@ The rest:
   - 0.24 and `utils/cliffords.py`'s `UnboundLocalError` → step 8, which deletes both modules;
   - 0.25 → step 6.1 (`configure_dataset`) and step 9.6 (the CZ fixed-duration match). With zero-padded `qNN` names neither misfires today.
 - **Left for later (decided):** 0.6–0.7. AllXY and Purity stay in the default map; nothing depends on them, so only a run that targets them reaches them, and it fails. Fixing them is step 9.7.
-- **For the testbed, not a blind fix:**
+- **For real hardware, not a blind fix:**
   - 0.18: qubit spectroscopy's peak check has been overridden to `True` since `fca99544` (2024), and Rabi's fit uncertainty is hard-coded to 0. Re-enabling either changes which values a real run picks.
   - 0.20: the three suspects (the 1–2 pulse duration, the readout motzoi, the double correction on reanalysis).
   - 0.21: the CZ phase sign and units.
   - 0.23's analysis items: plots and the interleaving assumption.
-  - Each needs a recorded dataset or a testbed run that shows the right answer, before its fix.
+  - Each needs a recorded dataset or a real run that shows the right answer, before its fix.
 
 **Runner and base**
 
@@ -259,7 +259,7 @@ After this step, CI rejects any commit that makes the code less clean than it is
 Tests only. After this step, a refactor commit that changes behaviour fails a test.
 
 1. **Every default node in dummy mode** (the README TODO). Built as `tests/test_tune_up.py`: one test per node in the default graph, each on the calibrated device in `standard_redis_mock.json` with `ignore_spec`, so a node does not depend on what the one before it wrote from random data. Analyses of random IQ points may fail, which is fine; the check is that the node measures, saves its dataset and analyses without raising. It takes about five minutes, so it is marked `slow`, and CI runs it. Four nodes fail, as strict `xfail`s that turn red when fixed:
-   - qubit 01 spectroscopy: five 6 µs `SoftSquarePulse` amplitudes need 18,000 waveform samples, over the 16,384 limit. `test_precompile.py` missed it, as it does not apply the node config, whose 6 µs `node_config.example.toml` shares. For the testbed list.
+   - qubit 01 spectroscopy: five 6 µs `SoftSquarePulse` amplitudes need 18,000 waveform samples, over the 16,384 limit. `test_precompile.py` missed it, as it does not apply the node config, whose 6 µs `node_config.example.toml` shares. For the real-hardware list.
    - AllXY and purity benchmarking (step 9.7).
    - CZ chevron: its analysis raised `IndexError` on data it could not fit (`analysis.py:217`); fixed in step 4.3, as the line was dead.
 
@@ -296,7 +296,7 @@ The refactor must lower neither.
    - the wall time and peak RSS of the step 2.1 dummy tune-up;
    - `python -X importtime -c "import tergite_tuner"`, which is the cost of importing the scheduler and of everything set up at import time (loggers, the Clifford tables);
    - the installed size and package count of a fresh `uv sync --no-dev` environment. Step 11 is judged on this.
-3. **On the testbed**, at the sign-offs that include a real run:
+3. **On real hardware**, at the sign-offs that include a real run:
    - **time:** wall time per node, split into compile, instrument and analysis. `run_node` logs the three phases' durations at `INFO`, so a run's log is its measurement.
    - **quality:** readout assignment fidelity, single-qubit RB fidelity, T1 and T2, and CZ fidelity where couplers are wired.
    - **How quality is judged:** these drift from day to day, so they are compared with a same-day run of the baseline tag on the same qubits, not with a fixed number.
@@ -567,7 +567,7 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 10. ~~The CZ chevron analysis raised on data it could not fit~~: its `IndexError` came from a dead `np.linspace` over the working frequencies, removed in step 4.3.
 11. **The T2 and two-qubit RB analyses fail their QOI** on data they cannot fit, instead of raising: on some draws of random IQ points each raised `ZeroDivisionError` (step 3.5). A test with such data first.
 12. **One reset alignment.** Punchout, Motzoi and Ramsey align each qubit's reset to the end of the shared reset (`qubit_reset_ref_pt_new="end"`), the other five multiplexed schedules to its start, and Motzoi's shared reset lasts 4 ns where the others last the qubits' reset time. Each qubit gets at least one full reset before its sweep either way. Pick one, drop the two arguments from `get_multiplexed_schedule`, and update the three schedules' goldens.
-13. **Resonator spectroscopy prepares |2> without the ef motzoi**: its ef π pulse has `D_amp=0`, where `prepare_state`, used by both RO optimizations, uses `r12.ef_motzoi()`. Check on the testbed which is right, then use `prepare_state` there too.
+13. **Resonator spectroscopy prepares |2> without the ef motzoi**: its ef π pulse has `D_amp=0`, where `prepare_state`, used by both RO optimizations, uses `r12.ef_motzoi()`. Check on a real device which is right, then use `prepare_state` there too.
 
 ## Step 10: tests in the right place
 
@@ -606,7 +606,7 @@ qcodes cannot go while we drive the Cluster through qblox-instruments, which req
    - Go straight to qblox-scheduler 1.0.x, not 1.0.0b8. 1.0.0 moved `BasicTransmonElement`, `dispersive_measurement_transmon` and `rxy_drag_pulse` into qblox-applications, which is not on PyPI and lists pytest, ruff and pre-commit as runtime dependencies. Vendor those three into `backend/device.py` (BSD-3, credited in `CREDITS.md`, as the quantify fitting models were).
    - Map `AcquisitionMode` to `average_segment_repetitions`, which replaces the deprecated `bin_mode`.
    - 1.0.1 pins `pydantic<=2.13.5`: loosen our `~=2.14.1`, or wait for upstream.
-   - The step 2.3 digests are re-baselined in this commit. The step 2.1 dummy run and the step 2.2 goldens must hold unchanged, and so must the step 3 testbed quality.
+   - The step 2.3 digests are re-baselined in this commit. The step 2.1 dummy run and the step 2.2 goldens must hold unchanged, and so must the step 3 quality on real hardware.
 3. **The SPI rack on `spirack`** (23 MB, numpy and pyserial), instead of qblox-instruments' qcodes driver.
    - Add a `CurrentSource` class in `backend/spi.py` with `set_currents(currents)` (serial ramp, ±3.1 mA limit, about 30 lines of our own ramping) and `zero()`.
    - Pass `reset_currents=False`. `spirack`'s default forces the span to `range_max_bi` at 0 mA, and the span warning at `spi.py:113` is about heating.
@@ -616,7 +616,7 @@ qcodes cannot go while we drive the Cluster through qblox-instruments, which req
    - Measured on the quantify line (step 3): of the 743 MB install, about 230 MB is never imported: PyQt5 and pyqtgraph (138 MB, via quantify-core), plotly (39 MB, via quantify-scheduler), and `ipykernel` with jedi and debugpy (43 MB, via qcodes). pyarrow (123 MB) stays, as the pandas/xarray chain imports it. Drop the rest with impossible markers, e.g. `override-dependencies = ["pyqt5; python_version < '0'", ...]`, and add the same overrides to tergite-backend, which shares the environment and also installs with uv. Shipping empty stub modules instead was considered and rejected: pip still installs the real packages that quantify declares, and stand-in packages under those names would break anything else in the environment that uses them.
    - Import time is a separate problem: of its 5–8 s, scipy takes 2.0 s, pandas 1.0 s and scikit-learn 0.6 s, which the tuner uses itself; quantify-scheduler's own code takes 0.24 s, and nothing above is imported. Lazy imports of the analysis stack in the nodes that need it would help, not trimming.
    - uv's `override-dependencies` drops what is never imported from our lock and CI image (below); pyarrow stays.
-   - This lands only once the dummy run and a testbed run pass.
+   - This lands only once the dummy run and a real run pass.
    - It helps uv installs only: `pip install tergite-tuner` still pulls the full tree.
 5. **Not in this plan: a scheduler-free backend.**
    - Generating Q1ASM ourselves on qblox-instruments would get to about 335 MB and 61 packages. In return we would own the compiler: timing, NCO, allocation, waveform memory and firmware compatibility.
@@ -629,5 +629,5 @@ qcodes cannot go while we drive the Cluster through qblox-instruments, which req
 1. Read `DESIGN.md`, `README.md` and `CONTRIBUTING.md` against the tree.
    - Update the README's custom-node example to `NodeSpec`.
    - Remove the README TODOs that are done: the dummy whole-run test and a flexible node map.
-2. Run the step 2.1 dummy tune-up, the step 3 comparison and a full testbed tune-up against the merged result. Compare the seed file with one from the baseline tag, made the same day.
+2. Run the step 2.1 dummy tune-up, the step 3 comparison and a full tune-up on real hardware against the merged result. Compare the seed file with one from the baseline tag, made the same day.
 3. Delete `docs/prototypes/`, the step 1 lint baselines that are empty, and this file; the history keeps them.

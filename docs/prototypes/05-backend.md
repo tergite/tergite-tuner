@@ -42,6 +42,6 @@ No measure more than 15% worse.
 - The dummy cluster has the modules in the cluster config's `hardware_description`, not a fixed 15 QCM-RF and 2 QRM-RF.
 - A schedule's run waits for its estimated duration plus `cluster_timeout`, not an hour, and has no progress bar.
 
-## 5. Check on the testbed
+## 5. Check on real hardware
 
-The wait is the one change the dummy cluster cannot exercise. On the testbed, run punchout, whose schedule is the longest at about 264 s, and a CZ calibration with its real `loop_repetitions`: neither should raise a timeout.
+The wait is the one change the dummy cluster cannot exercise. On a real cluster, run punchout, whose schedule is the longest at about 264 s, and a CZ calibration with its real `loop_repetitions`: neither should raise a timeout.

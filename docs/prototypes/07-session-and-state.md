@@ -37,6 +37,6 @@ No measure is worse. The dummy tune-up took 117 s and 610 MB, against 285 s and 
 - Options given with a session are set over its values, where they were ignored.
 - An element a node's analysis failed on is marked `not_calibrated`.
 
-## 4. Check on the testbed
+## 4. Check on real hardware
 
 Run a tune-up through CZ calibration, then a second session with `calibration` set to the first's `results.json`, and check its nodes start from the first run's values. Then run tergite-backend's recalibration with `feature/tuner-node-specs` merged, and check that its one-qubit-at-a-time nodes measure one qubit each.

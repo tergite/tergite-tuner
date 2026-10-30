@@ -32,6 +32,6 @@ No measure is worse than the baseline, and import time did not move (5.6 s). The
 
 None beyond the modules: `tergite_tuner.utils.cliffords` and `tqg_randomized_benchmarking.utils` are gone, and the group lives in `tergite_tuner.lib.utils.cliffords`.
 
-## 4. Check on the testbed
+## 4. Check on real hardware
 
 Run single-qubit RB, interleaved with X90, and CZ RB: their fidelities should match a run from before the step.

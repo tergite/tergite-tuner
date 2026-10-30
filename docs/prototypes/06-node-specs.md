@@ -35,6 +35,6 @@ No measure more than 15% worse.
 - Dummy mode no longer pauses between T1 and T2 repetitions, and every node has a dummy model of its own.
 - A failed analysis is still plotted.
 
-## 4. Check on the testbed
+## 4. Check on real hardware
 
 Run a tune-up through CZ calibration, with `save_plot`: every node's plots should look as before, and each coupler node's figures appear under the same names.
