@@ -1,5 +1,4 @@
 # Violations that predate the style-guide test. Delete a line when you fix it; never add one.
-banner: tergite_tuner/backend/transmon.py: ############################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ############################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ########################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#

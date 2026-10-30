@@ -15,7 +15,6 @@ tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/backend/transmon.py: RET504 Unnecessary assignment to `dev_cfg` before `return` statement
 tergite_tuner/backend/transmon.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
 tergite_tuner/backend/transmon.py: UP035 Import from `collections.abc` instead: `Hashable`
 tergite_tuner/config/session.py: UP006 Use `list` instead of `List` for type annotation

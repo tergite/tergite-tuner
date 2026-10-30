@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 import collections
 import math
-from typing import Any, Hashable, Literal
+from typing import Any, Hashable, Literal, NamedTuple
 
 import numpy as np
 from qcodes import ChannelTuple
@@ -39,6 +39,23 @@ from tergite_tuner.backend.gates import (
     ExtendedClocksFrequencies,
     Spec,
 )
+
+
+class Readout(NamedTuple):
+    """A readout operation: the submodule its parameters are in, and its clock's suffix."""
+
+    parameters: str
+    clock: str
+    should_threshold: bool
+    should_label_feedback: bool
+
+
+READOUTS = {
+    "measure_1": Readout("measure", "ro1", True, False),
+    "measure_2": Readout("measure", "ro2", False, False),
+    "measure_2state_opt": Readout("measure_2state_opt", "ro_2st_opt", True, True),
+    "measure_3state_opt": Readout("measure_3state_opt", "ro_3st_opt", False, True),
+}
 
 
 class ExtendedTransmon(BasicTransmonElement):
@@ -71,146 +88,11 @@ class ExtendedTransmon(BasicTransmonElement):
             )
 
     def generate_device_config(self) -> DeviceCompilationConfig:
-        cfg_dict = {
-            "elements": self._generate_config(),
-            "clocks": {
-                f"{self.name}.01": self.clock_freqs.f01(),
-                f"{self.name}.12": self.clock_freqs.f12(),
-                f"{self.name}.ro": self.clock_freqs.readout(),
-                f"{self.name}.ro1": self.extended_clock_freqs.readout_1(),
-                f"{self.name}.ro2": self.extended_clock_freqs.readout_2(),
-                f"{self.name}.ro_2st_opt": self.extended_clock_freqs.readout_2state_opt(),
-                f"{self.name}.ro_3st_opt": self.extended_clock_freqs.readout_3state_opt(),
-            },
-            "edges": {},
-        }
-        cfg_dict["elements"][f"{self.name}"]["measure_1"] = OperationCompilationConfig(
-            factory_func=measurement_factories.dispersive_measurement_transmon,
-            factory_kwargs={
-                "port": self.ports.readout(),
-                # use different clock: ####
-                "clock": f"{self.name}.ro1",
-                ############################
-                "pulse_type": self.measure.pulse_type(),
-                "pulse_amp": self.measure.pulse_amp(),
-                "pulse_duration": self.measure.pulse_duration(),
-                "acq_delay": self.measure.acq_delay(),
-                "acq_duration": self.measure.integration_time(),
-                "acq_channel": self.measure.acq_channel(),
-                "acq_protocol_default": "SSBIntegrationComplex",
-                "reset_clock_phase": self.measure.reset_clock_phase(),
-                "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
-                    self.measure.reference_magnitude
-                ),
-                "acq_weights_a": self.measure.acq_weights_a(),
-                "acq_weights_b": self.measure.acq_weights_b(),
-                "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
-                "acq_rotation": self.measure.acq_rotation(),
-                "acq_threshold": self.measure.acq_threshold(),
-            },
-            gate_info_factory_kwargs=[
-                "acq_channel_override",
-                "acq_index",
-                "bin_mode",
-                "acq_protocol",
-            ],
-        )
-        cfg_dict["elements"][f"{self.name}"]["measure_2"] = OperationCompilationConfig(
-            factory_func=measurement_factories.dispersive_measurement_transmon,
-            factory_kwargs={
-                "port": self.ports.readout(),
-                # use different clock: ####
-                "clock": f"{self.name}.ro2",
-                ############################
-                "pulse_type": self.measure.pulse_type(),
-                "pulse_amp": self.measure.pulse_amp(),
-                "pulse_duration": self.measure.pulse_duration(),
-                "acq_delay": self.measure.acq_delay(),
-                "acq_duration": self.measure.integration_time(),
-                "acq_channel": self.measure.acq_channel(),
-                "acq_protocol_default": "SSBIntegrationComplex",
-                "reset_clock_phase": self.measure.reset_clock_phase(),
-                "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
-                    self.measure.reference_magnitude
-                ),
-                "acq_weights_a": self.measure.acq_weights_a(),
-                "acq_weights_b": self.measure.acq_weights_b(),
-                "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
-            },
-            gate_info_factory_kwargs=[
-                "acq_channel_override",
-                "acq_index",
-                "bin_mode",
-                "acq_protocol",
-            ],
-        )
-        cfg_dict["elements"][f"{self.name}"]["measure_2state_opt"] = (
-            OperationCompilationConfig(
-                factory_func=measurement_factories.dispersive_measurement_transmon,
-                factory_kwargs={
-                    "port": self.ports.readout(),
-                    # use different clock: ####
-                    "clock": f"{self.name}.ro_2st_opt",
-                    ############################
-                    "pulse_type": self.measure_2state_opt.pulse_type(),
-                    "pulse_amp": self.measure_2state_opt.pulse_amp(),
-                    "pulse_duration": self.measure_2state_opt.pulse_duration(),
-                    "acq_delay": self.measure_2state_opt.acq_delay(),
-                    "acq_duration": self.measure_2state_opt.integration_time(),
-                    "acq_channel": self.measure_2state_opt.acq_channel(),
-                    "acq_protocol_default": "SSBIntegrationComplex",
-                    "reset_clock_phase": self.measure_2state_opt.reset_clock_phase(),
-                    "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
-                        self.measure_2state_opt.reference_magnitude
-                    ),
-                    "acq_weights_a": self.measure_2state_opt.acq_weights_a(),
-                    "acq_weights_b": self.measure_2state_opt.acq_weights_b(),
-                    "acq_weights_sampling_rate": self.measure_2state_opt.acq_weights_sampling_rate(),
-                    "acq_rotation": self.measure_2state_opt.acq_rotation(),
-                    "acq_threshold": self.measure_2state_opt.acq_threshold(),
-                },
-                gate_info_factory_kwargs=[
-                    "acq_channel_override",
-                    "acq_index",
-                    "bin_mode",
-                    "acq_protocol",
-                    "feedback_trigger_label",
-                ],
-            )
-        )
-        cfg_dict["elements"][f"{self.name}"]["measure_3state_opt"] = (
-            OperationCompilationConfig(
-                factory_func=measurement_factories.dispersive_measurement_transmon,
-                factory_kwargs={
-                    "port": self.ports.readout(),
-                    # use different clock: ####
-                    "clock": f"{self.name}.ro_3st_opt",
-                    ############################
-                    "pulse_type": self.measure_3state_opt.pulse_type(),
-                    "pulse_amp": self.measure_3state_opt.pulse_amp(),
-                    "pulse_duration": self.measure_3state_opt.pulse_duration(),
-                    "acq_delay": self.measure_3state_opt.acq_delay(),
-                    "acq_duration": self.measure_3state_opt.integration_time(),
-                    "acq_channel": self.measure_3state_opt.acq_channel(),
-                    "acq_protocol_default": "SSBIntegrationComplex",
-                    "reset_clock_phase": self.measure_3state_opt.reset_clock_phase(),
-                    "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
-                        self.measure_3state_opt.reference_magnitude
-                    ),
-                    "acq_weights_a": self.measure_3state_opt.acq_weights_a(),
-                    "acq_weights_b": self.measure_3state_opt.acq_weights_b(),
-                    "acq_weights_sampling_rate": self.measure_3state_opt.acq_weights_sampling_rate(),
-                },
-                gate_info_factory_kwargs=[
-                    "acq_channel_override",
-                    "acq_index",
-                    "bin_mode",
-                    "acq_protocol",
-                    "feedback_trigger_label",
-                ],
-            )
-        )
-        cfg_dict["elements"][f"{self.name}"]["r12"] = OperationCompilationConfig(
+        elements = self._generate_config()
+        operations = elements[self.name]
+        for name, readout in READOUTS.items():
+            operations[name] = self._get_readout_config(readout)
+        operations["r12"] = OperationCompilationConfig(
             factory_func=pulse_factories.rxy_drag_pulse,
             factory_kwargs={
                 "amp180": self.r12.ef_amp180(),
@@ -221,8 +103,7 @@ class ExtendedTransmon(BasicTransmonElement):
             },
             gate_info_factory_kwargs=["theta", "phi"],
         )
-
-        cfg_dict["elements"][f"{self.name}"]["spec"] = OperationCompilationConfig(
+        operations["spec"] = OperationCompilationConfig(
             factory_func=pulse_factories.rxy_drag_pulse,
             factory_kwargs={
                 "spec_amp": self.spec.spec_amp(),
@@ -232,10 +113,53 @@ class ExtendedTransmon(BasicTransmonElement):
             },
             gate_info_factory_kwargs=["theta", "phi"],
         )
+        return DeviceCompilationConfig.model_validate(
+            {"elements": elements, "clocks": self._get_clocks(), "edges": {}}
+        )
 
-        dev_cfg = DeviceCompilationConfig.model_validate(cfg_dict)
+    def _get_clocks(self) -> dict[str, float]:
+        return {
+            f"{self.name}.01": self.clock_freqs.f01(),
+            f"{self.name}.12": self.clock_freqs.f12(),
+            f"{self.name}.ro": self.clock_freqs.readout(),
+            f"{self.name}.ro1": self.extended_clock_freqs.readout_1(),
+            f"{self.name}.ro2": self.extended_clock_freqs.readout_2(),
+            f"{self.name}.ro_2st_opt": self.extended_clock_freqs.readout_2state_opt(),
+            f"{self.name}.ro_3st_opt": self.extended_clock_freqs.readout_3state_opt(),
+        }
 
-        return dev_cfg
+    def _get_readout_config(self, readout: "Readout") -> OperationCompilationConfig:
+        """A dispersive measurement with ``readout``'s parameters, on its own clock."""
+        measure = getattr(self, readout.parameters)
+        factory_kwargs = {
+            "port": self.ports.readout(),
+            "clock": f"{self.name}.{readout.clock}",
+            "pulse_type": measure.pulse_type(),
+            "pulse_amp": measure.pulse_amp(),
+            "pulse_duration": measure.pulse_duration(),
+            "acq_delay": measure.acq_delay(),
+            "acq_duration": measure.integration_time(),
+            "acq_channel": measure.acq_channel(),
+            "acq_protocol_default": "SSBIntegrationComplex",
+            "reset_clock_phase": measure.reset_clock_phase(),
+            "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
+                measure.reference_magnitude
+            ),
+            "acq_weights_a": measure.acq_weights_a(),
+            "acq_weights_b": measure.acq_weights_b(),
+            "acq_weights_sampling_rate": measure.acq_weights_sampling_rate(),
+        }
+        if readout.should_threshold:
+            factory_kwargs["acq_rotation"] = measure.acq_rotation()
+            factory_kwargs["acq_threshold"] = measure.acq_threshold()
+        gate_info = ["acq_channel_override", "acq_index", "bin_mode", "acq_protocol"]
+        if readout.should_label_feedback:
+            gate_info.append("feedback_trigger_label")
+        return OperationCompilationConfig(
+            factory_func=measurement_factories.dispersive_measurement_transmon,
+            factory_kwargs=factory_kwargs,
+            gate_info_factory_kwargs=gate_info,
+        )
 
     def upsert_submodule(
         self, name: str, submodule: InstrumentModule | ChannelTuple
