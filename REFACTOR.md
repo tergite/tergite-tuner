@@ -450,7 +450,7 @@ class NodeSpec:
    - the analysis base classes;
    - `NodeManager`, whose `inspect_node` becomes the `run_node` composition above.
 
-## Step 7: configuration and the session
+## Step 7: configuration, the session and storage
 
 Today `SessionContext` is passed to every function, and it holds:
 - the configuration;
@@ -474,6 +474,26 @@ It also makes `config/` import `lib/` (`session.py:65`), to get the node class m
    - `DeviceConfigFile.from_toml`, `NodeConfig.from_toml`, `SpiConfig.from_toml` and `ClusterConfig.from_json` share one `load_config(model, path)`.
    - The hand-written `__getitem__`/`__contains__`/`__iter__` on `NodeConfig` and `SpiConfig` go, since `RootModel` gives `.root`.
 4. **Safe deletion.** `is_safe_path` (`tuner.py:498`) guards `shutil.rmtree(session.data_dir)` with a list of five system paths. Replace it with deleting only what this run created: its own subfolder.
+5. **Storage behind a URL**, as tergite-frontend's `libs/storage` does it.
+   - `storage/` defines a `Store`:
+     - read and write an element's parameters;
+     - read and set its calibration statuses.
+   - Two implementations: `RedisStore`, and a `SqlStore` on SQLAlchemy.
+   - `get_store(database_url)` picks one by the URL's scheme: `redis://`, `sqlite:///` or `postgresql://`. Changing the URL is all it takes to switch.
+   - The style guide already confines `redis` to `storage/`; it confines `sqlalchemy` there too.
+   - `redis_url` becomes `database_url`. `redis_url` stays accepted for one release, with a `Changed` entry.
+   - SQL keeps one row per element, field and value, with the value's type, plus one row per element, node and status. That mirrors the Redis hashes, so the store needs no migration whenever a node adds a field.
+   - A conformance test runs every `Store` method on fakeredis and on in-memory SQLite. Every storage test then runs on both.
+   - tergite-backend reads results through `read_result` and `generate_calib_seed_file`, which stay. Its test helper writes the `cs:` hashes directly, so it moves to the `Store` API in the same change.
+6. **Intermediate state in memory; one write per node.**
+   - Today the store holds state that lives only during a node:
+     - `populate_node_parameters` writes each node's config overrides into Redis before the node, and `revert_node_parameters` writes them back after;
+     - 14 raw `session.redis` calls in 8 files read values mid-run (NRabi's amplitude, Ramsey's frequency, the resonator plots, the discriminator in `calculate_probabilities`, the parking currents).
+   - Instead, a run loads the device's parameters from the store once, into an in-memory `DeviceState`.
+   - A node's config overrides apply to that node's copy of the state, so nothing needs reverting.
+   - Measurements and analyses read from the state, never from the store.
+   - After each node, its fits and calibration statuses go to the store in one write, and into the state. A node that fails writes nothing.
+   - The perf suite counts store round trips per node, before and after.
 
 ## Step 8: one Clifford implementation
 
