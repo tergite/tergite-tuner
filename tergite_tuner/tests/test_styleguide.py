@@ -325,7 +325,7 @@ def test_checks_catch_what_they_describe(tmp_path: Path):
         "boolean: tergite_tuner/utils/sample.py::job_status(active)",
         "constant-position: tergite_tuner/utils/sample.py::LIMIT",
         "private-helper-position: tergite_tuner/utils/sample.py::job_status",
-        "banner: tergite_tuner/utils/sample.py:7",
+        "banner: tergite_tuner/utils/sample.py: # ---- jobs ----",
         "license-header: tergite_tuner/utils/sample.py",
         "import-layering: tergite_tuner/utils/sample.py::import tergite_tuner.lib.base",
         "confined-import: tergite_tuner/utils/sample.py::import redis",
@@ -438,7 +438,8 @@ def _check_banners(module: Module) -> Iterator[Violation]:
             if token.type == tokenize.COMMENT and BANNER_COMMENT.match(
                 token.string.strip()
             ):
-                yield Violation("banner", f"{module.name}:{token.start[0]}")
+                # keyed by text, not line, so that editing above it does not move it
+                yield Violation("banner", f"{module.name}: {token.string.strip()}")
 
 
 def _check_license_header(module: Module) -> Iterator[Violation]:
