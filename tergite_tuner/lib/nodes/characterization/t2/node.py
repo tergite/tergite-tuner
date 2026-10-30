@@ -101,7 +101,6 @@ class T2EchoNode(QubitNode):
     def __init__(self, all_qubits: list[str], **schedule_keywords):
         super().__init__(all_qubits, **schedule_keywords)
         self.all_qubits = all_qubits
-        self.backup = False
 
         self.schedule_keywords = {
             "multiplexing": "one_by_one"

@@ -36,7 +36,6 @@ boolean: tergite_tuner/utils/types/qoi.py::QOI.analysis_successful
 confined-import: tergite_tuner/config/session.py::import quantify_scheduler.backends.qblox_backend
 confined-import: tergite_tuner/config/session.py::import redis
 confined-import: tergite_tuner/config/types/cluster.py::import quantify_scheduler.backends.qblox_backend
-confined-import: tergite_tuner/lib/base/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.device_under_test.quantum_device
 confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
 confined-import: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::import quantify_scheduler
@@ -248,7 +247,6 @@ type-hints: tergite_tuner/lib/base/analysis.py::BaseAllCouplersAnalysis.display_
 type-hints: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis.__init__
 type-hints: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis._analyze_all_qubits
 type-hints: tergite_tuner/lib/base/analysis.py::BaseAllQubitsAnalysis._fill_plots
-type-hints: tergite_tuner/lib/base/analysis.py::BaseAnalysis.qoi
 type-hints: tergite_tuner/lib/base/analysis.py::BaseCouplerAnalysis.__init__
 type-hints: tergite_tuner/lib/base/analysis.py::BaseCouplerAnalysis.analyze_coupler
 type-hints: tergite_tuner/lib/base/analysis.py::BaseCouplerAnalysis.process_coupler
@@ -256,7 +254,6 @@ type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.__init__
 type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis._manage_plots
 type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis._save_other_plots
 type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis._save_plots
-type-hints: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.qoi
 type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis._compute_magnitudes
 type-hints: tergite_tuner/lib/base/analysis.py::BaseQubitAnalysis._set_data_variables
@@ -545,8 +542,6 @@ type-hints: tergite_tuner/lib/nodes/schedule_node.py::ScheduleNode.__init__
 type-hints: tergite_tuner/lib/nodes/schedule_node.py::ScheduleNode.measure_node
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ExpDecayModel.__init__
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ExpDecayModel.guess
-type-hints: tergite_tuner/lib/utils/analysis_models.py::QuadraticModel.__init__
-type-hints: tergite_tuner/lib/utils/analysis_models.py::QuadraticModel.guess
 type-hints: tergite_tuner/lib/utils/analysis_models.py::RabiModel.__init__
 type-hints: tergite_tuner/lib/utils/analysis_models.py::RabiModel.guess
 type-hints: tergite_tuner/lib/utils/analysis_models.py::RamseyModel.__init__
@@ -560,7 +555,6 @@ type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_01
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_12
 type-hints: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega_20
-type-hints: tergite_tuner/lib/utils/analysis_models.py::parabolic
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
 type-hints: tergite_tuner/lib/utils/classification_functions.py::calculate_probabilities
@@ -602,8 +596,6 @@ type-hints: tergite_tuner/utils/types/extended_coupler_edge.py::ExtendedComposit
 type-hints: tergite_tuner/utils/types/extended_transmon.py::ExtendedTransmon.__init__
 verb: tergite_tuner/config/session.py::_default_data_dir
 verb: tergite_tuner/lib/base/analysis.py::BaseAnalysis.plotter
-verb: tergite_tuner/lib/base/analysis.py::BaseAnalysis.qoi
-verb: tergite_tuner/lib/base/analysis.py::BaseNodeAnalysis.qoi
 verb: tergite_tuner/lib/base/node.py::BaseNode.post_process
 verb: tergite_tuner/lib/base/node.py::CouplerNode.gate_qubit_types_dict
 verb: tergite_tuner/lib/base/node.py::CouplerNode.transition_frequency
@@ -735,7 +727,6 @@ verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersectio
 verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.intersection_Q
 verb: tergite_tuner/lib/utils/analysis_models.py::ThreeClassBoundary.omega
 verb: tergite_tuner/lib/utils/analysis_models.py::cos_func
-verb: tergite_tuner/lib/utils/analysis_models.py::parabolic
 verb: tergite_tuner/lib/utils/analysis_models.py::sin_func
 verb: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
 verb: tergite_tuner/lib/utils/fitting_models.py::_resonator_phase_guess

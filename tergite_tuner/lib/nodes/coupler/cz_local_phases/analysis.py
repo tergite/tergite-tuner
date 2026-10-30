@@ -47,20 +47,16 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
             coord = str(coord)
             if "loops" in coord:
                 self.loops_coord = coord
-                self.number_of_loops = dataset[coord].size
             elif "phases" in coord:
                 if dataset[coord].attrs["qubit"] == self.control_qubit:
                     self.control_phases_coord = coord
-                    self.control_phases = self.S21[coord].values
                 elif dataset[coord].attrs["qubit"] == self.target_qubit:
                     self.target_phases_coord = coord
                     self.target_phases = self.S21[coord].values
             elif "swap" in coord:
                 self.swap_coord = coord
-                self.swap_modes = dataset[coord].values
             elif "gate" in coord:
                 self.gate_mode_coord = coord
-                self.gate_modes = dataset[coord].values
             else:
                 raise ValueError
 

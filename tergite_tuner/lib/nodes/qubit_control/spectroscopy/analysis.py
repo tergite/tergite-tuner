@@ -57,7 +57,6 @@ class QubitSpectroscopyMaxThresholdQubitAnalysis:
         self.max_significance = abs((self.max_value - mean_value) / std_value)
 
         if self.max_significance < self.SIGNIFICANCE_THRESHOLD:
-            self.is_bad_value = True
             logger.warning(
                 "This spectroscopy doeas not have a proper maximum, it is ok if this is in a transition region in the coupler spectroscopy"
             )
@@ -81,7 +80,6 @@ class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
                 self.frequency_coords = coord
                 self.frequencies = self.dataset.coords[coord].values
             elif "amplitudes" in coord:
-                self.amplitude_coords = coord
                 self.amplitudes = self.dataset.coords[coord].values
 
         self.spec_ampl = 0
@@ -148,9 +146,6 @@ class QubitSpectroscopyMultidimAnalysis(BaseQubitAnalysis):
         self.filtered_std = np.std(x_filtered)
         peaks, properties = signal.find_peaks(
             x, prominence=self.filtered_std * prom_coef, width=wid_coef
-        )
-        self.prominence = (
-            properties["prominences"][0] if len(properties["prominences"]) == 1 else 0
         )
         self.hasPeak = peaks.size > 0
         self.hasPeak = True

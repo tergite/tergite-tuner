@@ -48,24 +48,17 @@ class CZCalibrationCouplerAnalysis(BaseCouplerAnalysis):
             elif "dc_currents" in coord:
                 self.dc_currents_coord = coord
                 self.dc_currents = self.S21[self.dc_currents_coord].values
-            elif "cz_frequencies" in coord:
-                self.cz_frequencies_coord = coord
-                self.cz_frequencies = self.S21[coord].values
-                self.number_of_frequencies = self.S21[coord].size
             elif "working_points" in coord:
                 self.cz_working_points_coord = coord
                 self.cz_working_points = self.S21[coord].values
                 self.number_of_wp = self.S21[coord].size
                 self.frequencies, self.durations = zip(*self.cz_working_points)
             elif "ramsey_phases" in coord:
-                if self.control_qubit in coord:
-                    self.control_phase_coord = coord
-                elif self.target_qubit in coord:
+                if self.target_qubit in coord:
                     self.target_phase_coord = coord
                     self.target_phases = self.S21[coord].values
             elif "loops" in coord:
                 self.loops_coord = coord
-                self.number_of_loops = self.S21[self.loops_coord].size
 
         self.control_qubit_probabilities = calculate_probabilities(
             self.control_qubit_data_var, self.session.redis

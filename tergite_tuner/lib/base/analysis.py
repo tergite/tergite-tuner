@@ -42,7 +42,6 @@ class BaseAnalysis(ABC):
     """
 
     def __init__(self):
-        self._qoi = None
         self.redis_fields = ""
         self.dataset: Optional[xr.Dataset] = None
         self.S21: Optional[xr.DataArray] = None
@@ -51,14 +50,6 @@ class BaseAnalysis(ABC):
         self.qubit: str = ""
         self.coord = None
         self.data_path = ""
-
-    @property
-    def qoi(self) -> "QOI":
-        return self._qoi
-
-    @qoi.setter
-    def qoi(self, value: "QOI"):
-        self._qoi = value
 
     @abstractmethod
     def plotter(self) -> None:
@@ -79,7 +70,6 @@ class BaseNodeAnalysis(ABC):
     def __init__(self, name, redis_fields, session: "SessionContext", **kwargs):
         self.name = name
         self.session = session
-        self._qoi = None
         self.redis_fields = redis_fields
         self.data_path = None
         self.dataset = None
@@ -88,14 +78,6 @@ class BaseNodeAnalysis(ABC):
 
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-    @property
-    def qoi(self) -> "QOI":
-        return self._qoi
-
-    @qoi.setter
-    def qoi(self, value: "QOI"):
-        self._qoi = value
 
     @abstractmethod
     def analyze_node(
@@ -254,8 +236,7 @@ class BaseQubitAnalysis(BaseAnalysis, ABC):
         self.qubit = qubit_element
         self._set_data_variables()
         self._compute_magnitudes()
-        self._qoi = self.analyse_qubit()
-        return self._qoi
+        return self.analyse_qubit()
 
     def _set_data_variables(self):
         self.coord = self.dataset.coords  # TODO: is this used anywhere?
@@ -329,9 +310,7 @@ class BaseCouplerAnalysis(BaseAnalysis, ABC):
             else:
                 raise ValueError("No control or target qubits")
 
-        self._qoi = self.analyze_coupler()
-
-        return self._qoi
+        return self.analyze_coupler()
 
     @abstractmethod
     def analyze_coupler(self):

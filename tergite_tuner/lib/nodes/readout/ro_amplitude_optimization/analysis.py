@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 import matplotlib.patches as mpatches
 import numpy as np
 import xarray as xr
-from numpy.linalg import inv
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
@@ -37,7 +36,6 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
             if "amplitudes" in str(coord):
                 self.amplitude_coord = coord
                 self.amplitudes = self.S21.coords[coord]
-                self.number_of_amplitudes = self.amplitudes.size
             elif "state" in str(coord):
                 self.state_coord = coord
                 self.unique_qubit_states = self.S21[coord].values
@@ -129,10 +127,6 @@ class OptimalROAmplitudeQubitAnalysis(BaseQubitAnalysis):
             self.fidelities.append(assignment)
             self.cms.append(cm_norm)
 
-        self.iq0_tp = array_iq0_tp
-        self.iq0_fp = array_iq0_fp
-        self.iq1_tp = array_iq1_tp
-        self.iq1_fp = array_iq1_fp
         self.optimal_index = np.argmax(self.fidelities)
         self.optimal_amplitude = self.amplitudes.values[self.optimal_index]
 
@@ -205,8 +199,6 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.IQ1_tp = IQ1[tp1]  # True Positive when sending 1
         self.IQ1_fp = IQ1[~tp1]
 
-        self.rotated_y_limits = (aligned_IQ[:, 1].min(), aligned_IQ[:, 1].max())
-
         self.x_space = np.linspace(optimal_IQ[:, 0].min(), optimal_IQ[:, 0].max(), 100)
         x_min = min(optimal_IQ[:, 0].min(), 0)
         x_max = max(optimal_IQ[:, 0].max(), 0)
@@ -226,7 +218,6 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
             y_min + delta + center_distance / 2,
         )
 
-        self.rotation_angle = rotation_angle_rad
         self.rotation_angle_degrees = np.rad2deg(rotation_angle_rad)
 
         analysis_successful = True
@@ -333,7 +324,6 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 
         self.optimal_index = np.argmax(self.fidelities)
         self.optimal_amplitude = self.amplitudes.values[self.optimal_index]
-        self.optimal_inv_cm = inv(self.cms[self.optimal_index])
         return
 
     def analyse_qubit(self):

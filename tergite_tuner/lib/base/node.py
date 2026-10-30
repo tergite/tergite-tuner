@@ -76,8 +76,6 @@ class BaseNode(ABC):
         self.schedule_keywords = {}
         self.analysis_keywords = {}
 
-        self.samplespace = self.schedule_samplespace | self.external_samplespace
-
         self.device: Optional["QuantumDevice"] = None
 
     @abstractmethod

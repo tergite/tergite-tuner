@@ -28,9 +28,7 @@ class MotzoiBaseQubitAnalysis(BaseQubitAnalysis):
 
         for coord in self.magnitudes.coords:
             coord = str(coord)
-            if "motzois" in coord:
-                self.motzois_coord = coord
-            elif "repetitions" in coord:
+            if "repetitions" in coord:
                 self.x_repetitions_coord = coord
 
         sums = self.magnitudes.sum(self.x_repetitions_coord)

@@ -28,7 +28,6 @@ class AllXYNode(QubitNode):
         super().__init__(all_qubits, **schedule_keywords)
         self.all_qubits = all_qubits
         self.redis_field = ["error_syndromes"]
-        self.backup = False
         # TODO properly set the dimensions
         self.schedule_samplespace = {
             "XY_index": {qubit: np.array(range(23)) for qubit in self.all_qubits}

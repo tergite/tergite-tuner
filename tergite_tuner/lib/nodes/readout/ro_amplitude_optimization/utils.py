@@ -56,7 +56,6 @@ def align_on_y_axis(
     center_of_rotated_I_0 = np.mean(rotated_IQ0[:, 0])
     center_of_rotated_I_1 = np.mean(rotated_IQ1[:, 0])
 
-    # FIXME: that first if is due to the 2- not2 thresholding. better trigonometry can simplify this
     # FIXME: if this message is still here keep an eye on the rotated thresholds
     if (
         center_of_rotated_I_0
@@ -64,13 +63,7 @@ def align_on_y_axis(
         < absolute_threshold
         < center_of_rotated_I_1
     ):
-        if (
-            absolute_threshold - center_of_rotated_I_0
-            < -absolute_threshold - center_of_rotated_I_0
-        ):
-            threshold = absolute_threshold
-        else:
-            threshold = -absolute_threshold
+        threshold = -absolute_threshold
     elif center_of_rotated_I_0 < absolute_threshold < center_of_rotated_I_1:
         threshold = absolute_threshold
     else:

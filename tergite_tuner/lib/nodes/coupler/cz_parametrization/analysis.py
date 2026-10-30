@@ -37,23 +37,18 @@ class CZParametrizationAnalysis(BaseCouplerAnalysis):
             coord = str(coord)
             if "loops" in coord:
                 self.loops_coord = coord
-                self.number_of_loops = dataset[self.loops_coord].size
             elif "frequencies" in coord:
                 self.frequencies_coord = coord
                 self.frequencies = dataset[self.frequencies_coord].values
-                self.number_of_frequencies = dataset[self.frequencies_coord].size
             elif "amplitudes" in coord:
                 self.amplitudes_coord = coord
                 self.amplitudes = dataset[self.amplitudes_coord].values
-                self.x_coordinate = coord
             elif "durations" in coord:
                 self.durations_coord = coord
                 self.durations = dataset[self.durations_coord].values
-                self.x_coordinate = coord
             elif "dc_currents" in coord:
                 self.dc_currents_coord = coord
                 self.dc_currents = dataset[self.dc_currents_coord].values
-                self.number_of_dc_currents = dataset[self.dc_currents_coord].size
 
         control_qubit_probabilities = calculate_probabilities(
             self.control_qubit_data_var, self.session.redis

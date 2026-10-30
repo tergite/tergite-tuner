@@ -29,7 +29,6 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
         for coord in self.dataset.coords:
             if "delay" in coord:
                 self.delay_coord = coord
-                self.ramsey_delays = self.dataset.coords[coord].values
             elif "detuning" in coord:
                 self.detuning_coord = coord
                 self.artificial_detunings = self.dataset.coords[coord].values
@@ -39,7 +38,6 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
 
         model = RamseyModel()
         ramsey_delays = self.dataset.coords[self.delay_coord].values
-        self.fit_ramsey_delays = np.linspace(ramsey_delays[0], ramsey_delays[-1], 400)
 
         fitted_detunings = []
         for indx, detuning in enumerate(self.dataset.coords[self.detuning_coord]):

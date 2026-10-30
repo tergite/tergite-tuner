@@ -59,7 +59,6 @@ class QubitSpectroscopyVsCurrentNode(CouplerNode):
     ):
         super().__init__(couplers, session, **schedule_keywords)
         self.qubit_state = 0
-        self.dacs = []
         self.schedule_keywords["qubit_state"] = self.qubit_state
 
         self.schedule_samplespace = {
@@ -139,7 +138,6 @@ class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
     ):
         super().__init__(couplers, session, **schedule_keywords)
         self.qubit_state = 0
-        self.dacs = []
 
         self.schedule_samplespace = {
             "ro_frequencies": {

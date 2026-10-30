@@ -43,10 +43,8 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
                 self.number_cliffords = self.S21[coord]
             elif "seed" in coord:
                 self.seed_coord = coord
-                self.seeds = self.S21[coord].values
             elif "loops" in str(coord):
                 self.loops_coord = coord
-                self.number_of_loops = self.S21[coord].size
             elif "interleave" in str(coord):
                 self.interleave_gate_coord = coord
                 self.gates = self.S21[coord].values

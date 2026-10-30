@@ -116,8 +116,6 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
         self.phase_times = []
         self.average_offset = None
         self.average_amplitude = None
-        self.average_frequency = None
-        self.average_phase = None
         self.average_t2_y = None
         self.label = ""
         self.param_name = ""
@@ -153,9 +151,6 @@ class BaseT2QubitAnalysis(BaseQubitAnalysis, ABC):
 
         self.average_offset = np.mean(self.offset_times)
         self.average_amplitude = np.mean(self.amplitude_times)
-        if len(self.frequency_times) > 0:
-            self.average_frequency = np.mean(self.frequency_times)
-            self.average_phase = np.mean(self.phase_times)
 
         # Prepare base params object for evaluating mean fit
         self.average_params = fit_result.params.copy()

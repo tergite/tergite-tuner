@@ -13,7 +13,6 @@
 
 import lmfit
 import numpy as np
-from lmfit.model import Model
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from tergite_tuner.lib.utils.fitting_models import (
@@ -331,47 +330,3 @@ class SineOscillatingModel(lmfit.model.Model):
 
         params = self.make_params()
         return lmfit.models.update_param_vals(params, self.prefix, **kws)
-
-
-def parabolic(x, x0=0, a=0.0, c=0.0):
-    """Return a parabolic function.
-
-    parabolic(x, x0, a, c) = a * (x-x0)**2  + c
-
-    """
-    return a * (x - x0) ** 2 + c
-
-
-class QuadraticModel(Model):
-    """A quadratic model, with three Parameters: `x0`, `a`, and `c`.
-
-    Defined as:
-
-    .. math::
-
-        f(x; x0, a, c) =  a * (x-x0)**2  + c
-
-    """
-
-    def __init__(self, independent_vars=["x"], prefix="", nan_policy="raise", **kwargs):
-        kwargs.update(
-            {
-                "prefix": prefix,
-                "nan_policy": nan_policy,
-                "independent_vars": independent_vars,
-            }
-        )
-        super().__init__(parabolic, **kwargs)
-
-    def guess(self, data, x, **kwargs):
-        """Estimate initial model parameter values from data."""
-        c_guess = np.max(data)
-        index_max_duration = np.argmax(data)
-        freq_at_max_duration = x[index_max_duration]
-
-        # guess a: assume that a x-x0 = 2MHz -> y-y0 = - 12ns
-        a_guess = -12e-9 / (2e6) ** 2
-
-        pars = self.make_params(x0=freq_at_max_duration, a=a_guess, c=c_guess)
-        self.set_param_hint("x0", min=x.min(), max=x.max())
-        return lmfit.models.update_param_vals(pars, self.prefix, **kwargs)

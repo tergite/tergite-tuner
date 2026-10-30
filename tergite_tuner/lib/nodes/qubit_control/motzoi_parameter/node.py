@@ -39,7 +39,6 @@ class MotzoiParameterNode(QubitNode):
 
     def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
         super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.motzoi_minima = []  # NOTE: is this needed?
         self.qubit_state = 0
         self.schedule_keywords["qubit_state"] = self.qubit_state
         self.schedule_samplespace = {

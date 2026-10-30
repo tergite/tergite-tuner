@@ -22,7 +22,7 @@ from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
 )
-from tergite_tuner.lib.utils.analysis_models import QuadraticModel, SineOscillatingModel
+from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
 from tergite_tuner.utils.types.qoi import QOI
 
 
@@ -32,8 +32,6 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         super().__init__(name, redis_fields, session, **kwargs)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
-        self.chevron_model = QuadraticModel()
-        self.number_of_working_points: int = kwargs["number_of_working_points"]
 
     def apply_sinusoidal_slices_fit(self, data):
         # durations is the independent variable in the cosine definition
@@ -96,7 +94,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         self.combined_data = self.control_diffs + self.target_diffs
 
         # apply a sinusoidal fit to each verical slice (column of specific frequency)
-        cz_durations, self.fit_plot_probs = xr.apply_ufunc(
+        cz_durations, _ = xr.apply_ufunc(
             self.apply_sinusoidal_slices_fit,
             self.combined_data,
             input_core_dims=[[self.durations_coord]],

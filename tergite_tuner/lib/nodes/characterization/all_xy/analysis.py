@@ -24,8 +24,6 @@ class AllXYAnalysis(BaseAnalysis):
         coord = list(dataset[data_var].coords.keys())[0]
         self.S21 = dataset[data_var].values
         self.independents = dataset[coord].values
-        self.calibration_0 = self.S21[-2]
-        self.calibration_1 = self.S21[-1]
         self.magnitudes = np.absolute(self.S21[:-2])
         self.fit_results = {}
         self.qubit = dataset[data_var].attrs["qubit"]

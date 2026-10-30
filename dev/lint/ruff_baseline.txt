@@ -333,7 +333,6 @@ tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/test_ro_freq_ana
 tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/test_ro_freq_analysis.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/readout/ro_frequency_optimization/tests/test_ro_frequency_optimization_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/schedule_node.py: RET504 Unnecessary assignment to `result_dataset` before `return` statement
-tergite_tuner/lib/utils/analysis_models.py: B006 Do not use mutable data structures for argument defaults
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("drive_amp")` instead of `kws.get("drive_amp", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("t")` instead of `kws.get("t", None)`

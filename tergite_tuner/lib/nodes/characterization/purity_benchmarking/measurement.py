@@ -32,9 +32,6 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
         self.qubit_state = qubit_state
         self.transmons = transmons
         # Initialize dictionaries to store raw measurement data for each qubit and each basis
-        self.raw_measurements = {
-            qubit: {"X": [], "Y": [], "Z": []} for qubit in transmons
-        }
 
     def schedule_function(
         self,

@@ -46,14 +46,11 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
                 self.number_cliffords = self.S21[coord].values
             elif "seed" in coord:
                 self.seed_coord = coord
-                self.seeds = self.S21[coord].values
             elif "loops" in coord:
                 self.loops_coord = coord
-                self.number_of_loops = self.S21[coord].size
             elif "interleave" in coord:
                 self.interleave_modes_coord = coord
                 self.interleave_modes = self.S21[coord].values
-                self.number_of_modes = self.S21[coord].size
             else:
                 raise ValueError
 
@@ -70,11 +67,6 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
         self.P01 = self.state_probabilities(0, 1)
         self.P10 = self.state_probabilities(1, 0)
         self.P11 = self.state_probabilities(1, 1)
-        self.P02 = self.state_probabilities(0, 2)
-        self.P12 = self.state_probabilities(1, 2)
-        self.P20 = self.state_probabilities(2, 0)
-        self.P21 = self.state_probabilities(2, 1)
-        self.P22 = self.state_probabilities(2, 2)
 
         mean_probabilities_00 = self.P00.mean(self.seed_coord)
         mean_probabilities_01 = self.P01.mean(self.seed_coord)
@@ -207,14 +199,12 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
             self.interleaved_p = interleaved_fit_result.params["p"].value
             self.interleaved_lambda_L = interleaved_fit_Pchi_1_result.params["p"].value
             self.interleaved_AM = interleaved_fit_Pchi_1_result.params["A"].value
-            self.interleaved_BM = interleaved_fit_Pchi_1_result.params["B"].value
             self.interleaved_lambda_r = interleaved_fit_Pideal_result.params["p"].value
             self.interleaved_p = interleaved_fit_result.params["p"].value
 
         self.standard_p = standard_fit_result.params["p"].value
         self.standard_lambda_L = standard_fit_Pchi_1_result.params["p"].value
         self.standard_AM = standard_fit_Pchi_1_result.params["A"].value
-        self.standard_BM = standard_fit_Pchi_1_result.params["B"].value
         self.standard_lambda_r = standard_fit_Pideal_result.params["p"].value
 
         L1_standard = (1 - self.standard_lambda_L) * (1 - self.standard_AM)
