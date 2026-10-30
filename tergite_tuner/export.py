@@ -38,6 +38,36 @@ _CalibValueType = TypeVar("_CalibValueType", int, float, str)
 _NodeState = Literal["calibrated", "not_calibrated"]
 _DOWNCONVERT_FREQUENCY = 4.4e9
 _NUMPY_FLOAT_PATTERN = re.compile(r"np\.float\d*")
+_SEED_UNITS = {
+    "qubit": dict(
+        frequency="Hz",
+        t1_decoherence="us",
+        t2_decoherence="us",
+        anharmonicity="Hz",
+        pi_pulse_amplitude="",
+        pi_pulse_duration="s",
+        pi_pulse_motzoi="",
+        pulse_sigma="",
+    ),
+    "readout_resonator": dict(
+        acq_delay="s",
+        acq_integration_time="s",
+        frequency="Hz",
+        pulse_delay="s",
+        pulse_duration="s",
+        pulse_amplitude="",
+        pulse_type="",
+    ),
+    "coupler": dict(
+        frequency="Hz",
+        cz_pulse_amplitude="",
+        cz_pulse_dc_bias="",
+        cz_pulse_duration_constant="s",
+        control_rz_lambda="rad",
+        target_rz_lambda="rad",
+        pulse_type="",
+    ),
+}
 
 
 def read_result(
@@ -94,96 +124,26 @@ def generate_calib_seed_file(
         coupler_name_map = {k: k for k in session.couplers}
 
     results = read_result(session, session_only=False)
-    transmon_data = results.transmons
-    coupler_data = results.couplers
-
-    config_file_data = {
+    seed = {
         "calibration_config": {
-            "units": {
-                "qubit": dict(
-                    frequency="Hz",
-                    t1_decoherence="us",
-                    t2_decoherence="us",
-                    anharmonicity="Hz",
-                    pi_pulse_amplitude="",
-                    pi_pulse_duration="s",
-                    pi_pulse_motzoi="",
-                    pulse_sigma="",
-                ),
-                "readout_resonator": dict(
-                    acq_delay="s",
-                    acq_integration_time="s",
-                    frequency="Hz",
-                    pulse_delay="s",
-                    pulse_duration="s",
-                    pulse_amplitude="",
-                    pulse_type="",
-                ),
-                "coupler": dict(
-                    frequency="Hz",
-                    cz_pulse_amplitude="",
-                    cz_pulse_dc_bias="",
-                    cz_pulse_duration_constant="s",
-                    control_rz_lambda="rad",
-                    target_rz_lambda="rad",
-                    pulse_type="",
-                ),
-            },
+            "units": _SEED_UNITS,
             "qubit": [
-                dict(
-                    id=q,
-                    frequency=item.clock_freqs.f01,
-                    pi_pulse_amplitude=item.rxy.amp180,
-                    pi_pulse_duration=item.rxy.duration,
-                    pi_pulse_motzoi=item.rxy.motzoi,
-                    pulse_type="Gaussian",
-                    pulse_sigma=item.rxy.sigma or 0,  # might be None
-                    t1_decoherence=item.t1_time,
-                    t2_decoherence=item.t2_echo_time,
-                )
-                for q, item in transmon_data.items()
+                _get_qubit_seed(q, item) for q, item in results.transmons.items()
             ],
             "coupler": [
-                dict(
-                    id=coupler_name_map[c],
-                    frequency=_DOWNCONVERT_FREQUENCY - item.cz_pulse_frequency,
-                    cz_pulse_amplitude=item.cz_pulse_amplitude,
-                    cz_pulse_dc_bias=item.parking_current or 0,  # might be None
-                    cz_pulse_duration_constant=item.cz_pulse_duration,
-                    control_rz_lambda=np.deg2rad(item.cz_dynamic_control),
-                    target_rz_lambda=np.deg2rad(item.cz_dynamic_target),
-                    pulse_type="wacqt_cz",
-                )
-                for c, item in coupler_data.items()
+                _get_coupler_seed(coupler_name_map[c], item)
+                for c, item in results.couplers.items()
             ],
             "readout_resonator": [
-                dict(
-                    id=q,
-                    acq_delay=item.measure.acq_delay,
-                    acq_integration_time=item.measure.integration_time,
-                    frequency=item.extended_clock_freqs.readout_2state_opt,
-                    pulse_delay=item.measure.ro_pulse_delay or 0,  # might be None
-                    pulse_duration=item.measure.pulse_duration,
-                    pulse_type="Square",
-                    pulse_amplitude=item.measure_2state_opt.pulse_amp,
-                )
-                for q, item in transmon_data.items()
+                _get_resonator_seed(q, item) for q, item in results.transmons.items()
             ],
             "discriminators": {
-                "lda": {
-                    q: dict(
-                        coef_0=item.lda_coef_0,
-                        coef_1=item.lda_coef_1,
-                        intercept=item.lda_intercept,
-                    )
-                    for q, item in transmon_data.items()
-                }
+                "lda": {q: _get_lda_seed(item) for q, item in results.transmons.items()}
             },
         }
     }
-
     with open(path, "w") as file:
-        tomlkit.dump(config_file_data, file)
+        tomlkit.dump(seed, file)
 
 
 def _validate_numpy_tuple(v: Any) -> Any:
@@ -437,3 +397,55 @@ class _ResetInRedis(_RedisDict):
     """The data structure of coupler:reset as saved in redis"""
 
     duration: float | None = None
+
+
+def _get_qubit_seed(qubit: str, item: "_QubitInRedis") -> dict[str, Any]:
+    """A qubit's seed entry from its calibrated values."""
+    return dict(
+        id=qubit,
+        frequency=item.clock_freqs.f01,
+        pi_pulse_amplitude=item.rxy.amp180,
+        pi_pulse_duration=item.rxy.duration,
+        pi_pulse_motzoi=item.rxy.motzoi,
+        pulse_type="Gaussian",
+        pulse_sigma=item.rxy.sigma or 0,  # might be None
+        t1_decoherence=item.t1_time,
+        t2_decoherence=item.t2_echo_time,
+    )
+
+
+def _get_coupler_seed(name: str, item: "_CouplerInRedis") -> dict[str, Any]:
+    """A coupler's seed entry, under its name in the backend."""
+    return dict(
+        id=name,
+        frequency=_DOWNCONVERT_FREQUENCY - item.cz_pulse_frequency,
+        cz_pulse_amplitude=item.cz_pulse_amplitude,
+        cz_pulse_dc_bias=item.parking_current or 0,  # might be None
+        cz_pulse_duration_constant=item.cz_pulse_duration,
+        control_rz_lambda=np.deg2rad(item.cz_dynamic_control),
+        target_rz_lambda=np.deg2rad(item.cz_dynamic_target),
+        pulse_type="wacqt_cz",
+    )
+
+
+def _get_resonator_seed(qubit: str, item: "_QubitInRedis") -> dict[str, Any]:
+    """A qubit's readout resonator's seed entry."""
+    return dict(
+        id=qubit,
+        acq_delay=item.measure.acq_delay,
+        acq_integration_time=item.measure.integration_time,
+        frequency=item.extended_clock_freqs.readout_2state_opt,
+        pulse_delay=item.measure.ro_pulse_delay or 0,  # might be None
+        pulse_duration=item.measure.pulse_duration,
+        pulse_type="Square",
+        pulse_amplitude=item.measure_2state_opt.pulse_amp,
+    )
+
+
+def _get_lda_seed(item: "_QubitInRedis") -> dict[str, Any]:
+    """A qubit's linear discriminant's coefficients and intercept."""
+    return dict(
+        coef_0=item.lda_coef_0,
+        coef_1=item.lda_coef_1,
+        intercept=item.lda_intercept,
+    )
