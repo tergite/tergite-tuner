@@ -37,27 +37,6 @@ class RandomizedBenchmarkingMeasurement(BaseMeasurement):
         super().__init__(transmons)
         self.transmons = transmons
 
-        """
-        Generate a schedule for performing a randomized benchmarking test using Clifford gates.
-        The goal is to get a measure of the total error of the calibrated qubits.
-
-        Schedule sequence
-            Reset -> Apply Clifford operations-> Apply inverse of all Clifford operations -> Measure
-
-        Parameters
-        ----------
-        repetitions
-            The amount of times the Schedule will be repeated.
-        **number_of_cliffords_operations
-            The number of random Clifford operations applied and then inverted on each qubit state.
-            This parameter is swept over.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
-
     def rb_shot(
         self,
         seeds: dict[str, int],

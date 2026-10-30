@@ -77,23 +77,16 @@ def generate_calib_seed_file(
     coupler_name_map: Optional[Dict[str, str]] = None,
     **session_options: Unpack[SessionOptions],
 ):
-    """Build a calibration seed payload from redis-stored values.
+    """Writes the calibration seed tergite-backend reads, from the values in Redis, as TOML to ``path``.
 
     Args:
-        path: path to write the seed to. The file extension
-            is ignored — the format follows the ``format`` argument.
-        session: session context to use for session.
-        env_file: optional path to a ``.env`` file used to populate the
-            internal :class:`SessionContext`.
-        coupler_name_map: dict of coupler_name (in redis) -> coupler name (in bcc) mapping
-        **session_options: any :class:`SessionContext` field — most
-            usefully ``qubits``, ``couplers``, and ``redis_url`` — to
-            override values that would otherwise come from
-            ``env_file`` / ``os.environ``.
-            See `<tergite_tuner.config.session.SessionContext>`_ for details.
-
-    Returns:
-        The payload in the requested format.
+        path: the file to write; defaults to ``calibration.seed.toml``.
+        session: the session to read; built from ``env_file`` and ``session_options`` if not given.
+        env_file: an optional ``.env`` file for that session.
+        coupler_name_map: each coupler's name in Redis mapped to its name in the backend;
+            defaults to the same names.
+        **session_options: any ``SessionContext`` field, most usefully ``qubits``,
+            ``couplers`` and ``redis_url``, overriding ``env_file`` and ``os.environ``.
     """
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)

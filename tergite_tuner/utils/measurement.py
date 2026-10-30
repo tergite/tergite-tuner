@@ -18,26 +18,16 @@ import numpy
 
 
 def reduce_samplespace(iteration: tuple, samplespace: dict) -> dict:
+    """The values of each settable at ``iteration``'s index, per element.
+
+    ``{"frequencies": {"q1": [4.0e9, 4.1e9]}}`` at ``(1,)`` gives ``{"frequencies": {"q1": 4.1e9}}``.
+    """
     reduced_samplespace = {}
     element_values = {}
 
     # To account for empty samplespaces
     if not samplespace:
         return reduced_samplespace
-
-    """
-    example of samplespace:
-    samplespace = {
-        "frequencies": {
-            "q1": np.array([4.0e9, 4.1e9, 4.2e9]),
-            "q2": np.array([4.5e9, 4.6e9, 4.7e9]),
-        },
-        "amplitudes": {
-            "q1": np.array([0.1, 0.2, 0.3, 0.4, 0.5]),
-            "q2": np.array([0.2, 0.3, 0.4, 0.5, 0.6]),
-        },
-    }
-    """
 
     # e.g. 'frequencies':
     settable = list(samplespace.keys())[0]
@@ -54,19 +44,6 @@ def reduce_samplespace(iteration: tuple, samplespace: dict) -> dict:
             element_values[element] = current_value
         reduced_samplespace[settable] = copy.deepcopy(element_values)
 
-    """
-    example of reduced_samplespace at the (2,4) iteration:
-    reduced_external_samplespace = {
-        'frequencies': {
-             'q1': np.array(4.2e9),
-             'q2': np.array(4.7e9),
-        },
-        "amplitudes": {
-            "q1": np.array([0.5]),
-            "q2": np.array([0.6]),
-        },
-    }
-    """
     return reduced_samplespace
 
 

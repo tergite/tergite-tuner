@@ -36,24 +36,7 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         repetitions: int = 1024,
         qubit_state: int = 0,
     ) -> Schedule:
-        """
-        Generate a schedule for performing a Rabi oscillation measurement on multiple qubits using a Gaussian pulse.
-
-        Schedule sequence
-            Reset -> Gaussian pulse -> Measure
-        Parameters
-
-        ----------
-        mw_amplitudes
-            Array of the sweeping amplitudes of the Rabi pulse for each qubit.
-        repetitions
-            The amount of times the Schedule will be repeated.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
+        """Drives each qubit with a DRAG pulse at each of its mw_amplitudes, then measures it."""
         if qubit_state == 0:
             schedule_title = "rabi_01_oscillations"
             measure_function = Measure
@@ -142,25 +125,7 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
         repetitions: int = 1024,
         qubit_state: int = 0,
     ) -> Schedule:
-        """
-
-        Schedule sequence
-            Reset -> DRAG pulse x N times-> Measure
-        Step 2 and 3 are repeated X_repetition amount of times
-
-        Parameters
-        ----------
-        mw_amplitudes
-        X_repetition: The amount of times that the DRAG pulse and inverse DRAG pulse are applied
-           mw_amplitude: Amplitude of the DRAG pulse for each qubit.
-        repetitions
-            The amount of times the Schedule will be repeated.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
-        """
+        """Applies X_repetitions DRAG pulses at each of the mw_amplitudes_sweep, then measures."""
         if qubit_state == 0:
             schedule_title = "n_rabi_oscillations"
             measure_function = Measure

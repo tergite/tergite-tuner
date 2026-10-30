@@ -245,52 +245,11 @@ class CZRBMeasurement(BaseMeasurement):
         interleaving_clifford_id: Optional[int] = None,
         apply_inverse_gate: bool = True,
     ) -> Schedule:
-        """
-        Generates a schedule for performing randomized benchmarking (RB) experiments using Clifford gates
-        to measure qubit error rates. The schedule creates a sequence of operations including state
-        preparation, random Clifford operations, inverse operations, and measurement.
+        """Two-qubit randomized benchmarking of one coupler, repeated loop_repetitions times.
 
-        The basic sequence for each shot is:
-            1. Reset qubits to ground state
-            2. Apply random sequence of Clifford operations
-            3. Apply inverse Clifford operations (optional)
-            4. Measure qubit states
-            5. Reset for next iteration
-
-        Parameters
-        ----------
-        seed : int
-            Random seed for generating Clifford sequences, ensuring reproducibility.
-        loop_repetitions : int
-            Number of times to repeat the entire schedule for statistical averaging.
-        number_of_cliffords : dict[str, np.ndarray]
-            Dictionary mapping qubit names to arrays of Clifford operation counts.
-            Each array specifies the number of random Clifford operations to apply
-            in different experimental sequences.
-        interleaving_clifford_id : Optional[int], default=None
-            If provided, specifies the ID of a Clifford gate to interleave between
-            random Clifford operations. Used for interleaved RB experiments to
-            characterize specific gate fidelities.
-        apply_inverse_gate : bool, default=True
-            Whether to apply inverse Clifford operations after the random sequence.
-            The inverse operations should return the qubits to their initial state
-            in the absence of errors.
-
-        Returns
-        -------
-        Schedule
-            A complete experimental schedule containing all pulses, measurements,
-            and control flow for the RB experiment.
-
-        Notes
-        -----
-        - The schedule includes proper clock resource initialization for both qubits
-        and couplers to ensure correct timing and frequency control.
-        - Measurements use three-state optimized readout for improved fidelity.
-        - The schedule includes buffer times and idle pulses to ensure proper timing
-        alignment between operations.
-        - The last three elements of the Clifford sequence lengths are currently
-        excluded (marked as TODO for investigation).
+        For each interleave mode and number of Cliffords, a random sequence from seeds, interleaved
+        with interleaving_clifford_id (the CZ by default) in the interleaved mode and followed by its
+        inverse when apply_inverse_gate, then a three-state measurement of both qubits.
         """
 
         if interleaving_clifford_id is None:

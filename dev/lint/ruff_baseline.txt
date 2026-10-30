@@ -75,7 +75,6 @@ tergite_tuner/config/types/device.py: UP006 Use `dict` instead of `Dict` for typ
 tergite_tuner/config/types/device.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/types/device.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/types/device.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/config/types/device.py: UP015 Unnecessary mode argument
 tergite_tuner/config/types/device.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/config/types/device.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/config/types/node.py: UP006 Use `dict` instead of `Dict` for type annotation
@@ -83,11 +82,9 @@ tergite_tuner/config/types/node.py: UP006 Use `dict` instead of `Dict` for type 
 tergite_tuner/config/types/node.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/types/node.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/types/node.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/config/types/node.py: UP015 Unnecessary mode argument
 tergite_tuner/config/types/node.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/config/types/spi.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/types/spi.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/config/types/spi.py: UP015 Unnecessary mode argument
 tergite_tuner/config/types/spi.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/config/types/spi.py: UP045 Use `X | None` for type annotations
 tergite_tuner/export.py: B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
@@ -390,9 +387,6 @@ tergite_tuner/tests/test_export.py: C420 Unnecessary dict comprehension for iter
 tergite_tuner/tests/test_export.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/tests/test_export.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/tests/test_export.py: UP006 Use `list` instead of `List` for type annotation
-tergite_tuner/tests/test_export.py: UP015 Unnecessary mode argument
-tergite_tuner/tests/test_export.py: UP015 Unnecessary mode argument
-tergite_tuner/tests/test_export.py: UP015 Unnecessary mode argument
 tergite_tuner/tests/test_export.py: UP035 Import from `collections.abc` instead: `Mapping`
 tergite_tuner/tests/test_export.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/tests/test_export.py: UP035 `typing.List` is deprecated, use `list` instead

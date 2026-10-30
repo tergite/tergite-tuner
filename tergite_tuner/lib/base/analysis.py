@@ -92,15 +92,7 @@ class BaseNodeAnalysis(ABC):
         """
 
     def open_dataset(self) -> xr.Dataset:
-        """
-        Open the dataset for the analysis.
-
-        Args:
-
-        Returns:
-            xarray.Dataset with measurement results
-
-        """
+        """The node's dataset, dataset_<name>.hdf5 in data_path."""
         dataset_name = f"dataset_{self.name}.hdf5"
         dataset_path = os.path.join(self.data_path, dataset_name)
         if not os.path.exists(dataset_path):

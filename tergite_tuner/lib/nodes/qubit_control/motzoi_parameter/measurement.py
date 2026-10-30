@@ -40,28 +40,9 @@ class MotzoiParameterMeasurement(BaseMeasurement):
         repetitions: int = 1024,
         qubit_state: int = 0,
     ) -> Schedule:
-        """
-        Generate a schedule for a DRAG pulse calibration measurement that gives the optimized motzoi parameter.
-        This calibrates the drive pulse as to account for errors caused by higher order excitations of the qubits.
+        """Applies a DRAG pulse and its inverse X_repetitions times at each of the mw_motzois, then measures.
 
-        Schedule sequence
-            Reset -> DRAG pulse -> Inverse DRAG pulse -> Measure
-        Step 2 and 3 are repeated X_repetition amount of times
-
-
-        Parameters
-        ----------
-        repetitions
-            The amount of times the Schedule will be repeated.
-        mw_motzois
-            2D sweeping parameter arrays.
-        X_repetition: The amount of times that the DRAG pulse and inverse DRAG pulse are applied
-            mw_motzoi: The mozoi parameter values of the DRAG (and inverse DRAG) pulses.
-
-        Returns
-        -------
-        :
-            An experiment schedule.
+        The repetitions amplify the phase error that the right motzoi cancels.
         """
         if qubit_state == 0:
             schedule_title = "motzoi_01_parameter"
