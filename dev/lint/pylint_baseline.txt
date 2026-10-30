@@ -15,9 +15,7 @@ tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py: too-many-loca
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: too-many-locals CouplerAnticrossingAnalysis._find_crossing_currents
 tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: too-many-locals ResonatorSpectroscopyVsCurrentCouplerAnalysis._find_crossing_currents
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_qubit_spec_vs_current_coupler_analysis.py: too-many-locals test_coupler_plot_is_created
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-many-locals CZRBCouplerAnalysis.analyse
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-many-locals CZRBCouplerAnalysis.plotter
-tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: too-many-statements CZRBCouplerAnalysis.analyse
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: too-many-locals CZRBMeasurement.ro_shot
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROTwoStateAmplitudeQubitAnalysis.analyse

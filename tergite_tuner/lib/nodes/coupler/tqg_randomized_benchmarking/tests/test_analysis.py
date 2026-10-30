@@ -12,11 +12,14 @@
 # that they have been altered from the originals.
 
 
+import numpy as np
 import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBCouplerAnalysis,
+    DecayFits,
+    get_cz_fidelities,
 )
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
@@ -90,3 +93,28 @@ def test_a_decay_fitted_to_zero_fails_the_fits(
         fits = analysis.analyse()
 
     assert is_failed(fits)
+
+
+def _get_decays(p: float, lambda_L: float, AM: float, lambda_r: float) -> DecayFits:
+    curve = np.zeros(3)
+    return DecayFits(p, lambda_L, AM, lambda_r, curve, curve, curve)
+
+
+def test_an_ideal_cz_has_unit_fidelities():
+    decays = _get_decays(p=0.9, lambda_L=0.99, AM=0.5, lambda_r=0.9)
+
+    assert get_cz_fidelities(decays, decays) == pytest.approx((1.0, 1.0))
+
+
+def test_the_cz_fidelity_follows_the_decay_ratio():
+    standard = _get_decays(p=0.9, lambda_L=1.0, AM=0.5, lambda_r=0.8)
+    interleaved = _get_decays(p=0.45, lambda_L=1.0, AM=0.5, lambda_r=0.4)
+
+    # no leakage: 1 - L1 is 1 in both modes, so Nakamura's is 3/4 * lambda_r ratio + 1/4
+    assert get_cz_fidelities(standard, interleaved) == pytest.approx((0.625, 0.625))
+
+
+def test_without_interleaving_there_is_no_cz_fidelity():
+    decays = _get_decays(p=0.9, lambda_L=0.99, AM=0.5, lambda_r=0.9)
+
+    assert np.isnan(get_cz_fidelities(decays, None)).all()

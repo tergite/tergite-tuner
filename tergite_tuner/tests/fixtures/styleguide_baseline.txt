@@ -2,7 +2,6 @@
 banner: tergite_tuner/backend/transmon.py: ############################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ############################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ########################################
-banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py: ##################################################
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#
 boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec

@@ -13,7 +13,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,6 +25,21 @@ from tergite_tuner.lib.utils.classification_functions import calculate_probabili
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
+
+COMPUTATIONAL_SPACE_DIMENSION = 4
+CURVE_POINTS = 200
+
+
+class DecayFits(NamedTuple):
+    """One mode's three decays (Nakamura's eqs. K14, K15): the decay parameters, and each fitted curve."""
+
+    p: float
+    lambda_L: float
+    AM: float
+    lambda_r: float
+    curve_00: np.ndarray
+    curve_chi_1: np.ndarray
+    curve_ideal: np.ndarray
 
 
 class CZRBCouplerAnalysis(CouplerAnalysis):
@@ -39,11 +54,45 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
         return c_state_probs * t_state_probs
 
     def analyse(self) -> Fits | None:
+        self._find_coords()
+        self.control_qubit_probabilities = calculate_probabilities(
+            self.control_qubit_data_var, self.session.state
+        )
+        self.target_qubit_probabilities = calculate_probabilities(
+            self.target_qubit_data_var, self.session.state
+        )
+        self.P00 = self.state_probabilities(0, 0)
+        self.P01 = self.state_probabilities(0, 1)
+        self.P10 = self.state_probabilities(1, 0)
+        self.P11 = self.state_probabilities(1, 1)
 
-        computational_space_dimension = 4
+        mean_00 = self.P00.mean(self.seed_coord)
+        # the probability of staying in the computational subspace
+        mean_chi_1 = sum(
+            probabilities.mean(self.seed_coord)
+            for probabilities in (self.P00, self.P01, self.P10, self.P11)
+        )
+        self.fit_n_cliffords = np.linspace(
+            self.number_cliffords[0], self.number_cliffords[-1], CURVE_POINTS
+        )
+        self.standard = self._fit_decays(mean_00, mean_chi_1, is_interleaved=False)
+        self.interleaved = None
+        if True in self.interleave_modes:
+            self.interleaved = self._fit_decays(
+                mean_00, mean_chi_1, is_interleaved=True
+            )
 
-        dataset = self.S21
-        for coord in dataset.coords:
+        self.cz_fidelity, self.average_fidelity_nakamura = get_cz_fidelities(
+            self.standard, self.interleaved
+        )
+        analysis_succesful = bool(
+            np.isfinite([self.cz_fidelity, self.average_fidelity_nakamura]).all()
+        )
+        analysis_result = {"cz_fidelity": {"value": self.cz_fidelity, "error": 0}}
+        return get_fits_from_result(analysis_result, analysis_succesful)
+
+    def _find_coords(self) -> None:
+        for coord in self.S21.coords:
             coord = str(coord)
             if "cliffords" in coord:
                 self.number_cliffords_coord = coord
@@ -58,181 +107,34 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
             else:
                 raise ValueError
 
-        self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.state
-        )
-        self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.state
-        )
-
-        number_cliffords = self.number_cliffords
-
-        self.P00 = self.state_probabilities(0, 0)
-        self.P01 = self.state_probabilities(0, 1)
-        self.P10 = self.state_probabilities(1, 0)
-        self.P11 = self.state_probabilities(1, 1)
-
-        mean_probabilities_00 = self.P00.mean(self.seed_coord)
-        mean_probabilities_01 = self.P01.mean(self.seed_coord)
-        mean_probabilities_10 = self.P10.mean(self.seed_coord)
-        mean_probabilities_11 = self.P11.mean(self.seed_coord)
-
-        # probabilities to of states in the computational subspace
-        mean_probabilities_chi_1 = (
-            mean_probabilities_00
-            + mean_probabilities_01
-            + mean_probabilities_10
-            + mean_probabilities_11
+    def _fit_decays(
+        self, mean_00: xr.DataArray, mean_chi_1: xr.DataArray, is_interleaved: bool
+    ) -> DecayFits:
+        """The decays of |00>, of the computational subspace and of the reduced ideal probability, in one mode."""
+        mode = {self.interleave_modes_coord: is_interleaved}
+        mean_00 = mean_00.sel(mode)
+        mean_chi_1 = mean_chi_1.sel(mode)
+        reduced_ideal = mean_00 - mean_chi_1 / COMPUTATIONAL_SPACE_DIMENSION
+        results = [
+            self._fit_decay(data) for data in (mean_00, mean_chi_1, reduced_ideal)
+        ]
+        fit_00, fit_chi_1, fit_ideal = results
+        return DecayFits(
+            p=fit_00.params["p"].value,
+            lambda_L=fit_chi_1.params["p"].value,
+            AM=fit_chi_1.params["A"].value,
+            lambda_r=fit_ideal.params["p"].value,
+            curve_00=self._get_curve(fit_00),
+            curve_chi_1=self._get_curve(fit_chi_1),
+            curve_ideal=self._get_curve(fit_ideal),
         )
 
-        standard_mean_probs_00 = mean_probabilities_00.sel(
-            {self.interleave_modes_coord: False}
-        )
+    def _fit_decay(self, data: xr.DataArray) -> Any:
+        guess = self.single_model.guess(data=data.values, m=self.number_cliffords)
+        return self.single_model.fit(data.values, params=guess, m=self.number_cliffords)
 
-        standard_mean_probs_chi_1 = mean_probabilities_chi_1.sel(
-            {self.interleave_modes_coord: False}
-        )
-
-        standard_reduced_ideal_probabilities = (
-            standard_mean_probs_00
-            - standard_mean_probs_chi_1 / computational_space_dimension
-        )
-        interleaved_mean_probs_00 = mean_probabilities_00.sel(
-            {self.interleave_modes_coord: True}
-        )
-
-        interleaved_mean_probs_chi_1 = mean_probabilities_chi_1.sel(
-            {self.interleave_modes_coord: True}
-        )
-        interleaved_reduced_ideal_probabilities = (
-            interleaved_mean_probs_00
-            - interleaved_mean_probs_chi_1 / computational_space_dimension
-        )
-
-        ## Calculate the CZ Fidelity based on Nakamura's paper
-        # Fit 1: fit probabilities of the computational states eq. K14
-        standard_guess_Pchi_1 = self.single_model.guess(
-            data=standard_mean_probs_chi_1.values, m=number_cliffords
-        )
-
-        standard_fit_Pchi_1_result = self.single_model.fit(
-            standard_mean_probs_chi_1.values,
-            params=standard_guess_Pchi_1,
-            m=number_cliffords,
-        )
-
-        # Fit 2: fit the reduced ideal probabilities eq. K15
-        standard_guess_Pideal = self.single_model.guess(
-            data=standard_reduced_ideal_probabilities.values,
-            m=number_cliffords,
-        )
-
-        standard_fit_Pideal_result = self.single_model.fit(
-            standard_reduced_ideal_probabilities.values,
-            params=standard_guess_Pideal,
-            m=number_cliffords,
-        )
-        ##################################################
-
-        standard_guess = self.single_model.guess(
-            data=standard_mean_probs_00.values, m=number_cliffords
-        )
-        standard_fit_result = self.single_model.fit(
-            standard_mean_probs_00.values,
-            params=standard_guess,
-            m=number_cliffords,
-        )
-
-        self.fit_n_cliffords = np.linspace(
-            number_cliffords[0], number_cliffords[-1], 200
-        )
-        self.standard_fit_y = self.single_model.eval(
-            standard_fit_result.params, **{"m": self.fit_n_cliffords}
-        )
-        self.standard_fit_Pchi_1_y = self.single_model.eval(
-            standard_fit_Pchi_1_result.params, **{"m": self.fit_n_cliffords}
-        )
-        self.standard_fit_Pideal_y = self.single_model.eval(
-            standard_fit_Pideal_result.params, **{"m": self.fit_n_cliffords}
-        )
-        if True in self.interleave_modes:
-            interleaved_mean_probs_00 = mean_probabilities_00.sel(
-                {self.interleave_modes_coord: True}
-            )
-            interleaved_mean_probs_chi_1 = mean_probabilities_chi_1.sel(
-                {self.interleave_modes_coord: True}
-            )
-            interleaved_guess = self.single_model.guess(
-                data=interleaved_mean_probs_00.values,
-                m=number_cliffords,
-            )
-            interleaved_fit_result = self.single_model.fit(
-                interleaved_mean_probs_00.values,
-                params=interleaved_guess,
-                m=number_cliffords,
-            )
-            interleaved_guess_Pchi_1 = self.single_model.guess(
-                data=interleaved_mean_probs_chi_1.values,
-                m=number_cliffords,
-            )
-
-            interleaved_fit_Pchi_1_result = self.single_model.fit(
-                interleaved_mean_probs_chi_1.values,
-                params=interleaved_guess_Pchi_1,
-                m=number_cliffords,
-            )
-            interleaved_guess_Pideal = self.single_model.guess(
-                data=interleaved_reduced_ideal_probabilities.values,
-                m=number_cliffords,
-            )
-
-            interleaved_fit_Pideal_result = self.single_model.fit(
-                interleaved_reduced_ideal_probabilities.values,
-                params=interleaved_guess_Pideal,
-                m=number_cliffords,
-            )
-            self.interleaved_fit_Pideal_y = self.single_model.eval(
-                interleaved_fit_Pideal_result.params, **{"m": self.fit_n_cliffords}
-            )
-            self.interleaved_fit_Pchi_1_y = self.single_model.eval(
-                interleaved_fit_Pchi_1_result.params, **{"m": self.fit_n_cliffords}
-            )
-            self.interleaved_fit_y = self.single_model.eval(
-                interleaved_fit_result.params, **{"m": self.fit_n_cliffords}
-            )
-            self.interleaved_p = interleaved_fit_result.params["p"].value
-            self.interleaved_lambda_L = interleaved_fit_Pchi_1_result.params["p"].value
-            self.interleaved_AM = interleaved_fit_Pchi_1_result.params["A"].value
-            self.interleaved_lambda_r = interleaved_fit_Pideal_result.params["p"].value
-            self.interleaved_p = interleaved_fit_result.params["p"].value
-
-        self.standard_p = standard_fit_result.params["p"].value
-        self.standard_lambda_L = standard_fit_Pchi_1_result.params["p"].value
-        self.standard_AM = standard_fit_Pchi_1_result.params["A"].value
-        self.standard_lambda_r = standard_fit_Pideal_result.params["p"].value
-
-        L1_standard = (1 - self.standard_lambda_L) * (1 - self.standard_AM)
-        L1_interleaved = (1 - self.interleaved_lambda_L) * (1 - self.interleaved_AM)
-        self.one_minus_L1_CZ = _get_ratio(1 - L1_interleaved, 1 - L1_standard)
-        self.lambda_r_CZ = _get_ratio(self.interleaved_lambda_r, self.standard_lambda_r)
-
-        # Fidelity based on Nakamura's paper
-        self.average_fidelity_nakamura = (
-            3 / 4 * self.lambda_r_CZ + self.one_minus_L1_CZ / 4
-        )
-        # fidelity based on simple exponential fits
-        self.cz_fidelity = 0.25 + 0.75 * _get_ratio(self.interleaved_p, self.standard_p)
-
-        analysis_succesful = bool(
-            np.isfinite([self.cz_fidelity, self.average_fidelity_nakamura]).all()
-        )
-        analysis_result = {
-            "cz_fidelity": {
-                "value": self.cz_fidelity,
-                "error": 0,
-            },
-        }
-        return get_fits_from_result(analysis_result, analysis_succesful)
+    def _get_curve(self, result: Any) -> np.ndarray:
+        return self.single_model.eval(result.params, m=self.fit_n_cliffords)
 
     def plotter(self, figures_dictionary):
 
@@ -249,10 +151,10 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
         title = ""
         axs[0].plot(
             self.fit_n_cliffords,
-            self.standard_fit_y,
+            self.standard.curve_00,
             color="red",
             lw=3,
-            label=rf"$p_{{SRB}}$: {self.standard_p:.3f}",
+            label=rf"$p_{{SRB}}$: {self.standard.p:.3f}",
         )
         styles = {"hue": self.seed_coord, "alpha": 0.2}
         standard_probs_00.plot(ax=axs[0], x=self.number_cliffords_coord, **styles)
@@ -282,10 +184,10 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
             )
             axs[0].plot(
                 self.fit_n_cliffords,
-                self.interleaved_fit_y,
+                self.interleaved.curve_00,
                 color="magenta",
                 lw=3,
-                label=f"$p_{{IRB}}$: {self.interleaved_p:.3f}",
+                label=f"$p_{{IRB}}$: {self.interleaved.p:.3f}",
             )
             # fidelity based on simple exponential fits
             title = rf"CZ fidelity = {self.cz_fidelity:.3f}"
@@ -307,10 +209,10 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
             ax=axs[1], x=self.number_cliffords_coord, **styles
         )
 
-        lambda_standard_str = rf"$\lambda_L^{{SRB}}$: {self.standard_lambda_L:.3f}"
-        A_standard_str = rf"$A_M^{{SRB}}$: {self.standard_AM:.3f}"
-        L1_standard = (1 - self.standard_lambda_L) * (1 - self.standard_AM)
-        L2_standard = (1 - self.standard_lambda_L) * self.standard_AM
+        lambda_standard_str = rf"$\lambda_L^{{SRB}}$: {self.standard.lambda_L:.3f}"
+        A_standard_str = rf"$A_M^{{SRB}}$: {self.standard.AM:.3f}"
+        L1_standard = (1 - self.standard.lambda_L) * (1 - self.standard.AM)
+        L2_standard = (1 - self.standard.lambda_L) * self.standard.AM
         L1_standard_str = rf"$L1^{{SRB}}$: {L1_standard:.3f}"
         L2_standard_str = rf"$L2^{{SRB}}$: {L2_standard:.3f}"
         standard_label = (
@@ -323,11 +225,11 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
             + L2_standard_str,
         )
         lambda_interleaved_str = (
-            rf"$\lambda_L^{{IRB}}$: {self.interleaved_lambda_L:.3f}"
+            rf"$\lambda_L^{{IRB}}$: {self.interleaved.lambda_L:.3f}"
         )
-        A_interleaved_str = rf"$A_M^{{IRB}}$: {self.interleaved_AM:.3f}"
-        L1_interleaved = (1 - self.interleaved_lambda_L) * (1 - self.interleaved_AM)
-        L2_interleaved = (1 - self.interleaved_lambda_L) * self.interleaved_AM
+        A_interleaved_str = rf"$A_M^{{IRB}}$: {self.interleaved.AM:.3f}"
+        L1_interleaved = (1 - self.interleaved.lambda_L) * (1 - self.interleaved.AM)
+        L2_interleaved = (1 - self.interleaved.lambda_L) * self.interleaved.AM
         L1_interleaved_str = rf"$L1^{{IRB}}$: {L1_interleaved:.3f}"
         L2_interleaved_str = rf"$L2^{{IRB}}$: {L2_interleaved:.3f}"
         interleaved_label = (
@@ -342,31 +244,31 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
 
         axs[1].plot(
             self.fit_n_cliffords,
-            self.standard_fit_Pchi_1_y,
+            self.standard.curve_chi_1,
             color="teal",
             lw=3,
             label=standard_label,
         )
         axs[1].plot(
             self.fit_n_cliffords,
-            self.interleaved_fit_Pchi_1_y,
+            self.interleaved.curve_chi_1,
             color="orange",
             lw=3,
             label=interleaved_label,
         )
         axs[1].plot(
             self.fit_n_cliffords,
-            self.standard_fit_Pideal_y,
+            self.standard.curve_ideal,
             color="orchid",
             lw=3,
-            label=rf"$\lambda_r^{{SRB}}$: {self.standard_lambda_r:.4f}",
+            label=rf"$\lambda_r^{{SRB}}$: {self.standard.lambda_r:.4f}",
         )
         axs[1].plot(
             self.fit_n_cliffords,
-            self.interleaved_fit_Pideal_y,
+            self.interleaved.curve_ideal,
             color="aqua",
             lw=3,
-            label=rf"$\lambda_r^{{SRB}}$: {self.interleaved_lambda_r:.3f}",
+            label=rf"$\lambda_r^{{SRB}}$: {self.interleaved.lambda_r:.3f}",
         )
         axs[1].legend()
         axs[1].set_title(
@@ -374,6 +276,25 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
         )
 
         figures_dictionary[self.coupler] = [fig]
+
+
+def get_cz_fidelities(
+    standard: DecayFits, interleaved: DecayFits | None
+) -> tuple[float, float]:
+    """The CZ's fidelity from the |00> decays' ratio, and Nakamura's from the leakage and reduced ideal decays.
+
+    NaN without interleaved sequences, or for a standard decay fitted to zero.
+    """
+    if interleaved is None:
+        return np.nan, np.nan
+    l1_standard = (1 - standard.lambda_L) * (1 - standard.AM)
+    l1_interleaved = (1 - interleaved.lambda_L) * (1 - interleaved.AM)
+    one_minus_l1 = _get_ratio(1 - l1_interleaved, 1 - l1_standard)
+    lambda_r = _get_ratio(interleaved.lambda_r, standard.lambda_r)
+    return (
+        0.25 + 0.75 * _get_ratio(interleaved.p, standard.p),
+        3 / 4 * lambda_r + one_minus_l1 / 4,
+    )
 
 
 def _get_ratio(numerator: float, denominator: float) -> float:
