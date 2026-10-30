@@ -574,9 +574,11 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 
 ## Step 10: tests in the right place
 
-1. Shared helpers stay in `tergite_tuner/tests/utils/`, grouped by what they do (`redis.py`, `datasets.py`, `sessions.py`). The unused `from conftest import …` lines in 5 test files go.
-2. The empty `tests/` folders (`all_xy`, `t1`, `t2`) get their golden test from step 2.2, or are deleted.
-3. `tests-readme.md` folds into the testing section of `DESIGN.md`.
+1. ~~Shared helpers stay in `tergite_tuner/tests/utils/`, grouped by what they do~~: `datasets.py`, `fixtures.py`, `goldens.py`, `pytest.py`, `runs.py` and `state.py`; Redis went in step 7, and no test imports from `conftest`.
+2. ~~The empty `tests/` folders (`all_xy`, `t1`, `t2`) get their golden test from step 2.2, or are deleted~~: AllXY and T2 have tests, and T1's folder is gone, as T2's decay test fits T1's dummy decay with the analysis they share.
+3. ~~`tests-readme.md` folds into the testing section of `DESIGN.md`~~.
+
+**Built.** The earlier steps had done most of it: only T1's folder and the readme were left.
 
 ## Step 11: qblox-scheduler, then the dependency diet
 
