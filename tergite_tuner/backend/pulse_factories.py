@@ -37,45 +37,11 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
     t0: float = 0,
 ) -> pulse_library.SoftSquarePulse:
+    """A CZ: a soft square pulse, with each qubit's clock shifted by its phase, in degrees, at the start.
+
+    ``reference_magnitude`` is unused; quantify-scheduler's pulse factories take it.
     """
-    An example composite pulse to implement a CZ gate.
-
-    It applies the
-    square pulse and then corrects for the phase shifts on both the qubits.
-
-    Parameters
-    ----------
-    square_amp
-        Amplitude of the square envelope.
-    square_duration
-        The square pulse duration in seconds.
-    square_port
-        Port of the pulse, must be capable of playing a complex waveform.
-    square_clock
-        Clock used to modulate the pulse.
-    virt_z_parent_qubit_phase
-        The phase shift in degrees applied to the parent qubit.
-    virt_z_parent_qubit_clock
-        The clock of which to shift the phase applied to the parent qubit.
-    virt_z_child_qubit_phase
-        The phase shift in degrees applied to the child qubit.
-    virt_z_child_qubit_clock
-        The clock of which to shift the phase applied to the child qubit.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
-        Scaling value and unit for the unitless amplitude. Uses settings in
-        hardware config if not provided.
-    t0
-        Time in seconds when to start the pulses relative to the start time
-        of the Operation in the Schedule.
-
-    Returns
-    -------
-    :
-        SquarePulse operation.
-    """
-
     composite_pulse = pulse_library.IdlePulse(duration=4e-9)
-
     composite_pulse.add_pulse(
         pulse_library.SoftSquarePulse(
             amp=square_amp,
@@ -92,22 +58,13 @@ def composite_soft_square_pulse(  # pylint: disable=too-many-arguments
     if virt_z_child_qubit_phase is float("nan"):
         virt_z_child_qubit_phase = 0
 
-    # And at the same time apply clock phase corrections
-    composite_pulse.add_pulse(
-        pulse_library.ShiftClockPhase(
-            phase_shift=virt_z_parent_qubit_phase,
-            clock=virt_z_parent_qubit_clock,
-            t0=t0,
+    for phase, clock in (
+        (virt_z_parent_qubit_phase, virt_z_parent_qubit_clock),
+        (virt_z_child_qubit_phase, virt_z_child_qubit_clock),
+    ):
+        composite_pulse.add_pulse(
+            pulse_library.ShiftClockPhase(phase_shift=phase, clock=clock, t0=t0)
         )
-    )
-    composite_pulse.add_pulse(
-        pulse_library.ShiftClockPhase(
-            phase_shift=virt_z_child_qubit_phase,
-            clock=virt_z_child_qubit_clock,
-            t0=t0,
-        )
-    )
-
     composite_pulse.add_pulse(pulse_library.IdlePulse(4e-9))
 
     logger.info(f"{square_amp=}")
