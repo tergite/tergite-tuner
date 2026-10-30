@@ -17,26 +17,9 @@ from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.runs import DEFAULT_NODES, run_dummy_node
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-# each fails on a defect REFACTOR.md lists; strict, so a fix fails the test until removed
-_KNOWN_FAILURES = {
-    NodeEnum.QUBIT_01_SPECTROSCOPY: "five 6 us spectroscopy amplitudes overflow the waveform memory",
-}
-_DEFAULT_NODES = [
-    pytest.param(
-        node,
-        id=node.value,
-        marks=(
-            [pytest.mark.xfail(reason=_KNOWN_FAILURES[node], strict=True)]
-            if node in _KNOWN_FAILURES
-            else []
-        ),
-    )
-    for node in DEFAULT_NODES
-]
-
 
 @pytest.mark.slow
-@pytest.mark.parametrize("node", _DEFAULT_NODES)
+@pytest.mark.parametrize("node", DEFAULT_NODES, ids=lambda node: node.value)
 def test_every_default_node_runs_in_dummy_mode(
     node, session_context, tmp_path, monkeypatch
 ):
