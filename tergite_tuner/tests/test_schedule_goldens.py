@@ -13,12 +13,14 @@
 
 A change that alters a program on purpose rewrites its digest with
 ``UPDATE_GOLDENS=1 pytest tergite_tuner/tests/test_schedule_goldens.py``, and the commit says why.
+Run it without ``-n``: parallel workers overwrite each other's digests.
 """
 
 import dataclasses
 import hashlib
 import json
 import os
+import re
 from enum import Enum
 from pathlib import Path
 
@@ -56,6 +58,8 @@ def _get_digest(compiled_instructions: dict) -> str:
 def _to_canonical(value):
     if dataclasses.is_dataclass(value):
         return _to_canonical(dataclasses.asdict(value))
+    if isinstance(value, dict) and {"program", "waveforms"} <= value.keys():
+        return _get_canonical_sequence(value)
     if isinstance(value, dict) and value and all(_is_hash_key(key) for key in value):
         # waveform names are Python hashes, seeded per process; programs use their index
         items = [_to_canonical(item) for item in value.values()]
@@ -73,6 +77,31 @@ def _to_canonical(value):
     if isinstance(value, (str, int, bool)) or value is None:
         return value
     return repr(value)
+
+
+def _get_canonical_sequence(sequence: dict) -> dict:
+    """The sequence with its waveforms equal to ``SIGNIFICANT_DIGITS`` merged, numbered by their samples.
+
+    The compiler keeps apart waveforms that differ only in their last bits, so which copy a
+    pulse plays differs between platforms.
+    """
+    samples = {
+        waveform["index"]: json.dumps(_to_canonical(waveform["data"]))
+        for waveform in sequence["waveforms"].values()
+    }
+    distinct = sorted(set(samples.values()))
+    numbers = {index: distinct.index(data) for index, data in samples.items()}
+    program = re.sub(
+        r"\bplay (\d+),(\d+)",
+        lambda match: f"play {numbers[int(match[1])]},{numbers[int(match[2])]}",
+        sequence["program"],
+    )
+    rest = {
+        key: _to_canonical(item)
+        for key, item in sequence.items()
+        if key not in ("program", "waveforms")
+    }
+    return {**rest, "program": program, "waveforms": distinct}
 
 
 def _is_hash_key(key) -> bool:
