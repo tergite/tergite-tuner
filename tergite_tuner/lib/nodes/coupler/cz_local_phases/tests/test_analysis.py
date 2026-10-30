@@ -11,10 +11,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import numpy as np
+import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesCouplerAnalysis,
+    get_gate_phase,
 )
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
@@ -61,3 +64,11 @@ def test_plotting(session_context, node_data_dir):
             figure = figures_dictionary["q13_q14"][0]
 
             assert len(figure.get_axes()) == 4
+
+
+def test_the_gate_phase_is_the_phase_with_the_gate_less_without():
+    phis = xr.DataArray(
+        [np.pi / 2, np.pi / 6], coords={"gate": [True, False]}, dims="gate"
+    )
+
+    assert get_gate_phase(phis, "gate") == pytest.approx(60.0)

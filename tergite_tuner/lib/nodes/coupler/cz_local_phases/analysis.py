@@ -28,6 +28,8 @@ from tergite_tuner.lib.utils.analysis_models import (
 )
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 
+CURVE_POINTS = 400
+
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
@@ -39,15 +41,50 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
         self.model = SineOscillatingModel()
 
     def analyse(self) -> Fits | None:
-        dataset = self.S21
-        for coord in dataset.coords:
+        self._find_coords()
+        self.control_qubit_probabilities = calculate_probabilities(
+            self.control_qubit_data_var, self.session.state
+        )
+        self.target_qubit_probabilities = calculate_probabilities(
+            self.target_qubit_data_var, self.session.state
+        )
+        self.fit_plot_phases = np.linspace(
+            self.target_phases[0], self.target_phases[-1], CURVE_POINTS
+        )
+        # the target's |1> unswapped, and the control's |1> swapped
+        target_phis, self.target_plot_points = self._fit_phases(
+            self.target_qubit_probabilities, False, self.target_phases_coord
+        )
+        control_phis, self.control_swaped_plot_points = self._fit_phases(
+            self.control_qubit_probabilities, True, self.control_phases_coord
+        )
+        self.phase_01 = get_gate_phase(target_phis, self.gate_mode_coord)
+        self.phase_10 = get_gate_phase(control_phis, self.gate_mode_coord)
+
+        # FIXME: Work around to be removed in the next version
+        reverse_phase_qubits = self.session.reverse_phase_qubits
+        self.cz_dynamic_target = self.phase_01
+        if self.target_qubit_data_var.qubit in reverse_phase_qubits:
+            self.cz_dynamic_target = -self.cz_dynamic_target
+        self.cz_dynamic_control = self.phase_10
+        if self.control_qubit_data_var.qubit in reverse_phase_qubits:
+            self.cz_dynamic_control = -self.cz_dynamic_control
+
+        analysis_result = {
+            "cz_dynamic_control": {"value": self.cz_dynamic_control, "error": 0},
+            "cz_dynamic_target": {"value": self.cz_dynamic_target, "error": 0},
+        }
+        return get_fits_from_result(analysis_result, True)
+
+    def _find_coords(self) -> None:
+        for coord in self.S21.coords:
             coord = str(coord)
             if "loops" in coord:
                 self.loops_coord = coord
             elif "phases" in coord:
-                if dataset[coord].attrs["qubit"] == self.control_qubit:
+                if self.S21[coord].attrs["qubit"] == self.control_qubit:
                     self.control_phases_coord = coord
-                elif dataset[coord].attrs["qubit"] == self.target_qubit:
+                elif self.S21[coord].attrs["qubit"] == self.target_qubit:
                     self.target_phases_coord = coord
                     self.target_phases = self.S21[coord].values
             elif "swap" in coord:
@@ -57,96 +94,25 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
             else:
                 raise ValueError
 
-        self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.state
-        )
-        self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.state
-        )
-
-        self.fit_plot_phases = np.linspace(
-            self.target_phases[0], self.target_phases[-1], 400
-        )  # x-values for plotting
-
-        # apply sinusoidal fit on the state |1> of the target qubit and...
-        data_target_1 = self.target_qubit_probabilities.sel(
-            {"state": 1, self.swap_coord: False}
-        )
-        # ... the state |1> of the control qubit while we have swaped.
-        data_control_swap_1 = self.control_qubit_probabilities.sel(
-            {"state": 1, self.swap_coord: True}
-        )
-
-        phi_fits, target_plot_points_1 = xr.apply_ufunc(
+    def _fit_phases(
+        self, probabilities: xr.DataArray, is_swapped: bool, phases_coord: str
+    ) -> tuple[xr.DataArray, xr.DataArray]:
+        """The phase of a sine fitted to each |1> curve, and the fits over ``phases_coord``."""
+        phis, plot_points = xr.apply_ufunc(
+            # over the target's phases, as both qubits sweep the same ones
             partial(
                 fit_sine_phase,
                 self.model,
                 x=self.target_phases,
                 plot_x=self.fit_plot_phases,
             ),
-            data_target_1,
-            input_core_dims=[[self.target_phases_coord]],
+            probabilities.sel({"state": 1, self.swap_coord: is_swapped}),
+            input_core_dims=[[phases_coord]],
             output_core_dims=[["phases"], ["plot_points"]],
             vectorize=True,
         )
-        phi_swaped_fits, control_swap_plot_points_1 = xr.apply_ufunc(
-            partial(
-                fit_sine_phase,
-                self.model,
-                x=self.target_phases,
-                plot_x=self.fit_plot_phases,
-            ),
-            data_control_swap_1,
-            input_core_dims=[[self.control_phases_coord]],
-            output_core_dims=[["phases"], ["plot_points"]],
-            vectorize=True,
-        )
-        self.target_plot_points = target_plot_points_1.assign_coords(
-            {"plot_points": self.fit_plot_phases}
-        )
-        self.target_plot_points = self.target_plot_points.rename(
-            {"plot_points": self.target_phases_coord}
-        )
-        self.control_swaped_plot_points = control_swap_plot_points_1.assign_coords(
-            {"plot_points": self.fit_plot_phases}
-        )
-        self.control_swaped_plot_points = self.control_swaped_plot_points.rename(
-            {"plot_points": self.control_phases_coord}
-        )
-
-        # phase 01 correction
-        reverse_phase_qubits = self.session.reverse_phase_qubits
-        phi_gate_on = phi_fits.sel({self.gate_mode_coord: True})
-        phi_gate_off = phi_fits.sel({self.gate_mode_coord: False})
-        phi_01_rad = (phi_gate_on - phi_gate_off).item()
-        self.phase_01 = np.rad2deg(phi_01_rad)
-        self.cz_dynamic_target = np.rad2deg(phi_01_rad)
-        # FIXME: Work around to be removed in the next version
-        if self.target_qubit_data_var.qubit in reverse_phase_qubits:
-            self.cz_dynamic_target = -self.cz_dynamic_target
-
-        # phase 10 correction
-        phi_swaped_gate_on = phi_swaped_fits.sel({self.gate_mode_coord: True})
-        phi_swaped_gate_off = phi_swaped_fits.sel({self.gate_mode_coord: False})
-        phi_10_rad = (phi_swaped_gate_on - phi_swaped_gate_off).item()
-        self.phase_10 = np.rad2deg(phi_10_rad)
-        self.cz_dynamic_control = np.rad2deg(phi_10_rad)
-        # FIXME: Work around to be removed in the next version
-        if self.control_qubit_data_var.qubit in reverse_phase_qubits:
-            self.cz_dynamic_control = -self.cz_dynamic_control
-
-        analysis_succesful = True
-        analysis_result = {
-            "cz_dynamic_control": {
-                "value": self.cz_dynamic_control,
-                "error": 0,
-            },
-            "cz_dynamic_target": {
-                "value": self.cz_dynamic_target,
-                "error": 0,
-            },
-        }
-        return get_fits_from_result(analysis_result, analysis_succesful)
+        plot_points = plot_points.assign_coords({"plot_points": self.fit_plot_phases})
+        return phis, plot_points.rename({"plot_points": phases_coord})
 
     def plotter(self, figures_dictionary):
         fig, axs = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
@@ -213,3 +179,10 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
         axs[1][1].set_title(f"swap: {swap}")
 
         figures_dictionary[self.coupler] = [fig]
+
+
+def get_gate_phase(phis: xr.DataArray, gate_mode_coord: str) -> float:
+    """The phase, in degrees, the gate adds: the fitted phase with it less the phase without."""
+    on = phis.sel({gate_mode_coord: True})
+    off = phis.sel({gate_mode_coord: False})
+    return np.rad2deg((on - off).item())
