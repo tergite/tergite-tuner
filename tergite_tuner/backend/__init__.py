@@ -38,7 +38,13 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import ClockResource
 
-from .device import close_device_resources, configure_device, save_serial_device
+from .compile import CompiledSchedule, compile_schedule
+from .device import (
+    QuantumDevice,
+    close_device_resources,
+    configure_device,
+    save_serial_device,
+)
 from .edge import ExtendedCompositeSquareEdge
 from .gates import Measure_RO1, Measure_RO_3state_Opt
 from .transmon import ExtendedTransmon
@@ -46,6 +52,7 @@ from .transmon import ExtendedTransmon
 __all__ = [
     "CZ",
     "ClockResource",
+    "CompiledSchedule",
     "DRAGPulse",
     "ExtendedCompositeSquareEdge",
     "ExtendedTransmon",
@@ -56,6 +63,7 @@ __all__ = [
     "Measure",
     "Measure_RO1",
     "Measure_RO_3state_Opt",
+    "QuantumDevice",
     "Reset",
     "ResetClockPhase",
     "Rxy",
@@ -69,6 +77,7 @@ __all__ = [
     "Y",
     "Y90",
     "close_device_resources",
+    "compile_schedule",
     "configure_device",
     "long_square_pulse",
     "save_serial_device",

@@ -36,7 +36,6 @@ boolean: tergite_tuner/utils/types/qoi.py::QOI.analysis_successful
 confined-import: tergite_tuner/config/session.py::import quantify_scheduler.backends.qblox_backend
 confined-import: tergite_tuner/config/session.py::import redis
 confined-import: tergite_tuner/config/types/cluster.py::import quantify_scheduler.backends.qblox_backend
-confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.device_under_test.quantum_device
 confined-import: tergite_tuner/lib/base/node.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
 confined-import: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/nodes/characterization/t1/measurement.py::import quantify_scheduler.enums
@@ -52,10 +51,6 @@ confined-import: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.
 confined-import: tergite_tuner/lib/nodes/readout/punchout/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::import quantify_scheduler.enums
 confined-import: tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/measurement.py::import quantify_scheduler.enums
-confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler
-confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.backends
-confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.backends.qblox
-confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.device_under_test.quantum_device
 confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
 confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator
 confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator.components.qblox
@@ -177,7 +172,6 @@ type-hints: tergite_tuner/lib/base/node.py::BaseNode.calibrate
 type-hints: tergite_tuner/lib/base/node.py::BaseNode.measure_compiled_schedule
 type-hints: tergite_tuner/lib/base/node.py::BaseNode.measure_node
 type-hints: tergite_tuner/lib/base/node.py::BaseNode.post_process
-type-hints: tergite_tuner/lib/base/node.py::BaseNode.precompile
 type-hints: tergite_tuner/lib/base/node.py::BaseNode.reset_qois
 type-hints: tergite_tuner/lib/base/node.py::CouplerNode.__format__
 type-hints: tergite_tuner/lib/base/node.py::CouplerNode.__init__

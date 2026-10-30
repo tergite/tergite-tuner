@@ -20,13 +20,7 @@ import xarray
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.types.enums import MeasurementMode
 
-# Schedules lasting minutes (punchout: 264 s) build up float error in their absolute
-# times beyond quantify's default tolerance of 1.1e-3 ns, and fail to compile.
-GRID_TIME_TOLERANCE_NS = 5e-2
-
 if TYPE_CHECKING:
-    from quantify_scheduler import Schedule
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
     from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
         CompiledSchedule,
         InstrumentCoordinator,
@@ -62,23 +56,3 @@ def execute_schedule(
     lab_ic.stop()
 
     return raw_dataset
-
-
-def compile_schedule(
-    schedule: "Schedule", device: "QuantumDevice", name: str
-) -> "CompiledSchedule":
-    """Compiles ``schedule`` for ``device``, with the grid-time tolerance long schedules need."""
-    from quantify_scheduler.backends import SerialCompiler
-    from quantify_scheduler.backends.qblox import constants
-
-    default_tolerance = constants.GRID_TIME_TOLERANCE_TIME
-    constants.GRID_TIME_TOLERANCE_TIME = GRID_TIME_TOLERANCE_NS
-    try:
-        start = time.perf_counter()
-        compiled_schedule = SerialCompiler(name=f"{name}_compiler").compile(
-            schedule=schedule, config=device.generate_compilation_config()
-        )
-        logger.info(f"Compiled {name} in {time.perf_counter() - start:.2f} s")
-        return compiled_schedule
-    finally:
-        constants.GRID_TIME_TOLERANCE_TIME = default_tolerance

@@ -25,15 +25,13 @@ import xarray
 
 from tergite_tuner.backend import (
     close_device_resources,
+    compile_schedule,
     configure_device,
     save_serial_device,
 )
 from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
 from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
-from tergite_tuner.lib.utils.schedule_execution import (
-    compile_schedule,
-    execute_schedule,
-)
+from tergite_tuner.lib.utils.schedule_execution import execute_schedule
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.utils.dicts import insert_nested_key
 from tergite_tuner.utils.hardware.spi import SpiDAC
@@ -44,12 +42,11 @@ from tergite_tuner.utils.types.enums import MeasurementMode
 from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
     from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
-        CompiledSchedule,
         InstrumentCoordinator,
     )
 
+    from tergite_tuner.backend import CompiledSchedule, QuantumDevice
     from tergite_tuner.config.session import SessionContext
 
 
@@ -78,9 +75,18 @@ class BaseNode(ABC):
 
         self.device: Optional["QuantumDevice"] = None
 
+    def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
+        schedule = self.get_measurement().schedule_function(
+            **schedule_samplespace, **self.schedule_keywords
+        )
+        return compile_schedule(schedule, self.device, name=self.name)
+
     @abstractmethod
-    def precompile(self, samplespace):
-        pass
+    def get_measurement(self) -> BaseMeasurement:
+        """This node's measurement, over the device's elements it measures."""
+
+    def get_transmons(self) -> dict:
+        return {qubit: self.device.get_element(qubit) for qubit in self.all_qubits}
 
     @classmethod
     @abstractmethod
@@ -333,15 +339,8 @@ class QubitNode(BaseNode):
             session=self.session,
         )
 
-    def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
-        transmons_dict = {
-            qubit: self.device.get_element(qubit) for qubit in self.all_qubits
-        }
-        measurement_class = self.measurement_cls(transmons_dict)
-        schedule = measurement_class.schedule_function(
-            **schedule_samplespace, **self.schedule_keywords
-        )
-        return compile_schedule(schedule, self.device, name=self.name)
+    def get_measurement(self) -> BaseMeasurement:
+        return self.measurement_cls(self.get_transmons())
 
     @classmethod
     def reset_qois(cls, session: "SessionContext", node_name: str):
@@ -534,18 +533,9 @@ class CouplerNode(BaseNode):
 
         return ac_frequency
 
-    def precompile(self, schedule_samplespace: dict) -> "CompiledSchedule":
-        transmons_dict = {
-            qubit: self.device.get_element(qubit) for qubit in self.all_qubits
-        }
-        edges_dict = {
-            coupler: self.device.get_edge(coupler) for coupler in self.couplers
-        }
-        measurement_class = self.measurement_cls(transmons_dict, edges_dict)
-        schedule = measurement_class.schedule_function(
-            **schedule_samplespace, **self.schedule_keywords
-        )
-        return compile_schedule(schedule, self.device, name=self.name)
+    def get_measurement(self) -> BaseMeasurement:
+        edges = {coupler: self.device.get_edge(coupler) for coupler in self.couplers}
+        return self.measurement_cls(self.get_transmons(), edges)
 
     def __str__(self):
         return f"Node representation for {self.name} on couplers {self.couplers}"
