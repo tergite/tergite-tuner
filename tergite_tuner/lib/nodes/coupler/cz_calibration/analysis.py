@@ -26,6 +26,8 @@ from tergite_tuner.lib.utils.analysis_models import (
 )
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 
+PLOT_COLUMNS = 5
+
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
@@ -121,142 +123,68 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
         return get_fits_from_result(analysis_result, analysis_succesful)
 
     def plotter(self, figures_dictionary):
-
-        figures_list = []
-        number_of_plots = self.number_of_wp + 1
-        ncols = 5
-        n_rows = max(1, int(np.ceil(number_of_plots / ncols)))
-        display_target_state_1 = False
-        display_target_state_2 = False
-
-        fig, axs = plt.subplots(
-            ncols=ncols,
-            nrows=n_rows,
-            sharex=True,
-            sharey=True,
-            squeeze=False,
+        rows = max(1, int(np.ceil((self.number_of_wp + 1) / PLOT_COLUMNS)))
+        figure, axes = plt.subplots(
+            ncols=PLOT_COLUMNS, nrows=rows, sharex=True, sharey=True, squeeze=False
         )
-
-        for i, _ in enumerate(self.cz_working_points):
-            title_color = "black"
-            legend_collor = "white"
-            if i == self.optimal_point_index:
-                title_color = "red"
-                legend_collor = "red"
-
-            col = i % ncols
-            row = i // ncols
-            phi_on = self.phi_0.sel({self.control_mode_coord: True}).isel(
-                {self.cz_working_points_coord: i}
+        for index in range(len(self.cz_working_points)):
+            self._plot_working_point(
+                axes[index // PLOT_COLUMNS][index % PLOT_COLUMNS], index
             )
-            phi_off = self.phi_0.sel({self.control_mode_coord: False}).isel(
-                {self.cz_working_points_coord: i}
-            )
-            delta_phi = np.rad2deg((phi_off - phi_on).values.item())
-
-            target_probabilities = self.target_qubit_probabilities.isel(
-                {self.cz_working_points_coord: i}
-            )
-
-            # plot sinusoidal fits
-            target_fit_points = self.target_plot_points_0.isel(
-                {self.cz_working_points_coord: i}
-            )
-            target_fit_points.sel({self.control_mode_coord: True}).plot(
-                ax=axs[row][col], x=self.target_phase_coord, color="orange"
-            )
-            target_fit_points.sel({self.control_mode_coord: False}).plot(
-                ax=axs[row][col], x=self.target_phase_coord, color="black"
-            )
-
-            # plot data points for state |0> for ON and Off Contrnol mode
-            target_probabilities.sel({"state": 0, self.control_mode_coord: True}).plot(
-                ax=axs[row][col],
-                x=self.target_phase_coord,
-                marker="o",
-                color="orange",
-                ls="",
-            )
-            target_probabilities.sel({"state": 0, self.control_mode_coord: False}).plot(
-                ax=axs[row][col],
-                x=self.target_phase_coord,
-                marker="o",
-                color="black",
-                ls="",
-                label=rf"$\Delta\Phi$: {delta_phi:.1f} $^o$",
-            )
-            if display_target_state_1:
-                # plot data points for state |1> for ON and Off Contrnol mode
-                target_probabilities.sel(
-                    {"state": 1, self.control_mode_coord: True}
-                ).plot(
-                    ax=axs[row][col],
-                    x=self.target_phase_coord,
-                    marker="o",
-                    color="tomato",
-                    ls="",
-                )
-                target_probabilities.sel(
-                    {"state": 1, self.control_mode_coord: False}
-                ).plot(
-                    ax=axs[row][col],
-                    x=self.target_phase_coord,
-                    marker="o",
-                    color="grey",
-                    ls="",
-                )
-            if display_target_state_2:
-                # plot data points for state |2> for ON and Off Contrnol mode
-                target_probabilities.sel(
-                    {"state": 2, self.control_mode_coord: True}
-                ).plot(
-                    ax=axs[row][col],
-                    x=self.target_phase_coord,
-                    marker="o",
-                    color="green",
-                    ls="",
-                )
-                target_probabilities.sel(
-                    {"state": 2, self.control_mode_coord: False}
-                ).plot(
-                    ax=axs[row][col],
-                    x=self.target_phase_coord,
-                    marker="o",
-                    color="olivedrab",
-                    ls="",
-                )
-
-            axs[row][col].set_title(
-                f"freq: {self.frequencies[i]:.3e} duration: {self.durations[i]:.3e}",
-                color=title_color,
-                fontsize=10,
-            )
-            axs[row][col].legend(facecolor=legend_collor)
-            axs[row][col].set_xlabel("")
-            axs[row][col].set_ylabel("")
-
-        fig.text(0.5, 0.04, self.target_phase_coord, ha="center")
-        fig.text(
+        figure.text(0.5, 0.04, self.target_phase_coord, ha="center")
+        figure.text(
             0.04,
             0.5,
             rf"Target Qubit: {self.target_qubit}, $|0\rangle$ probailities",
             va="center",
             rotation="vertical",
         )
-
-        # plot Delta phi vs flux pulse frequencies
-        col = self.number_of_wp % ncols
-        row = self.number_of_wp // ncols
-
-        phis_on = self.phi_0.sel({self.control_mode_coord: True})
-        phis_off = self.phi_0.sel({self.control_mode_coord: False})
-        delta_phis = np.rad2deg((phis_off - phis_on).values)
-        [axs[row][col]._shared_axes["x"].remove(ax) for ax in axs.ravel()]
-        [axs[row][col]._shared_axes["y"].remove(ax) for ax in axs.ravel()]
-        axs[row][col].plot(self.frequencies, delta_phis, "bo")
-
-        fig.suptitle(
+        summary_axis = axes[self.number_of_wp // PLOT_COLUMNS][
+            self.number_of_wp % PLOT_COLUMNS
+        ]
+        self._plot_phase_differences(summary_axis, axes)
+        figure.suptitle(
             "Target Qubit State 0 Probabilities: \n orange: control is ON - black: control is OFF"
         )
-        figures_list.append(fig)
-        figures_dictionary[self.coupler] = figures_list
+        figures_dictionary[self.coupler] = [figure]
+
+    def _plot_working_point(self, axis: Any, index: int) -> None:
+        """The target's |0> probabilities and sine fits with the control on and off, best point in red."""
+        is_optimal = index == self.optimal_point_index
+        point = {self.cz_working_points_coord: index}
+        phi_on = self.phi_0.sel({self.control_mode_coord: True}).isel(point)
+        phi_off = self.phi_0.sel({self.control_mode_coord: False}).isel(point)
+        delta_phi = np.rad2deg((phi_off - phi_on).values.item())
+
+        fit_points = self.target_plot_points_0.isel(point)
+        probabilities = self.target_qubit_probabilities.isel(point)
+        for is_on, colour in ((True, "orange"), (False, "black")):
+            fit_points.sel({self.control_mode_coord: is_on}).plot(
+                ax=axis, x=self.target_phase_coord, color=colour
+            )
+        for is_on, colour in ((True, "orange"), (False, "black")):
+            probabilities.sel({"state": 0, self.control_mode_coord: is_on}).plot(
+                ax=axis,
+                x=self.target_phase_coord,
+                marker="o",
+                color=colour,
+                ls="",
+                **({} if is_on else {"label": rf"$\Delta\Phi$: {delta_phi:.1f} $^o$"}),
+            )
+        axis.set_title(
+            f"freq: {self.frequencies[index]:.3e} duration: {self.durations[index]:.3e}",
+            color="red" if is_optimal else "black",
+            fontsize=10,
+        )
+        axis.legend(facecolor="red" if is_optimal else "white")
+        axis.set_xlabel("")
+        axis.set_ylabel("")
+
+    def _plot_phase_differences(self, axis: Any, axes: np.ndarray) -> None:
+        """Each working point's phase difference against its frequency, on its own scales."""
+        phis_on = self.phi_0.sel({self.control_mode_coord: True})
+        phis_off = self.phi_0.sel({self.control_mode_coord: False})
+        for other in axes.ravel():
+            axis._shared_axes["x"].remove(other)
+            axis._shared_axes["y"].remove(other)
+        axis.plot(self.frequencies, np.rad2deg((phis_off - phis_on).values), "bo")
