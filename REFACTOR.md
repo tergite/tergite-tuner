@@ -548,13 +548,11 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 | `cz_chevron` `analyze_coupler` | 91 |
 | `coupler/spectroscopy` `_find_crossing_currents` (two diverged copies, made one) | 69 / 64 |
 
-2. **Shared functions for the remaining repeats:**
-   - `get_pair_probabilities(control, target, discriminators)`, for 4 CZ analyses;
-   - `fit_sine_phase(data, x)`, for 3;
-   - `get_assignment_fidelities(iq_per_amplitude, states)`, for 3 copies in `ro_amplitude_optimization`;
-   - `scipy.stats.median_abs_deviation`, in place of the two `reject_outliers`/`has_peak` copies;
-   - `wait_between_repetitions`, for T1, T2 and T2Echo;
-   - `get_phase_paths(state, couplers)`, for 2 copies.
+2. ~~Shared functions for the remaining repeats~~:
+   - `fit_sine_phase(model, data, x, plot_x)`, for CZ local phases and CZ calibration, each keeping its own model;
+   - `classify_shots(iq, states, lda)`, for the two- and three-state readout amplitude analyses;
+   - already shared after step 6: the waits between T1, T2 and T2 echo repetitions (`get_waits_between_points`) and `get_phase_path`; the `reject_outliers`/`has_peak` copies were gone;
+   - not shared: the four CZ analyses' `calculate_probabilities` calls, two lines each that each analysis then uses differently.
 3. ~~Analyses read Redis through `RedisStore`~~: step 7.5 gives them the session's device state, and removes `RedisStore`.
 4. ~~The spec's `element` replaces the `"_" in pk` test for coupler vs qubit~~: it went with `base/node.py` in step 6.
 5. **Logging.** `ExtendedLogger` adds its handlers at import time, but a library should only create its logger.
