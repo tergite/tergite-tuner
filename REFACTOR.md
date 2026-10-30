@@ -529,7 +529,7 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 
 ## Step 9: long functions and the rest
 
-1. **Long functions become compositions**, one per commit, with unit tests for the pure steps. The largest, after step 6 has moved them:
+1. ~~**Long functions become compositions**, one per commit, with unit tests for the pure steps~~: no function has 60 lines or more. The largest, after step 6 had moved them:
 
 | Function | Lines |
 | --- | --- |
@@ -555,9 +555,7 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
    - not shared: the four CZ analyses' `calculate_probabilities` calls, two lines each that each analysis then uses differently.
 3. ~~Analyses read Redis through `RedisStore`~~: step 7.5 gives them the session's device state, and removes `RedisStore`.
 4. ~~The spec's `element` replaces the `"_" in pk` test for coupler vs qubit~~: it went with `base/node.py` in step 6.
-5. **Logging.** `ExtendedLogger` adds its handlers at import time, but a library should only create its logger.
-   - Keep `status` as a level.
-   - Move `add_console_handler`/`add_file_handler` behind an explicit `setup_logging(stdout_level, file_level, log_dir)`, which the entry points call.
+5. ~~Logging~~: the handlers are behind `setup_logging(stdout_level, file_level, log_dir)`, which the entry points call; `status` stays a level.
 6. ~~Match couplers by name~~: CZ calibration checks `coupler in session.fixed_duration_couplers`.
 7. ~~Fix AllXY and Purity~~: purity benchmarking runs on the sweep layout its measurement and analysis share, and AllXY has an analysis; neither has a recorded dataset yet.
 8. ~~One name per node~~: qubit spectroscopy vs current has the same measurement under its own name, and a test checks every default spec is named for its node.
@@ -566,6 +564,13 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
 11. ~~The T2 and two-qubit RB analyses raised `ZeroDivisionError`~~: T2 fails its fits when a repetition guesses a 0 Hz oscillation, and CZ RB when a standard decay fits to zero.
 12. ~~One reset alignment~~: each schedule keeps the alignment its compiled program has had since before the refactor; making them one would change programs that run as they are.
 13. ~~Resonator spectroscopy prepares |2> without the ef motzoi~~: it prepares |2> with `prepare_state`, as the readout optimizations do.
+
+**Built.** Every function over 60 lines was split, one commit each, and no compiled program moved. Where it departs from the plan:
+- **The crossing finders became the anticrossing's**: the resonator-vs-current copy's grouping moved the anticrossing's crossings, while the anticrossing's left the other node's unchanged.
+- **The three schedules built point by point** (resonator and qubit spectroscopy, Ramsey) keep `get_multiplexed_schedule`'s callback, now a method bound with `functools.partial` instead of a nested function.
+- **Dead code went with the splits**: readout amplitude's per-amplitude shot arrays, which nothing read, and CZ calibration's unused plot flags.
+- **Two bugs got their own commits**: CZ chevron floored 100 ns to 96 ns, and the CZ pulse shifted a qubit's clock by NaN for an uncalibrated phase correction.
+- Docstrings that the splits showed wrong were corrected: the dependency order's, and the child phase correction's, which named the parent.
 
 ## Step 10: tests in the right place
 
