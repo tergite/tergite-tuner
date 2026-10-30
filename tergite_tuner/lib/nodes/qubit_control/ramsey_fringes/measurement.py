@@ -13,13 +13,20 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.resources import ClockResource
 
-from tergite_tuner.backend import ExtendedTransmon, Measure_RO1
+from tergite_tuner.backend import (
+    X90,
+    ClockResource,
+    DRAGPulse,
+    ExtendedTransmon,
+    Measure,
+    Measure_RO1,
+    Reset,
+    Rxy,
+    Schedule,
+    X,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 
 

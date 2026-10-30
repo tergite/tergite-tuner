@@ -16,19 +16,20 @@ Module containing a schedule class for two-tone (qubit) spectroscopy calibration
 """
 
 import numpy as np
-from quantify_scheduler.backends.qblox.operations.pulse_factories import (
-    long_square_pulse,
-)
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
-from quantify_scheduler.operations.pulse_library import (
+
+from tergite_tuner.backend import (
+    ClockResource,
+    ExtendedTransmon,
+    Measure,
+    Measure_RO1,
+    Reset,
+    Schedule,
     SetClockFrequency,
     SoftSquarePulse,
+    X,
+    long_square_pulse,
 )
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule
-
-from tergite_tuner.backend import ExtendedTransmon, Measure_RO1
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.logging import logger
 

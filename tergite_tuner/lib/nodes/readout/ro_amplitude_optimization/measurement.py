@@ -12,19 +12,20 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
-    DRAGPulse,
-    IdlePulse,
-    SquarePulse,
-)
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import LoopOperation
 
-from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend import (
+    ClockResource,
+    DRAGPulse,
+    ExtendedTransmon,
+    IdlePulse,
+    LoopOperation,
+    Reset,
+    Schedule,
+    SquarePulse,
+    SSBIntegrationComplex,
+    X,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 
 

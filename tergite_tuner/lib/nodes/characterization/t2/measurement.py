@@ -13,11 +13,9 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X
 
-from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend import X90, ExtendedTransmon, Measure, Reset, Schedule, X
 
 from ....base.measurement import BaseMeasurement
 

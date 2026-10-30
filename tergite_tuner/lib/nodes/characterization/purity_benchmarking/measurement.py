@@ -15,12 +15,19 @@ Module containing a schedule class for purity benchmarking measurement.
 """
 
 import numpy as np
-from quantify_scheduler.operations.gate_library import X90, H, Measure, Reset, Rxy, X
-from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.schedules.schedule import Schedule
 
 import tergite_tuner.utils.cliffords as cliffords
-from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend import (
+    X90,
+    DRAGPulse,
+    ExtendedTransmon,
+    H,
+    Measure,
+    Reset,
+    Rxy,
+    Schedule,
+    X,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 
 

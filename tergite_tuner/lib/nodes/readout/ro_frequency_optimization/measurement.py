@@ -14,17 +14,18 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
+
+from tergite_tuner.backend import (
+    ClockResource,
     DRAGPulse,
+    ExtendedTransmon,
+    Reset,
+    Schedule,
     SetClockFrequency,
     SquarePulse,
+    SSBIntegrationComplex,
+    X,
 )
-from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule
-
-from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 
 

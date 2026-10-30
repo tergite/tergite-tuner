@@ -19,17 +19,23 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
-from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import CZ, X90, Y90, Reset, Rxy, X, Y
-from quantify_scheduler.operations.pulse_library import IdlePulse
-from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.backend import (
+    CZ,
+    X90,
+    Y90,
+    ClockResource,
     ExtendedCompositeSquareEdge,
     ExtendedTransmon,
+    IdlePulse,
+    LoopOperation,
     Measure_RO_3state_Opt,
+    Reset,
+    Rxy,
+    Schedule,
+    X,
+    Y,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (

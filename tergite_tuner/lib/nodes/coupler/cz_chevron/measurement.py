@@ -14,21 +14,20 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from quantify_scheduler import Schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import Reset, X
-from quantify_scheduler.operations.pulse_library import (
-    IdlePulse,
-    SetClockFrequency,
-    SoftSquarePulse,
-)
-from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.backend import (
+    ClockResource,
     ExtendedCompositeSquareEdge,
     ExtendedTransmon,
+    IdlePulse,
+    LoopOperation,
     Measure_RO_3state_Opt,
+    Reset,
+    Schedule,
+    SetClockFrequency,
+    SoftSquarePulse,
+    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 
