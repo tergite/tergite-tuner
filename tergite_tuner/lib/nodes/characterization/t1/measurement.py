@@ -17,9 +17,9 @@ Module containing a schedule class for T1 and T2 coherence time measurement.
 """
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.enums import BinMode
-from qblox_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
@@ -36,9 +36,7 @@ class T1Measurement(BaseMeasurement):
     ):
         schedule.add(X(qubit))
         schedule.add(
-            Measure(
-                qubit, coords={"acq_index": acq_index}, bin_mode=BinMode.AVERAGE_APPEND
-            ),
+            Measure(qubit, acq_index=acq_index, bin_mode=BinMode.AVERAGE),
             ref_pt="end",
             rel_time=tau,
         )

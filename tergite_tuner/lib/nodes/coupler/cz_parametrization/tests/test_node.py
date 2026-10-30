@@ -29,12 +29,14 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_cannot_create_correct_type(redis_connection, session_context):
     """
     raise error if parking current does not exist on redis
     """
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
     if redis_connection.hexists(f"couplers:{coupler}", "initial_parking_current"):
         redis_connection.hdel(f"couplers:{coupler}", "initial_parking_current")
@@ -48,6 +50,7 @@ def test_cannot_create_correct_type(redis_connection, session_context):
 
 
 def test_can_create_correct_type(redis_connection, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
     redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
     redis_connection.hset(f"couplers:{coupler}", "cz_phase_path", "via_20")
@@ -66,6 +69,7 @@ def test_can_create_correct_type(redis_connection, session_context):
 
 
 def test_validation_return_error_with_same_qubit_coupler(session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     with pytest.raises(ValueError):
         CZParametrizationNode(
             all_qubits=["q14", "q15"],
@@ -76,6 +80,7 @@ def test_validation_return_error_with_same_qubit_coupler(session_context):
 
 @pytest.mark.skip
 def test_validation_return_error_with_qubits_not_matching_couplers(session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     with pytest.raises(ValueError):
         CZParametrizationNode(
             all_qubits=["q14", "q16"],
@@ -85,6 +90,7 @@ def test_validation_return_error_with_qubits_not_matching_couplers(session_conte
 
 
 def test_measurement_class_type(redis_connection, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q14_q15"
     redis_connection.hset(f"couplers:{coupler}", "initial_parking_current", "100e-6")
     redis_connection.hset(f"couplers:{coupler}", "control_qubit", "q15")
@@ -105,6 +111,7 @@ def test_measurement_class_type(redis_connection, session_context):
 
 
 def test_dummy_generation(redis_connection, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     for coupler in DEFAULT_TEST_COUPLERS:
         c_qubit, t_qubit = coupler.split("_")
         redis_connection.hset(

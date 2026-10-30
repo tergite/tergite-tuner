@@ -16,8 +16,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from qblox_scheduler import Schedule
-from qblox_scheduler.schedules import TimeableSchedule
 
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.measurement import (
     RandomizedBenchmarkingMeasurement,
@@ -26,6 +24,7 @@ from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node impor
     RandomizedBenchmarkingNode,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
 
@@ -38,6 +37,7 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
     """
     redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
     with loaded_redis(redis_connection, redis_data_file):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q11", "q12", "q13", "q14", "q15"]
         couplers = ["q14_q15"]
 
@@ -63,7 +63,11 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
             **samplespace, **outer_samplespace, **node.schedule_keywords
         )
 
-        shot = _shot_schedule(schedule)
+        for op_id, operation in schedule.data["operation_dict"].items():
+            if operation["name"] == "LoopOperation":
+                loop_id = op_id
+                break
+        shot = schedule.data["operation_dict"][loop_id]["control_flow_info"]["body"]
 
         for qubit in qubits:
             assert f"root_{qubit}" in shot.schedulables
@@ -74,13 +78,11 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
             **samplespace, **outer_samplespace, **node.schedule_keywords
         )
 
-        shot = _shot_schedule(schedule)
+        for op_id, operation in schedule.data["operation_dict"].items():
+            if operation["name"] == "LoopOperation":
+                loop_id = op_id
+                break
+        shot = schedule.data["operation_dict"][loop_id]["control_flow_info"]["body"]
 
         for qubit in qubits:
             assert not f"root_{qubit}" in shot.schedulables
-
-
-def _shot_schedule(schedule: Schedule) -> TimeableSchedule:
-    return next(
-        op for op in schedule.operations.values() if isinstance(op, TimeableSchedule)
-    )

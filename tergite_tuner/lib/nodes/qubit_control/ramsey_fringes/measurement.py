@@ -13,15 +13,14 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.enums import BinMode
-from qblox_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X
-from qblox_scheduler.operations.pulse_library import DRAGPulse
-from qblox_scheduler.resources import ClockResource
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X
+from quantify_scheduler.operations.pulse_library import DRAGPulse
+from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_gates import Measure_RO1
-from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -74,7 +73,7 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
 
         if qubit_state == 1:
             for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12
+                mw_frequency_12 = this_transmon.clock_freqs.f12()
                 this_clock = f"{this_qubit}.12"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_12)
@@ -86,9 +85,9 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
         # The outer loop, iterates over all qubits
         for this_qubit, artificial_detunings_values in artificial_detunings.items():
             this_transmon = self.transmons[this_qubit]
-            mw_pulse_duration = this_transmon.rxy.duration
-            mw_pulse_port = this_transmon.ports.microwave
-            mw_ef_amp180 = this_transmon.r12.ef_amp180
+            mw_pulse_duration = this_transmon.rxy.duration()
+            mw_pulse_port = this_transmon.ports.microwave()
+            mw_ef_amp180 = this_transmon.r12.ef_amp180()
 
             if qubit_state == 1:
                 this_clock = f"{this_qubit}.12"
@@ -120,8 +119,8 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
                         schedule.add(
                             DRAGPulse(
                                 duration=mw_pulse_duration,
-                                amplitude=f12_amp / 2,
-                                beta=motzoi_to_beta(0, mw_pulse_duration),
+                                G_amp=f12_amp / 2,
+                                D_amp=0,
                                 port=mw_pulse_port,
                                 clock=this_clock,
                                 phase=0,
@@ -131,8 +130,8 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
                         schedule.add(
                             DRAGPulse(
                                 duration=mw_pulse_duration,
-                                amplitude=f12_amp / 2,
-                                beta=motzoi_to_beta(0, mw_pulse_duration),
+                                G_amp=f12_amp / 2,
+                                D_amp=0,
                                 port=mw_pulse_port,
                                 clock=this_clock,
                                 phase=recovery_phase,
@@ -150,9 +149,7 @@ class RamseyDetuningsMeasurement(BaseMeasurement):
 
                     schedule.add(
                         measure_function(
-                            this_qubit,
-                            coords={"acq_index": this_index},
-                            bin_mode=BinMode.AVERAGE_APPEND,
+                            this_qubit, acq_index=this_index, bin_mode=BinMode.AVERAGE
                         ),
                     )
 

@@ -55,7 +55,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from qblox_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from redis import Redis
 
 from tergite_tuner.config.types import (
@@ -159,7 +159,7 @@ class SessionContext(BaseModel):
         id: stable identifier of this session, derived from the
             timestamp.
         cluster_config: config that QBlox needs to compile schedules on the
-            hardware. It can also be a path to the qblox-scheduler cluster_config JSON file.
+            hardware. It can also be a path to the quantify-scheduler-based cluster_config JSON file.
             See cluster_config.example.json
         device_config: config with the initial values for the device
             configuration. It can also be a path to the device_config TOML file.

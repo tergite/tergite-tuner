@@ -22,6 +22,7 @@ from tergite_tuner.utils.measurement import (
     reduce_samplespace,
     samplespace_dimensions,
 )
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
 _node_names = list(DEFAULT_NODE_NAME_CLS_MAP.keys())
@@ -32,6 +33,7 @@ def test_precompile_all_nodes_without_error(
     node_name, redis_connection, session_context
 ):
     with loaded_redis(redis_connection, _redis_values):
+        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         node_cls = DEFAULT_NODE_NAME_CLS_MAP[node_name]
         node = node_cls(
             all_qubits=["q00", "q01"],

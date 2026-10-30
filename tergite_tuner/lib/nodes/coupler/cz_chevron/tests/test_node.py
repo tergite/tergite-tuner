@@ -20,9 +20,11 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_node_creation(redis_connection, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     coupler = "q13_q14"
     session_context.redis.hset(
         f"couplers:{coupler}", "initial_parking_current", "100e-6"
@@ -45,6 +47,7 @@ def test_node_creation(redis_connection, session_context):
 def test_class_attribute_objects(redis_connection, session_context):
     session_context.redis.hset(f"couplers:{'q13_q14'}", "cz_pulse_frequency", "7.16e8")
     session_context.redis.hset(f"couplers:{'q13_q14'}", "cz_half_duration", "92e-9")
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node = CZChevronNode(
         couplers=["q13_q14"],
         session=session_context,
@@ -55,6 +58,7 @@ def test_class_attribute_objects(redis_connection, session_context):
 
 
 def test_dummy_generation(redis_connection, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     for coupler in DEFAULT_TEST_COUPLERS:
         c_qubit, t_qubit = coupler.split("_")
         session_context.redis.hset(f"couplers:{coupler}", "cz_half_duration", "92e-9")

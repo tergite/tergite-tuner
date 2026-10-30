@@ -11,8 +11,8 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.operations.gate_library import Measure, Reset, Rxy, X
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy, X
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
@@ -80,20 +80,20 @@ class AllXYMeasurement(BaseMeasurement):
                 second_theta = pulses[1]["theta"]
                 second_phi = pulses[1]["phi"]
                 schedule.add(Rxy(qubit=this_qubit, theta=second_theta, phi=second_phi))
-                schedule.add(Measure(this_qubit, coords={"acq_index": acq_index}))
+                schedule.add(Measure(this_qubit, acq_index=acq_index))
                 schedule.add(Reset(this_qubit))
 
             # 0 calibration point
             schedule.add(Reset(this_qubit))
             schedule.add(Reset(this_qubit))
-            schedule.add(Measure(this_qubit, coords={"acq_index": acq_index + 1}))
+            schedule.add(Measure(this_qubit, acq_index=acq_index + 1))
             schedule.add(Reset(this_qubit))
 
             # 1 calibration point
             schedule.add(Reset(this_qubit))
             schedule.add(Reset(this_qubit))
             schedule.add(X(this_qubit))
-            schedule.add(Measure(this_qubit, coords={"acq_index": acq_index + 2}))
+            schedule.add(Measure(this_qubit, acq_index=acq_index + 2))
             schedule.add(Reset(this_qubit))
 
         return schedule

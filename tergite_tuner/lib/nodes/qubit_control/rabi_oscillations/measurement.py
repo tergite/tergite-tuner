@@ -15,14 +15,13 @@
 
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.operations.gate_library import Measure, Reset, X
-from qblox_scheduler.operations.pulse_library import DRAGPulse
-from qblox_scheduler.resources import ClockResource
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_library import DRAGPulse
+from quantify_scheduler.resources import ClockResource
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.types.extended_gates import Measure_RO1
-from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -71,16 +70,16 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         # we must first add the clocks
         if qubit_state == 0:
             for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_01 = this_transmon.clock_freqs.f01
-                mw_duration = this_transmon.rxy.duration
+                mw_frequency_01 = this_transmon.clock_freqs.f01()
+                mw_duration = this_transmon.rxy.duration()
                 this_clock = f"{this_qubit}.01"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_01)
                 )
         elif qubit_state == 1:
             for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12
-                mw_duration = this_transmon.r12.ef_duration
+                mw_frequency_12 = this_transmon.clock_freqs.f12()
+                mw_duration = this_transmon.r12.ef_duration()
                 this_clock = f"{this_qubit}.12"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_12)
@@ -94,7 +93,7 @@ class RabiOscillationsMeasurement(BaseMeasurement):
         for this_qubit, mw_amp_array_val in mw_amplitudes.items():
             # unpack the static parameters
             this_transmon = self.transmons[this_qubit]
-            mw_pulse_port = this_transmon.ports.microwave
+            mw_pulse_port = this_transmon.ports.microwave()
 
             if qubit_state == 0:
                 this_clock = f"{this_qubit}.01"
@@ -114,8 +113,8 @@ class RabiOscillationsMeasurement(BaseMeasurement):
                 schedule.add(
                     DRAGPulse(
                         duration=mw_duration,
-                        amplitude=mw_amplitude,
-                        beta=motzoi_to_beta(0, mw_duration),
+                        G_amp=mw_amplitude,
+                        D_amp=0,
                         port=mw_pulse_port,
                         clock=this_clock,
                         phase=0,
@@ -123,7 +122,7 @@ class RabiOscillationsMeasurement(BaseMeasurement):
                 )
 
                 schedule.add(
-                    measure_function(this_qubit, coords={"acq_index": acq_index}),
+                    measure_function(this_qubit, acq_index=acq_index),
                 )
 
                 schedule.add(Reset(this_qubit))
@@ -176,7 +175,7 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
 
         if qubit_state == 1:
             for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12
+                mw_frequency_12 = this_transmon.clock_freqs.f12()
                 this_clock = f"{this_qubit}.12"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_12)
@@ -188,16 +187,16 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
         # The outer loop, iterates over all qubits
         for this_qubit, X_values in X_repetitions.items():
             this_transmon = self.transmons[this_qubit]
-            mw_pulse_duration = this_transmon.rxy.duration
-            mw_pulse_port = this_transmon.ports.microwave
-            mw_amplitude = this_transmon.rxy.amp180
-            mw_motzoi = this_transmon.rxy.motzoi
+            mw_pulse_duration = this_transmon.rxy.duration()
+            mw_pulse_port = this_transmon.ports.microwave()
+            mw_amplitude = this_transmon.rxy.amp180()
+            mw_motzoi = this_transmon.rxy.motzoi()
             this_clock = f"{this_qubit}.01"
 
             if qubit_state == 1:
-                mw_pulse_duration = this_transmon.r12.ef_duration
-                mw_amplitude = this_transmon.r12.ef_amp180
-                mw_motzoi = this_transmon.r12.ef_motzoi
+                mw_pulse_duration = this_transmon.r12.ef_duration()
+                mw_amplitude = this_transmon.r12.ef_amp180()
+                mw_motzoi = this_transmon.r12.ef_motzoi()
                 this_clock = f"{this_qubit}.12"
 
             mw_amplitudes_corrections = mw_amplitudes_sweep[this_qubit]
@@ -220,8 +219,8 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
                         schedule.add(
                             DRAGPulse(
                                 duration=mw_pulse_duration,
-                                amplitude=mw_amplitude + mw_amplitude_correction,
-                                beta=motzoi_to_beta(mw_motzoi, mw_pulse_duration),
+                                G_amp=mw_amplitude + mw_amplitude_correction,
+                                D_amp=mw_motzoi,
                                 port=mw_pulse_port,
                                 clock=this_clock,
                                 phase=0,
@@ -230,8 +229,8 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
                         schedule.add(
                             DRAGPulse(
                                 duration=mw_pulse_duration,
-                                amplitude=mw_amplitude + mw_amplitude_correction,
-                                beta=motzoi_to_beta(mw_motzoi, mw_pulse_duration),
+                                G_amp=mw_amplitude + mw_amplitude_correction,
+                                D_amp=mw_motzoi,
                                 port=mw_pulse_port,
                                 clock=this_clock,
                                 phase=0,
@@ -239,7 +238,7 @@ class NRabiOscillationsMeasurement(BaseMeasurement):
                         )
 
                     schedule.add(
-                        measure_function(this_qubit, coords={"acq_index": this_index}),
+                        measure_function(this_qubit, acq_index=this_index),
                     )
 
                     schedule.add(Reset(this_qubit))

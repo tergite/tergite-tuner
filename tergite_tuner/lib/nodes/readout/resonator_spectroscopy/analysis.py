@@ -19,9 +19,9 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import xarray as xr
+from quantify_core.analysis import fitting_models as fm
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
-from tergite_tuner.lib.utils import fitting_models as fm
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.types.qoi import QOI
 

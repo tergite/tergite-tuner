@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from qblox_scheduler.schedules import TimeableSchedule
 
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.node import (
     ROAmplitudeThreeStateOptimizationNode,
@@ -22,11 +21,13 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
+from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_dummy_generation(redis_connection, session_context):
     for qubit in DEFAULT_TEST_QUBITS:
         redis_connection.hset(f"transmons:{qubit}", "measure:pulse_amp", "0.05")
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     node_3 = ROAmplitudeThreeStateOptimizationNode(
         DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session_context
     )
@@ -43,6 +44,7 @@ def test_dummy_generation(redis_connection, session_context):
 
 
 def test_12_pulse_duration(seeded_redis, session_context):
+    ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
     qubits = ["q13", "q14", "q15"]
     node_12 = ROAmplitudeThreeStateOptimizationNode(
         qubits, ["q13_q14"], session=session_context
@@ -62,11 +64,12 @@ def test_12_pulse_duration(seeded_redis, session_context):
         **samplespace, **node_12.schedule_keywords
     )
     pulse_duration = None
-    for operation in schedule.operations.values():
-        if isinstance(operation, TimeableSchedule):
-            for shot in operation.operations.values():
+    for pulses in schedule.operations.values():
+        if pulses["name"] == "LoopOperation":
+            shot_schedule = pulses["control_flow_info"]["body"]
+            for shot in shot_schedule.operations.values():
                 if shot["name"] == "DRAGPulse":
-                    pulse_duration = shot["pulse_info"]["duration"]
+                    pulse_duration = shot["pulse_info"][0]["duration"]
                     break
 
     assert pytest.approx(pulse_duration) == 7.6e-8

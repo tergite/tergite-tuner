@@ -14,18 +14,17 @@
 # that they have been altered from the originals.
 
 import numpy as np
-from qblox_scheduler import Schedule
-from qblox_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from qblox_scheduler.operations.gate_library import Reset, X
-from qblox_scheduler.operations.pulse_library import (
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import Reset, X
+from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     SetClockFrequency,
     SquarePulse,
 )
-from qblox_scheduler.resources import ClockResource
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
 
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_pulse_factories import motzoi_to_beta
 from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
@@ -38,28 +37,28 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
 
         this_qubit = transmon.name
         measure = transmon.measure
-        acq_cha = measure.acq_label
+        acq_cha = measure.acq_channel()
         this_ro_clock = f"{this_qubit}." + self.ro_str
 
         ro_pulse = schedule.add(
             SquarePulse(
-                duration=measure.pulse_duration,
-                amplitude=measure.pulse_amp,
-                port=transmon.ports.readout,
+                duration=measure.pulse_duration(),
+                amp=measure.pulse_amp(),
+                port=transmon.ports.readout(),
                 clock=this_ro_clock,
             )
         )
         schedule.add(
             SSBIntegrationComplex(
-                duration=measure.integration_time,
-                port=transmon.ports.readout,
+                duration=measure.integration_time(),
+                port=transmon.ports.readout(),
                 clock=this_ro_clock,
-                coords={"acq_index": acq_index},
-                acq_label=acq_cha,
+                acq_index=acq_index,
+                acq_channel=acq_cha,
             ),
             ref_op=ro_pulse,
             ref_pt="start",
-            rel_time=measure.acq_delay,
+            rel_time=measure.acq_delay(),
         )
 
         schedule.add(Reset(this_qubit))
@@ -81,10 +80,10 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
 
         schedule.add(
             DRAGPulse(
-                duration=transmon.r12.ef_duration,
-                amplitude=transmon.r12.ef_amp180,
-                beta=motzoi_to_beta(transmon.r12.ef_motzoi, transmon.r12.ef_duration),
-                port=transmon.ports.microwave,
+                duration=transmon.r12.ef_duration(),
+                G_amp=transmon.r12.ef_amp180(),
+                D_amp=transmon.r12.ef_motzoi(),
+                port=transmon.ports.microwave(),
                 clock=this_mw_clock,
                 phase=0,
             ),
@@ -118,7 +117,7 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
 
         if len(qubit_states[list(qubits)[0]]) == 3:
             for this_qubit, this_transmon in self.transmons.items():
-                mw_frequency_12 = this_transmon.clock_freqs.f12
+                mw_frequency_12 = this_transmon.clock_freqs.f12()
                 this_clock = f"{this_qubit}.12"
                 schedule.add_resource(
                     ClockResource(name=this_clock, freq=mw_frequency_12)
@@ -143,7 +142,7 @@ class ROFrequencyOptimizationMeasurement(BaseMeasurement):
 
             for acq_index, ro_frequency in enumerate(ro_f_values):
                 schedule.add(
-                    SetClockFrequency(clock=this_ro_clock, frequency=ro_frequency),
+                    SetClockFrequency(clock=this_ro_clock, clock_freq_new=ro_frequency),
                 )
 
                 # The third for loop iterates over all qubit states
