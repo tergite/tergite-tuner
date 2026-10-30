@@ -96,24 +96,21 @@ def session_context(redis_connection) -> SessionContext:
 
 
 @pytest.fixture
-def node_data_dir(request):
-    """
-    Returns the 'data' directory located in the same parent
-    folder as the current test file.
+def node_data_dir(request, tmp_path):
+    """The 'data' folder beside the test file, as links in a folder of the test's own.
+
+    Tests write plots and datasets into it, and tests of one node share their 'data'
+    folder, so in parallel runs one test's clean-up deleted another's files.
     """
     data_dir = request.path.parent / "data"
-    initial_files = set(data_dir.iterdir())
-
     if not data_dir.is_dir():
         pytest.fail(f"Expected data directory not found at: {data_dir}")
 
-    yield data_dir
-
-    current_files = set(data_dir.iterdir())
-    new_files = current_files - initial_files
-
-    for file in new_files:
-        file.unlink(missing_ok=True)
+    linked_dir = tmp_path / "data"
+    linked_dir.mkdir()
+    for item in data_dir.iterdir():
+        (linked_dir / item.name).symlink_to(item)
+    return linked_dir
 
 
 @pytest.fixture
