@@ -39,7 +39,6 @@ tergite_tuner/config/session.py: UP006 Use `tuple` instead of `Tuple` for type a
 tergite_tuner/config/session.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/config/session.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/config/session.py: UP006 Use `tuple` instead of `Tuple` for type annotation
-tergite_tuner/config/session.py: UP015 Unnecessary mode argument
 tergite_tuner/config/session.py: UP035 Import from `collections.abc` instead: `Mapping`
 tergite_tuner/config/session.py: UP035 `typing.Dict` is deprecated, use `dict` instead
 tergite_tuner/config/session.py: UP035 `typing.List` is deprecated, use `list` instead

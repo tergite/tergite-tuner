@@ -99,12 +99,7 @@ private-helper-position: tergite_tuner/config/session.py::SessionOptions
 private-helper-position: tergite_tuner/export.py::CalibrationResults
 private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
 private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
-type-hints: tergite_tuner/config/session.py::SessionContext.cast_bool_fields
-type-hints: tergite_tuner/config/session.py::SessionContext.cast_cluster_mode
-type-hints: tergite_tuner/config/session.py::SessionContext.cast_comma_separated_to_list
-type-hints: tergite_tuner/config/session.py::SessionContext.cast_spi_mode
 type-hints: tergite_tuner/config/session.py::SessionContext.cast_target_node
-type-hints: tergite_tuner/config/session.py::SessionContext.from_env
 type-hints: tergite_tuner/config/session.py::SessionContext.refresh_redis_fields_log
 type-hints: tergite_tuner/config/session.py::SessionContext.update_redis_fields_log
 type-hints: tergite_tuner/export.py::generate_calib_seed_file

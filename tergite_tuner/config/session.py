@@ -19,13 +19,11 @@ run: environment-driven settings (formerly the ``.env`` file), and the
 per-run state that used to live on a bespoke object (target node, qubit
 list, mode, etc.).
 
-Build a :class:`SessionContext` directly with kwargs, or via the
-:meth:`SessionContext.from_env` factory which merges values read from a
-``.env`` file with the matching ``os.environ`` entries.
+Build a :class:`SessionContext` with kwargs, which it fills from the
+environment, or with :meth:`SessionContext.from_env`, which also reads a
+``.env`` file.
 """
 
-import os
-import os.path
 from collections.abc import Iterable
 from datetime import datetime
 from functools import cached_property
@@ -33,6 +31,7 @@ from ipaddress import IPv4Address
 from os import PathLike
 from pathlib import Path
 from typing import (
+    Annotated,
     Any,
     Dict,
     List,
@@ -44,10 +43,7 @@ from typing import (
     Union,
 )
 
-from dotenv import dotenv_values
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     Field,
     PrivateAttr,
     RedisDsn,
@@ -56,6 +52,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from redis import Redis
 
 from tergite_tuner.backend import QbloxHardwareCompilationConfig
@@ -124,15 +121,13 @@ class SessionOptions(TypedDict, total=False):
     reverse_phase_qubits: Tuple[str, ...]
 
 
-class SessionContext(BaseModel):
+class SessionContext(BaseSettings):
     """Context for the current calibration run.
 
-    The model unifies what was previously split between the ``.env``
-    file and a bespoke per-run object. Field names are the lower-case
-    versions of the corresponding ``.env`` variable names.
-
-    Build directly from kwargs or use :meth:`from_env` to load from a
-    ``.env`` file (with ``os.environ`` as a fallback).
+    Each field is read, in this order, from the keyword arguments, the environment
+    variable of its upper-case name, the ``.env`` file given to :meth:`from_env`, and
+    its default. Enums are read by name from the environment and the ``.env`` file,
+    and lists as comma-separated values.
 
     Attributes:
         _redis: an active Redis client used by
@@ -143,10 +138,8 @@ class SessionContext(BaseModel):
         target_node: the calibration node on which to stop. Stored as a
             :class:`NodeEnum`; the lower-case string form is exposed via
             :attr:`target_node_name`.
-        qubits: list of qubit names to calibrate. Accepts a
-            comma-separated string from env vars (``QUBITS='q00,q01'``).
-        couplers: list of coupler names to calibrate. Accepts a
-            comma-separated string from env vars.
+        qubits: list of qubit names to calibrate, e.g. ``QUBITS='q00,q01'``.
+        couplers: list of coupler names to calibrate.
         name: human-readable name for the run; defaults to the target
             node name in lower case.
         data_dir: path where the data files are stored. default: 'out' in the working directory.
@@ -200,14 +193,17 @@ class SessionContext(BaseModel):
             to a coupler
     """
 
-    model_config = ConfigDict(
-        extra="allow", populate_by_name=True, arbitrary_types_allowed=True
+    model_config = SettingsConfigDict(
+        extra="ignore",
+        arbitrary_types_allowed=True,
+        env_ignore_empty=True,
+        env_parse_enums=True,
     )
 
     cluster_ip: Optional[IPv4Address] = None
     target_node: Optional[NodeEnum] = None
-    qubits: List[str] = []
-    couplers: List[str] = []
+    qubits: Annotated[List[str], NoDecode] = []
+    couplers: Annotated[List[str], NoDecode] = []
     name: Optional[str] = None
     cluster_mode: MeasurementMode = MeasurementMode.real
     cluster_timeout: int = 222
@@ -221,15 +217,18 @@ class SessionContext(BaseModel):
     ignore_spec: bool = True
     save_plot: bool = False
     data_dir: Path = Field(default_factory=_default_data_dir)
-    device_config: DeviceConfig = Field(default_factory=DeviceConfig)
-    node_config: NodeConfig = Field(default_factory=NodeConfig)
-    spi_config: Optional[SpiConfig] = None
-    cluster_config: Optional[QbloxHardwareCompilationConfig] = None
+    # NoDecode: a file path, not JSON
+    device_config: Annotated[DeviceConfig, NoDecode] = Field(
+        default_factory=DeviceConfig
+    )
+    node_config: Annotated[NodeConfig, NoDecode] = Field(default_factory=NodeConfig)
+    spi_config: Annotated[Optional[SpiConfig], NoDecode] = None
+    cluster_config: Annotated[Optional[QbloxHardwareCompilationConfig], NoDecode] = None
     node_specs: Mapping[NodeEnum, NodeSpec] = {}
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES
-    fixed_duration_couplers: Tuple[str, ...] = ()
-    reverse_phase_qubits: Tuple[str, ...] = ()
+    fixed_duration_couplers: Annotated[Tuple[str, ...], NoDecode] = ()
+    reverse_phase_qubits: Annotated[Tuple[str, ...], NoDecode] = ()
     _redis_fields_touched: Dict[str, int] = {}
 
     _timestamp: datetime = PrivateAttr(default_factory=datetime.now)
@@ -255,15 +254,10 @@ class SessionContext(BaseModel):
         mode="before",
     )
     @classmethod
-    def cast_comma_separated_to_list(cls, value):
-        """Accept comma-separated strings (e.g. from ``os.environ``) for list fields."""
-        if value is None or isinstance(value, list):
-            return value
+    def split_comma_separated(cls, value: Any) -> Any:
+        """Splits a comma-separated string, as the environment gives lists."""
         if isinstance(value, str):
-            stripped = value.strip()
-            if not stripped:
-                return []
-            return [item.strip() for item in stripped.split(",") if item.strip()]
+            return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
     @field_validator("target_node", mode="before")
@@ -278,42 +272,6 @@ class SessionContext(BaseModel):
         if isinstance(value, str):
             return NodeEnum(value.lower())
         return value
-
-    @field_validator("cluster_mode", mode="before")
-    @classmethod
-    def cast_cluster_mode(cls, value):
-        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``,
-        ``'re_analyse'``) as well as raw int / :class:`MeasurementMode` values."""
-        if value is None or isinstance(value, MeasurementMode):
-            return value
-        if isinstance(value, str):
-            return MeasurementMode[value.strip()]
-        return value
-
-    @field_validator("spi_mode", mode="before")
-    @classmethod
-    def cast_spi_mode(cls, value):
-        """Accept the lower-case mode name (e.g. ``'real'``, ``'dummy'``
-        as well as raw int / :class:`SPIMode` values."""
-        if value is None or isinstance(value, SPIMode):
-            return value
-        if isinstance(value, str):
-            return SPIMode[value.strip()]
-        return value
-
-    @field_validator("is_recalibration", "ignore_spec", mode="before")
-    @classmethod
-    def cast_bool_fields(cls, value):
-        """Accept common string representations (e.g. ``'true'``, ``'false'``,
-        ``'1'``, ``'0'``) as well as raw bool values from ``os.environ``."""
-        if isinstance(value, str):
-            normalised = value.strip().lower()
-            if normalised in ("true", "1", "yes", "y", "on"):
-                return True
-            if normalised in ("false", "0", "no", "n", "off", ""):
-                return False
-            raise ValueError(f"Cannot cast {value!r} to bool.")
-        return bool(value)
 
     @model_validator(mode="after")
     def update_attrs(self) -> Self:
@@ -370,47 +328,13 @@ class SessionContext(BaseModel):
     def from_env(
         cls,
         file: Optional[Union[str, "PathLike[str]"]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "SessionContext":
-        """Build a :class:`SessionContext` from a ``.env`` file and ``os.environ``.
-
-        Resolution order, per field:
-          1. The matching ``KEY`` in the ``.env`` file at ``file`` (if
-             ``file`` is provided and the file exists).
-          2. ``os.environ[<FIELD_NAME_UPPER>]`` if present and non-empty.
-          3. The :class:`SessionContext` field default.
-
-        Args:
-            file: path to a ``.env`` file. When ``None`` (or the path
-                does not exist), only ``os.environ`` and the class
-                defaults are used.
-            kwargs: extra attributes to set on this instance.
-                These override any that are set in the environment already or on the env file
-
-        Returns:
-            A validated :class:`SessionContext`.
+        """A session from ``kwargs``, the environment and the ``.env`` file at ``file``, in that order.
 
         Raises:
-            FileNotFoundError: if ``file`` is provided but doesn't exist.
+            FileNotFoundError: if ``file`` is given but does not exist.
         """
-        data = {
-            k.lower(): v
-            for k, v in os.environ.items()
-            if k.lower() in cls.model_fields and v not in (None, "")
-        }
-
-        try:
-            with open(file, "r", encoding="utf-8") as fh:
-                data.update(
-                    {
-                        k.lower(): v
-                        for k, v in dotenv_values(stream=fh).items()
-                        if v not in (None, "")
-                    }
-                )
-        except TypeError:
-            pass
-
-        # update with kwargs
-        data.update(kwargs)
-        return cls.model_validate(data)
+        if file is not None and not Path(file).exists():
+            raise FileNotFoundError(f"No .env file at {file}")
+        return cls(_env_file=file, **kwargs)

@@ -50,8 +50,13 @@ Copy the [example environment file](./.example.env) and edit it as needed.
 The `.env` file controls the cluster IP, redis URL, target node,
 qubits/couplers under calibration, and so on.   
 
-Every field on `SessionContext`can be set in the `.env` (in upper case), 
-or passed as a keyword argument to the public API of the entry point functions.  
+Every field on `SessionContext` can be set in the `.env` or as an environment variable
+(in upper case), or passed as a keyword argument to the public API of the entry point functions.
+A keyword argument wins over an environment variable, which wins over the `.env` file.
+
+`IS_RECALIBRATION` and `IGNORE_SPEC` default to `True`: a run recalibrates the nodes,
+whatever their calibration status, without resetting the cluster or setting the couplers'
+currents. Set both to `False` to tune up the device from the device config.
 
 
 On top of having a `.env` file, more configuration files maybe required. 
@@ -227,7 +232,8 @@ session, results = tune_device(
     target_node=NodeEnum.RABI_OSCILLATIONS,
     qubits=["q00", "q01"],
     couplers=["q00_q01"],
-    is_recalibration=True,
+    is_recalibration=False,
+    ignore_spec=False,
 )
 
 # you can even pass a session from before or construct it yourself with 

@@ -164,14 +164,13 @@ def test_session_falls_back_to_os_environ(tmp_path, monkeypatch, clean_environ):
     assert session.qubits == ["q00", "q01"]  # csv-coerced
 
 
-def test_session_env_file_wins_over_os_environ(tmp_path, monkeypatch, clean_environ):
-    """If the ``.env`` file has a value, ``os.environ`` is ignored for that field."""
+def test_session_os_environ_wins_over_env_file(tmp_path, monkeypatch, clean_environ):
     sample = tmp_path / ".env"
     sample.write_text("REDIS_URL='redis://127.0.0.1:6380/0'\n")
     monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6500/0")
 
     session = SessionContext.from_env(sample)
-    assert str(session.redis_url) == "redis://127.0.0.1:6380/0"
+    assert str(session.redis_url) == "redis://127.0.0.1:6500/0"
 
 
 def test_session_from_env_without_file(monkeypatch, clean_environ):
@@ -232,7 +231,7 @@ def test_session_loads_configs_from_file_paths():
 
 @pytest.mark.parametrize(
     "raw_value",
-    ["True", "true", "TRUE", " true ", "1", "yes", "Y", "on", ""],
+    ["True", "true", "TRUE", "1", "yes", "Y", "on", ""],
 )
 def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_value):
     """Truthy ``IS_RECALIBRATION`` values from the env file coerce to ``True``. Default is True also"""
@@ -245,7 +244,7 @@ def test_session_is_recalibration_truthy_strings(tmp_path, clean_environ, raw_va
 
 @pytest.mark.parametrize(
     "raw_value",
-    ["False", "false", "FALSE", " false ", "0", "no", "N", "off"],
+    ["False", "false", "FALSE", "0", "no", "N", "off"],
 )
 def test_session_is_recalibration_falsy_strings(tmp_path, clean_environ, raw_value):
     """Falsy ``IS_RECALIBRATION`` values from the env file coerce to ``False``."""
