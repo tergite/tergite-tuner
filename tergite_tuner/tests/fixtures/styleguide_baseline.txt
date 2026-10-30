@@ -32,7 +32,6 @@ license-header: tergite_tuner/lib/nodes/characterization/purity_benchmarking/tes
 license-header: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/t1/__init__.py
-license-header: tergite_tuner/lib/nodes/characterization/t1/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/t2/__init__.py
 license-header: tergite_tuner/lib/nodes/characterization/t2/tests/__init__.py
 license-header: tergite_tuner/lib/nodes/coupler/__init__.py
