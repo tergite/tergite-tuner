@@ -57,10 +57,8 @@ from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node import (
     MotzoiParameterNode,
 )
 from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
-    NRabiOscillations12Node,
-    NRabiOscillationsNode,
-    RabiOscillations12Node,
-    RabiOscillationsNode,
+    N_RABI_SPECS,
+    RABI_SPECS,
 )
 from tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node import (
     RamseyFringes12Node,
@@ -88,7 +86,11 @@ from tergite_tuner.lib.spec import NodeSpec
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 # the nodes moved to NodeSpec; the rest are still classes in DEFAULT_NODE_CLS_MAP
-DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {**RESONATOR_SPECTROSCOPY_SPECS}
+DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
+    **RESONATOR_SPECTROSCOPY_SPECS,
+    **RABI_SPECS,
+    **N_RABI_SPECS,
+}
 
 DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.PUNCHOUT: PunchoutNode,
@@ -98,10 +100,6 @@ DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
     NodeEnum.QUBIT_BRING_UP_SPECTROSCOPY: Qubit01SpectroscopyAmplitudeNode,
     NodeEnum.QUBIT_01_SPECTROSCOPY: Qubit01SpectroscopyNode,
     NodeEnum.QUBIT_12_SPECTROSCOPY: Qubit12SpectroscopyNode,
-    NodeEnum.RABI_OSCILLATIONS: RabiOscillationsNode,
-    NodeEnum.RABI_OSCILLATIONS_12: RabiOscillations12Node,
-    NodeEnum.N_RABI_OSCILLATIONS: NRabiOscillationsNode,
-    NodeEnum.N_RABI_12_OSCILLATIONS: NRabiOscillations12Node,
     NodeEnum.RAMSEY_CORRECTION: RamseyFringesNode,
     NodeEnum.RAMSEY_CORRECTION_12: RamseyFringes12Node,
     NodeEnum.MOTZOI_PARAMETER: MotzoiParameterNode,

@@ -13,10 +13,7 @@
 
 import numpy as np
 
-from tergite_tuner.backend import ExtendedTransmon
-from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
-    RabiOscillationsNode,
-)
+from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
     TwoTonesAmplitudeMeasurement,
 )
@@ -103,7 +100,7 @@ def test_amplitude_spectroscopy_accepts_long_spectroscopy_pulses(
 ):
     ExtendedTransmon.close_all()
     qubits = ["q13", "q14"]
-    device = RabiOscillationsNode(qubits, ["q13_q14"], session=session_context).device
+    device = configure_device("spectroscopy", qubits, ["q13_q14"], session_context)
     transmons = {qubit: device.get_element(qubit) for qubit in qubits}
     for transmon in transmons.values():
         transmon.spec.spec_duration(8e-6)

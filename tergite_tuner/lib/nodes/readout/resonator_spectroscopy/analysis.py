@@ -82,7 +82,7 @@ def fit_resonator(frequencies: np.ndarray, s21: np.ndarray) -> ResonatorFit | No
     return ResonatorFit(result, frequency, Ql, minimum)
 
 
-def analyse_resonator(s21: xr.DataArray) -> Fits | None:
+def analyse_resonator(s21: xr.DataArray, _session: "SessionContext") -> Fits | None:
     """The resonator's ``frequency``, ``Ql`` and data ``minimum``, and the lmfit ``model``."""
     fit = fit_resonator(s21.coords[s21.dims[0]].values, s21.values)
     if fit is None:

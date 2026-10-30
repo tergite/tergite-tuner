@@ -295,16 +295,6 @@ tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_01_anal
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_12_analysis.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_12_analysis.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/tests/test_motzoi_parameter_measurement.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_n_rabi_01_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_n_rabi_01_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_n_rabi_12_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_n_rabi_12_analysis.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_rabi_oscillations_measurement.py: ARG001 Unused function argument: `seeded_redis`
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_rabi_oscillations_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/tests/test_rabi_oscillations_measurement.py: ARG001 Unused function argument: `seeded_redis`
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: B007 Loop control variable `detuning` not used within loop body
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: RET504 Unnecessary assignment to `qoi` before `return` statement

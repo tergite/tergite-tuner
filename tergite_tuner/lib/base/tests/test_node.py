@@ -10,36 +10,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import matplotlib
 import pytest
 
-from tergite_tuner.backend import ExtendedTransmon
-from tergite_tuner.lib.nodes import RabiOscillationsNode
 from tergite_tuner.tests.utils.fixtures import (
-    DEFAULT_TEST_COUPLERS,
-    DEFAULT_TEST_QUBITS,
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.goldens import DEFAULT_NODE_NAMES, get_dataset_builder
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
-
-
-@pytest.mark.parametrize("save_plot", [True, False])
-def test_node_keeps_the_callers_matplotlib_backend(session_context, save_plot):
-    ExtendedTransmon.close_all()
-    original_backend = matplotlib.get_backend()
-    matplotlib.use("pdf")
-    session = session_context.model_copy(update={"save_plot": save_plot})
-
-    try:
-        RabiOscillationsNode(
-            DEFAULT_TEST_QUBITS, DEFAULT_TEST_COUPLERS, session=session
-        )
-        assert matplotlib.get_backend() == "pdf"
-    finally:
-        matplotlib.use(original_backend)
 
 
 @pytest.mark.parametrize("node_name", DEFAULT_NODE_NAMES)

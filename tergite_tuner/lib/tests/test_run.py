@@ -15,6 +15,9 @@ import pytest
 from tergite_tuner.exc import MissingCalibrationStatusError
 from tergite_tuner.lib import run
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
+from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
+    RESONATOR_SPECTROSCOPY_SPECS,
+)
 from tergite_tuner.storage.fs.dataset import load_dataset
 from tergite_tuner.tests.utils.goldens import (
     RECORDED_DATASETS,
@@ -28,7 +31,7 @@ from tergite_tuner.utils.types.node_enum import NodeEnum
 RESONATOR = DEFAULT_NODE_SPECS[NodeEnum.RESONATOR_SPECTROSCOPY]
 
 
-@pytest.mark.parametrize("state_node", list(DEFAULT_NODE_SPECS))
+@pytest.mark.parametrize("state_node", list(RESONATOR_SPECTROSCOPY_SPECS))
 def test_plot_elements_saves_the_preview_and_the_full_plot(
     state_node, redis_connection, session_context, tmp_path
 ):
@@ -39,7 +42,11 @@ def test_plot_elements_saves_the_preview_and_the_full_plot(
     s21s = run.get_element_s21s(load_dataset(name, tmp_path))
     with loaded_redis(redis_connection, get_redis_file(case)):
         run.plot_elements(
-            spec, s21s, run.get_fits(spec, s21s), tmp_path, session_context
+            spec,
+            s21s,
+            run.get_fits(spec, s21s, session_context),
+            tmp_path,
+            session_context,
         )
 
     assert (tmp_path / f"{spec.name.value}_preview.png").exists()

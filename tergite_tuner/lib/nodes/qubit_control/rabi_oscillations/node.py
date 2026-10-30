@@ -5,6 +5,7 @@
 # (C) Copyright Amr Osman 2024
 # (C) Copyright Michele Faucci Giannelli 2024
 # (C) Copyright Abdullah Al Amin 2026
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -13,151 +14,131 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Rabi and NRabi, from 0 to 1 and from 1 to 2: each transition's pi amplitude."""
+
+from collections.abc import Mapping
+from functools import partial
+from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray
 
-from tergite_tuner.lib.base.node import QubitNode
+from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.analysis import (
-    NRabi_12_NodeAnalysis,
-    NRabiNodeAnalysis,
-    RabiNode12Analysis,
-    RabiNodeAnalysis,
+    analyse_n_rabi,
+    analyse_rabi,
+    plot_n_rabi,
+    plot_rabi,
 )
 from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.measurement import (
     NRabiOscillationsMeasurement,
     RabiOscillationsMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
 from tergite_tuner.lib.utils.analysis_models import RabiModel
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
+
+AMP180_FIELDS = ("rxy:amp180", "r12:ef_amp180")
+# the largest drive amplitude Rabi sweeps to, per transition
+RABI_MAX_AMPLITUDES = (0.90, 0.80)
+RABI_POINTS = 61
+# NRabi's amplitude corrections, as (half width, points), and pi pulse counts
+N_RABI_CORRECTIONS = ((0.045, 30), (0.05, 31))
+N_RABI_REPETITIONS = (np.arange(1, 23, 6), np.arange(1, 13, 4))
+# the dummy NRabi's amplitude correction
+DUMMY_CORRECTION = -0.01
 
 rabi = RabiModel()
 
 
-class RabiOscillationsBase(QubitNode):
+def get_rabi_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    mw_amplitudes: dict[str, np.ndarray],
+    state: int,
+) -> Schedule:
+    return RabiOscillationsMeasurement(transmons).schedule_function(
+        mw_amplitudes, qubit_state=state
+    )
 
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
 
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-        for index, qubit in enumerate(self.all_qubits):
-            samples = self.schedule_samplespace["mw_amplitudes"][qubit]
-            true_params = rabi.make_params(amplitude=0.2, frequency=1, offset=0.2)
-            number_of_samples = len(samples)
-            true_s21 = rabi.eval(params=true_params, drive_amp=samples)
-            noise_scale = 0.005 * index
-            np.random.seed(123)
-            measured_s21 = true_s21 + noise_scale * (
-                np.random.randn(number_of_samples)
-                + 1j * np.random.randn(number_of_samples)
+def get_n_rabi_schedule(
+    transmons: Mapping[str, ExtendedTransmon],
+    mw_amplitudes_sweep: dict[str, np.ndarray],
+    X_repetitions: dict[str, np.ndarray],
+    state: int,
+) -> Schedule:
+    return NRabiOscillationsMeasurement(transmons).schedule_function(
+        mw_amplitudes_sweep, X_repetitions, qubit_state=state
+    )
+
+
+def get_dummy_rabi(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    params = rabi.make_params(amplitude=0.2, frequency=1, offset=0.2)
+    return rabi.eval(params=params, drive_amp=sweeps["mw_amplitudes"])
+
+
+def get_dummy_n_rabi(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    """Oscillations whose minimum is at ``DUMMY_CORRECTION`` for every number of pi pulses."""
+    columns = []
+    for repetitions in sweeps["X_repetitions"]:
+        frequency = 2 * repetitions
+        params = rabi.make_params(
+            amplitude=0.2,
+            frequency=frequency,
+            offset=0.2,
+            phase=np.pi - 2 * np.pi * frequency * DUMMY_CORRECTION,
+        )
+        columns.append(
+            rabi.eval(params=params, drive_amp=sweeps["mw_amplitudes_sweep"])
+        )
+    return np.stack(columns, axis=1)
+
+
+RABI_SPECS = {
+    name: NodeSpec(
+        name=name,
+        element="qubit",
+        get_schedule=partial(get_rabi_schedule, state=state),
+        analyse=analyse_rabi,
+        qois={"amp180": AMP180_FIELDS[state]},
+        sweeps={
+            "mw_amplitudes": get_fixed_sweep(
+                np.linspace(0.002, RABI_MAX_AMPLITUDES[state], RABI_POINTS)
             )
-            data_array = xarray.DataArray(measured_s21)
-            dataset[index] = data_array
-        return dataset
+        },
+        get_dummy_s21=get_dummy_rabi,
+        plot=plot_rabi,
+    )
+    for state, name in enumerate(
+        (NodeEnum.RABI_OSCILLATIONS, NodeEnum.RABI_OSCILLATIONS_12)
+    )
+}
 
-
-class RabiOscillationsNode(RabiOscillationsBase):
-    name: str = "rabi_oscillations"
-    measurement_cls = RabiOscillationsMeasurement
-    analysis_cls = RabiNodeAnalysis
-    measurement_type_cls = ScheduleNode
-
-    qubit_qois = ["rxy:amp180"]
-
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.schedule_samplespace = {
-            "mw_amplitudes": {
-                qubit: np.linspace(0.002, 0.90, 61) for qubit in self.all_qubits
-            }
-        }
-
-
-class RabiOscillations12Node(RabiOscillationsBase):
-    name: str = "rabi_oscillations_12"
-    measurement_cls = RabiOscillationsMeasurement
-    analysis_cls = RabiNode12Analysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = ["r12:ef_amp180"]
-
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.qubit_state = 1
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-
-        self.schedule_samplespace = {
-            "mw_amplitudes": {
-                qubit: np.linspace(0.002, 0.800, 61) for qubit in self.all_qubits
-            }
-        }
-
-
-class NRabiOscillationsNode(QubitNode):
-    name: str = "n_rabi_oscillations"
-    measurement_cls = NRabiOscillationsMeasurement
-    analysis_cls = NRabiNodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = ["rxy:amp180"]
-
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.qubit_state = 0
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-
-        self.schedule_samplespace = {
-            "mw_amplitudes_sweep": {
-                qubit: np.linspace(-0.045, 0.045, 30) for qubit in self.all_qubits
-            },
-            "X_repetitions": {qubit: np.arange(1, 23, 6) for qubit in self.all_qubits},
-        }
-
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-        real_correction = -0.01
-        first_qubit = self.all_qubits[0]
-        x_repetitions = self.schedule_samplespace["X_repetitions"][first_qubit]
-        for index, _ in enumerate(self.all_qubits):
-            data_array = np.array([])
-            # TODO: the oscillations frequecny should be no set empirically
-            for number_of_Xs in x_repetitions:
-                this_frequency = 2 * number_of_Xs
-                # find the phase that produces minimum at the real_correction
-                this_phase = np.pi - 2 * np.pi * this_frequency * real_correction
-                true_params = rabi.make_params(
-                    amplitude=0.2,
-                    frequency=this_frequency,
-                    offset=0.2,
-                    phase=this_phase,
-                )
-                samples = self.schedule_samplespace["mw_amplitudes_sweep"][first_qubit]
-                number_of_samples = len(samples)
-                fit_samples = np.linspace(samples[0], samples[-1], number_of_samples)
-                true_s21 = rabi.eval(params=true_params, drive_amp=fit_samples)
-
-                measured_s21 = true_s21
-                data_array = np.concatenate((data_array, measured_s21))
-
-            # Add the DataArray to the Dataset with an integer name (converted to string)
-            dataset[index] = xarray.DataArray(data_array)
-        return dataset
-
-
-class NRabiOscillations12Node(QubitNode):
-    name: str = "n_rabi_12_oscillations"
-    measurement_cls = NRabiOscillationsMeasurement
-    analysis_cls = NRabi_12_NodeAnalysis
-    measurement_type_cls = ScheduleNode
-    qubit_qois = ["r12:ef_amp180"]
-
-    def __init__(self, all_qubits: list[str], couplers: list[str], **schedule_keywords):
-        super().__init__(all_qubits, couplers, **schedule_keywords)
-        self.qubit_state = 1
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-
-        self.schedule_samplespace = {
-            "mw_amplitudes_sweep": {
-                qubit: np.linspace(-0.05, 0.05, 31) for qubit in self.all_qubits
-            },
-            "X_repetitions": {qubit: np.arange(1, 13, 4) for qubit in self.all_qubits},
-        }
+N_RABI_SPECS = {
+    name: NodeSpec(
+        name=name,
+        element="qubit",
+        get_schedule=partial(get_n_rabi_schedule, state=state),
+        analyse=partial(analyse_n_rabi, amp180_field=AMP180_FIELDS[state]),
+        qois={"amp180": AMP180_FIELDS[state]},
+        sweeps={
+            "mw_amplitudes_sweep": get_fixed_sweep(np.linspace(-width, width, points)),
+            "X_repetitions": get_fixed_sweep(N_RABI_REPETITIONS[state]),
+        },
+        get_dummy_s21=get_dummy_n_rabi,
+        plot=plot_n_rabi,
+    )
+    for state, (name, (width, points)) in enumerate(
+        zip(
+            (NodeEnum.N_RABI_OSCILLATIONS, NodeEnum.N_RABI_12_OSCILLATIONS),
+            N_RABI_CORRECTIONS,
+            strict=True,
+        )
+    )
+}

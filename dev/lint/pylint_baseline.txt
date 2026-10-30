@@ -38,7 +38,6 @@ tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clif
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: too-many-locals TwoQubitClifford.iSWAP_like_gates
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py: too-many-locals MotzoiParameter12Node.generate_dummy_dataset
 tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/node.py: too-many-locals MotzoiParameterNode.generate_dummy_dataset
-tergite_tuner/lib/nodes/qubit_control/rabi_oscillations/node.py: too-many-locals NRabiOscillationsNode.generate_dummy_dataset
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/analysis.py: too-many-locals RamseyDetuningsBaseQubitAnalysis._analyse_ramsey
 tergite_tuner/lib/nodes/qubit_control/ramsey_fringes/node.py: too-many-locals RamseyFringesBase.generate_dummy_dataset
 tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: too-many-locals OptimalROAmplitudeQubitAnalysis.run_initial_fitting

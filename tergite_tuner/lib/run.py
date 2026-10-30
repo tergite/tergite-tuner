@@ -138,7 +138,8 @@ def get_dummy_dataset(
                         qubit,
                         {setting: values[qubit] for setting, values in sweeps.items()},
                         session,
-                    )
+                    ),
+                    order="F",
                 )
             )
             for index, qubit in enumerate(get_elements(spec, session))
@@ -184,7 +185,7 @@ def analyse_node(
     data_path = Path(data_path)
     start = time.perf_counter()
     s21s = get_element_s21s(load_dataset(spec.name.value, data_path))
-    fits = get_fits(spec, s21s)
+    fits = get_fits(spec, s21s, session)
     logger.info(f"Analysed {spec.name.value} in {time.perf_counter() - start:.2f} s")
     if should_save_plot:
         plot_elements(spec, s21s, fits, data_path, session)
@@ -193,9 +194,9 @@ def analyse_node(
 
 
 def get_fits(
-    spec: NodeSpec, s21s: Mapping[str, xr.DataArray]
+    spec: NodeSpec, s21s: Mapping[str, xr.DataArray], session: "SessionContext"
 ) -> dict[str, Fits | None]:
-    return {element: spec.analyse(s21) for element, s21 in s21s.items()}
+    return {element: spec.analyse(s21, session) for element, s21 in s21s.items()}
 
 
 def get_element_s21s(dataset: xr.Dataset) -> dict[str, xr.DataArray]:

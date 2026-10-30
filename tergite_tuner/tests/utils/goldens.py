@@ -205,7 +205,7 @@ def get_analyser(
 
     def analyse() -> dict[str, QOI]:
         s21s = run.get_element_s21s(load_dataset(node_name, data_path))
-        fits = run.get_fits(spec, s21s)
+        fits = run.get_fits(spec, s21s, session)
         if should_save_plot:
             run.plot_elements(spec, s21s, fits, data_path, session)
         return {

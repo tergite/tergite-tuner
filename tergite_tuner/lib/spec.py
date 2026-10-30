@@ -47,23 +47,30 @@ class NodeSpec:
         get_schedule: the schedule, given the transmons by name and each swept
             setting's values per element.
         analyse: the fits of one element's S21, which has a coordinate per swept
-            setting, named by ``get_coord_name``; None if the element failed.
+            setting, named by ``get_coord_name``, given the session; None if the
+            element failed.
         qois: the Redis field each fit is stored in; fits it does not name are not stored.
         sweeps: each swept setting's values for an element, in the order the dataset
             is reshaped: the first setting varies fastest.
-        get_dummy_s21: an element's S21 in dummy mode, given its sweeps' values.
+        get_dummy_s21: an element's S21 in dummy mode, given its sweeps' values, with
+            an axis per sweep.
         plot: draws an element's S21 and fits.
     """
 
     name: NodeEnum
     element: Literal["qubit", "coupler"]
     get_schedule: Callable[..., Schedule]
-    analyse: Callable[[xr.DataArray], Fits | None]
+    analyse: Callable[[xr.DataArray, "SessionContext"], Fits | None]
     qois: Mapping[str, str]
     sweeps: Mapping[str, SweepFn]
     get_dummy_s21: Callable[[str, Mapping[str, np.ndarray], "SessionContext"], Any]
     plot: Callable[[Axes, xr.DataArray, Fits, "SessionContext"], None] | None = None
     schedule_keywords: Mapping[str, Any] = field(default_factory=dict)
+
+
+def get_fixed_sweep(values: np.ndarray) -> SweepFn:
+    """A sweep over the same ``values`` for every element."""
+    return lambda _element, _session: values
 
 
 def get_coord_name(quantity: str, element: str) -> str:

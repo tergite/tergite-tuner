@@ -38,7 +38,7 @@ from tergite_tuner.lib.nodes import (
     DEFAULT_NODE_DAG_EDGES,
     NodeEnum,
     Qubit01SpectroscopyAmplitudeNode,
-    RabiOscillationsNode,
+    T1Node,
 )
 from tergite_tuner.utils.types.enums import MeasurementMode
 
@@ -295,7 +295,7 @@ def test_session_rejects_invalid_is_recalibration(tmp_path, clean_environ):
 def test_session_loads_node_vars_from_py_objects():
     """Can load the node vars like node_dag_edges, ignored_nodes etc. from python objects"""
     node_cls_map = {
-        NodeEnum.CZ_RB: RabiOscillationsNode,
+        NodeEnum.CZ_RB: T1Node,
         NodeEnum.CZ_CHEVRON: Qubit01SpectroscopyAmplitudeNode,
     }
     ignored_nodes = (NodeEnum.CZ_RB,)
