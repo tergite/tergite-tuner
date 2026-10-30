@@ -48,7 +48,6 @@ def test_plotting(session_context, node_data_dir):
     with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_local_phases.hdf5"
         with xr.open_dataset(file_path) as dataset:
-
             analysis = CZLocalPhasesCouplerAnalysis(
                 get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
                 session_context,

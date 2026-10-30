@@ -56,7 +56,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
         root_relaxation = shot.add(IdlePulse(4e-9))
 
         for this_coupler in self.couplers:
-
             control_qubit = coupler_dict[this_coupler]["control_qubit"]
             target_qubit = coupler_dict[this_coupler]["target_qubit"]
             swap_modes = swap[this_coupler]
@@ -85,7 +84,6 @@ class CZLocalPhasesMeasurement(BaseMeasurement):
 
                 number_of_intermediates = len(gate_modes)
                 for intermediate_index, gate_mode in enumerate(gate_modes):
-
                     for inner_index, local_phase in enumerate(local_phases_values):
                         starting_op = shot.add(IdlePulse(4e-9))
 

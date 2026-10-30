@@ -35,7 +35,6 @@ if TYPE_CHECKING:
 
 
 class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
-
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
         super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
@@ -115,70 +114,54 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
         return phis, plot_points.rename({"plot_points": phases_coord})
 
     def plotter(self, figures_dictionary):
-        fig, axs = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
+        figure, axes = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
         target_probabilities = self.target_qubit_probabilities.sel({"state": 1})
         control_probabilities = self.control_qubit_probabilities.sel({"state": 1})
-
-        styles = {"marker": "o", "ls": ""}
-        text_styles = {
-            "size": 16,
-            "color": "red",
-            "backgroundcolor": "white",
-        }
-
-        ###  normal qubits (not swaped) for phi_10
-        swap = False
-        axs[0][0].set_prop_cycle(cycler("color", ["orange", "black"]))
-        control_probabilities.sel({self.swap_coord: swap}).plot(
-            ax=axs[0][0], hue=self.gate_mode_coord, **styles
+        self._plot_panel(axes[0][0], control_probabilities, False)
+        self._plot_panel(
+            axes[0][1],
+            target_probabilities,
+            False,
+            self.target_plot_points,
+            rf"$\varphi_{{01}} = {self.phase_01:.1f} ^o$",
         )
-        axs[0][0].set_title(f"swap: {swap}")
-
-        axs[0][1].set_prop_cycle(cycler("color", ["orange", "black"]))
-        target_probabilities.sel({self.swap_coord: swap}).plot(
-            ax=axs[0][1],
-            hue=self.gate_mode_coord,
-            **styles,
+        self._plot_panel(
+            axes[1][0],
+            control_probabilities,
+            True,
+            self.control_swaped_plot_points,
+            rf"$\varphi_{{10}} = {self.phase_10:.1f} ^o$",
         )
-        # plot sinusoidal fits:
-        self.target_plot_points.plot(ax=axs[0][1], hue=self.gate_mode_coord)
-        axs[0][1].text(
+        self._plot_panel(axes[1][1], target_probabilities, True)
+        figures_dictionary[self.coupler] = [figure]
+
+    def _plot_panel(
+        self,
+        axis: Any,
+        probabilities: xr.DataArray,
+        is_swapped: bool,
+        fits: xr.DataArray | None = None,
+        phase_label: str = "",
+    ) -> None:
+        """One qubit's |1> probabilities with the gate on and off, and their sine fits if given."""
+        axis.set_prop_cycle(cycler("color", ["orange", "black"]))
+        probabilities.sel({self.swap_coord: is_swapped}).plot(
+            ax=axis, hue=self.gate_mode_coord, marker="o", ls=""
+        )
+        axis.set_title(f"swap: {is_swapped}")
+        if fits is None:
+            return
+        fits.plot(ax=axis, hue=self.gate_mode_coord)
+        axis.text(
             0,
             0,
-            f"$\\varphi_{{01}} = {self.phase_01:.1f} ^o$",
-            bbox=dict(facecolor="white", alpha=0.5, linewidth=0),
-            **text_styles,
+            phase_label,
+            bbox={"facecolor": "white", "alpha": 0.5, "linewidth": 0},
+            size=16,
+            color="red",
+            backgroundcolor="white",
         )
-        axs[0][1].set_title(f"swap: {swap}")
-        axs[0][1].get_legend().remove()
-
-        ### swaped qubits for phi_01
-        swap = True
-        axs[1][0].set_prop_cycle(cycler("color", ["orange", "black"]))
-        control_probabilities.sel({self.swap_coord: swap}).plot(
-            ax=axs[1][0],
-            hue=self.gate_mode_coord,
-            **styles,
-        )
-        # plot sinusoidal fits:
-        self.control_swaped_plot_points.plot(ax=axs[1][0], hue=self.gate_mode_coord)
-        axs[1][0].text(
-            0,
-            0,
-            f"$\\varphi_{{10}} = {self.phase_10:.1f} ^o$",
-            bbox=dict(facecolor="white", alpha=0.5, linewidth=0),
-            **text_styles,
-        )
-        axs[1][0].set_title(f"swap: {swap}")
-        axs[1][0].get_legend().remove()
-
-        axs[1][1].set_prop_cycle(cycler("color", ["orange", "black"]))
-        target_probabilities.sel({self.swap_coord: True}).plot(
-            ax=axs[1][1], hue=self.gate_mode_coord, **styles
-        )
-        axs[1][1].set_title(f"swap: {swap}")
-
-        figures_dictionary[self.coupler] = [fig]
+        axis.get_legend().remove()
 
 
 def get_gate_phase(phis: xr.DataArray, gate_mode_coord: str) -> float:
