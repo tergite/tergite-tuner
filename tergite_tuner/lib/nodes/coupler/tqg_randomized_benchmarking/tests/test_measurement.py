@@ -28,8 +28,8 @@ from tergite_tuner.tests.utils.state import loaded_state
 
 
 def test_align_cliffords(session_context, node_data_dir):
-    redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / "state-2026-02-10-11-23-12.json"
+    with loaded_state(session_context, state_file):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         qubits = ["q13", "q14"]
         couplers = ["q13_q14"]
@@ -73,8 +73,8 @@ def test_align_cliffords(session_context, node_data_dir):
 
 
 def _get_rb_measurement(session_context, node_data_dir, couplers):
-    redis_data_file = node_data_dir / "redis-2026-02-10-11-23-12.json"
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / "state-2026-02-10-11-23-12.json"
+    with loaded_state(session_context, state_file):
         ExtendedTransmon.close_all()
         qubits = sorted({q for coupler in couplers for q in coupler.split("_")})
         device = configure_device("cz_rb", qubits, couplers, session_context)

@@ -20,12 +20,12 @@ from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILENAME = "redis-coupler-run-2026-02.json"
+_STATE_FILENAME = "state-coupler-run-2026-02.json"
 
 
 def test_cz_local_phases(session_context, node_data_dir):
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_local_phases.hdf5"
         with xr.open_dataset(file_path) as dataset:
             analysis = CZLocalPhasesCouplerAnalysis(
@@ -41,8 +41,8 @@ def test_plotting(session_context, node_data_dir):
     """
     Test that the plotter produces a figure with the right number of axes
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_local_phases.hdf5"
         with xr.open_dataset(file_path) as dataset:
 

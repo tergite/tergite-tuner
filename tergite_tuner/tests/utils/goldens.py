@@ -37,7 +37,7 @@ STANDARD_RUN_DIR = Path(
         "data", "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS"
     )
 )
-STANDARD_REDIS = get_fixture_path("redis", "standard_redis_mock.json")
+STANDARD_STATE = get_fixture_path("states", "standard_state.json")
 # Left out: purity benchmarking, Rabi and Rabi 12, qubit 01 and 12 spectroscopy and resonator
 # spectroscopy, whose datasets predate the per-variable ``qubit`` attribute the node analysis
 # splits on; the Ramsey standard run, whose device values were not recorded; and the
@@ -56,7 +56,7 @@ class Result:
 class GoldenCase:
     node: NodeEnum
     dataset: str
-    redis_file: str | None = None
+    state_file: str | None = None
     analysis_keywords: dict = field(default_factory=dict)
 
 
@@ -113,12 +113,12 @@ RECORDED_DATASETS = {
     "n_rabi_oscillations": GoldenCase(
         NodeEnum.N_RABI_OSCILLATIONS,
         "qubit_control/rabi_oscillations/tests/data/dataset_n_rabi_oscillations.hdf5",
-        redis_file="single-run-redis-data.json",
+        state_file="single_run_state.json",
     ),
     "n_rabi_12_oscillations": GoldenCase(
         NodeEnum.N_RABI_12_OSCILLATIONS,
         "qubit_control/rabi_oscillations/tests/data/dataset_n_rabi_oscillations_12.hdf5",
-        redis_file="single-run-redis-data.json",
+        state_file="single_run_state.json",
     ),
     "punchout": GoldenCase(
         NodeEnum.PUNCHOUT, "readout/punchout/tests/data/dataset_punchout_0.hdf5"
@@ -142,7 +142,7 @@ RECORDED_DATASETS = {
     "standard_run_rabi_oscillations": GoldenCase(
         NodeEnum.RABI_OSCILLATIONS,
         "20250728-165219-145-8960cd-rabi_oscillations/dataset_rabi_oscillations.hdf5",
-        redis_file="single-run-redis-data.json",
+        state_file="single_run_state.json",
     ),
 }
 
@@ -235,13 +235,13 @@ def copy_dataset(source: Path, target: Path) -> None:
         dataset.load().to_netcdf(target)
 
 
-def get_redis_file(golden_case: GoldenCase) -> Path:
-    if golden_case.redis_file is not None:
-        return get_fixture_path("redis", golden_case.redis_file)
-    redis_files = sorted(
-        get_dataset_path(golden_case.dataset).parent.glob("redis*.json")
+def get_state_file(golden_case: GoldenCase) -> Path:
+    if golden_case.state_file is not None:
+        return get_fixture_path("states", golden_case.state_file)
+    state_files = sorted(
+        get_dataset_path(golden_case.dataset).parent.glob("state*.json")
     )
-    return redis_files[-1] if redis_files else STANDARD_REDIS
+    return state_files[-1] if state_files else STANDARD_STATE
 
 
 def _get_default_sweeps(spec: NodeSpec, session: "SessionContext") -> run.Sweeps:

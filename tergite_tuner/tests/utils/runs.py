@@ -27,7 +27,7 @@ from tergite_tuner.tests.utils.state import (
 )
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-DUMMY_REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
+DUMMY_STATE_FILE = get_fixture_path("states", "standard_state.json")
 # the fixture spi_config.toml wires q06 to q25, not the session's coupler
 DUMMY_SPI_CONFIG = SpiConfig.model_validate(
     {"q00_q01": {"spi_module_number": 1, "dac_name": "dac0", "edge_group": 1}}
@@ -55,7 +55,7 @@ def run_dummy_node(
             "user_samplespace": {},
         }
     )
-    with loaded_state(session, DUMMY_REDIS_VALUES):
+    with loaded_state(session, DUMMY_STATE_FILE):
         set_drive_frequencies_from_device(session.state, session.device_config)
         # nodes' own dummy generators draw from numpy's global generator
         np.random.seed(0)

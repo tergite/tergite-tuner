@@ -22,7 +22,7 @@ from tergite_tuner.tests.utils.goldens import get_compiler
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-_redis_values = get_fixture_path("redis", "standard_redis_mock.json")
+_state_file = get_fixture_path("states", "standard_state.json")
 # purity benchmarking cannot be built (step 9.7)
 _OUTER_NODES = [
     node
@@ -37,7 +37,7 @@ _OUTER_NODES = [
 def test_every_outer_point_compiles(node, session_context):
     spec = DEFAULT_NODE_SPECS[node]
     session = session_context.model_copy(update={"user_samplespace": {}})
-    with loaded_state(session, _redis_values):
+    with loaded_state(session, _state_file):
         ExtendedTransmon.close_all()
         device = configure_device(
             node.value, run.get_qubits(spec, session), session.couplers, session
@@ -49,7 +49,7 @@ def test_every_outer_point_compiles(node, session_context):
 
 def test_precompile_restores_the_grid_time_tolerance(session_context):
     default_tolerance = qblox_constants.GRID_TIME_TOLERANCE_TIME
-    with loaded_state(session_context, _redis_values):
+    with loaded_state(session_context, _state_file):
         get_compiler("punchout", session_context)()
 
     assert qblox_constants.GRID_TIME_TOLERANCE_TIME == default_tolerance

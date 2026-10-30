@@ -22,7 +22,7 @@ from tergite_tuner.lib.run import get_element_s21s
 from tergite_tuner.lib.spec import plot_class_analysis
 from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILENAME = "redis-2026-03-10-21-33-32.json"
+_STATE_FILENAME = "state-2026-03-10-21-33-32.json"
 
 
 def _get_fits(node_data_dir, session_context) -> dict:
@@ -39,7 +39,7 @@ def _get_fits(node_data_dir, session_context) -> dict:
 
 
 def test_randomized_benchmarking_analysis(session_context, node_data_dir):
-    with loaded_state(session_context, node_data_dir / _REDIS_DATA_FILENAME):
+    with loaded_state(session_context, node_data_dir / _STATE_FILENAME):
         fits = _get_fits(node_data_dir, session_context)
 
     assert fits["q11"]["fidelity"].value == pytest.approx(0.99951747)
@@ -49,7 +49,7 @@ def test_randomized_benchmarking_analysis(session_context, node_data_dir):
 
 
 def test_plotting(session_context, node_data_dir):
-    with loaded_state(session_context, node_data_dir / _REDIS_DATA_FILENAME):
+    with loaded_state(session_context, node_data_dir / _STATE_FILENAME):
         fits = _get_fits(node_data_dir, session_context)["q11"]
     figure, axis = plt.subplots()
 

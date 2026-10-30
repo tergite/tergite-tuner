@@ -37,7 +37,7 @@ from tergite_tuner.utils.types.enums import MeasurementMode
 
 _FIXTURE_CONFIGS_DIR = Path(get_fixture_path("configs"))
 _PROJECT_ROOT = Path(__file__).parent
-_SINGLE_RUN_REDIS_JSON = load_fixture("redis/single-run-redis-data.json")
+_SINGLE_RUN_STATE = load_fixture("states/single_run_state.json")
 
 
 @pytest.fixture
@@ -92,5 +92,5 @@ def node_data_dir(request, tmp_path):
 @pytest.fixture
 def seeded_state(session_context):
     """The session's state as one recorded run left it."""
-    session_context.state = get_state(_SINGLE_RUN_REDIS_JSON)
+    session_context.state = get_state(_SINGLE_RUN_STATE)
     return session_context.state

@@ -32,7 +32,7 @@ from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.enums import MeasurementMode
 
-REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
+STATE_FILE = get_fixture_path("states", "standard_state.json")
 STANDARD_RUN_RESONATOR = get_fixture_path(
     "data",
     "16-51-33_standard_run_ro_amplitude_three_state_optimization-SUCCESS",
@@ -55,7 +55,7 @@ def test_tune_device_calibrates_up_to_the_target_node(session_context, tmp_path)
     session = _get_dummy_session(
         session_context, tmp_path, target_node=NodeEnum.RESONATOR_SPECTROSCOPY
     )
-    with loaded_state(session, REDIS_VALUES):
+    with loaded_state(session, STATE_FILE):
         ExtendedTransmon.close_all()
         returned_session, results = tune_device(session=session, refresh_session=False)
 
@@ -66,7 +66,7 @@ def test_tune_device_calibrates_up_to_the_target_node(session_context, tmp_path)
 
 def test_a_runs_results_file_seeds_a_later_session(session_context, tmp_path):
     session = _get_dummy_session(session_context, tmp_path)
-    with loaded_state(session, REDIS_VALUES):
+    with loaded_state(session, STATE_FILE):
         ExtendedTransmon.close_all()
         run_node(NodeEnum.RESONATOR_SPECTROSCOPY, session=session)
     [results_file] = tmp_path.glob("*-run/results.json")
@@ -85,7 +85,7 @@ def test_a_runs_results_file_seeds_a_later_session(session_context, tmp_path):
 
 def test_run_node_runs_only_that_node(session_context, tmp_path):
     session = _get_dummy_session(session_context, tmp_path)
-    with loaded_state(session, REDIS_VALUES):
+    with loaded_state(session, STATE_FILE):
         ExtendedTransmon.close_all()
         _, results = run_node(
             NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
@@ -111,7 +111,7 @@ def test_run_node_uses_a_custom_node_spec(session_context, tmp_path):
         tmp_path,
         node_specs={NodeEnum.RESONATOR_SPECTROSCOPY: custom_spec},
     )
-    with loaded_state(session, REDIS_VALUES):
+    with loaded_state(session, STATE_FILE):
         ExtendedTransmon.close_all()
         run_node(
             NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
@@ -125,7 +125,7 @@ def test_reanalyse_analyses_a_recorded_dataset(session_context, tmp_path):
     session = _get_dummy_session(
         session_context, tmp_path, target_node=NodeEnum.RESONATOR_SPECTROSCOPY
     )
-    with loaded_state(session, REDIS_VALUES):
+    with loaded_state(session, STATE_FILE):
         ExtendedTransmon.close_all()
         returned_session, results = reanalyse(session=session, refresh_session=False)
 
@@ -154,7 +154,7 @@ def _get_dummy_session(session: SessionContext, data_dir, **updates) -> SessionC
 
 def test_run_node_logs_how_long_each_phase_took(session_context, tmp_path, caplog):
     session = _get_dummy_session(session_context, tmp_path)
-    with loaded_state(session, REDIS_VALUES), caplog.at_level("INFO"):
+    with loaded_state(session, STATE_FILE), caplog.at_level("INFO"):
         ExtendedTransmon.close_all()
         run_node(
             NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False

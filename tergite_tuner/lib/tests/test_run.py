@@ -24,10 +24,10 @@ from tergite_tuner.lib.spec import Fit
 from tergite_tuner.storage.fs.dataset import load_dataset
 from tergite_tuner.tests.utils.goldens import (
     RECORDED_DATASETS,
-    STANDARD_REDIS,
+    STANDARD_STATE,
     copy_dataset,
     get_dataset_path,
-    get_redis_file,
+    get_state_file,
 )
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -44,7 +44,7 @@ def test_plot_elements_saves_the_preview_and_the_full_plot(
     name = RESONATOR.name.value
     copy_dataset(get_dataset_path(case.dataset), tmp_path / f"dataset_{name}.hdf5")
     s21s = run.get_element_s21s(load_dataset(name, tmp_path))
-    with loaded_state(session_context, get_redis_file(case)):
+    with loaded_state(session_context, get_state_file(case)):
         run.plot_elements(
             spec,
             s21s,
@@ -94,7 +94,7 @@ def test_parking_currents_are_set_unless_recalibrating(
 ):
     session = session_context.model_copy(update={"is_recalibration": is_recalibration})
     hardware = SimpleNamespace(spi=_Spi())
-    with loaded_state(session, STANDARD_REDIS):
+    with loaded_state(session, STANDARD_STATE):
         run.set_parking_currents(hardware, session)
 
     expected = None if is_recalibration else {"q00_q01": 0.00095}

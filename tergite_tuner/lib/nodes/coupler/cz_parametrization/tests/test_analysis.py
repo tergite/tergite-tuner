@@ -28,15 +28,15 @@ from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-_REDIS_DATA_FILENAME = "redis-export-2025-12-16.json"
+_STATE_FILENAME = "state-export-2025-12-16.json"
 
 
 def test_cz_parametrization_analysis_good_data(session_context, node_data_dir):
     """
     Test whether single coupler analysis outputs right QOIs
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_parametrization_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
@@ -60,8 +60,8 @@ def test_cz_parametrization_analysis_bad_data(session_context, node_data_dir):
     """
     Test whether single coupler analysis outputs that the analysis fails on bad data
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_parametrization_1.hdf5"
         with xr.open_dataset(file_path) as dataset:
@@ -83,8 +83,8 @@ def test_plotting(session_context, tmp_path, node_data_dir):
     """
     Test whether plotting produces right plots
     """
-    redis_data_file = node_data_dir / _REDIS_DATA_FILENAME
-    with loaded_state(session_context, redis_data_file):
+    state_file = node_data_dir / _STATE_FILENAME
+    with loaded_state(session_context, state_file):
         # Copy dataset to the temporary data path
         shutil.copy(
             node_data_dir / "dataset_cz_parametrization_0.hdf5",

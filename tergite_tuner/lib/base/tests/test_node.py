@@ -18,12 +18,12 @@ from tergite_tuner.tests.utils.fixtures import (
 from tergite_tuner.tests.utils.goldens import DEFAULT_NODE_NAMES, get_dataset_builder
 from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
+_STATE_FILE = get_fixture_path("states", "standard_state.json")
 
 
 @pytest.mark.parametrize("node_name", DEFAULT_NODE_NAMES)
 def test_every_node_has_a_dummy_dataset_it_can_configure(node_name, session_context):
-    with loaded_state(session_context, _REDIS_VALUES):
+    with loaded_state(session_context, _STATE_FILE):
         dataset = get_dataset_builder(node_name, session_context)()
 
     assert dataset.data_vars

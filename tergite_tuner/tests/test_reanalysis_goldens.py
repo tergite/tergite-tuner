@@ -27,7 +27,7 @@ from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import (
     RECORDED_DATASETS,
     get_analyser,
-    get_redis_file,
+    get_state_file,
 )
 from tergite_tuner.tests.utils.state import loaded_state
 
@@ -40,7 +40,7 @@ TOLERANCE = 1e-6
 def test_reanalysis_gives_the_golden_qois(case, session_context, tmp_path):
     golden_case = RECORDED_DATASETS[case]
     analyse = get_analyser(golden_case, tmp_path, session_context)
-    with loaded_state(session_context, get_redis_file(golden_case)):
+    with loaded_state(session_context, get_state_file(golden_case)):
         qois = analyse()
 
     values = _get_flat_values(qois)

@@ -10,41 +10,34 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Device states for tests, from the Redis dumps the fixtures keep."""
+"""Device states for tests, from the state JSON the fixtures keep."""
 
 import json
 from collections.abc import Iterator, Mapping
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from tergite_tuner.state import COLLECTIONS, DeviceState
+from tergite_tuner.state import DeviceState
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
     from tergite_tuner.config.types import DeviceConfig
 
 
-def get_state(dump: Mapping[str, Any] | str | Path) -> DeviceState:
-    """The state in a Redis dump, or its JSON file: each ``<collection>:<element>`` hash."""
-    if not isinstance(dump, Mapping):
-        dump = json.loads(Path(dump).read_text())
-    records = {}
-    for key, entry in dump.items():
-        collection, _, element = key.partition(":")
-        if collection in COLLECTIONS and entry["type"] == "hash":
-            records.setdefault(collection, {})[element] = {
-                field: _decode(value) for field, value in entry["value"].items()
-            }
+def get_state(records: Mapping[str, Any] | str | Path) -> DeviceState:
+    """The state of ``records``, or of the JSON file holding them."""
+    if not isinstance(records, Mapping):
+        records = json.loads(Path(records).read_text())
     return DeviceState(records)
 
 
 @contextmanager
 def loaded_state(
-    session: "SessionContext", dump: Mapping[str, Any] | str | Path
+    session: "SessionContext", records: Mapping[str, Any] | str | Path
 ) -> Iterator[DeviceState]:
-    """Gives ``session`` the state in a Redis dump, alone, for the block."""
-    session.state = get_state(dump)
+    """Gives ``session`` the state of ``records`` alone, for the block."""
+    session.state = get_state(records)
     yield session.state
 
 
@@ -53,7 +46,7 @@ def set_drive_frequencies_from_device(
 ) -> None:
     """Sets each qubit's f01 and f12 to the device config's.
 
-    standard_redis_mock.json holds another chip's frequencies, 0.6-0.8 GHz above the
+    standard_state.json holds another chip's frequencies, 0.6-0.8 GHz above the
     fixture cluster's drive LOs, which the dummy cluster refuses to set as NCO frequencies.
     """
     state.load(
@@ -68,10 +61,3 @@ def set_drive_frequencies_from_device(
             }
         }
     )
-
-
-def _decode(value: str) -> Any:
-    """A dumped value as the Redis store read one saved without its type: JSON, else the string."""
-    with suppress(json.JSONDecodeError):
-        return json.loads(value)
-    return value

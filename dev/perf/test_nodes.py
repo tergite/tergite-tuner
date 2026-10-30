@@ -23,24 +23,24 @@ from tergite_tuner.tests.utils.goldens import (
     get_analyser,
     get_compiler,
     get_dataset_builder,
-    get_redis_file,
+    get_state_file,
 )
 from tergite_tuner.tests.utils.state import loaded_state
 
-REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
+STATE_FILE = get_fixture_path("states", "standard_state.json")
 # purity benchmarking cannot be built (step 9.7)
 NODE_NAMES = [name for name in DEFAULT_NODE_NAMES if name != "purity_benchmarking"]
 
 
 @pytest.mark.parametrize("node_name", NODE_NAMES)
 def test_compile(measure, node_name, session_context):
-    with loaded_state(session_context, REDIS_VALUES):
+    with loaded_state(session_context, STATE_FILE):
         measure(get_compiler(node_name, session_context))
 
 
 @pytest.mark.parametrize("node_name", NODE_NAMES)
 def test_dataset(measure, node_name, session_context):
-    with loaded_state(session_context, REDIS_VALUES):
+    with loaded_state(session_context, STATE_FILE):
         measure(get_dataset_builder(node_name, session_context))
 
 
@@ -50,5 +50,5 @@ def test_analysis(measure, case, session_context, tmp_path):
     analyse = get_analyser(
         golden_case, tmp_path, session_context, should_save_plot=True
     )
-    with loaded_state(session_context, get_redis_file(golden_case)):
+    with loaded_state(session_context, get_state_file(golden_case)):
         measure(analyse)

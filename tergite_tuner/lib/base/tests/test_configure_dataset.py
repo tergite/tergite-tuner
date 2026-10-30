@@ -20,7 +20,7 @@ from tergite_tuner.tests.utils.goldens import get_dataset_builder
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
+state_file = get_fixture_path("states", "standard_state.json")
 
 
 def test_get_dataset_labels_each_qubits_sweep(session_context):
@@ -40,7 +40,7 @@ def test_get_dataset_labels_each_qubits_sweep(session_context):
 
 
 def test_get_dataset_gives_a_coupler_node_a_variable_per_qubit(session_context):
-    with loaded_state(session_context, redis_mock):
+    with loaded_state(session_context, state_file):
         dataset = get_dataset_builder("coupler_anticrossing", session_context)()
 
     assert dataset.attrs["elements"] == ["q00_q01"]
@@ -65,7 +65,7 @@ def test_get_dataset_puts_loops_last(session_context):
 
 
 def test_get_dataset_labels_a_couplers_sweeps_by_coupler(session_context):
-    with loaded_state(session_context, redis_mock):
+    with loaded_state(session_context, state_file):
         dataset = get_dataset_builder("cz_parametrization", session_context)()
 
     assert dataset["yq00"].attrs["element"] == "q00_q01"

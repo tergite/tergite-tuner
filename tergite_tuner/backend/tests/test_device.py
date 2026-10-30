@@ -27,11 +27,11 @@ from tergite_tuner.tests.utils.fixtures import (
 )
 from tergite_tuner.tests.utils.state import loaded_state
 
-redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
+state_file = get_fixture_path("states", "standard_state.json")
 
 
 def test_create_serial_device(session_context):
-    with loaded_state(session_context, redis_mock):
+    with loaded_state(session_context, state_file):
         # ensure no other transmon objects are instantiated
         # this is because some other test doesn't close the device properly
         ExtendedTransmon.close_all()
@@ -60,7 +60,7 @@ def test_create_serial_device(session_context):
 
 
 def test_save_serial_device(tmp_path, session_context):
-    with loaded_state(session_context, redis_mock):
+    with loaded_state(session_context, state_file):
         # ensure no other transmon objects are instantiated
         # this is because some other test doesn't close the device properly
         ExtendedTransmon.close_all()

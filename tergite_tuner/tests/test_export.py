@@ -10,11 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import json
 import tomllib
-from contextlib import suppress
-from json import JSONDecodeError
-from typing import Any, Dict, List, Mapping
 
 from tergite_tuner import SessionContext
 from tergite_tuner.export import (
@@ -25,8 +21,8 @@ from tergite_tuner.export import (
 from tergite_tuner.tests.utils.fixtures import get_fixture_path, load_fixture
 from tergite_tuner.tests.utils.state import loaded_state
 
-_REDIS_DATA_FILE = get_fixture_path("redis", "export_bcc_script.json")
-_REDIS_DATA = load_fixture("redis/export_bcc_script.json")
+_STATE_FILE = get_fixture_path("states", "export_bcc_script.json")
+_STATE = load_fixture("states/export_bcc_script.json")
 _CALIB_SEED = load_fixture("data/calib.seed.json")
 _CALIB_CONTENT = _CALIB_SEED["calibration_config"]
 
@@ -140,7 +136,7 @@ def test_read_results_default():
         },
     }
     session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
-    with loaded_state(session, _REDIS_DATA_FILE) as state:
+    with loaded_state(session, _STATE_FILE) as state:
         state.written_paths.update(touched_fields)
         result = read_result(session)
 
@@ -150,11 +146,10 @@ def test_read_results_default():
 
 def test_read_results_session_only_false():
     """Returns all the session's results when session_only=False"""
-    expected_result_dict = _redis_to_nested_dict(_REDIS_DATA)
-    expected_result = CalibrationResults.model_validate(expected_result_dict)
+    expected_result = CalibrationResults.model_validate(_STATE)
 
     session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
-    with loaded_state(session, _REDIS_DATA_FILE):
+    with loaded_state(session, _STATE_FILE):
         result = read_result(session, session_only=False)
 
     assert result == expected_result
@@ -165,7 +160,7 @@ def test_generate_calib_seed_file_writes_toml(tmp_path):
     output_path = tmp_path / "calibration_seed.toml"
 
     session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
-    with loaded_state(session, _REDIS_DATA_FILE):
+    with loaded_state(session, _STATE_FILE):
         generate_calib_seed_file(path=output_path, session=session)
 
     with open(output_path, "rb") as f:
@@ -178,7 +173,7 @@ def test_generate_calib_seed_file_partial(tmp_path):
     """When no couplers are requested the coupler list is empty."""
     output_path = tmp_path / "calibration_seed.toml"
     session = SessionContext.from_env(qubits=["q12"], couplers=[])
-    with loaded_state(session, _REDIS_DATA_FILE):
+    with loaded_state(session, _STATE_FILE):
         generate_calib_seed_file(path=output_path, session=session)
 
     with open(output_path, "rb") as f:
@@ -201,7 +196,7 @@ def test_generate_calib_seed_file_coupler_map(tmp_path):
     """When coupler_name_map is passed, coupler names are changed."""
     output_path = tmp_path / "calibration_seed.toml"
     session = SessionContext.from_env(qubits=["q11", "q12"], couplers=["q11_q12"])
-    with loaded_state(session, _REDIS_DATA_FILE):
+    with loaded_state(session, _STATE_FILE):
         generate_calib_seed_file(
             path=output_path, session=session, coupler_name_map={"q11_q12": "u24"}
         )
@@ -217,59 +212,9 @@ def test_generate_calib_seed_file_coupler_map(tmp_path):
     assert seed["calibration_config"] == expected
 
 
-def _redis_to_nested_dict(raw_data: Mapping[str, Any], level=0) -> Dict[str, Any]:
-    """Converts the raw data in redis to a nested dict
-
-    Keys that have ':' are converted into nested dicts
-
-    Args:
-        raw_data: the data that as got from redis in form {key: {type: ...: value: ...}}
-        level: the level of the nested dict
-
-    Returns:
-        The dict nested
-    """
-    result = {}
-
-    for key, value in raw_data.items():
-        if level == 0:
-            # redis data has format: {key: {type: ...: value: ...}}
-            value = value["value"]
-
-        # ignore 'nan'
-        if value == "nan":
-            continue
-
-        if isinstance(value, Mapping):
-            value = _redis_to_nested_dict(value, level + 1)
-        elif isinstance(value, str):
-            with suppress(JSONDecodeError):
-                value = json.loads(value)
-
-        path = key.split(":")
-        _insert_nested_key(result, path, value)
-
-    return result
-
-
-def _insert_nested_key(data: Dict[str, Any], path: List[str], value: Any):
-    """Inserts inplace a given value at the given nested path in the data object
-
-    Args:
-        data: the dictionary to insert into
-        path: the path to the field, as a tuple of path segments.
-        value: the value to be inserted.
-    """
-    inner_record = data
-    for segment in path[:-1]:
-        inner_record = inner_record.setdefault(segment, {})
-
-    inner_record[path[-1]] = value
-
-
 def test_read_results_matches_touched_fields_exactly():
     session = SessionContext.from_env(qubits=["q11"], couplers=[])
-    with loaded_state(session, _REDIS_DATA_FILE) as state:
+    with loaded_state(session, _STATE_FILE) as state:
         state.load({"transmons": {"q11": {"fidelity": 0.99}}})
         state.written_paths.update({"t1_time", "purity_fidelity"})
         result = read_result(session)
