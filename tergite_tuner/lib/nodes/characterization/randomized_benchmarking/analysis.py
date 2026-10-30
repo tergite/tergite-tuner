@@ -11,7 +11,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
@@ -19,6 +19,8 @@ import xarray as xr
 from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
+
+CURVE_POINTS = 400
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -34,9 +36,42 @@ class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
         self.fit_results = {}
 
     def analyse(self) -> Fits:
-
         model = ExpDecayModel()
+        self._find_coords()
+        iq_array = self.S21[self.data_var].assign_attrs(qubit=self.qubit)
+        self.state_probabilities = calculate_probabilities(iq_array, self.session.state)
+        self.fit_n_cliffords = np.linspace(
+            self.number_cliffords.values[0],
+            self.number_cliffords.values[-1],
+            CURVE_POINTS,
+        )
 
+        standard = self.state_probabilities.sel(
+            {self.interleave_gate_coord: "Standard"}
+        )
+        self.standard_p_value, self.standard_fit_y = self._fit_decay(
+            model, standard.sel(state=0).mean(self.seed_coord)
+        )
+        self.leakage, self.fit_y2 = self._fit_leakage(
+            model, standard.sel(state=2).mean(self.seed_coord)
+        )
+        interleaved_p = None
+        if self.interleaved_gate is not None:
+            interleaved = self.state_probabilities.sel(
+                {self.interleave_gate_coord: self.interleaved_gate}
+            )
+            self.interleaved_p_value, self.interleaved_fit_y = self._fit_decay(
+                model, interleaved.sel(state=0).mean(self.seed_coord)
+            )
+            interleaved_p = self.interleaved_p_value
+        self.fidelity = get_rb_fidelity(self.standard_p_value, interleaved_p)
+        return {
+            "fidelity": Fit(self.fidelity, np.nan),
+            "leakage": Fit(self.leakage, np.nan),
+            "analysis": Fit(self),
+        }
+
+    def _find_coords(self) -> None:
         for coord in self.dataset[self.data_var].coords:
             if "cliffords" in coord:
                 self.number_cliffords_coord = coord
@@ -50,93 +85,33 @@ class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
                 self.gates = self.S21[coord].values
                 self.number_of_gates = self.S21[coord].size
                 self.interleaved_gate = None
-
         if self.number_of_gates == 2:
             self.interleaved_gate = self.gates[1]
 
-        qubit = self.qubit
-        iq_array = self.S21[self.data_var].assign_attrs(qubit=qubit)
+    def _fit_decay(
+        self, model: ExpDecayModel, mean_0: xr.DataArray
+    ) -> tuple[float, np.ndarray]:
+        """The decay of |0>'s mean probability: its p, and the fitted curve."""
+        cliffords = self.number_cliffords.values
+        guess = model.guess(data=mean_0.values, m=cliffords)
+        result = model.fit(mean_0.values, params=guess, m=cliffords)
+        return result.params["p"].value, self._get_curve(model, result)
 
-        self.state_probabilities = calculate_probabilities(iq_array, self.session.state)
+    def _fit_leakage(
+        self, model: ExpDecayModel, mean_2: xr.DataArray
+    ) -> tuple[float, np.ndarray]:
+        """The leakage, one less the p of |2>'s rising population, and the fitted curve."""
+        guess = model.guess(data=mean_2.values, m=self.number_cliffords)
+        # an inverted decay
+        guess["A"].value = -1 / 2
+        guess["p"].value = 0.998
+        result = model.fit(mean_2, params=guess, m=self.number_cliffords)
+        return 1 - result.params["p"].value, self._get_curve(model, result)
 
-        standard_probabilities = self.state_probabilities.sel(
-            {self.interleave_gate_coord: "Standard"}
+    def _get_curve(self, model: ExpDecayModel, result: Any) -> np.ndarray:
+        return model.eval(
+            result.params, **{model.independent_vars[0]: self.fit_n_cliffords}
         )
-        standard_mean_probabilities_state_0 = standard_probabilities.sel(state=0).mean(
-            self.seed_coord
-        )
-        standard_mean_probabilities_state_2 = standard_probabilities.sel(state=2).mean(
-            self.seed_coord
-        )
-
-        guess = model.guess(
-            data=standard_mean_probabilities_state_0.values,
-            m=self.number_cliffords.values,
-        )
-        fit_result = model.fit(
-            standard_mean_probabilities_state_0.values,
-            params=guess,
-            m=self.number_cliffords.values,
-        )
-
-        self.fit_n_cliffords = np.linspace(
-            self.number_cliffords.values[0], self.number_cliffords.values[-1], 400
-        )
-        self.standard_fit_y = model.eval(
-            fit_result.params, **{model.independent_vars[0]: self.fit_n_cliffords}
-        )
-        self.standard_p_value = fit_result.params["p"].value
-
-        # Gives an initial guess for the model parameters and then fits the model to the data.
-        guess2 = model.guess(
-            data=standard_mean_probabilities_state_2.values, m=self.number_cliffords
-        )
-
-        # Adjust the parameters for an inverted decaying exponential fit
-        guess2["A"].value = -1 / 2  # Force 'A' to be negative
-        guess2["p"].value = 0.998
-        fit_result2 = model.fit(
-            standard_mean_probabilities_state_2, params=guess2, m=self.number_cliffords
-        )
-        self.fit_y2 = model.eval(
-            fit_result2.params, **{model.independent_vars[0]: self.fit_n_cliffords}
-        )
-        self.leakage = 1 - fit_result2.params["p"].value
-
-        if self.interleaved_gate is not None:
-            interleaved_probabilities = self.state_probabilities.sel(
-                {self.interleave_gate_coord: self.interleaved_gate}
-            )
-            interleaved_mean_probabilities_state_0 = interleaved_probabilities.sel(
-                state=0
-            ).mean(self.seed_coord)
-
-            guess = model.guess(
-                data=interleaved_mean_probabilities_state_0.values,
-                m=self.number_cliffords.values,
-            )
-            fit_result = model.fit(
-                interleaved_mean_probabilities_state_0.values,
-                params=guess,
-                m=self.number_cliffords.values,
-            )
-            self.interleaved_fit_y = model.eval(
-                fit_result.params, **{model.independent_vars[0]: self.fit_n_cliffords}
-            )
-            self.interleaved_p_value = fit_result.params["p"].value
-
-        if self.interleaved_gate is None:
-            self.fidelity = self.standard_p_value
-        else:
-            self.fidelity = 1 - 0.5 * (
-                1 - self.interleaved_p_value / self.standard_p_value
-            )
-
-        return {
-            "fidelity": Fit(self.fidelity, np.nan),
-            "leakage": Fit(self.leakage, np.nan),
-            "analysis": Fit(self),
-        }
 
     def plotter(self, ax):
         standard_probabilities = self.state_probabilities.sel(
@@ -183,3 +158,10 @@ class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
         ax.tick_params(axis="both", which="major", labelsize=14)
         ax.set_title("")
         ax.grid()
+
+
+def get_rb_fidelity(standard_p: float, interleaved_p: float | None) -> float:
+    """The standard decay's p, or, interleaved, the gate's fidelity from the two decays."""
+    if interleaved_p is None:
+        return standard_p
+    return 1 - 0.5 * (1 - interleaved_p / standard_p)

@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis import (
     RandomizedBenchmarkingQubitAnalysis,
+    get_rb_fidelity,
 )
 from tergite_tuner.lib.run import get_element_s21s
 from tergite_tuner.lib.spec import plot_class_analysis
@@ -57,3 +58,11 @@ def test_plotting(session_context, node_data_dir):
 
     assert axis.get_xlabel() == "number of cliffords"
     plt.close(figure)
+
+
+def test_the_fidelity_is_the_standard_decay_without_interleaving():
+    assert get_rb_fidelity(0.99, None) == 0.99
+
+
+def test_the_interleaved_fidelity_follows_the_decays_ratio():
+    assert get_rb_fidelity(0.98, 0.96) == pytest.approx(1 - 0.5 * (1 - 0.96 / 0.98))
