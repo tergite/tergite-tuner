@@ -15,6 +15,7 @@ from itertools import product
 import pytest
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
@@ -23,7 +24,6 @@ from tergite_tuner.utils.measurement import (
     reduce_samplespace,
     samplespace_dimensions,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _redis_values = get_fixture_path("redis", "standard_redis_mock.json")
 _node_names = list(DEFAULT_NODE_NAME_CLS_MAP.keys())

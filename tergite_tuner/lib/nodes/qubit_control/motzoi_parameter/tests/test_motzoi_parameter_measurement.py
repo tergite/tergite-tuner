@@ -15,6 +15,7 @@
 import numpy as np
 import pytest
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node import (
     MotzoiParameter12Node,
     MotzoiParameterNode,
@@ -23,7 +24,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_dummy_generation(session_context):

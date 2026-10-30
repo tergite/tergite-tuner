@@ -26,6 +26,11 @@ from quantify_scheduler.operations.gate_library import CZ, X90, Y90, Reset, Rxy,
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.resources import ClockResource
 
+from tergite_tuner.backend import (
+    ExtendedCompositeSquareEdge,
+    ExtendedTransmon,
+    Measure_RO_3state_Opt,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.randomized_benchmarking import (
     randomized_benchmarking_sequence,
@@ -34,9 +39,6 @@ from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit
     TwoQubitClifford,
 )
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 # Constants
 IDLE_TIME = 12e-9

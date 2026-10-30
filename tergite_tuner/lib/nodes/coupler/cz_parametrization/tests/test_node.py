@@ -14,6 +14,7 @@
 
 import pytest
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
@@ -29,7 +30,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_cannot_create_correct_type(redis_connection, session_context):

@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from tergite_tuner import run_node
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
@@ -26,7 +27,6 @@ from tergite_tuner.tests.utils.redis import (
     loaded_redis,
     set_drive_frequencies_from_device,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 _REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")

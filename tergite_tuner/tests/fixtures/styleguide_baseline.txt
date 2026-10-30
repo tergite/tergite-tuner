@@ -5,7 +5,7 @@ banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py:
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: # ---- PycQED mappings ----#
 banner: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/utils/two_qubit_clifford_group.py: ##############################################################################
 banner: tergite_tuner/utils/cliffords.py: # ******************************************************
-banner: tergite_tuner/utils/types/extended_transmon.py: ############################
+banner: tergite_tuner/backend/transmon.py: ############################
 boolean: tergite_tuner/config/session.py::SessionContext.ignore_spec
 boolean: tergite_tuner/config/session.py::SessionContext.save_plot
 boolean: tergite_tuner/config/session.py::SessionOptions.ignore_spec
@@ -31,7 +31,7 @@ boolean: tergite_tuner/tuner.py::run_node(keep_data_files)
 boolean: tergite_tuner/tuner.py::run_node(refresh_session)
 boolean: tergite_tuner/tuner.py::tune_device(keep_data_files)
 boolean: tergite_tuner/tuner.py::tune_device(refresh_session)
-boolean: tergite_tuner/utils/types/extended_transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
+boolean: tergite_tuner/backend/transmon.py::_ExtendedDispersiveMeasurement.__init__(reset_clock_phase)
 boolean: tergite_tuner/utils/types/qoi.py::QOI.analysis_successful
 confined-import: tergite_tuner/config/session.py::import quantify_scheduler.backends.qblox_backend
 confined-import: tergite_tuner/config/session.py::import redis
@@ -128,8 +128,6 @@ confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measu
 confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.operations.pulse_library
 confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.resources
 confined-import: tergite_tuner/lib/nodes/readout/ro_frequency_optimization/measurement.py::import quantify_scheduler.schedules.schedule
-confined-import: tergite_tuner/lib/utils/device.py::import quantify_scheduler.device_under_test.quantum_device
-confined-import: tergite_tuner/lib/utils/device.py::import quantify_scheduler.json_utils
 confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler
 confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.backends
 confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.backends.qblox
@@ -137,16 +135,6 @@ confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_
 confined-import: tergite_tuner/lib/utils/schedule_execution.py::import quantify_scheduler.instrument_coordinator.instrument_coordinator
 confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator
 confined-import: tergite_tuner/tuner.py::import quantify_scheduler.instrument_coordinator.components.qblox
-confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.backends.graph_compilation
-confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.device_under_test.edge
-confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.device_under_test.transmon_element
-confined-import: tergite_tuner/utils/types/extended_coupler_edge.py::import quantify_scheduler.helpers.validators
-confined-import: tergite_tuner/utils/types/extended_gates.py::import quantify_scheduler.enums
-confined-import: tergite_tuner/utils/types/extended_gates.py::import quantify_scheduler.helpers.validators
-confined-import: tergite_tuner/utils/types/extended_gates.py::import quantify_scheduler.operations.gate_library
-confined-import: tergite_tuner/utils/types/extended_pulse_factories.py::import quantify_scheduler.operations
-confined-import: tergite_tuner/utils/types/extended_transmon.py::import quantify_scheduler.backends.circuit_to_device
-confined-import: tergite_tuner/utils/types/extended_transmon.py::import quantify_scheduler.device_under_test.transmon_element
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.base.node
 import-layering: tergite_tuner/config/session.py::import tergite_tuner.lib.nodes
 import-layering: tergite_tuner/utils/hardware/spi.py::import tergite_tuner.config.session
@@ -558,7 +546,7 @@ type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state
 type-hints: tergite_tuner/lib/utils/classification_functions.py::assign_state.state_filter
 type-hints: tergite_tuner/lib/utils/classification_functions.py::calculate_probabilities
 type-hints: tergite_tuner/lib/utils/classification_functions.py::generate_iq_shots
-type-hints: tergite_tuner/lib/utils/device.py::close_device_resources
+type-hints: tergite_tuner/backend/device.py::close_device_resources
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.__init__
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ExpDecayModel.guess
 type-hints: tergite_tuner/lib/utils/fitting_models.py::ResonatorModel.__init__
@@ -591,8 +579,8 @@ type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.log_dir
 type-hints: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 type-hints: tergite_tuner/utils/logging/visuals.py::draw_arrow_chart
 type-hints: tergite_tuner/utils/measurement.py::samplespace_dimensions
-type-hints: tergite_tuner/utils/types/extended_coupler_edge.py::ExtendedCompositeSquareEdge.__init__
-type-hints: tergite_tuner/utils/types/extended_transmon.py::ExtendedTransmon.__init__
+type-hints: tergite_tuner/backend/edge.py::ExtendedCompositeSquareEdge.__init__
+type-hints: tergite_tuner/backend/transmon.py::ExtendedTransmon.__init__
 verb: tergite_tuner/config/session.py::_default_data_dir
 verb: tergite_tuner/lib/base/analysis.py::BaseAnalysis.plotter
 verb: tergite_tuner/lib/base/node.py::BaseNode.post_process
@@ -744,4 +732,4 @@ verb: tergite_tuner/utils/cliffords.py::x_PTM
 verb: tergite_tuner/utils/cliffords.py::y_PTM
 verb: tergite_tuner/utils/logging/__init__.py::ExtendedLogger.status
 verb: tergite_tuner/utils/measurement.py::samplespace_dimensions
-verb: tergite_tuner/utils/types/extended_pulse_factories.py::composite_soft_square_pulse
+verb: tergite_tuner/backend/pulse_factories.py::composite_soft_square_pulse

@@ -24,6 +24,7 @@ from tergite_tuner import (
     run_node,
     tune_device,
 )
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
 from tergite_tuner.lib.nodes import DEFAULT_NODE_CLS_MAP
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
@@ -32,7 +33,6 @@ from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.redis import loaded_redis
 from tergite_tuner.utils.types.enums import MeasurementMode
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
 STANDARD_RUN_RESONATOR = get_fixture_path(

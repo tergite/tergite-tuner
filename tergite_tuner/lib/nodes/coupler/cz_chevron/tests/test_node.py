@@ -11,6 +11,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_chevron.measurement import CZChevronMeasurement
@@ -20,7 +21,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_node_creation(redis_connection, session_context):

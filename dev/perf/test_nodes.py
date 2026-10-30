@@ -18,6 +18,7 @@ from typing import Any
 
 import pytest
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes import DEFAULT_NODE_CLS_MAP, DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import (
@@ -30,7 +31,6 @@ from tergite_tuner.tests.utils.goldens import (
     get_redis_file,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")
 # purity benchmarking cannot be built (step 9.7)

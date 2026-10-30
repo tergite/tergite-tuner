@@ -28,10 +28,9 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
 
+from tergite_tuner.backend import ExtendedTransmon, Measure_RO1
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.types.extended_gates import Measure_RO1
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class TwoTonesMultidimMeasurement(BaseMeasurement):

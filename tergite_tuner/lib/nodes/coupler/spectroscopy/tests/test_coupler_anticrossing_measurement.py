@@ -11,6 +11,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.coupler.spectroscopy.node import (
     QubitSpectroscopyVsCurrentNode,
 )
@@ -19,7 +20,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_measurement_01_type(session_context):

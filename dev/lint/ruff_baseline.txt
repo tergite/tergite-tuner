@@ -3,6 +3,25 @@ conftest.py: ARG005 Unused lambda argument: `args`
 conftest.py: ARG005 Unused lambda argument: `args`
 conftest.py: ARG005 Unused lambda argument: `kwargs`
 conftest.py: ARG005 Unused lambda argument: `kwargs`
+tergite_tuner/backend/device.py: RET504 Unnecessary assignment to `transmon` before `return` statement
+tergite_tuner/backend/edge.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/edge.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/edge.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/edge.py: RET504 Unnecessary assignment to `edge_op_config` before `return` statement
+tergite_tuner/backend/edge.py: UP006 Use `dict` instead of `Dict` for type annotation
+tergite_tuner/backend/edge.py: UP006 Use `dict` instead of `Dict` for type annotation
+tergite_tuner/backend/edge.py: UP035 `typing.Dict` is deprecated, use `dict` instead
+tergite_tuner/backend/gates.py: UP045 Use `X | None` for type annotations
+tergite_tuner/backend/gates.py: UP045 Use `X | None` for type annotations
+tergite_tuner/backend/gates.py: UP045 Use `X | None` for type annotations
+tergite_tuner/backend/pulse_factories.py: ARG001 Unused function argument: `reference_magnitude`
+tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/transmon.py: ARG002 Unused method argument: `kwargs`
+tergite_tuner/backend/transmon.py: RET504 Unnecessary assignment to `dev_cfg` before `return` statement
+tergite_tuner/backend/transmon.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
+tergite_tuner/backend/transmon.py: UP035 Import from `collections.abc` instead: `Hashable`
 tergite_tuner/config/session.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/session.py: UP006 Use `dict` instead of `Dict` for type annotation
 tergite_tuner/config/session.py: UP006 Use `list` instead of `List` for type annotation
@@ -338,7 +357,6 @@ tergite_tuner/lib/utils/classification_functions.py: C416 Unnecessary dict compr
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `assigned_states` before `return` statement
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `iq_points` before `return` statement
 tergite_tuner/lib/utils/classification_functions.py: RET504 Unnecessary assignment to `state_probabilities` before `return` statement
-tergite_tuner/lib/utils/device.py: RET504 Unnecessary assignment to `transmon` before `return` statement
 tergite_tuner/lib/utils/fitting_models.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/utils/fitting_models.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/utils/fitting_models.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
@@ -467,22 +485,4 @@ tergite_tuner/utils/hardware/spi.py: RET505 Unnecessary `elif` after `return` st
 tergite_tuner/utils/logging/visuals.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/utils/logging/visuals.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/utils/measurement.py: UP035 Import from `collections.abc` instead: `Iterable`
-tergite_tuner/utils/types/extended_coupler_edge.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_coupler_edge.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_coupler_edge.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_coupler_edge.py: RET504 Unnecessary assignment to `edge_op_config` before `return` statement
-tergite_tuner/utils/types/extended_coupler_edge.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/utils/types/extended_coupler_edge.py: UP006 Use `dict` instead of `Dict` for type annotation
-tergite_tuner/utils/types/extended_coupler_edge.py: UP035 `typing.Dict` is deprecated, use `dict` instead
-tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
-tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
-tergite_tuner/utils/types/extended_gates.py: UP045 Use `X | None` for type annotations
-tergite_tuner/utils/types/extended_pulse_factories.py: ARG001 Unused function argument: `reference_magnitude`
-tergite_tuner/utils/types/extended_transmon.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_transmon.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_transmon.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_transmon.py: ARG002 Unused method argument: `kwargs`
-tergite_tuner/utils/types/extended_transmon.py: RET504 Unnecessary assignment to `dev_cfg` before `return` statement
-tergite_tuner/utils/types/extended_transmon.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
-tergite_tuner/utils/types/extended_transmon.py: UP035 Import from `collections.abc` instead: `Hashable`
 tergite_tuner/utils/types/node_enum.py: UP042 Class NodeEnum inherits from both `str` and `enum.Enum`

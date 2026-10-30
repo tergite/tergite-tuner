@@ -15,6 +15,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 - Removed `NodeEnum.PROCESS_TOMOGRAPHY_SSRO`, whose node could not run and was left out of the node map, with the unused reset chevron node
 - Read the TOML config files with Python's `tomllib`; a malformed one raises `tomllib.TOMLDecodeError` where it raised `toml.TomlDecodeError`, and `toml`, `h5py` and `requests` are no longer direct dependencies
+- Moved the transmon, coupler edge, extended gates and device helpers from `tergite_tuner.utils.types.extended_*` and `tergite_tuner.lib.utils.device` to `tergite_tuner.backend`
 - [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 
 ### Fixed

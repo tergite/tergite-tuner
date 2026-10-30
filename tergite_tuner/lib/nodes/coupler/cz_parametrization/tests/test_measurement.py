@@ -14,13 +14,13 @@ from collections import Counter
 
 import numpy as np
 
+from tergite_tuner.backend import (
+    ExtendedCompositeSquareEdge,
+    ExtendedTransmon,
+)
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.measurement import (
     CZParametrizationMeasurement,
 )
-from tergite_tuner.utils.types.extended_coupler_edge import (
-    ExtendedCompositeSquareEdge,
-)
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_each_coupler_excites_only_its_own_qubits():

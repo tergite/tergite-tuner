@@ -25,11 +25,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.goldens import get_first_samplespace
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 GOLDEN_FILE = Path(get_fixture_path("goldens")) / "schedules.json"
 REDIS_VALUES = get_fixture_path("redis", "standard_redis_mock.json")

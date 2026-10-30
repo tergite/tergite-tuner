@@ -23,7 +23,7 @@ from quantify_scheduler.device_under_test.edge import Edge
 from quantify_scheduler.device_under_test.transmon_element import pulse_factories
 from quantify_scheduler.helpers.validators import Numbers
 
-from tergite_tuner.utils.types.extended_pulse_factories import (
+from tergite_tuner.backend.pulse_factories import (
     composite_soft_square_pulse,
 )
 

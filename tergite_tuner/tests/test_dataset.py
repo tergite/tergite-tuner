@@ -14,6 +14,7 @@
 import pandas
 import xarray as xr
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
     ResonatorSpectroscopyNode,
@@ -25,7 +26,6 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
 

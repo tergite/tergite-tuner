@@ -23,13 +23,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Typ
 import numpy as np
 import xarray
 
-from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
-from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
-from tergite_tuner.lib.utils.device import (
+from tergite_tuner.backend import (
     close_device_resources,
     configure_device,
     save_serial_device,
 )
+from tergite_tuner.lib.base.analysis import BaseNodeAnalysis
+from tergite_tuner.lib.base.measurement import BaseMeasurement, MeasurementType
 from tergite_tuner.lib.utils.schedule_execution import (
     compile_schedule,
     execute_schedule,

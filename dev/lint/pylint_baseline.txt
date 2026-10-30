@@ -9,6 +9,7 @@ duplicate-code: tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.measureme
 duplicate-code: tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.measurement, tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.measurement
 duplicate-code: tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node
 duplicate-code: tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis, tergite_tuner.lib.nodes.readout.ro_frequency_optimization.analysis
+tergite_tuner/backend/transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__
 tergite_tuner/lib/base/node.py: too-many-locals BaseNode.configure_dataset
 tergite_tuner/lib/base/utils/figure_utils.py: too-many-locals create_figure_with_top_band
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: too-many-locals PurityBenchmarkingQubitAnalysis._process_and_normalize_data
@@ -67,4 +68,3 @@ tergite_tuner/lib/nodes/schedule_node.py: too-many-locals OuterScheduleNode.meas
 tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary.__init__
 tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots
 tergite_tuner/tuner.py: too-many-locals _set_output_attenuations
-tergite_tuner/utils/types/extended_transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__

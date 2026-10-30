@@ -14,7 +14,8 @@
 import math
 import os
 
-from tergite_tuner.lib.utils.device import (
+from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend.device import (
     close_device_resources,
     configure_device,
     save_serial_device,
@@ -25,7 +26,6 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 

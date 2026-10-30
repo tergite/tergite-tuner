@@ -25,10 +25,12 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import ClockResource
 
+from tergite_tuner.backend import (
+    ExtendedCompositeSquareEdge,
+    ExtendedTransmon,
+    Measure_RO_3state_Opt,
+)
 from tergite_tuner.lib.base.measurement import BaseMeasurement
-from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.types.extended_gates import Measure_RO_3state_Opt
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 class CZChevronMeasurement(BaseMeasurement):

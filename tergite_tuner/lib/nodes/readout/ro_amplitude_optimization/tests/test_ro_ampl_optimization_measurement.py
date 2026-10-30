@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.node import (
     ROAmplitudeThreeStateOptimizationNode,
 )
@@ -21,7 +22,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_dummy_generation(redis_connection, session_context):

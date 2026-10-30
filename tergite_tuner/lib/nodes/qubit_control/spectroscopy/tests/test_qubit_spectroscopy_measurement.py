@@ -13,6 +13,7 @@
 
 import numpy as np
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.qubit_control.rabi_oscillations.node import (
     RabiOscillationsNode,
 )
@@ -29,7 +30,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_measurement_01_type(session_context):

@@ -11,6 +11,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesNodeAnalysis,
@@ -21,7 +22,6 @@ from tergite_tuner.lib.nodes.coupler.cz_local_phases.measurement import (
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import CZLocalPhasesNode
 from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 _REDIS_DATA_FILENAME = "redis-2026-02-06-18.json"
 

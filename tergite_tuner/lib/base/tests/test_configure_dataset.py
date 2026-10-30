@@ -11,6 +11,7 @@
 # that they have been altered from the originals.
 
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.node import (
     RandomizedBenchmarkingNode,
 )
@@ -29,7 +30,6 @@ from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
 )
 from tergite_tuner.tests.utils.redis import loaded_redis
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 redis_mock = get_fixture_path("redis", "standard_redis_mock.json")
 

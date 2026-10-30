@@ -12,6 +12,7 @@
 # that they have been altered from the originals.
 
 
+from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.lib.nodes.qubit_control.ramsey_fringes.node import (
     RamseyFringes12Node,
     RamseyFringesNode,
@@ -20,7 +21,6 @@ from tergite_tuner.tests.utils.fixtures import (
     DEFAULT_TEST_COUPLERS,
     DEFAULT_TEST_QUBITS,
 )
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 
 def test_dummy_01_generation(session_context):

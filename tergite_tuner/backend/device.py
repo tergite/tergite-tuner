@@ -19,11 +19,11 @@ from typing import TYPE_CHECKING
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
+from tergite_tuner.backend import transmon as transmon_module
+from tergite_tuner.backend.edge import ExtendedCompositeSquareEdge
+from tergite_tuner.backend.transmon import ExtendedTransmon
 from tergite_tuner.storage.redis import RedisStore
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.types import extended_transmon
-from tergite_tuner.utils.types.extended_coupler_edge import ExtendedCompositeSquareEdge
-from tergite_tuner.utils.types.extended_transmon import ExtendedTransmon
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -133,7 +133,7 @@ def _load_transmon_from_redis(
 
     # create a transmon with the same name but with updated config
     transmon = json.loads(
-        encoded_transmon, cls=SchedulerJSONDecoder, modules=[extended_transmon]
+        encoded_transmon, cls=SchedulerJSONDecoder, modules=[transmon_module]
     )
 
     return transmon
