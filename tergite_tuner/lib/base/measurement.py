@@ -12,14 +12,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
-
-import xarray
-
-if TYPE_CHECKING:
-    from tergite_tuner.lib.base.node import BaseNode
-
 
 class BaseMeasurement:
     def __init__(self, transmons: dict, couplers=None):
@@ -28,9 +20,3 @@ class BaseMeasurement:
         self.transmons = transmons
         self.couplers = couplers
         self.qubits = list(self.transmons.keys())
-
-
-class MeasurementType(ABC):
-    @abstractmethod
-    def measure_node(self, measurement_mode, node: "BaseNode") -> xarray.Dataset:
-        pass

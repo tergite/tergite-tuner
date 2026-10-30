@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas
 import xarray as xr
 
 from tergite_tuner.backend import (
@@ -34,7 +35,7 @@ from tergite_tuner.backend import (
 )
 from tergite_tuner.exc import MissingCalibrationStatusError
 from tergite_tuner.lib.base.utils.figure_utils import create_figure_with_top_band
-from tergite_tuner.lib.spec import Fits, NodeSpec, get_coord_name
+from tergite_tuner.lib.spec import Fits, NodeSpec, get_coord_name, is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset, save_dataset
 from tergite_tuner.utils.dicts import insert_nested_key
 from tergite_tuner.utils.logging import logger
@@ -60,7 +61,7 @@ def calibrate(
     """Measures ``spec``'s node, unless re-analysing, then analyses and stores it."""
     if session.cluster_mode != MeasurementMode.re_analyse:
         device = configure_device(
-            spec.name.value, session.qubits, session.couplers, session
+            spec.name.value, get_qubits(spec, session), session.couplers, session
         )
         try:
             dataset = measure(spec, hardware, device, session)
@@ -82,11 +83,27 @@ def get_elements(spec: NodeSpec, session: "SessionContext") -> list[str]:
     return list(session.couplers if spec.element == "coupler" else session.qubits)
 
 
+def get_qubits(spec: NodeSpec, session: "SessionContext") -> list[str]:
+    """The qubits the node measures: the session's, or the coupled ones of a coupler node."""
+    if spec.element == "qubit":
+        return list(session.qubits)
+    return sorted(
+        {qubit for coupler in session.couplers for qubit in coupler.split("_")}
+    )
+
+
 def compile_node(
-    spec: NodeSpec, device: QuantumDevice, sweeps: Sweeps
+    spec: NodeSpec,
+    device: QuantumDevice,
+    sweeps: Sweeps,
+    session: "SessionContext | None" = None,
 ) -> CompiledSchedule:
     transmons = {qubit: device.get_element(qubit) for qubit in device.elements()}
     keywords = dict(spec.schedule_keywords)
+    if spec.element == "coupler":
+        keywords["edges"] = {edge: device.get_edge(edge) for edge in device.edges()}
+    if spec.get_schedule_keywords is not None:
+        keywords |= spec.get_schedule_keywords(session)
     if spec.loops is not None:
         keywords["loop_repetitions"] = spec.loops
     schedule = spec.get_schedule(transmons, **sweeps, **keywords)
@@ -105,6 +122,9 @@ def measure(
     for each outer point, and each run's dataset gains a dimension per such setting.
     """
     sweeps = get_sweeps(spec, session)
+    if spec.element == "coupler":
+        validate_couplers(session.couplers)
+        set_parking_currents(hardware, session)
     external_points = get_points(get_external_sweeps(spec, session))
     compiled_schedule = None
     dataset = xr.Dataset()
@@ -116,14 +136,14 @@ def measure(
     for index, (outer_point, external_point) in enumerate(runs):
         point_sweeps = sweeps | outer_point
         if compiled_schedule is None or spec.outer_sweeps:
-            compiled_schedule = compile_node(spec, device, point_sweeps)
+            compiled_schedule = compile_node(spec, device, point_sweeps, session)
         if spec.set_external is not None:
             spec.set_external(hardware, external_point, index % len(external_points))
         point_dataset = _run_once(
             spec,
             hardware,
             compiled_schedule,
-            point_sweeps,
+            point_sweeps | external_point,
             sweeps,
             session,
             list(device.elements()),
@@ -172,13 +192,16 @@ def get_dummy_dataset(
                 np.ravel(
                     spec.get_dummy_s21(
                         qubit,
-                        {setting: values[qubit] for setting, values in sweeps.items()},
+                        {
+                            setting: _get_qubit_value(values, qubit)
+                            for setting, values in sweeps.items()
+                        },
                         session,
                     ),
                     order="F",
                 )
             )
-            for index, qubit in enumerate(get_elements(spec, session))
+            for index, qubit in enumerate(get_qubits(spec, session))
         }
     )
 
@@ -188,33 +211,32 @@ def get_dataset(
     sweeps: Sweeps,
     qubits: list[str],
     loops: int | None = None,
+    couplers: list[str] | None = None,
 ) -> xr.Dataset:
-    """The instruments' acquisitions, one variable per qubit, shaped and labelled by ``sweeps``, then ``loops``."""
+    """The instruments' acquisitions, one variable per qubit, shaped and labelled by ``sweeps``, then ``loops``.
+
+    A setting swept per coupler is labelled by the qubit's coupler. With ``couplers``,
+    each qubit's variable belongs to its coupler, as the dataset's elements.
+    """
     dataset = xr.Dataset(attrs={"elements": []})
     dimensions = samplespace_dimensions(sweeps, loops)
     for key in raw_dataset.data_vars:
         qubit = qubits[key % len(qubits)]
-        coords = {}
-        for quantity, values in sweeps.items():
-            coord_name = get_coord_name(quantity, qubit)
-            coord_attrs = {
-                "element_type": "qubit",
-                "qubit": qubit,
-                "measured_qubit": qubit,
-                "long_name": coord_name,
-                "units": "NA",
-            }
-            coords[coord_name] = (coord_name, values[qubit], coord_attrs)
-        if loops is not None:
-            coords["loops"] = ("loops", np.arange(loops), {"element_type": "NA"})
+        coords = _get_qubit_coords(sweeps, qubit, loops)
+        owner = _get_coupler(couplers, qubit) if couplers else qubit
         partial_dataset = xr.Dataset(coords=coords)
         partial_dataset[f"y{qubit}"] = (
             tuple(coords),
             raw_dataset[key].values.reshape(*dimensions, order="F"),
-            {"qubit": qubit, "element": qubit, "long_name": f"y{qubit}", "units": "NA"},
+            {
+                "qubit": qubit,
+                "element": owner,
+                "long_name": f"y{qubit}",
+                "units": "NA",
+            },
         )
         dataset = xr.merge([dataset, partial_dataset])
-        dataset.attrs["elements"].append(qubit)
+        dataset.attrs["elements"].append(owner)
     dataset.attrs["elements"] = sorted(set(dataset.attrs["elements"]))
     return dataset
 
@@ -225,7 +247,11 @@ def analyse_node(
     """Analyses the node's saved dataset in ``data_path`` and stores the fits in Redis."""
     data_path = Path(data_path)
     start = time.perf_counter()
-    s21s = get_element_s21s(load_dataset(spec.name.value, data_path))
+    dataset = load_dataset(spec.name.value, data_path)
+    if spec.element == "coupler":
+        s21s = get_coupler_datasets(dataset, spec.name.value)
+    else:
+        s21s = get_element_s21s(dataset)
     fits = get_fits(spec, s21s, session)
     logger.info(f"Analysed {spec.name.value} in {time.perf_counter() - start:.2f} s")
     if should_save_plot:
@@ -237,7 +263,20 @@ def analyse_node(
 def get_fits(
     spec: NodeSpec, s21s: Mapping[str, xr.DataArray], session: "SessionContext"
 ) -> dict[str, Fits | None]:
-    return {element: spec.analyse(s21, session) for element, s21 in s21s.items()}
+    return {
+        element: spec.analyse(
+            s21, session, **get_analysis_keywords(spec, element, session)
+        )
+        for element, s21 in s21s.items()
+    }
+
+
+def get_analysis_keywords(
+    spec: NodeSpec, element: str, session: "SessionContext"
+) -> Mapping[str, Any]:
+    if spec.get_analysis_keywords is None:
+        return {}
+    return spec.get_analysis_keywords(element, session)
 
 
 def get_element_s21s(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
@@ -250,6 +289,21 @@ def get_element_s21s(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     return dict(sorted(s21s.items(), key=lambda item: int(item[0][1:])))
 
 
+def get_coupler_datasets(dataset: xr.Dataset, name: str) -> dict[str, xr.Dataset]:
+    """Each coupler's variables from a saved dataset, still split into real and imaginary parts."""
+    couplers = sorted({var.attrs["element"] for var in dataset.data_vars.values()})
+    return {
+        coupler: xr.merge(
+            [
+                var
+                for var in dataset.data_vars.values()
+                if var.attrs["element"] == coupler
+            ]
+        ).assign_attrs(coupler=coupler, node=name)
+        for coupler in couplers
+    }
+
+
 def plot_elements(
     spec: NodeSpec,
     s21s: Mapping[str, xr.DataArray],
@@ -258,6 +312,9 @@ def plot_elements(
     session: "SessionContext",
 ) -> None:
     """Plots each element in a grid and saves it at 100 and 400 dpi in ``data_path``."""
+    if spec.save_details is not None:
+        for element, s21 in s21s.items():
+            spec.save_details(s21, fits[element] or {}, data_path, session)
     if spec.plot is None:
         return
     rows = spec.plot_rows
@@ -271,9 +328,6 @@ def plot_elements(
     figure.savefig(data_path / f"{name}_preview.png", bbox_inches="tight", dpi=100)
     figure.savefig(data_path / f"{name}.png", bbox_inches="tight", dpi=400)
     plt.close(figure)
-    if spec.save_details is not None:
-        for element, s21 in s21s.items():
-            spec.save_details(s21, fits[element] or {}, data_path, session)
     logger.info(f"Plots saved to {data_path}")
 
 
@@ -284,7 +338,7 @@ def store_fits(
     collection = "couplers" if spec.element == "coupler" else "transmons"
     redis_data = {}
     for element, element_fits in fits.items():
-        if element_fits is None:
+        if is_failed(element_fits):
             logger.warning(f"Analysis failed for {element}")
             continue
         insert_nested_key(
@@ -308,16 +362,18 @@ def get_redis_record(qois: Mapping[str, str], fits: Fits) -> dict[str, object]:
     return record
 
 
-def mark_not_calibrated(spec: NodeSpec, session: "SessionContext") -> None:
-    """Marks the node not calibrated on each of its elements that has no status yet."""
-    elements = get_elements(spec, session)
+def mark_not_calibrated(
+    name: str, elements: Iterable[str], session: "SessionContext"
+) -> None:
+    """Marks node ``name`` not calibrated on each of ``elements`` that has no status yet."""
+    elements = list(elements)
     statuses = session.redis_store.find_many("cs", pks=elements).get("cs", {})
     session.redis_store.save_many(
         {
             "cs": {
-                element: {spec.name.value: "not_calibrated"}
+                element: {name: "not_calibrated"}
                 for element in elements
-                if spec.name.value not in statuses.get(element, {})
+                if name not in statuses.get(element, {})
             }
         }
     )
@@ -336,6 +392,32 @@ def is_in_spec(name: str, elements: Iterable[str], session: "SessionContext") ->
     return True
 
 
+def validate_couplers(couplers: list[str]) -> None:
+    """Raises ``ValueError`` if two couplers, or a coupler's own ends, share a qubit."""
+    qubits = [qubit for coupler in couplers for qubit in coupler.split("_")]
+    if len(qubits) > len(set(qubits)):
+        logger.info("Couplers share qubits")
+        raise ValueError("Improper Couplers")
+
+
+def set_parking_currents(hardware: Hardware, session: "SessionContext") -> None:
+    """Sets each coupler's stored parking current, which CZ parametrization may have updated; not when recalibrating."""
+    records = session.redis_store.find_many(collection="couplers", pks=session.couplers)
+    try:
+        currents = {
+            coupler: record["parking_current"]
+            for coupler, record in records["couplers"].items()
+        }
+    except KeyError:
+        logger.error(f"Some couplers are missing currents: {records}")
+        return
+    if session.is_recalibration:
+        logger.debug("Skipping setting DC currents")
+        return
+    logger.status("Setting updated DC currents")
+    hardware.spi.set_dac_current(currents)
+
+
 def _get_element_axes(axes: np.ndarray, index: int, rows: int) -> Any:
     """The ``index``-th element's axis, or its column of ``rows`` axes, in a grid of ``PLOT_COLUMNS``."""
     row, column = rows * (index // PLOT_COLUMNS), index % PLOT_COLUMNS
@@ -346,8 +428,12 @@ def _get_sweeps(
     sweep_fns: Mapping[str, Any], spec: NodeSpec, session: "SessionContext"
 ) -> Sweeps:
     elements = get_elements(spec, session)
+    qubits = get_qubits(spec, session)
     sweeps = {
-        setting: {element: get_values(element, session) for element in elements}
+        setting: {
+            element: get_values(element, session)
+            for element in (qubits if setting in spec.qubit_sweeps else elements)
+        }
         for setting, get_values in sweep_fns.items()
     }
     user_samplespace = session.user_samplespace.get(spec.name.value, {})
@@ -384,7 +470,8 @@ def _run_once(
     logger.info(f"Measured {spec.name.value} in {time.perf_counter() - start:.2f} s")
     if session.cluster_mode == MeasurementMode.dummy:
         raw_dataset = get_dummy_dataset(spec, point_sweeps, session)
-    return get_dataset(raw_dataset, sweeps, qubits, spec.loops)
+    couplers = get_elements(spec, session) if spec.element == "coupler" else None
+    return get_dataset(raw_dataset, sweeps, qubits, spec.loops, couplers)
 
 
 def _add_point_dimensions(
@@ -392,7 +479,43 @@ def _add_point_dimensions(
 ) -> xr.Dataset:
     """``dataset`` with a dimension per setting of ``point``, which is the same for every element."""
     for setting, values in point.items():
-        dataset = dataset.expand_dims(
-            {setting: np.array([next(iter(values.values()))])}
-        )
+        value = next(iter(values.values()))
+        if np.ndim(value) == 0:
+            dataset = dataset.expand_dims({setting: np.array([value])})
+            continue
+        # a point of several values, such as a working point's frequency and duration
+        index = pandas.MultiIndex.from_tuples([tuple(value)], names=["l1", "l2"])
+        dataset = dataset.expand_dims({setting: index})
+        dataset = dataset.assign_coords({setting: (setting, index)})
     return dataset
+
+
+def _get_coupler(values: Mapping[str, Any], qubit: str) -> str:
+    return next(element for element in values if qubit in element.split("_"))
+
+
+def _get_qubit_value(values: Mapping[str, Any], qubit: str) -> Any:
+    """``qubit``'s value of a setting swept per qubit or per coupler."""
+    return values[qubit] if qubit in values else values[_get_coupler(values, qubit)]
+
+
+def _get_qubit_coords(
+    sweeps: Sweeps, qubit: str, loops: int | None
+) -> dict[str, tuple[str, np.ndarray, dict[str, str]]]:
+    """A coordinate per setting, named by the qubit or, for a setting swept per coupler, its coupler; then the loops."""
+    coords = {}
+    for quantity, values in sweeps.items():
+        element = qubit if qubit in values else _get_coupler(values, qubit)
+        element_type = "qubit" if element == qubit else "coupler"
+        coord_name = get_coord_name(quantity, element)
+        coord_attrs = {
+            "element_type": element_type,
+            element_type: element,
+            "measured_qubit": qubit,
+            "long_name": coord_name,
+            "units": "NA",
+        }
+        coords[coord_name] = (coord_name, np.atleast_1d(values[element]), coord_attrs)
+    if loops is not None:
+        coords["loops"] = ("loops", np.arange(loops), {"element_type": "NA"})
+    return coords

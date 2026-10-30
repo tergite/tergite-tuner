@@ -2,6 +2,7 @@
 #
 # (C) Copyright Eleftherios Moschandreou 2023, 2024, 2025
 # (C) Copyright Michele Faucci Giannelli 2024, 2025
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -10,159 +11,105 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""Qubit and resonator spectroscopy against each coupler's current: where the coupler crosses them."""
 
-
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray
 from lmfit.models import LorentzianModel
 
-from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
-    CouplerAnticrossingNodeAnalysis,
-    ResonatorSpectroscopyVsCurrentNodeAnalysis,
+    CouplerAnticrossingAnalysis,
+    ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.lib.nodes.external_parameter_node import ExternalParameterNode
+from tergite_tuner.lib.nodes.coupler.utils import reset_dc_currents, set_dc_currents
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
     TwoTonesMultidimMeasurement,
 )
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.measurement import (
     ResonatorSpectroscopyMeasurement,
 )
+from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
+    get_dummy_s21 as get_dummy_resonator,
+)
+from tergite_tuner.lib.spec import (
+    NodeSpec,
+    get_class_schedule,
+    get_coupler_analyser,
+    get_fixed_sweep,
+    save_coupler_figures,
+)
 from tergite_tuner.lib.utils.samplespace import qubit_samples, resonator_samples
-from tergite_tuner.utils.logging import logger
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
+QUBIT_CURRENTS = np.arange(-2e-3, 2e-3, 80e-6)
+RESONATOR_CURRENTS = np.arange(-1e-3, 1e-3, 50e-6)
+# the dummy coupler crosses the qubit near these currents, offset to avoid dividing by zero
+DUMMY_ASYMPTOTES = np.array([-0.001, 0.001]) + 3 / 5 * 1e-7
+
 peak = LorentzianModel()
 
 
-class QubitSpectroscopyVsCurrentNode(CouplerNode):
-    """
-    This node performs a qubit spectroscopy measurement while varying the
-    current through the coupler to measure the crossing point of the coupler with the qubit.
-    """
-
-    name: str = "coupler_anticrossing"
-    measurement_cls = TwoTonesMultidimMeasurement
-    analysis_cls = CouplerAnticrossingNodeAnalysis
-    measurement_type_cls = ExternalParameterNode
-    coupler_qois = ["control_qubit_crossing_points", "target_qubit_crossing_points"]
-
-    def __init__(
-        self,
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(couplers, session, **schedule_keywords)
-        self.qubit_state = 0
-        self.schedule_keywords["qubit_state"] = self.qubit_state
-
-        self.schedule_samplespace = {
-            "spec_frequencies": {
-                qubit: qubit_samples(qubit, self.session) for qubit in self.all_qubits
-            }
-        }
-
-        self.external_samplespace = {
-            "dc_currents": {
-                coupler: np.arange(-2e-3, 2e-3, 80e-6) for coupler in self.couplers
-            },
-        }
-        self.validate()
-
-    def initial_operation(self):
-        pass
-
-    def pre_measurement_operation(self, reduced_ext_space):
-        self.hardware.spi.set_dac_current(reduced_ext_space["dc_currents"])
-
-    def final_operation(self):
-        logger.info("Final Operation")
-        currents = {}
-        for coupler in self.couplers:
-            currents[coupler] = 0
-
-        self.hardware.spi.set_dac_current(currents)
-
-    def generate_dummy_dataset(self):
-        dataset = xarray.Dataset()
-        current = self.reduced_external_samplespace["dc_currents"][self.couplers[0]]
-        for index, qubit in enumerate(self.all_qubits):
-            qubit_freq = self.session.device_config.qubits[qubit]["VNA_f01_frequency"]
-            epsilon = 3 / 5 * 1e-7  # to avoid divide by zero
-            low_asymptote = -0.001 + epsilon
-            high_asymptote = 0.001 + epsilon
-            shifted_frequency = qubit_freq + 2e6 * np.abs(
-                low_asymptote * high_asymptote
-            ) / (current - low_asymptote) / (current - high_asymptote)
-            true_params = peak.make_params(
-                amplitude=0.2, center=shifted_frequency, sigma=0.1e6
-            )
-            samples = qubit_samples(qubit, self.session)
-            number_of_samples = len(samples)
-            frequncies = np.linspace(samples[0], samples[-1], number_of_samples)
-            true_s21 = peak.eval(params=true_params, x=frequncies)
-
-            measured_s21 = true_s21
-            data_array = xarray.DataArray(measured_s21)
-
-            # Add the DataArray to the Dataset with an integer name (converted to string)
-            dataset[index] = data_array
-        return dataset
+def get_dummy_anticrossing(
+    qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
+) -> np.ndarray:
+    """A qubit peak the coupler pushes away as its current nears the asymptotes."""
+    low, high = DUMMY_ASYMPTOTES
+    current = sweeps["dc_currents"]
+    frequency = session.device_config.qubits[qubit]["VNA_f01_frequency"]
+    frequency += 2e6 * np.abs(low * high) / (current - low) / (current - high)
+    params = peak.make_params(amplitude=0.2, center=frequency, sigma=0.1e6)
+    return peak.eval(params=params, x=sweeps["spec_frequencies"])
 
 
-class ResonatorSpectroscopyVsCurrentNode(CouplerNode):
-    """
-    This node performs a resonator spectroscopy measurement while varying the
-    current through the coupler to measure the crossing point of the coupler with the resonator.
-    """
+def get_dummy_resonator_vs_current(
+    qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
+) -> np.ndarray:
+    return get_dummy_resonator(qubit, sweeps, session, state=0)
 
-    name: str = "resonator_spectroscopy_vs_current"
-    measurement_cls = ResonatorSpectroscopyMeasurement
-    analysis_cls = ResonatorSpectroscopyVsCurrentNodeAnalysis
-    measurement_type_cls = ExternalParameterNode
-    coupler_qois = [
-        "control_resonator_crossing_points",
-        "target_resonator_crossing_points",
-    ]
 
-    def __init__(
-        self,
-        couplers: list[str],
-        session: "SessionContext",
-        **schedule_keywords,
-    ):
-        super().__init__(couplers, session, **schedule_keywords)
-        self.qubit_state = 0
+COUPLER_ANTICROSSING_SPEC = NodeSpec(
+    name=NodeEnum.COUPLER_ANTICROSSING,
+    element="coupler",
+    get_schedule=get_class_schedule(TwoTonesMultidimMeasurement),
+    analyse=get_coupler_analyser(CouplerAnticrossingAnalysis),
+    qois={
+        "control_qubit_crossing_points": "control_qubit_crossing_points",
+        "target_qubit_crossing_points": "target_qubit_crossing_points",
+    },
+    sweeps={"spec_frequencies": qubit_samples},
+    get_dummy_s21=get_dummy_anticrossing,
+    schedule_keywords={"qubit_state": 0},
+    qubit_sweeps=frozenset({"spec_frequencies"}),
+    external_sweeps={"dc_currents": get_fixed_sweep(QUBIT_CURRENTS)},
+    set_external=set_dc_currents,
+    reset_external=reset_dc_currents,
+    save_details=save_coupler_figures,
+)
 
-        self.schedule_samplespace = {
-            "ro_frequencies": {
-                qubit: resonator_samples(qubit, self.session)
-                for qubit in self.all_qubits
-            }
-        }
-
-        self.external_samplespace = {
-            "dc_currents": {
-                coupler: np.arange(-1e-3, 1e-3, 50e-6) for coupler in self.couplers
-            },
-        }
-        self.validate()
-
-    def initial_operation(self):
-        pass
-
-    def pre_measurement_operation(self, reduced_ext_space):
-        self.hardware.spi.set_dac_current(reduced_ext_space["dc_currents"])
-
-    def final_operation(self):
-        logger.info("Final Operation")
-        currents = {}
-        for coupler in self.couplers:
-            currents[coupler] = 0
-
-        self.hardware.spi.set_dac_current(currents)
+COUPLER_SPECTROSCOPY_SPECS = {
+    NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: NodeSpec(
+        name=NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT,
+        element="coupler",
+        get_schedule=get_class_schedule(ResonatorSpectroscopyMeasurement),
+        analyse=get_coupler_analyser(ResonatorSpectroscopyVsCurrentCouplerAnalysis),
+        qois={
+            "control_resonator_crossing_points": "control_resonator_crossing_points",
+            "target_resonator_crossing_points": "target_resonator_crossing_points",
+        },
+        sweeps={"ro_frequencies": resonator_samples},
+        get_dummy_s21=get_dummy_resonator_vs_current,
+        qubit_sweeps=frozenset({"ro_frequencies"}),
+        external_sweeps={"dc_currents": get_fixed_sweep(RESONATOR_CURRENTS)},
+        set_external=set_dc_currents,
+        reset_external=reset_dc_currents,
+        save_details=save_coupler_figures,
+    ),
+    NodeEnum.COUPLER_ANTICROSSING: COUPLER_ANTICROSSING_SPEC,
+    # the same node under another name (REFACTOR.md step 9.8)
+    NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: COUPLER_ANTICROSSING_SPEC,
+}

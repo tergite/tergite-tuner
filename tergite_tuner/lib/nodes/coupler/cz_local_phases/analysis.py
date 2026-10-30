@@ -13,21 +13,25 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING, Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from cycler import cycler
 
-from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
+from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
-from tergite_tuner.utils.types.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
-class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
+class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
 
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
+    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
+        super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
 
     def sinusoidal_fit(self, data):
@@ -41,7 +45,7 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
         fit_data = self.model.eval(fit.params, x=self.fit_plot_phases)
         return np.array([phase]), np.array([fit_data])
 
-    def analyze_coupler(self):
+    def analyse(self) -> Fits | None:
         dataset = self.S21
         for coord in dataset.coords:
             coord = str(coord)
@@ -139,16 +143,7 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
                 "error": 0,
             },
         }
-        qoi = QOI(analysis_result, analysis_succesful)
-        return qoi
-
-    @property
-    def processed_dataset(self):
-        self.probabilities = xr.concat(
-            [self.control_qubit_probabilities, self.target_qubit_probabilities],
-            dim="qubit",
-        )
-        return self.probabilities
+        return get_fits_from_result(analysis_result, analysis_succesful, self)
 
     def plotter(self, figures_dictionary):
         fig, axs = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
@@ -215,7 +210,3 @@ class CZLocalPhasesCouplerAnalysis(BaseCouplerAnalysis):
         axs[1][1].set_title(f"swap: {swap}")
 
         figures_dictionary[self.coupler] = [fig]
-
-
-class CZLocalPhasesNodeAnalysis(BaseAllCouplersAnalysis):
-    single_coupler_analysis_obj = CZLocalPhasesCouplerAnalysis

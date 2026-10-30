@@ -13,20 +13,24 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from typing import TYPE_CHECKING, Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
+from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
-from tergite_tuner.utils.types.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
-class CZRBCouplerAnalysis(BaseCouplerAnalysis):
+class CZRBCouplerAnalysis(CouplerAnalysis):
 
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
+    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
+        super().__init__(dataset, session, **keywords)
         self.single_model = ExpDecayModel(inverted=False)
 
     def state_probabilities(self, c_qubit_state: int, t_qubit_state: int):
@@ -34,7 +38,7 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
         t_state_probs = self.target_qubit_probabilities.sel({"state": t_qubit_state})
         return c_state_probs * t_state_probs
 
-    def analyze_coupler(self):
+    def analyse(self) -> Fits | None:
 
         computational_space_dimension = 4
 
@@ -226,16 +230,7 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
                 "error": 0,
             },
         }
-        qoi = QOI(analysis_result, analysis_succesful)
-        return qoi
-
-    @property
-    def processed_dataset(self):
-        self.probabilities = xr.concat(
-            [self.control_qubit_probabilities, self.target_qubit_probabilities],
-            dim="qubit",
-        )
-        return self.probabilities
+        return get_fits_from_result(analysis_result, analysis_succesful, self)
 
     def plotter(self, figures_dictionary):
 
@@ -377,7 +372,3 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
         )
 
         figures_dictionary[self.coupler] = [fig]
-
-
-class CZRBNodeAnalysis(BaseAllCouplersAnalysis):
-    single_coupler_analysis_obj = CZRBCouplerAnalysis

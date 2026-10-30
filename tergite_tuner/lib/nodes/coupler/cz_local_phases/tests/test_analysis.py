@@ -16,6 +16,8 @@ import xarray as xr
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesCouplerAnalysis,
 )
+from tergite_tuner.lib.spec import is_failed
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-coupler-run-2026-02.json"
@@ -27,13 +29,12 @@ def test_cz_local_phases(redis_connection, session_context, node_data_dir):
         file_path = node_data_dir / "dataset_cz_local_phases.hdf5"
         with xr.open_dataset(file_path) as dataset:
             analysis = CZLocalPhasesCouplerAnalysis(
-                "cz_calibration",
-                ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+                get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
                 session_context,
             )
-            qoi = analysis.process_coupler(dataset, "q13_q14")
+            qoi = analysis.analyse()
 
-            assert qoi.analysis_successful
+            assert not is_failed(qoi)
 
 
 def test_plotting(redis_connection, session_context, node_data_dir):
@@ -46,14 +47,13 @@ def test_plotting(redis_connection, session_context, node_data_dir):
         with xr.open_dataset(file_path) as dataset:
 
             analysis = CZLocalPhasesCouplerAnalysis(
-                "cz_calibration",
-                ["cz_pulse_frequency", "cz_pulse_duration", "cz_phase"],
+                get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
                 session_context,
             )
 
             figures_dictionary = {}
 
-            analysis.process_coupler(dataset, "q13_q14")
+            analysis.analyse()
             analysis.plotter(figures_dictionary)
 
             assert "q13_q14" in figures_dictionary

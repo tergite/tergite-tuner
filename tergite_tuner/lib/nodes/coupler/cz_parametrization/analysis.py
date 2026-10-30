@@ -13,23 +13,24 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Literal
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from scipy.ndimage import convolve
 
-from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
+from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
-from tergite_tuner.utils.types.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
-class CZParametrizationAnalysis(BaseCouplerAnalysis):
+class CZParametrizationAnalysis(CouplerAnalysis):
 
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
-        self.phase_path: Literal["via_20", "via_02"] = kwargs["phase_path"]
+    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
+        super().__init__(dataset, session, **keywords)
 
     def calculate_probabilities(self):
         dataset = self.S21
@@ -66,7 +67,7 @@ class CZParametrizationAnalysis(BaseCouplerAnalysis):
 
 class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
 
-    def analyze_coupler(self):
+    def analyse(self) -> Fits | None:
         self.calculate_probabilities()
 
         self.optimal_values = xr.DataArray(name=self.coupler)
@@ -156,12 +157,7 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
                 "error": 0,
             },
         }
-        qoi = QOI(analysis_result, self.analysis_succesful)
-        return qoi
-
-    @property
-    def processed_dataset(self):
-        return self.probabilities
+        return get_fits_from_result(analysis_result, self.analysis_succesful, self)
 
     def plotter(self, figures_dictionary: dict[str, list]):
         figures_list = []
@@ -216,7 +212,3 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
             figures_list.append(fig)
 
         figures_dictionary[self.coupler] = figures_list
-
-
-class CZParametrizationNodeAnalysis(BaseAllCouplersAnalysis):
-    single_coupler_analysis_obj = CZParametrizationCouplerAnalysis

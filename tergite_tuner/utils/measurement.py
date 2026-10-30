@@ -11,40 +11,9 @@
 # that they have been altered from the originals.
 
 
-import copy
 from typing import Iterable
 
 import numpy
-
-
-def reduce_samplespace(iteration: tuple, samplespace: dict) -> dict:
-    """The values of each settable at ``iteration``'s index, per element.
-
-    ``{"frequencies": {"q1": [4.0e9, 4.1e9]}}`` at ``(1,)`` gives ``{"frequencies": {"q1": 4.1e9}}``.
-    """
-    reduced_samplespace = {}
-    element_values = {}
-
-    # To account for empty samplespaces
-    if not samplespace:
-        return reduced_samplespace
-
-    # e.g. 'frequencies':
-    settable = list(samplespace.keys())[0]
-    # e.g. ('frequencies', 'amplitudes'):
-    settables = samplespace.keys()
-
-    # elements may refer to qubits or couplers
-    elements = samplespace[settable].keys()  # ['q1', 'q2'] in the example
-    for settable_index, settable in enumerate(settables):
-        element_iteration = iteration[settable_index]
-        for element in elements:
-            qubit_specific_values = samplespace[settable][element]
-            current_value = qubit_specific_values[element_iteration]
-            element_values[element] = current_value
-        reduced_samplespace[settable] = copy.deepcopy(element_values)
-
-    return reduced_samplespace
 
 
 def samplespace_dimensions(samplespace: dict, loops=None) -> list[int]:

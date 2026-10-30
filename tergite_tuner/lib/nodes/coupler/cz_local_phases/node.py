@@ -4,6 +4,7 @@
 # (C) Copyright Liangyu Chen 2024
 # (C) Copyright Amr Osman 2024
 # (C) Copyright Chalmers Next Labs 2024, 2025, 2026
+# (C) Copyright Chalmers Next Labs AB 2026
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,69 +13,60 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+"""CZ local phases: each qubit's dynamic phase from the CZ."""
+
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import numpy as np
-import xarray as xr
 
-from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
-    CZLocalPhasesNodeAnalysis,
+    CZLocalPhasesCouplerAnalysis,
 )
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.measurement import (
     CZLocalPhasesMeasurement,
 )
-from tergite_tuner.lib.nodes.schedule_node import ScheduleNode
+from tergite_tuner.lib.nodes.coupler.utils import get_coupler_keywords, get_random_shots
+from tergite_tuner.lib.spec import (
+    NodeSpec,
+    get_class_schedule,
+    get_coupler_analyser,
+    get_fixed_sweep,
+    save_coupler_figures,
+)
+from tergite_tuner.utils.types.node_enum import NodeEnum
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
+
+LOOPS = 512
 
 
-class CZLocalPhasesNode(CouplerNode):
-    name: str = "cz_local_phases"
-    measurement_cls = CZLocalPhasesMeasurement
-    analysis_cls = CZLocalPhasesNodeAnalysis
-    measurement_type_cls = ScheduleNode
-    coupler_qois = ["cz_dynamic_control", "cz_dynamic_target"]
+def get_dummy_s21(
+    _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
+) -> np.ndarray:
+    return get_random_shots(sweeps, LOOPS, ("local_phases", "gate_modes", "swap"))
 
-    def __init__(self, couplers: list[str], **schedule_keywords):
-        super().__init__(couplers, **schedule_keywords)
-        self.couplers = couplers
 
-        self.coupled_qubits = self.get_coupled_qubits()
-        self.all_qubits = self.coupled_qubits
-
-        self.schedule_keywords["loop_repetitions"] = 512
-        self.loops = self.schedule_keywords["loop_repetitions"]
-        self.schedule_keywords["coupler_dict"] = self.gate_qubit_types_dict()
-
-        self.schedule_samplespace = {
-            "local_phases": {
-                qubit: np.linspace(0, 360, 31) for qubit in self.coupled_qubits
-            },
-            "gate_modes": {
-                coupler: np.array([True, False]) for coupler in self.couplers
-            },
-            "swap": {coupler: np.array([False, True]) for coupler in self.couplers},
-        }
-
-    def generate_dummy_dataset(self):
-        dataset = xr.Dataset()
-        for index, coupler in enumerate(self.couplers):
-            qubit_1, qubit_2 = coupler.split("_")
-
-            number_of_local_phases = len(
-                self.schedule_samplespace["local_phases"][qubit_1]
-            )
-            number_of_gate_modes = len(self.schedule_samplespace["gate_modes"][coupler])
-            number_of_swap_modes = len(self.schedule_samplespace["swap"][coupler])
-
-            samples = (
-                number_of_local_phases * number_of_gate_modes * number_of_swap_modes
-            )
-
-            number_of_iq_samples = samples * self.loops
-            real_part = np.random.uniform(-1, 1, number_of_iq_samples)
-            imag_part = np.random.uniform(-1, 1, number_of_iq_samples)
-            complex_points = real_part + 1j * imag_part
-            data_array = xr.DataArray(complex_points)
-
-            dataset[2 * index] = data_array
-            dataset[2 * index + 1] = data_array
-        return dataset
+CZ_LOCAL_PHASES_SPECS = {
+    NodeEnum.CZ_LOCAL_PHASES: NodeSpec(
+        name=NodeEnum.CZ_LOCAL_PHASES,
+        element="coupler",
+        get_schedule=get_class_schedule(CZLocalPhasesMeasurement),
+        analyse=get_coupler_analyser(CZLocalPhasesCouplerAnalysis),
+        qois={
+            "cz_dynamic_control": "cz_dynamic_control",
+            "cz_dynamic_target": "cz_dynamic_target",
+        },
+        sweeps={
+            "local_phases": get_fixed_sweep(np.linspace(0, 360, 31)),
+            "gate_modes": get_fixed_sweep(np.array([True, False])),
+            "swap": get_fixed_sweep(np.array([False, True])),
+        },
+        get_dummy_s21=get_dummy_s21,
+        loops=LOOPS,
+        qubit_sweeps=frozenset({"local_phases"}),
+        get_schedule_keywords=get_coupler_keywords,
+        save_details=save_coupler_figures,
+    )
+}

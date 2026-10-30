@@ -11,7 +11,7 @@ A Python library (3.13+) that a program imports to tune up a chip: tergite-backe
 | Entry points | `tergite_tuner/tuner.py`, `export.py` | `tune_device`, `run_node`, `reanalyse`, `read_result`, `generate_calib_seed_file` |
 | Configuration | `tergite_tuner/config/` | `SessionContext` and the four config files' models |
 | Nodes | `tergite_tuner/lib/nodes/` | one package per calibration experiment |
-| Node machinery | `tergite_tuner/lib/base/`, `lib/nodes/{schedule_node,external_parameter_node}.py` | what every node inherits: measure, configure the dataset, analyse, store |
+| Node machinery | `tergite_tuner/lib/spec.py`, `lib/run.py` | a node as a `NodeSpec`, and running one: sweep, measure, shape the dataset, analyse, plot, store |
 | Storage | `tergite_tuner/storage/` | `redis/` holds the device's parameters; `fs/` writes each node's dataset |
 | Backend | `tergite_tuner/backend/` | everything taken from quantify-scheduler and qblox-instruments: the operations, the device model (our transmon and edge, extended with our gates and parameters), compiling and running schedules, and `Hardware`: the Qblox cluster and the SPI rack's current sources |
 
@@ -26,26 +26,22 @@ flowchart TD
     S --> M["NodeManager<br/>the node DAG, populate_initial_parameters"]
     M --> I["inspect_node, for each node up to target_node"]
     I -->|in spec| R["skip"]
-    I -->|out of spec| N["node = node_cls(qubits, couplers, session)"]
-    N --> T["measurement_type_cls: ScheduleNode, OuterScheduleNode or ExternalParameterNode"]
-    T --> C["precompile: Measurement.schedule_function → compile_schedule"]
-    C --> X["execute_schedule on the InstrumentCoordinator<br/>(or generate_dummy_dataset in dummy mode)"]
-    X --> D["configure_dataset → save_dataset (data_dir/&lt;timestamp&gt;-&lt;node&gt;/)"]
-    D --> A["analysis_cls: per-qubit or per-coupler fits → QOIs"]
-    A --> Q["post_process: QOIs → Redis transmons / couplers, cs = calibrated"]
+    I -->|out of spec| N["run.calibrate(spec)"]
+    N --> C["compile_node: spec.get_schedule → compile_schedule, per outer point"]
+    C --> X["run_schedule on the InstrumentCoordinator, per external point<br/>(or spec.get_dummy_s21 in dummy mode)"]
+    X --> D["get_dataset → save_dataset (data_dir/&lt;timestamp&gt;-&lt;node&gt;/)"]
+    D --> A["spec.analyse, per element → fits"]
+    A --> Q["store_fits: the fits spec.qois names → Redis transmons / couplers, cs = calibrated"]
 ```
 
 1. **The session.** `SessionContext.from_env` reads the `.env` file, then the environment variables that name a field, then the keyword arguments, and loads `device_config`, `node_config`, `spi_config` and `cluster_config` from their paths. It carries the Redis connection and `RedisStore` with it.
-2. **The graph.** `DEFAULT_NODE_DAG_EDGES` in `lib/nodes/__init__.py` lists `(parent, child)` edges, and `node_cls_map` maps each `NodeEnum` to its class. `NodeManager.topo_order` walks the ancestors of `target_node` in topological order, leaving out `ignored_nodes`.
+2. **The graph.** `DEFAULT_NODE_DAG_EDGES` in `lib/nodes/__init__.py` lists `(parent, child)` edges, and `DEFAULT_NODE_SPECS` maps each `NodeEnum` to its `NodeSpec`, which the session's `node_specs` can replace or add to. `NodeManager.topo_order` walks the ancestors of `target_node` in topological order, leaving out `ignored_nodes`.
 3. **Each node.** `inspect_node` reads the node's status in `cs:<element>`. A node in spec is skipped. Otherwise it is built, its `node_config` section is written to Redis, and it is measured, saved and analysed. After that, the node-config values are reverted to the device config's (unless `is_recalibration`).
-4. **Measuring.**
-   - `ScheduleNode` compiles one schedule.
-   - `OuterScheduleNode` compiles one per point of `outer_schedule_samplespace`, for sweeps too large for the instrument's memory.
-   - `ExternalParameterNode` compiles once and re-runs it per point of `external_samplespace`, calling the node's `initial_operation`, `pre_measurement_operation` and `final_operation` around it (to set an SPI current, or to wait).
+4. **Measuring.** `run.measure` compiles the spec's schedule over its `sweeps`, and runs it once per point of its `outer_sweeps` (compiled again per point, for sweeps too large for the instrument's memory) and of its `external_sweeps` (calling `set_external` before each, to set an SPI current or to wait, and `reset_external` after). Each run's dataset gains a dimension per outer or external setting.
 5. **Analysing.**
-   - `BaseAllQubitsAnalysis` and `BaseAllCouplersAnalysis` split the dataset by element, run the node's single-element analysis on each, and plot when `save_plot` is set.
-   - Each analysis returns a `QOI` per element, holding `{field: {"value", "error"}}` and whether it succeeded.
-   - `post_process` writes the successful ones to Redis and marks the element `calibrated` for that node.
+   - `run.analyse_node` gives each element its data: a qubit node's `analyse` gets the qubit's complex S21, a coupler node's the coupler's variables.
+   - `analyse` returns the element's fits, each a `Fit(value, error)`, or None, or fits marked `failed`, when the element failed. The spec's `qois` names the Redis field each stored fit goes to.
+   - `store_fits` writes the successful ones to Redis and marks the element `calibrated`; `plot_elements` plots when `save_plot` is set.
 
 **Modes.** `cluster_mode` is `real`, `dummy` (a dummy cluster, and each node's `generate_dummy_dataset` in place of acquisitions) or `re_analyse` (no hardware; `reanalyse` runs the target node's analysis on `data_dir`). `spi_mode` is `real` or `dummy`.
 
@@ -62,7 +58,7 @@ tergite_tuner/
 │   ├── session.py         SessionContext, SessionOptions
 │   └── types/             DeviceConfig, NodeConfig, SpiConfig, ClusterConfig
 ├── lib/
-│   ├── base/              BaseNode, QubitNode, CouplerNode; the analysis base classes
+│   ├── spec.py, run.py    NodeSpec, and running one
 │   ├── nodes/             readout/, qubit_control/, characterization/, coupler/: one package per node
 │   │   └── <group>/<node>/   node.py, measurement.py, analysis.py, tests/
 │   └── utils/             the schedules' shared building blocks, fit models, the DAG
@@ -80,7 +76,7 @@ Redis holds the device as the tuner knows it, one hash per element, and fakeredi
 
 | Key | Holds |
 | --- | --- |
-| `transmons:<qubit>` | the transmon's parameters, nested paths joined by `:` (`rxy:amp180`, `clock_freqs:f01`), each QOI beside its `_error` |
+| `transmons:<qubit>` | the transmon's parameters, nested paths joined by `:` (`rxy:amp180`, `clock_freqs:f01`), each stored fit beside its `_error` |
 | `couplers:<coupler>` | the coupler's parameters (`parking_current`, `cz_pulse_amplitude`, …) |
 | `cs:<element>` | the calibration status per node: `calibrated` or `not_calibrated` |
 
@@ -153,7 +149,7 @@ The conventions are tergite-frontend's, so the two read alike. Code reads like a
 1. **A function is a composition of functions.** A public function's body is a short sequence of calls, each to a function that does one thing and is named for it. Do not extract a step that would be a one-line function.
 2. **Callees sit below their callers.** A file runs: constants, public functions in the order a caller uses them, then private helpers in the order they are first called.
 3. **A comment that labels a phase is a missing function.**
-4. **Data is a struct; state gets a class.** A node definition, a sweep, a QOI or a config is a Pydantic model or frozen dataclass. The Cluster connection, the SPI rack and the Redis connection are classes. A class that holds only what its single method needs is a function.
+4. **Data is a struct; state gets a class.** A node definition, a sweep, a fit or a config is a Pydantic model, frozen dataclass or named tuple. The Cluster connection, the SPI rack and the Redis connection are classes. A class that holds only what its single method needs is a function.
 5. **Stateless behaviour is a module-level function**, taking explicit arguments. No inheritance used only to share behaviour, no ABC with one implementation.
 6. **Dependencies arrive as arguments.** Only the entry points turn configuration into instances. A function is given the store, the cluster or the value it needs, not the whole session.
 7. **A library never takes over its host.** No `quit()`, no `matplotlib.use()`, no write to another package's globals that outlives the call, no write into the installed package. Errors are `TunerError`s from `exc.py`.
@@ -190,7 +186,7 @@ The check fails on a finding the baseline lacks, and on an entry it no longer fi
 
 | Task | Where |
 | --- | --- |
-| A new calibration node | a package under `lib/nodes/<group>/<node>/` with `node.py` (the class: name, `measurement_cls`, `analysis_cls`, `measurement_type_cls`, `qubit_qois` or `coupler_qois`, the samplespace), `measurement.py` (`schedule_function`), `analysis.py`, and `tests/` with a recorded dataset |
-| Run it in the default graph | a `NodeEnum` member, an entry in `DEFAULT_NODE_CLS_MAP`, and its edges in `DEFAULT_NODE_DAG_EDGES` |
+| A new calibration node | a package under `lib/nodes/<group>/<node>/` with `node.py` (its `NodeSpec`: name, element, schedule, sweeps, analysis, QOIs, dummy model), `measurement.py`, `analysis.py`, and `tests/` with a recorded dataset |
+| Run it in the default graph | a `NodeEnum` member, its spec in `DEFAULT_NODE_SPECS`, and its edges in `DEFAULT_NODE_DAG_EDGES` |
 | A new device parameter | the extended transmon or edge in `backend/transmon.py` or `backend/edge.py`, and its initial value in `device_config.example.toml` |
 | A new session option | a `SessionContext` field, `SessionOptions`, and `.example.env` |

@@ -14,22 +14,26 @@
 # that they have been altered from the originals.
 
 
+from typing import TYPE_CHECKING, Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationAnalysis,
 )
+from tergite_tuner.lib.spec import Fits, get_fits_from_result
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
-from tergite_tuner.utils.types.qoi import QOI
+
+if TYPE_CHECKING:
+    from tergite_tuner.config.session import SessionContext
 
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
-    def __init__(self, name, redis_fields, session, **kwargs):
-        super().__init__(name, redis_fields, session, **kwargs)
+    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
+        super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
 
@@ -54,7 +58,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         except:
             return np.array([np.nan]), np.array([np.nan])
 
-    def analyze_coupler(self) -> QOI:
+    def analyse(self) -> Fits | None:
         """Analyze the chevron pattern measured while sweeping the flux duration and frequency.
 
         Analyze the chevron pattern measured while sweeping the flux pulse duration (y-axis)
@@ -136,12 +140,7 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
                 "error": 0,
             },
         }
-        qoi = QOI(analysis_result, analysis_succesful)
-        return qoi
-
-    @property
-    def processed_dataset(self):
-        return self.probabilities
+        return get_fits_from_result(analysis_result, analysis_succesful, self)
 
     def plotter(self, figures_dictionary):
 
@@ -175,7 +174,3 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             )
 
         figures_dictionary[self.coupler] = [fig]
-
-
-class CZChevronAnalysis(BaseAllCouplersAnalysis):
-    single_coupler_analysis_obj = CZChevronCouplerAnalysis

@@ -29,9 +29,7 @@ from tergite_tuner.backend import Hardware
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib import run
-from tergite_tuner.lib.base.node import BaseNode, CouplerNode
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
-from tergite_tuner.lib.spec import NodeSpec
 from tergite_tuner.lib.utils.graph import get_dependencies_in_topological_order
 from tergite_tuner.storage.fs.dataset import create_node_data_path
 from tergite_tuner.storage.redis.utils import (
@@ -60,13 +58,7 @@ class NodeManager:
         self.session = session
         self.hardware = hardware
 
-        # the session's own specs win over its classes, which win over the default specs
-        self.nodes = {
-            **DEFAULT_NODE_SPECS,
-            **session.node_cls_map,
-            **session.node_specs,
-        }
-        self.node_cls_map = session.node_cls_map
+        self.nodes = {**DEFAULT_NODE_SPECS, **session.node_specs}
         self.ignored_nodes = session.ignored_nodes
         self.node_dag_edges = session.node_dag_edges
 
@@ -94,20 +86,16 @@ class NodeManager:
     ):
         node_spec = self.nodes[node]
         node_name = node.value
+        elements = run.get_elements(node_spec, self.session)
         logger.info(f"Inspecting node {node_name}")
-        if isinstance(node_spec, NodeSpec):
-            run.mark_not_calibrated(node_spec, self.session)
-        else:
-            node_spec.reset_qois(self.session, node_name=node_name)
+        run.mark_not_calibrated(node_name, elements, self.session)
 
         # Check Redis if node is calibrated
         if ignore_spec:
             is_node_calibrated = False
             logger.info(f"Ignoring calibration status for {node_name}")
         else:
-            is_node_calibrated = run.is_in_spec(
-                node_name, self._get_elements(node), self.session
-            )
+            is_node_calibrated = run.is_in_spec(node_name, elements, self.session)
 
         populate_node_parameters(
             node_name,
@@ -130,62 +118,11 @@ class NodeManager:
             ):
                 data_path = create_node_data_path(self.session, node_name=node_name)
 
-            if isinstance(node_spec, NodeSpec):
-                run.calibrate(
-                    node_spec, self.session, self.hardware, data_path, save_plot
-                )
-            else:
-                calibration_node = self.initialize_node(node)
-                calibration_node.calibrate(
-                    data_path, self.session.cluster_mode, save_plot
-                )
+            run.calibrate(node_spec, self.session, self.hardware, data_path, save_plot)
 
         # if we are in recalibration, we should not revert node parameters
         if not self.session.is_recalibration:
             revert_node_parameters(self.session, node_name=node_name)
-
-    def initialize_node(self, node: NodeEnum) -> BaseNode:
-        """Initializes a node and updates it with user-defined samplespace if available."""
-        node_cls = self.node_cls_map[node]
-        node_obj = node_cls(
-            all_qubits=self.session.qubits,
-            couplers=self.session.couplers,
-            session=self.session,
-        )
-
-        # Update node samplespace
-        if node_obj.name in self.session.user_samplespace:
-            logger.info(f"Using user_samplespace for {node_obj.name}")
-            self.update_to_user_samplespace(node_obj, self.session.user_samplespace)
-
-        node_obj.hardware = self.hardware
-
-        # Log initialization details
-        logger.info(
-            f"Initializing parameters for qubits: {self.session.qubits} "
-            f"and couplers: {self.session.couplers}"
-        )
-        return node_obj
-
-    def _get_elements(self, node: NodeEnum) -> list[str]:
-        node_spec = self.nodes[node]
-        if isinstance(node_spec, NodeSpec):
-            return run.get_elements(node_spec, self.session)
-        if issubclass(node_spec, CouplerNode):
-            return list(self.session.couplers)
-        return list(self.session.qubits)
-
-    @staticmethod
-    def update_to_user_samplespace(node: BaseNode, user_samplespace: dict) -> None:
-        node_user_samplespace = user_samplespace[node.name]
-        for settable, element_samplespace in node_user_samplespace.items():
-            if settable in node.schedule_samplespace:
-                node.schedule_samplespace[settable] = element_samplespace
-            elif settable in node.external_samplespace:
-                node.external_samplespace[settable] = element_samplespace
-            else:
-                raise KeyError(f"{settable} not in any samplespace")
-        return
 
 
 def run_node(
@@ -371,11 +308,12 @@ def _reanalyse(
 
     target_node = session.target_node
     logger.status(f"Analysing '{session.target_node_name}'")
-    node_spec = node_manager.nodes[target_node]
-    if isinstance(node_spec, NodeSpec):
-        run.analyse_node(node_spec, session.data_dir, session, should_save_plot=False)
-    else:
-        node_manager.initialize_node(target_node).post_process(session.data_dir)
+    run.analyse_node(
+        node_manager.nodes[target_node],
+        session.data_dir,
+        session,
+        should_save_plot=False,
+    )
     logger.status("Analysis completed.")
 
     if not keep_data_files and is_safe_path(session.data_dir):

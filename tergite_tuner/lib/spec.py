@@ -18,8 +18,9 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 import numpy as np
 import xarray as xr
+from matplotlib import pyplot as plt
 
-from tergite_tuner.backend import Schedule
+from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
@@ -63,12 +64,18 @@ class NodeSpec:
         save_details: saves an element's own figures in the node's data folder.
         outer_sweeps: settings of a schedule too large for one run, compiled and run
             once per point; the dataset gains a dimension per setting.
+        qubit_sweeps: the settings of a coupler node swept per coupled qubit rather
+            than per coupler.
         external_sweeps: settings outside the schedule, such as a coupler's current,
             each value of which takes a run of the schedule; the dataset gains a
             dimension per setting.
         set_external: sets an external sweep's point before its run, given the
             hardware, each setting's value per element and the point's index.
         reset_external: undoes the external settings after the last point.
+        get_schedule_keywords: schedule keywords read from the session, such as each
+            coupler's control and target qubits.
+        get_analysis_keywords: an element's keywords for ``analyse``, read from the
+            session.
     """
 
     name: NodeEnum
@@ -86,11 +93,16 @@ class NodeSpec:
         Callable[[xr.DataArray, Fits, Path, "SessionContext"], None] | None
     ) = None
     outer_sweeps: Mapping[str, SweepFn] = field(default_factory=dict)
+    qubit_sweeps: frozenset[str] = frozenset()
     external_sweeps: Mapping[str, SweepFn] = field(default_factory=dict)
     set_external: (
         Callable[["Hardware", Mapping[str, Mapping[str, Any]], int], None] | None
     ) = None
     reset_external: Callable[["Hardware"], None] | None = None
+    get_schedule_keywords: Callable[["SessionContext"], Mapping[str, Any]] | None = None
+    get_analysis_keywords: (
+        Callable[[str, "SessionContext"], Mapping[str, Any]] | None
+    ) = None
 
 
 class ElementAnalysis:
@@ -106,6 +118,109 @@ class ElementAnalysis:
 
     def analyse(self) -> Fits | None:
         raise NotImplementedError
+
+
+class CouplerAnalysis:
+    """Base of the coupler analyses: one coupler's variables, saved in real and imaginary parts.
+
+    ``keywords`` become attributes, as the node's analysis keywords for the coupler.
+    """
+
+    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
+        self.session = session
+        self.name = dataset.attrs["node"]
+        self.coupler = dataset.attrs["coupler"]
+        self.control_qubit, self.target_qubit = (
+            session.device_config.get_control_target_qubit_pair_by_coupler(self.coupler)
+        )
+        self.dataset = dataset
+        self.coord = dataset.coords
+        self.data_var = list(dataset.data_vars)[0]
+        self.S21 = dataset.isel(ReIm=0) + 1j * dataset.isel(ReIm=1)
+        for var in self.S21.data_vars:
+            self.S21[var].attrs = dataset[var].attrs
+        self.magnitudes = np.abs(self.S21)
+        for var in self.S21.data_vars.values():
+            if var.attrs["qubit"] == self.control_qubit:
+                self.control_qubit_data_var = var
+            elif var.attrs["qubit"] == self.target_qubit:
+                self.target_qubit_data_var = var
+            else:
+                raise ValueError("No control or target qubits")
+        for name, value in keywords.items():
+            setattr(self, name, value)
+
+    def analyse(self) -> Fits | None:
+        raise NotImplementedError
+
+
+def get_fits_from_result(
+    result: Mapping[str, Mapping[str, Any]], is_successful: bool, analysis: Any
+) -> Fits | None:
+    """The fits of an analysis reporting ``{field: {"value": ..., "error": ...}}``, with the analysis itself."""
+    fits = {name: Fit(item["value"], item["error"]) for name, item in result.items()}
+    fits["analysis"] = Fit(analysis)
+    if not is_successful:
+        # failed fits keep their values and analysis, to plot and inspect, but are not stored
+        fits["failed"] = Fit(True)
+    return fits
+
+
+def is_failed(fits: Fits | None) -> bool:
+    """Whether an element's analysis failed: it gave no fits, or marked them ``failed``."""
+    return fits is None or "failed" in fits
+
+
+def get_coupler_analyser(
+    analysis_cls: type[CouplerAnalysis],
+) -> Callable[..., Fits | None]:
+    """An ``analyse`` that builds an ``analysis_cls`` for the coupler, with its analysis keywords."""
+    return lambda dataset, session, **keywords: analysis_cls(
+        dataset, session, **keywords
+    ).analyse()
+
+
+def save_coupler_figures(
+    _dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
+) -> None:
+    """Saves the figures a ``CouplerAnalysis`` in the fits draws, as ``<node>_<coupler>_<index>_preview.png``."""
+    if not fits:
+        return
+    analysis = fits["analysis"].value
+    figures = {}
+    analysis.plotter(figures_dictionary=figures)
+    for index, figure in enumerate(figures.get(analysis.coupler, [])):
+        geometry = figure.axes[0].get_gridspec().get_geometry()
+        nrows, ncols = geometry
+        if geometry == (2, 3):
+            figure.set_size_inches(14, 9)
+        elif geometry == (1, 1):
+            figure.set_size_inches(9, 6)
+        elif geometry == (1, 2):
+            figure.set_size_inches(12, 8)
+        else:
+            figure.set_size_inches(ncols * 6, nrows * 4)
+        path = data_path / f"{analysis.name}_{analysis.coupler}_{index}_preview.png"
+        figure.savefig(path, bbox_inches="tight", dpi=100)
+        plt.close(figure)
+
+
+def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
+    """A ``get_schedule`` that builds ``measurement_cls`` over the transmons, and over the edges in a coupler node."""
+
+    def get_schedule(
+        transmons: Mapping[str, ExtendedTransmon],
+        edges: Mapping[str, Any] | None = None,
+        **keywords: Any,
+    ) -> Schedule:
+        measurement = (
+            measurement_cls(transmons)
+            if edges is None
+            else measurement_cls(transmons, edges)
+        )
+        return measurement.schedule_function(**keywords)
+
+    return get_schedule
 
 
 def get_class_analyser(

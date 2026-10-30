@@ -10,7 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import math
+
+from types import SimpleNamespace
 
 import pytest
 
@@ -56,29 +57,13 @@ def test_plot_elements_saves_the_preview_and_the_full_plot(
     assert (tmp_path / f"{spec.name.value}.png").exists()
 
 
-@pytest.mark.parametrize("node", list(DEFAULT_NODE_SPECS))
-def test_dummy_data_has_a_point_per_sweep_point(
-    node, redis_connection, session_context
-):
-    spec = DEFAULT_NODE_SPECS[node]
-    session = session_context.model_copy(update={"user_samplespace": {}})
-    with loaded_redis(redis_connection, STANDARD_REDIS):
-        sweeps = run.get_sweeps(spec, session)
-
-    dataset = run.get_dummy_dataset(spec, sweeps, session)
-
-    qubit = session.qubits[0]
-    points = math.prod(len(values[qubit]) for values in sweeps.values())
-    points *= spec.loops or 1
-    assert len(dataset.data_vars) == len(session.qubits)
-    assert dataset[0].size == points
-
-
 def test_mark_not_calibrated_keeps_existing_statuses(redis_connection, session_context):
     qubit, other = session_context.qubits[:2]
     redis_connection.hset(f"cs:{qubit}", RESONATOR.name.value, "calibrated")
 
-    run.mark_not_calibrated(RESONATOR, session_context)
+    run.mark_not_calibrated(
+        RESONATOR.name.value, session_context.qubits, session_context
+    )
 
     assert run.is_in_spec(RESONATOR.name.value, [qubit], session_context)
     assert not run.is_in_spec(RESONATOR.name.value, [other], session_context)
@@ -87,3 +72,24 @@ def test_mark_not_calibrated_keeps_existing_statuses(redis_connection, session_c
 def test_a_missing_status_raises(session_context):
     with pytest.raises(MissingCalibrationStatusError):
         run.is_in_spec(RESONATOR.name.value, session_context.qubits, session_context)
+
+
+class _Spi:
+    def __init__(self):
+        self.currents = None
+
+    def set_dac_current(self, currents: dict):
+        self.currents = currents
+
+
+@pytest.mark.parametrize("is_recalibration", [True, False])
+def test_parking_currents_are_set_unless_recalibrating(
+    redis_connection, session_context, is_recalibration
+):
+    session = session_context.model_copy(update={"is_recalibration": is_recalibration})
+    hardware = SimpleNamespace(spi=_Spi())
+    with loaded_redis(redis_connection, STANDARD_REDIS):
+        run.set_parking_currents(hardware, session)
+
+    expected = None if is_recalibration else {"q00_q01": 0.00095}
+    assert hardware.spi.currents == expected

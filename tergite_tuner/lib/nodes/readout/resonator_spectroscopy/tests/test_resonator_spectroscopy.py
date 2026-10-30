@@ -10,17 +10,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import numpy as np
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
 
-from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy import (
     analysis as resonator_analysis,
 )
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
-    ResonatorSpectroscopyQubitAnalysis,
     analyse_resonator,
     plot_resonator,
 )
@@ -76,16 +73,3 @@ def test_plot_resonator_draws_the_fit(node_data_dir):
 
     assert axis.lines
     plt.close(figure)
-
-
-def test_punchout_reuses_the_fit_through_the_qubit_analysis(node_data_dir):
-    file_path = node_data_dir / "dataset_resonator_spectroscopy_0.hdf5"
-    with xr.open_dataset(file_path) as dataset:
-        analysis = ResonatorSpectroscopyQubitAnalysis(
-            "name", [], session=SessionContext(data_dir=node_data_dir)
-        )
-        qoi = analysis.process_qubit(dataset, "yq06")
-
-    expected = analyse_resonator(_get_s21(node_data_dir), None)["frequency"].value
-    assert qoi.analysis_result["clock_freqs:readout"]["value"] == expected
-    assert np.isfinite(expected)

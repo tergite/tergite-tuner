@@ -19,19 +19,15 @@ This module exposes:
   node referenced anywhere in the pipeline. Names are kept in sync with
   :data:`DEFAULT_NODE_DAG_EDGES` below; if a node never appears in the
   dependency edges, it should not be in the enum.
-* :data:`DEFAULT_NODE_CLS_MAP` — the canonical lookup from node enum
-  member to its concrete :class:`BaseNode` subclass. ``TOF`` does not
-  appear because it has no implementation; it exists only as a
-  placeholder predecessor in the dependency graph.
-* :data:`DEFAULT_NODE_NAME_CLS_MAP` — derived view keyed by lowercase node
-  name.
+* :data:`DEFAULT_NODE_SPECS` — each node enum member's :class:`NodeSpec`.
+  ``TOF`` does not appear because it has no implementation; it exists only
+  as a placeholder predecessor in the dependency graph.
 * :data:`DEFAULT_NODE_DAG_EDGES` — the directed edges of the calibration
   DAG. Reading ``(A, B)`` as "B depends on A".
 """
 
-from typing import Mapping, Tuple, Type
+from typing import Mapping, Tuple
 
-from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes.characterization.all_xy.node import (
     ALL_XY_SPECS,
 )
@@ -47,17 +43,24 @@ from tergite_tuner.lib.nodes.characterization.t1.node import (
 from tergite_tuner.lib.nodes.characterization.t2.node import (
     T2_SPECS,
 )
-from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
-from tergite_tuner.lib.nodes.coupler.cz_chevron.node import CZChevronNode
-from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import CZLocalPhasesNode
+from tergite_tuner.lib.nodes.coupler.cz_calibration.node import (
+    CZ_CALIBRATION_SPECS,
+)
+from tergite_tuner.lib.nodes.coupler.cz_chevron.node import (
+    CZ_CHEVRON_SPECS,
+)
+from tergite_tuner.lib.nodes.coupler.cz_local_phases.node import (
+    CZ_LOCAL_PHASES_SPECS,
+)
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.node import (
-    CZParametrizationNode,
+    CZ_PARAMETRIZATION_SPECS,
 )
 from tergite_tuner.lib.nodes.coupler.spectroscopy.node import (
-    QubitSpectroscopyVsCurrentNode,
-    ResonatorSpectroscopyVsCurrentNode,
+    COUPLER_SPECTROSCOPY_SPECS,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
+from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import (
+    CZ_RB_SPECS,
+)
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.node import (
     MOTZOI_SPECS,
 )
@@ -86,7 +89,6 @@ from tergite_tuner.lib.nodes.readout.ro_frequency_optimization.node import (
 from tergite_tuner.lib.spec import NodeSpec
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
-# the nodes moved to NodeSpec; the rest are still classes in DEFAULT_NODE_CLS_MAP
 DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
     **RESONATOR_SPECTROSCOPY_SPECS,
     **RABI_SPECS,
@@ -102,36 +104,13 @@ DEFAULT_NODE_SPECS: Mapping[NodeEnum, NodeSpec] = {
     **ALL_XY_SPECS,
     **RANDOMIZED_BENCHMARKING_SPECS,
     **PURITY_BENCHMARKING_SPECS,
+    **COUPLER_SPECTROSCOPY_SPECS,
+    **CZ_LOCAL_PHASES_SPECS,
+    **CZ_RB_SPECS,
+    **CZ_CHEVRON_SPECS,
+    **CZ_CALIBRATION_SPECS,
+    **CZ_PARAMETRIZATION_SPECS,
 }
-
-DEFAULT_NODE_CLS_MAP: Mapping[NodeEnum, Type[BaseNode]] = {
-    NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT: ResonatorSpectroscopyVsCurrentNode,
-    NodeEnum.QUBIT_SPECTROSCOPY_VS_CURRENT: QubitSpectroscopyVsCurrentNode,
-    NodeEnum.COUPLER_ANTICROSSING: QubitSpectroscopyVsCurrentNode,
-    NodeEnum.CZ_PARAMETRIZATION: CZParametrizationNode,
-    NodeEnum.CZ_CHEVRON: CZChevronNode,
-    NodeEnum.CZ_CALIBRATION: CZCalibrationNode,
-    NodeEnum.CZ_LOCAL_PHASES: CZLocalPhasesNode,
-    NodeEnum.CZ_RB: CZRBNode,
-}
-"""The default mapping from :class:`NodeEnum` to its concrete :class:`BaseNode` subclass.
-
-``TOF`` is intentionally absent; it has no implementation and is only
-used as a virtual predecessor in :data:`DEFAULT_NODE_DAG_EDGES`.
-"""
-
-DEFAULT_NODE_NAME_CLS_MAP: Mapping[str, Type[BaseNode]] = {
-    member.value: cls for member, cls in DEFAULT_NODE_CLS_MAP.items()
-}
-"""Same data as :data:`DEFAULT_NODE_CLS_MAP`, keyed by the lowercase
-:class:`NodeEnum` value (``member.value``).
-
-This is the form used everywhere the calibration system needs a string
-identifier — redis hash keys, log lines, file paths. The Python class
-name (``cls.__name__``) and the class's ``name`` attribute are
-internal; they may match the lookup key but the maps are the source
-of truth for the canonical string.
-"""
 
 DEFAULT_NODE_DAG_EDGES: Tuple[Tuple[NodeEnum, NodeEnum], ...] = (
     (NodeEnum.TOF, NodeEnum.RESONATOR_SPECTROSCOPY),

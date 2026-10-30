@@ -130,8 +130,8 @@ _, results = tune_device(
 
 #### Customization of Nodes
 
-It is also possible to pass in your own implementation of the `Nodes` as long as they
-are inherited from the base nodes `BaseNode`, `QubitNode`, `CouplerNode` etc. 
+A node is a `NodeSpec`: its schedule, sweeps, analysis and the Redis fields it stores.
+You can pass in your own specs, to replace a default node or add one, with `node_specs`.
 
 You can also change the order in which the nodes run or even choose to skip some of them
 by supplying your own `ignored_nodes: tuple[NodeEnum, ...] = ...` and 
@@ -139,29 +139,21 @@ by supplying your own `ignored_nodes: tuple[NodeEnum, ...] = ...` and
 
 ```python
 
-from tergite_tuner.lib.base.node import QubitNode, BaseNode, CouplerNode
+import dataclasses
+
 from tergite_tuner import tune_device, NodeEnum
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 
 
-class CustomQubitNode(QubitNode):
-    ...
-
-
-class CustomDeviceNode(BaseNode):
-    def precompile(self, samplespace): ...
-
-    @classmethod
-    def persist_qois(cls, session: "SessionContext", node_name: str): ...
-
-
-class CustomCouplerNode(QubitNode):
+def analyse_my_way(s21, session):
     ...
 
 
 _, results = tune_device(
-    node_cls_map={
-        NodeEnum.QUBIT_01_SPECTROSCOPY: CustomQubitNode,
-        NodeEnum.COUPLER_ANTICROSSING: CustomCouplerNode,
+    node_specs={
+        NodeEnum.QUBIT_01_SPECTROSCOPY: dataclasses.replace(
+            DEFAULT_NODE_SPECS[NodeEnum.QUBIT_01_SPECTROSCOPY], analyse=analyse_my_way
+        ),
     },
     node_dag_edges=(
         (NodeEnum.PUNCHOUT, NodeEnum.TOF,),

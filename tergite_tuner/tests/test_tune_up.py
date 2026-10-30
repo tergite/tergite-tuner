@@ -19,8 +19,8 @@ from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
+    DEFAULT_NODE_SPECS,
 )
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
 from tergite_tuner.tests.utils.redis import (
@@ -79,6 +79,6 @@ def test_every_default_node_runs_in_dummy_mode(
         run_node(node, session=session, refresh_session=False)
 
     # analyses of random IQ points may fail; reaching them without raising is the check
-    # a class may save under another name than its node's (step 9.8)
-    node_name = getattr(DEFAULT_NODE_CLS_MAP.get(node), "name", node.value)
+    # a node may save under another node's name (step 9.8)
+    node_name = DEFAULT_NODE_SPECS[node].name.value
     assert (tmp_path / f"dataset_{node_name}.hdf5").exists()

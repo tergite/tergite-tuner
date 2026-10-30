@@ -15,6 +15,8 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCouplerAnalysis
+from tergite_tuner.lib.spec import is_failed
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.pytest import is_headless, is_work_in_progress
 from tergite_tuner.tests.utils.redis import loaded_redis
 
@@ -37,21 +39,16 @@ def test_cz_chevron_analysis_good_data(
 
             # Run the single coupler analysis
             analysis = CZChevronCouplerAnalysis(
-                "cz_chevron",
-                ["cz_working_frequencies", "cz_working_durations_in_ns"],
+                get_coupler_dataset(dataset, "q13_q14", "cz_chevron"),
                 session_context,
                 phase_path="via_20",
                 number_of_working_points=number_of_working_points,
             )
-            qoi = analysis.process_coupler(dataset, "q13_q14")
-            cz_working_frequencies = eval(
-                qoi.analysis_result["cz_working_frequencies"]["value"]
-            )
-            cz_working_durations_in_ns = eval(
-                qoi.analysis_result["cz_working_durations_in_ns"]["value"]
-            )
+            qoi = analysis.analyse()
+            cz_working_frequencies = eval(qoi["cz_working_frequencies"].value)
+            cz_working_durations_in_ns = eval(qoi["cz_working_durations_in_ns"].value)
 
-            assert qoi.analysis_successful
+            assert not is_failed(qoi)
             assert 715415456 in cz_working_frequencies
             assert 408 in cz_working_durations_in_ns
 
@@ -69,14 +66,14 @@ def test_cz_chevron_analysis_bad_data(redis_connection, session_context, node_da
 
             # Run the single coupler analysis
             analysis = CZChevronCouplerAnalysis(
-                "cz_chevron",
-                ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
+                get_coupler_dataset(dataset, "q14_q15", "cz_chevron"),
+                session_context,
                 phase_path="via_20",
             )
-            qoi = analysis.process_coupler(dataset, "q14_q15")
+            qoi = analysis.analyse()
 
             # Make sure that the analysis returns as unsuccessful
-            assert qoi.analysis_successful is False
+            assert is_failed(qoi)
 
 
 @pytest.mark.skipif(
@@ -97,13 +94,12 @@ def test_plotting(redis_connection, session_context, node_data_dir):
 
             # Run the single coupler analysis
             analysis = CZChevronCouplerAnalysis(
-                "cz_chevron",
-                ["cz_working_frequencies", "cz_working_durations_in_ns"],
+                get_coupler_dataset(dataset, "q13_q14", "cz_chevron"),
                 session_context,
                 phase_path="via_20",
                 number_of_working_points=number_of_working_points,
             )
-            analysis.process_coupler(dataset, "q13_q14")
+            analysis.analyse()
             analysis.plotter(figures_dictionary)
 
             assert "q13_q14" in figures_dictionary

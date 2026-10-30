@@ -14,24 +14,19 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import xarray as xr
 
 from tergite_tuner.backend import CompiledSchedule, ExtendedTransmon, configure_device
 from tergite_tuner.lib import run
 from tergite_tuner.lib.nodes import (
-    DEFAULT_NODE_CLS_MAP,
-    DEFAULT_NODE_NAME_CLS_MAP,
     DEFAULT_NODE_SPECS,
 )
-from tergite_tuner.lib.nodes.schedule_node import OuterScheduleNode
-from tergite_tuner.lib.spec import Fits, NodeSpec
+from tergite_tuner.lib.spec import Fits, NodeSpec, is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.utils.measurement import reduce_samplespace
 from tergite_tuner.utils.types.node_enum import NodeEnum
-from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -47,6 +42,14 @@ STANDARD_REDIS = get_fixture_path("redis", "standard_redis_mock.json")
 # spectroscopy, whose datasets predate the per-variable ``qubit`` attribute the node analysis
 # splits on; the Ramsey standard run, whose device values were not recorded; and the
 # anticrossing without crossings, on q16_q17, which the fixture device config lacks.
+
+
+@dataclass(frozen=True)
+class Result:
+    """An element's analysis as the goldens record it: each stored field's value and error."""
+
+    analysis_result: dict[str, dict[str, Any]]
+    analysis_successful: bool
 
 
 @dataclass(frozen=True)
@@ -144,9 +147,7 @@ RECORDED_DATASETS = {
 }
 
 
-DEFAULT_NODE_NAMES = sorted(
-    {*DEFAULT_NODE_NAME_CLS_MAP, *(node.value for node in DEFAULT_NODE_SPECS)}
-)
+DEFAULT_NODE_NAMES = sorted(node.value for node in DEFAULT_NODE_SPECS)
 TEST_QUBITS = ["q00", "q01"]
 TEST_COUPLERS = ["q00_q01"]
 
@@ -156,14 +157,10 @@ def get_compiler(
 ) -> Callable[[], CompiledSchedule]:
     """Compiles a default node over its first samplespace point on q00 and q01, its device already built."""
     ExtendedTransmon.close_all()
-    spec = DEFAULT_NODE_SPECS.get(NodeEnum(node_name))
-    if spec is None:
-        node = _get_node(node_name, session)
-        samplespace = get_first_samplespace(node)
-        return lambda: node.precompile(samplespace)
+    spec = DEFAULT_NODE_SPECS[NodeEnum(node_name)]
     device = configure_device(node_name, TEST_QUBITS, TEST_COUPLERS, session)
     sweeps = _get_first_point_sweeps(spec, session)
-    return lambda: run.compile_node(spec, device, sweeps)
+    return lambda: run.compile_node(spec, device, sweeps, session)
 
 
 def get_dataset_builder(
@@ -171,17 +168,17 @@ def get_dataset_builder(
 ) -> Callable[[], xr.Dataset]:
     """Builds a default node's dataset from its dummy acquisitions, generated beforehand."""
     ExtendedTransmon.close_all()
-    spec = DEFAULT_NODE_SPECS.get(NodeEnum(node_name))
-    if spec is None:
-        node = _get_node(node_name, session)
-        node.reduced_external_samplespace = get_first_external_point(node)
-        raw_dataset = node.generate_dummy_dataset()
-        return lambda: node.configure_dataset(raw_dataset)
+    spec = DEFAULT_NODE_SPECS[NodeEnum(node_name)]
     sweeps = _get_default_sweeps(spec, session)
     raw_dataset = run.get_dummy_dataset(
-        spec, _get_first_point_sweeps(spec, session), session
+        spec,
+        _get_first_point_sweeps(spec, session, should_include_external=True),
+        session,
     )
-    return lambda: run.get_dataset(raw_dataset, sweeps, TEST_QUBITS, spec.loops)
+    couplers = TEST_COUPLERS if spec.element == "coupler" else None
+    return lambda: run.get_dataset(
+        raw_dataset, sweeps, TEST_QUBITS, spec.loops, couplers
+    )
 
 
 def get_analyser(
@@ -189,25 +186,31 @@ def get_analyser(
     data_path: Path,
     session: "SessionContext",
     should_save_plot: bool = False,
-) -> Callable[[], dict[str, QOI]]:
+) -> Callable[[], dict[str, Result]]:
     """Analyses a recorded dataset, copied into ``data_path``, as the node's own analysis does."""
-    spec = DEFAULT_NODE_SPECS.get(golden_case.node)
+    spec = DEFAULT_NODE_SPECS[golden_case.node]
     node_name = golden_case.node.value
     copy_dataset(
         get_dataset_path(golden_case.dataset), data_path / f"dataset_{node_name}.hdf5"
     )
-    if spec is None:
-        node_cls = DEFAULT_NODE_CLS_MAP[golden_case.node]
-        return lambda: node_cls.analysis_cls(
-            name=node_name,
-            redis_fields=get_qois(node_cls),
-            session=session,
-            **golden_case.analysis_keywords,
-        ).analyze_node(data_path, save_plot=should_save_plot)
 
-    def analyse() -> dict[str, QOI]:
-        s21s = run.get_element_s21s(load_dataset(node_name, data_path))
-        fits = run.get_fits(spec, s21s, session)
+    def analyse() -> dict[str, Result]:
+        dataset = load_dataset(node_name, data_path)
+        if spec.element == "coupler":
+            s21s = run.get_coupler_datasets(dataset, node_name)
+        else:
+            s21s = run.get_element_s21s(dataset)
+        fits = {
+            element: spec.analyse(
+                s21,
+                session,
+                **(
+                    golden_case.analysis_keywords.get(element)
+                    or run.get_analysis_keywords(spec, element, session)
+                ),
+            )
+            for element, s21 in s21s.items()
+        }
         if should_save_plot:
             run.plot_elements(spec, s21s, fits, data_path, session)
         return {
@@ -241,53 +244,28 @@ def get_redis_file(golden_case: GoldenCase) -> Path:
     return redis_files[-1] if redis_files else STANDARD_REDIS
 
 
-def get_qois(node_cls: type) -> list[str]:
-    return (
-        getattr(node_cls, "qubit_qois", None)
-        or getattr(node_cls, "coupler_qois", None)
-        or []
-    )
-
-
-def get_first_samplespace(node) -> dict:
-    """The schedule's own sweeps, plus the first point of an outer sweep, which needs one compile each."""
-    if not issubclass(node.measurement_type_cls, OuterScheduleNode):
-        return node.schedule_samplespace
-    first_point = (0,) * len(node.outer_schedule_samplespace)
-    return node.schedule_samplespace | reduce_samplespace(
-        first_point, node.outer_schedule_samplespace
-    )
-
-
-def get_first_external_point(node) -> dict:
-    """The first point of an external sweep, as the measurement loop sets it before each run."""
-    first_point = (0,) * len(node.external_samplespace)
-    return reduce_samplespace(first_point, node.external_samplespace)
-
-
-def _get_node(node_name: str, session: "SessionContext"):
-    return DEFAULT_NODE_NAME_CLS_MAP[node_name](
-        all_qubits=TEST_QUBITS, couplers=TEST_COUPLERS, session=session
-    )
-
-
 def _get_default_sweeps(spec: NodeSpec, session: "SessionContext") -> run.Sweeps:
     return run.get_sweeps(spec, session.model_copy(update={"user_samplespace": {}}))
 
 
-def _to_qoi(spec: NodeSpec, fits: Fits | None) -> QOI:
+def _to_qoi(spec: NodeSpec, fits: Fits | None) -> Result:
     if fits is None:
-        return QOI({}, False)
+        return Result({}, False)
     results = {
         spec.qois[name]: {"value": fit.value, "error": fit.error}
         for name, fit in fits.items()
         if name in spec.qois
     }
-    return QOI(results, True)
+    return Result(results, not is_failed(fits))
 
 
-def _get_first_point_sweeps(spec: NodeSpec, session: "SessionContext") -> run.Sweeps:
-    """The schedule's own sweeps, plus the first point of its outer sweeps."""
+def _get_first_point_sweeps(
+    spec: NodeSpec, session: "SessionContext", should_include_external: bool = False
+) -> run.Sweeps:
+    """The schedule's own sweeps, plus the first point of its outer sweeps, and of its external ones if ``should_include_external``."""
     default_session = session.model_copy(update={"user_samplespace": {}})
-    outer_sweeps = run.get_outer_sweeps(spec, default_session)
-    return _get_default_sweeps(spec, session) | run.get_points(outer_sweeps)[0]
+    sweeps = _get_default_sweeps(spec, session)
+    sweeps |= run.get_points(run.get_outer_sweeps(spec, default_session))[0]
+    if should_include_external:
+        sweeps |= run.get_points(run.get_external_sweeps(spec, default_session))[0]
+    return sweeps

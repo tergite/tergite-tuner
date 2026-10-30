@@ -11,8 +11,11 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import pytest
+
 from tergite_tuner.config.types import NodeConfig
-from tergite_tuner.lib.nodes import DEFAULT_NODE_NAME_CLS_MAP
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
+from tergite_tuner.lib.run import get_elements, mark_not_calibrated
 from tergite_tuner.storage.redis.utils import (
     populate_initial_parameters,
     populate_node_parameters,
@@ -90,32 +93,20 @@ def test_revert_node_parameters(redis_connection, session_context):
     assert reset_duration_redis == initial_reset_value
 
 
-def test_persist_qois(redis_connection, session_context):
-    """
-    Iterate over every registered node and check whether it correctly
-    pushes its QOI placeholders to redis.
-    """
-
+@pytest.mark.parametrize("node", list(DEFAULT_NODE_SPECS), ids=lambda node: node.value)
+def test_every_node_marks_its_elements_not_calibrated(
+    node, redis_connection, session_context
+):
     redis_connection.flushall()
-    assert not redis_connection.keys()
+    session = session_context.model_copy(
+        update={"qubits": ["q00", "q01"], "couplers": ["q00_q01"]}
+    )
+    elements = get_elements(DEFAULT_NODE_SPECS[node], session)
 
-    for node_name, node_cls in DEFAULT_NODE_NAME_CLS_MAP.items():
-        redis_connection.flushall()
-        assert not redis_connection.keys()
+    mark_not_calibrated(node.value, elements, session)
 
-        session_context.qubits = ["q00", "q01"]
-        session_context.couplers = ["q00_q01"]
-        node_cls.reset_qois(session_context, node_name=node_name)
-
-        if hasattr(node_cls, "qubit_qois") and node_cls.qubit_qois is not None:
-            for qubit_qoi in node_cls.qubit_qois:
-                assert redis_connection.hget("cs:q00", node_name) == "not_calibrated"
-
-        if hasattr(node_cls, "coupler_qois") and node_cls.coupler_qois is not None:
-            for coupler_qoi in node_cls.coupler_qois:
-                assert (
-                    redis_connection.hget("cs:q00_q01", node_name) == "not_calibrated"
-                )
+    for element in elements:
+        assert redis_connection.hget(f"cs:{element}", node.value) == "not_calibrated"
 
 
 def test_node_parameters_of_one_qubit_override_all(redis_connection, session_context):

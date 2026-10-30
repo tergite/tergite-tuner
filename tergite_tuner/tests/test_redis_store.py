@@ -23,7 +23,6 @@ from typing import Any, Dict, Literal
 import pytest
 
 from tergite_tuner.storage.redis import RedisStore
-from tergite_tuner.utils.types.qoi import QOI
 
 _ROUND_TRIP_VALUES = [
     0,
@@ -61,19 +60,7 @@ def test_save_parameters_in_transmon_via_redis_store(redis_connection, store):
     contract that lets the store drop in for the legacy helpers) see the
     expected values."""
     qubit = "q01"
-    redis_fields = ["resonator_minimum"]
-    qoi = QOI(
-        analysis_result={
-            "resonator_minimum": {"value": 3.91e9, "error": 0.01},
-        },
-        analysis_successful=True,
-    )
-
-    fields: dict = {}
-    for name, result in qoi.analysis_result.items():
-        assert name in redis_fields
-        fields[name] = result["value"]
-        fields[f"{name}_error"] = result["error"]
+    fields = {"resonator_minimum": 3.91e9, "resonator_minimum_error": 0.01}
     store.save_many({"transmons": {qubit: fields}})
     store.save_field("cs", qubit, "resonator_spectroscopy", "calibrated")
 

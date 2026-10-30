@@ -19,7 +19,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 - Waited for a schedule's estimated duration plus `cluster_timeout` before raising, instead of a fixed hour, and dropped the progress bar, which only slept for the estimate
 - Replaced `tergite_tuner.tuner.HardwareManager` and the nodes' `lab_instr_coordinator` and `spi_manager` with `tergite_tuner.backend.Hardware`, which a node reaches as `node.hardware`
 - Gave the dummy cluster the modules in the cluster config's `hardware_description`; it had 15 QCM-RF and 2 QRM-RF modules whatever the config said
-- Ran the three resonator spectroscopy nodes from `NodeSpec`s in `tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, removing `ResonatorSpectroscopyNode`, `ResonatorSpectroscopy1Node` and `ResonatorSpectroscopy2Node`; a missing calibration status raises `MissingCalibrationStatusError`, a `ValueError`
+- [BREAKING] Defined each node as a `NodeSpec` in `tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, replacing the node classes, `BaseNode`, `QubitNode`, `CouplerNode`, the analysis base classes and `DEFAULT_NODE_CLS_MAP`; custom nodes go in the session's `node_specs`, which replaces `node_cls_map`
+- Raised `MissingCalibrationStatusError`, a `ValueError`, for a node with no calibration status, and skipped the pause between T1 and T2 repetitions on a dummy cluster
 - [BREAKING] Requires Python 3.13 or later, as tergite-backend does, instead of 3.12; pip refused the package on 3.13 before
 
 ### Fixed

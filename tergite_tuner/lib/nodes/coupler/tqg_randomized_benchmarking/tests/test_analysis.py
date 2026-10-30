@@ -18,6 +18,8 @@ import xarray as xr
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBCouplerAnalysis,
 )
+from tergite_tuner.lib.spec import is_failed
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.redis import loaded_redis
 
 _REDIS_DATA_FILENAME = "redis-2026-03-05-10-55-35.json"
@@ -28,12 +30,15 @@ def test_cz_rb(redis_connection, session_context, node_data_dir):
     with loaded_redis(redis_connection, redis_data_file):
         file_path = node_data_dir / "dataset_cz_rb.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
-            qoi = analysis.process_coupler(dataset, "q12_q13")
+            analysis = CZRBCouplerAnalysis(
+                get_coupler_dataset(dataset, "q12_q13", "cz_rb"),
+                session_context,
+            )
+            qoi = analysis.analyse()
 
-            cz_fidelity = qoi.analysis_result["cz_fidelity"]["value"]
+            cz_fidelity = qoi["cz_fidelity"].value
 
-            assert qoi.analysis_successful
+            assert not is_failed(qoi)
             assert pytest.approx(cz_fidelity) == 0.95848
 
 
@@ -45,11 +50,14 @@ def test_plotting(redis_connection, session_context, node_data_dir):
     with loaded_redis(redis_connection, redis_data_file):
         file_path = node_data_dir / "dataset_cz_rb.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            analysis = CZRBCouplerAnalysis("cz_rb", ["cz_fidelity"], session_context)
+            analysis = CZRBCouplerAnalysis(
+                get_coupler_dataset(dataset, "q12_q13", "cz_rb"),
+                session_context,
+            )
 
             figures_dictionary = {}
 
-            analysis.process_coupler(dataset, "q12_q13")
+            analysis.analyse()
             analysis.plotter(figures_dictionary)
 
             assert "q12_q13" in figures_dictionary

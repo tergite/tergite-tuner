@@ -16,11 +16,10 @@ import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
 
-from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.utils.types.qoi import QOI
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 
 RES_COUPLER_QOIS = [
     "control_resonator_crossing_points",
@@ -43,15 +42,6 @@ _COUPLER_CROSSINGS = [
 ]
 
 
-def test_can_create_resonator_spec_vs_curr_coupler_analysis(session_context):
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "name", ["redis_field"], session=session_context
-    )
-    assert isinstance(a, ResonatorSpectroscopyVsCurrentCouplerAnalysis)
-    assert isinstance(a, BaseCouplerAnalysis)
-    assert isinstance(a, BaseAnalysis)
-
-
 @pytest.mark.parametrize("coupler, q1_crossings, q2_crossings", _COUPLER_CROSSINGS)
 def test_get_crossings(
     session_context,
@@ -67,11 +57,9 @@ def test_get_crossings(
         ds = xr.merge(ds[var] for var in [f"y{q1}", f"y{q2}"])
         ds.attrs["coupler"] = coupler
         a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-            "name",
-            RES_COUPLER_QOIS,
-            session_context,
+            get_coupler_dataset(ds, coupler, "name"), session_context
         )
-        qoi = a.process_coupler(ds, coupler)
+        qoi = a.analyse()
 
         q1_crossings = _get_crossing_for_qubit(qoi, q1)
         q2_crossings = _get_crossing_for_qubit(qoi, q2)
@@ -87,11 +75,9 @@ def test_coupler_plot_is_created(node_data_dir, session_context, redis_connectio
         ds = xr.merge(ds[var] for var in ["yq06", "yq07"])
         ds.attrs["coupler"] = coupler
         a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-            "name",
-            RES_COUPLER_QOIS,
-            session_context,
+            get_coupler_dataset(ds, coupler, "name"), session_context
         )
-        a.process_coupler(ds, coupler)
+        a.analyse()
 
         figure_path = node_data_dir / "name.png"
         figure_path.unlink(missing_ok=True)
@@ -110,8 +96,8 @@ def test_coupler_plot_is_created(node_data_dir, session_context, redis_connectio
             assert img.format == "PNG", "File should be a PNG image"
 
 
-def _get_crossing_for_qubit(qoi: QOI, qubit: str = "q06"):
-    results = qoi.analysis_result
+def _get_crossing_for_qubit(qoi: dict, qubit: str = "q06"):
+    results = qoi
     qubit_number = int(re.sub("[^0-9]", "", qubit))
     if qubit_number % 2 == 0:
         crossing_points = "control_resonator_crossing_points"
@@ -119,5 +105,5 @@ def _get_crossing_for_qubit(qoi: QOI, qubit: str = "q06"):
         crossing_points = "target_resonator_crossing_points"
     else:
         raise ValueError("Invalid qubit number")
-    crossings = results[crossing_points]["value"]
+    crossings = results[crossing_points].value
     return crossings

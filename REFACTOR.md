@@ -450,6 +450,15 @@ class NodeSpec:
    - the analysis base classes;
    - `NodeManager`, whose `inspect_node` becomes the `run_node` composition above.
 
+**Built.** All 34 node entries are `NodeSpec`s, run by `lib/run.py`, and the class hierarchy is gone. The compiled-program and reanalysis goldens did not move. Where it departs from the plan:
+- **`node_cls_map` was deleted, not deprecated** (decided with the user): custom nodes go in the session's `node_specs`. tergite-backend's test helper, which read the node classes, moves to the specs in the same change.
+- **`NodeSpec` has more than the plan's fields**, each added by the first node that needed it: `get_dummy_s21`, `loops`, `plot_rows`, `save_details` (punchout's and the coupler nodes' own figures), `qubit_sweeps` (a coupler node's settings swept per qubit), `set_external`/`reset_external`, and `get_schedule_keywords`/`get_analysis_keywords` (values read from Redis).
+- **Analyses return fits, but the large ones keep their classes**: the readout amplitude, benchmarking and coupler analyses sit on small `ElementAnalysis`/`CouplerAnalysis` bases that take one element's data, and still search coordinates by substring. Step 9 turns them into functions. The other analyses are functions, which find their coordinates with `get_coord_name`, and each 0-1/1-2 pair is one function.
+- **A failed analysis's fits are kept, marked `failed`**, so its values and figures can be inspected; nothing failed is stored.
+- **Dummy models live in each node's module**, seeded or noiseless, not in `dev/dummy.py`; dummy mode no longer sleeps between T1 and T2 repetitions.
+- **`BaseMeasurement` stays**: the schedules are still the measurement classes, which `get_class_schedule` wraps.
+- The alias of step 9.8 remains: `QUBIT_SPECTROSCOPY_VS_CURRENT` runs coupler anticrossing's spec, under its name.
+
 ## Step 7: configuration, the session and storage
 
 Today `SessionContext` is passed to every function, and it holds:

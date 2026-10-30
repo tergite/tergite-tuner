@@ -19,13 +19,12 @@ import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
 
-from tergite_tuner.lib.base.analysis import BaseAnalysis, BaseCouplerAnalysis
-from tergite_tuner.lib.base.node import qoi_to_redis_record
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
     CouplerAnticrossingAnalysis,
     ResonatorSpectroscopyVsCurrentCouplerAnalysis,
 )
-from tergite_tuner.utils.types.qoi import QOI
+from tergite_tuner.lib.run import get_redis_record
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 
 _RES_COUPLER_QOIS = [
     "control_resonator_crossing_points",
@@ -53,28 +52,20 @@ _COUPLER_CROSSINGS = [
 ]
 
 
-def test_coupler_anticrossing_analysis_create(session_context):
-    a = CouplerAnticrossingAnalysis("name", ["redis_field"], session=session_context)
-    assert isinstance(a, CouplerAnticrossingAnalysis)
-    assert isinstance(a, BaseCouplerAnalysis)
-    assert isinstance(a, BaseAnalysis)
-
-
 @pytest.mark.parametrize("coupler, q1_crossings, q2_crossings", _COUPLER_CROSSINGS)
 def test_get_crossings(
     coupler, q1_crossings, q2_crossings, session_context, node_data_dir
 ):
     ds_qu, ds_res = _get_dataset_for_coupler(coupler, node_data_dir)
-    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        "resonator_spectroscopy_vs_current",
-        _RES_COUPLER_QOIS,
-        session_context,
-    )
     q1, q2 = coupler.split("_")
     session_context.redis.hset(f"couplers:{coupler}", "control_qubit", q1)
     session_context.redis.hset(f"couplers:{coupler}", "target_qubit", q2)
-    qoi = a.process_coupler(ds_res, coupler)
-    record = qoi_to_redis_record(qoi, redis_fields=_RES_COUPLER_QOIS)
+    a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        get_coupler_dataset(ds_res, coupler, "resonator_spectroscopy_vs_current"),
+        session_context,
+    )
+    qoi = a.analyse()
+    record = get_redis_record({field: field for field in _RES_COUPLER_QOIS}, qoi)
     session_context.redis_store.save_many(
         {
             "couplers": {coupler: record},
@@ -82,8 +73,10 @@ def test_get_crossings(
         }
     )
 
-    b = CouplerAnticrossingAnalysis("name", _QUBIT_COUPLER_QOIS, session_context)
-    qoi = b.process_coupler(ds_qu, coupler)
+    b = CouplerAnticrossingAnalysis(
+        get_coupler_dataset(ds_qu, coupler, "name"), session_context
+    )
+    qoi = b.analyse()
 
     q1_actual_crossings = _get_crossing_for_qubit(qoi, q1)
     q2_actual_crossings = _get_crossing_for_qubit(qoi, q2)
@@ -98,12 +91,10 @@ def test_coupler_plot_is_created(session_context, node_data_dir):
     ds_qu, ds_res = _get_dataset_for_coupler(coupler, node_data_dir)
     name = "resonator_spectroscopy_vs_current"
     a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
-        name,
-        _RES_COUPLER_QOIS,
-        session_context,
+        get_coupler_dataset(ds_res, coupler, "name"), session_context
     )
-    qoi = a.process_coupler(ds_res, coupler)
-    redis_value = qoi_to_redis_record(qoi, redis_fields=_RES_COUPLER_QOIS)
+    qoi = a.analyse()
+    redis_value = get_redis_record({field: field for field in _RES_COUPLER_QOIS}, qoi)
     session_context.redis_store.save_many(
         {
             "couplers": {coupler: {name: redis_value}},
@@ -112,11 +103,10 @@ def test_coupler_plot_is_created(session_context, node_data_dir):
     )
 
     b = CouplerAnticrossingAnalysis(
-        "qubit_spectroscopy_vs_current",
-        _QUBIT_COUPLER_QOIS,
+        get_coupler_dataset(ds_qu, coupler, "qubit_spectroscopy_vs_current"),
         session_context,
     )
-    qoi = b.process_coupler(ds_qu, coupler)
+    qoi = b.analyse()
 
     figure_path = node_data_dir / "qubit_spectroscopy_vs_current.png"
     figure_path.unlink(missing_ok=True)
@@ -142,8 +132,10 @@ def test_no_crossings_for_q16_q17(session_context, node_data_dir):
         coupler = "q16_q17"
         ds = xr.merge(ds[var] for var in ["yq16", "yq17"])
         ds.attrs["coupler"] = coupler
-        a = CouplerAnticrossingAnalysis("name", _QUBIT_COUPLER_QOIS, session_context)
-        qoi = a.process_coupler(ds, coupler)
+        a = CouplerAnticrossingAnalysis(
+            get_coupler_dataset(ds, coupler, "name"), session_context
+        )
+        qoi = a.analyse()
 
         q16_crossings = _get_crossing_for_qubit(qoi, "q16")
         q17_crossings = _get_crossing_for_qubit(qoi, "q17")
@@ -151,8 +143,8 @@ def test_no_crossings_for_q16_q17(session_context, node_data_dir):
         assert len(q17_crossings) == 0
 
 
-def _get_crossing_for_qubit(qoi: QOI, qubit: str = "q06"):
-    results = qoi.analysis_result
+def _get_crossing_for_qubit(qoi: dict, qubit: str = "q06"):
+    results = qoi
     qubit_number = int(re.sub("[^0-9]", "", qubit))
     if qubit_number % 2 == 0:
         crossing_points = "control_qubit_crossing_points"
@@ -160,7 +152,7 @@ def _get_crossing_for_qubit(qoi: QOI, qubit: str = "q06"):
         crossing_points = "target_qubit_crossing_points"
     else:
         raise ValueError("Invalid qubit number")
-    crossings = results[crossing_points]["value"]
+    crossings = results[crossing_points].value
     return crossings
 
 

@@ -14,8 +14,6 @@
 import pandas
 import xarray as xr
 
-from tergite_tuner.backend import ExtendedTransmon
-from tergite_tuner.lib.nodes.coupler.cz_calibration.node import CZCalibrationNode
 from tergite_tuner.storage.fs.dataset import save_dataset
 from tergite_tuner.tests.utils.fixtures import (
     get_fixture_path,
@@ -23,7 +21,7 @@ from tergite_tuner.tests.utils.fixtures import (
 from tergite_tuner.tests.utils.goldens import get_dataset_builder
 from tergite_tuner.tests.utils.redis import loaded_redis
 
-_REDIS_FILE = get_fixture_path("redis/redis-2025-12-25-12-40-59.json")
+_REDIS_FILE = get_fixture_path("redis", "standard_redis_mock.json")
 
 
 def test_save_dataset(tmp_path, session_context):
@@ -43,23 +41,15 @@ def test_save_dataset_with_working_points(tmp_path, redis_connection, session_co
     for nodes like cz calibration where two coords are packed into a Multindex object
     """
     with loaded_redis(redis_connection, _REDIS_FILE):
-        ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
-        coupler = "q13_q14"
-        couplers = [coupler]
-        node = CZCalibrationNode(
-            session=session_context, all_qubits=["q13", "q14"], couplers=couplers
-        )
-
-        dummy_raw_dataset_1 = node.generate_dummy_dataset()
-        result_dataset_1 = node.configure_dataset(dummy_raw_dataset_1)
+        build_dataset = get_dataset_builder("cz_calibration", session_context)
+        result_dataset_1 = build_dataset()
         multi_index = pandas.MultiIndex.from_tuples([(7e8, 200e-9)], names=["l1", "l2"])
         result_dataset_1 = result_dataset_1.expand_dims({"working_points": multi_index})
         result_dataset_1 = result_dataset_1.assign_coords(
             {"working_points": ("working_points", multi_index)}
         )
 
-        dummy_raw_dataset_2 = node.generate_dummy_dataset()
-        result_dataset_2 = node.configure_dataset(dummy_raw_dataset_2)
+        result_dataset_2 = build_dataset()
         multi_index = pandas.MultiIndex.from_tuples([(8e8, 250e-9)], names=["l1", "l2"])
         result_dataset_2 = result_dataset_2.expand_dims({"working_points": multi_index})
         result_dataset_2 = result_dataset_2.assign_coords(

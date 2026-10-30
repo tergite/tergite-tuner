@@ -12,22 +12,25 @@
 # that they have been altered from the originals.
 
 
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray
 
-from tergite_tuner.lib.base.analysis import BaseAllCouplersAnalysis, BaseCouplerAnalysis
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.analysis import (
     QubitSpectroscopyMaxThresholdQubitAnalysis,
 )
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
-    ResonatorSpectroscopyQubitAnalysis,
+    fit_resonator,
 )
-from tergite_tuner.storage.fs.dataset import to_real_dataset
-from tergite_tuner.utils.types.qoi import QOI
+from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
+
+if TYPE_CHECKING:
+    pass
 
 
-class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
+class CouplerAnticrossingAnalysis(CouplerAnalysis):
     """
     This class analyzes the qubit spectroscopy data as a function of the current for a coupler.
     """
@@ -113,7 +116,7 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
             detected_currents.append(current)
         return detected_frequencies, detected_currents
 
-    def analyze_coupler(self):
+    def analyse(self) -> Fits | None:
         for coord in self.dataset[self.data_var].coords:
             if "frequencies" in coord:
                 self.frequencies = coord
@@ -167,8 +170,7 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
             },
         }
 
-        qoi = QOI(analysis_result, analysis_succesful)
-        return qoi
+        return get_fits_from_result(analysis_result, analysis_succesful, self)
 
     def plotter(self, figures_dictionary: dict[str, list]):
         """
@@ -216,7 +218,7 @@ class CouplerAnticrossingAnalysis(BaseCouplerAnalysis):
         return
 
 
-class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
+class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
     """
     This class analyzes the resonator spectroscopy data as a function of the current for a coupler.
     """
@@ -226,14 +228,8 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
         detected_currents = []
         for current in self.dc_currents:
             darray = res_specs_dataarray.sel({self.current_coord: current})
-            real_ds = to_real_dataset(darray.to_dataset())
-            real_ds = real_ds.drop_vars(self.current_coord)
-            freq_analysis = ResonatorSpectroscopyQubitAnalysis(
-                self.name, (), session=self.session
-            )
-            resonator_frequency = freq_analysis.process_qubit(
-                real_ds, self.data_var[1:]
-            ).analysis_result["clock_freqs:readout"]["value"]
+            frequencies = darray.coords[darray.dims[0]].values
+            resonator_frequency = fit_resonator(frequencies, darray.values).frequency
             detected_frequencies.append(resonator_frequency)
             detected_currents.append(current)
         return detected_frequencies, detected_currents
@@ -303,7 +299,7 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
 
         return crossing_currents
 
-    def analyze_coupler(self):
+    def analyse(self) -> Fits | None:
         """
         This function analyzes the coupler data to find crossing currents for both qubits.
         """
@@ -350,8 +346,7 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
                 "error": 0,
             },
         }
-        qoi = QOI(analysis_result, analysis_succesful)
-        return qoi
+        return get_fits_from_result(analysis_result, analysis_succesful, self)
 
     def plotter(self, figures_dictionary):
         """
@@ -396,19 +391,3 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(BaseCouplerAnalysis):
         figures_list.append(fig)
         figures_dictionary[self.coupler] = figures_list
         return
-
-
-class ResonatorSpectroscopyVsCurrentNodeAnalysis(BaseAllCouplersAnalysis):
-    """
-    This class analyzes the resonator spectroscopy data as a function of the current for all coupler.
-    """
-
-    single_coupler_analysis_obj = ResonatorSpectroscopyVsCurrentCouplerAnalysis
-
-
-class CouplerAnticrossingNodeAnalysis(BaseAllCouplersAnalysis):
-    """
-    This class analyzes the qubit spectroscopy data as a function of the current for all coupler.
-    """
-
-    single_coupler_analysis_obj = CouplerAnticrossingAnalysis

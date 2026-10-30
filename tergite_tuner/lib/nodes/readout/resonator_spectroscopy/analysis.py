@@ -20,11 +20,9 @@ import numpy as np
 import xarray as xr
 from matplotlib.axes import Axes
 
-from tergite_tuner.lib.base.analysis import BaseQubitAnalysis
 from tergite_tuner.lib.spec import Fit, Fits
 from tergite_tuner.lib.utils import fitting_models as fm
 from tergite_tuner.utils.logging import logger
-from tergite_tuner.utils.types.qoi import QOI
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
@@ -122,42 +120,3 @@ def plot_resonator(
     axis.set_ylabel("|S21| (V)")
     axis.legend()
     axis.grid()
-
-
-class ResonatorSpectroscopyQubitAnalysis(BaseQubitAnalysis):
-    """A resonator fit for the analyses of punchout and resonator spectroscopy vs current."""
-
-    def analyse_qubit(self):
-        coord_name = list(self.coord.keys())[0]
-        self.frequencies = self.dataset.coords[coord_name].values
-        if not isinstance(self.S21, xr.Dataset):
-            raise TypeError("Expected self.S21 to be an xarray.Dataset")
-        self.s21_values = self.S21[list(self.S21.data_vars)[0]].values
-
-        fit = fit_resonator(self.frequencies, self.s21_values)
-        self.fitting_model = None if fit is None else fit.result
-        if fit is None:
-            return QOI({}, False)
-        self.minimum_freq = fit.frequency
-        analysis_result = {
-            "clock_freqs:readout": {"value": fit.frequency, "error": 0},
-            "Ql": {"value": fit.Ql, "error": 0},
-            "resonator_minimum": {"value": fit.minimum, "error": 0},
-        }
-        return QOI(analysis_result, True)
-
-    def plotter(self, ax):
-        if self.fitting_model is not None and self.fitting_model.success:
-            self.fitting_model.plot_fit(ax, numpoints=400, xlabel=None, title=None)
-            ax.axvline(
-                self.minimum_freq,
-                c="blue",
-                ls="solid",
-                label=f"f = {self.minimum_freq:.6E}",
-            )
-        else:
-            ax.plot(self.frequencies, np.abs(self.s21_values))
-        ax.set_xlabel("Frequency (Hz)")
-        ax.set_ylabel("|S21| (V)")
-        ax.legend()
-        ax.grid()

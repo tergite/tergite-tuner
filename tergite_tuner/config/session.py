@@ -40,7 +40,6 @@ from typing import (
     Optional,
     Self,
     Tuple,
-    Type,
     TypedDict,
     Union,
 )
@@ -66,10 +65,8 @@ from tergite_tuner.config.types import (
     NodeConfig,
     SpiConfig,
 )
-from tergite_tuner.lib.base.node import BaseNode
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
     NodeSpec,
 )
@@ -111,7 +108,6 @@ class SessionOptions(TypedDict, total=False):
     node_config: NodeConfig | Path | str
     spi_config: Optional[SpiConfig] | Path | str
     cluster_config: Optional[QbloxHardwareCompilationConfig] | Path | str
-    node_cls_map: Mapping[NodeEnum, Type[BaseNode]]
     node_specs: Mapping[NodeEnum, NodeSpec]
     ignored_nodes: Tuple[NodeEnum, ...]
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...]
@@ -187,11 +183,9 @@ class SessionContext(BaseModel):
         ignored_nodes: the nodes that should not be included in the final DAG
             even if there are nodes that depend on them. Defaults to
             :data:`tergite_tuner.lib.nodes.DEFAULT_IGNORED_NODES`
-        node_cls_map: the mapping from :class:`NodeEnum` to its
-            concrete :class:`BaseNode` subclass so that the DAG of NodeEnum's can be translated
-            to actual callables. Defaults to :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_CLS_MAP`.
         node_specs: nodes to run in place of the defaults in
             :data:`tergite_tuner.lib.nodes.DEFAULT_NODE_SPECS`, or in addition to them.
+            A node replaced here must keep its node's name.
         fixed_duration_couplers: the couplers with a fixed duration working points for cz calibration.
         reverse_phase_qubits: the qubits which have the reverse of the expected phase when attached
             to a coupler
@@ -222,7 +216,6 @@ class SessionContext(BaseModel):
     node_config: NodeConfig = Field(default_factory=NodeConfig)
     spi_config: Optional[SpiConfig] = None
     cluster_config: Optional[QbloxHardwareCompilationConfig] = None
-    node_cls_map: Mapping[NodeEnum, Type[BaseNode]] = DEFAULT_NODE_CLS_MAP
     node_specs: Mapping[NodeEnum, NodeSpec] = {}
     ignored_nodes: Tuple[NodeEnum, ...] = DEFAULT_IGNORED_NODES
     node_dag_edges: Tuple[Tuple[NodeEnum, NodeEnum], ...] = DEFAULT_NODE_DAG_EDGES

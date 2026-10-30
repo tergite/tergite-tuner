@@ -17,11 +17,16 @@ import shutil
 
 import xarray as xr
 
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
     CZParametrizationCouplerAnalysis,
-    CZParametrizationNodeAnalysis,
 )
+from tergite_tuner.lib.run import get_coupler_datasets
+from tergite_tuner.lib.spec import is_failed, save_coupler_figures
+from tergite_tuner.storage.fs.dataset import load_dataset
+from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.redis import loaded_redis
+from tergite_tuner.utils.types.node_enum import NodeEnum
 
 _REDIS_DATA_FILENAME = "redis-export-2025-12-16.json"
 
@@ -41,23 +46,16 @@ def test_cz_parametrization_analysis_good_data(
 
             # Run the single coupler analysis
             analysis = CZParametrizationCouplerAnalysis(
-                "cz_parametrization",
-                ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
+                get_coupler_dataset(dataset, coupler, "cz_parametrization"),
                 session_context,
                 phase_path="via_20",
             )
-            qoi = analysis.process_coupler(dataset, coupler)
+            qoi = analysis.analyse()
 
             # Compare the output values
-            assert math.isclose(
-                qoi.analysis_result["cz_pulse_frequency"]["value"], 415004736.84210527
-            )
-            assert math.isclose(
-                qoi.analysis_result["cz_pulse_amplitude"]["value"], 0.28448275862068967
-            )
-            assert math.isclose(
-                qoi.analysis_result["parking_current"]["value"], 0.0006400000000000002
-            )
+            assert math.isclose(qoi["cz_pulse_frequency"].value, 415004736.84210527)
+            assert math.isclose(qoi["cz_pulse_amplitude"].value, 0.28448275862068967)
+            assert math.isclose(qoi["parking_current"].value, 0.0006400000000000002)
 
 
 def test_cz_parametrization_analysis_bad_data(
@@ -75,15 +73,14 @@ def test_cz_parametrization_analysis_bad_data(
 
             # Run the single coupler analysis
             analysis = CZParametrizationCouplerAnalysis(
-                "cz_parametrization",
-                ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
+                get_coupler_dataset(dataset, coupler, "cz_parametrization"),
                 session_context,
                 phase_path="via_20",
             )
-            qoi = analysis.process_coupler(dataset, coupler)
+            qoi = analysis.analyse()
 
             # Make sure that the analysis returns as unsuccessful
-            assert qoi.analysis_successful is False
+            assert is_failed(qoi)
 
 
 def test_plotting(redis_connection, session_context, tmp_path, node_data_dir):
@@ -100,13 +97,13 @@ def test_plotting(redis_connection, session_context, tmp_path, node_data_dir):
 
         coupler = "q14_q15"
         # Run the node analysis
-        analysis = CZParametrizationNodeAnalysis(
-            "cz_parametrization",
-            ["cz_pulse_frequency", "cz_pulse_amplitude", "parking_current"],
-            session=session_context,
-            **{coupler: {"phase_path": "via_20"}},
+        dataset = get_coupler_datasets(
+            load_dataset("cz_parametrization", tmp_path), "cz_parametrization"
+        )[coupler]
+        fits = DEFAULT_NODE_SPECS[NodeEnum.CZ_PARAMETRIZATION].analyse(
+            dataset, session_context, phase_path="via_20"
         )
-        analysis.analyze_node(tmp_path, save_plot=True)
+        save_coupler_figures(dataset, fits, tmp_path, session_context)
 
         # Check whether output images exist
         for i in range(5):

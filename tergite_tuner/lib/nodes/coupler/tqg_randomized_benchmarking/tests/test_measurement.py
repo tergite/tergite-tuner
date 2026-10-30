@@ -14,14 +14,13 @@
 import numpy as np
 import pytest
 
-from tergite_tuner.backend import ExtendedTransmon
+from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking import (
     measurement as tqg_measurement,
 )
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
 )
-from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.node import CZRBNode
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.utils.two_qubit_clifford_group import (
     TwoQubitClifford,
 )
@@ -36,9 +35,9 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
         couplers = ["q13_q14"]
         clifford_gate_index = 9799
 
-        node = CZRBNode(all_qubits=qubits, couplers=couplers, session=session_context)
-        transmons_dict = {qubit: node.device.get_element(qubit) for qubit in qubits}
-        edges_dict = {coupler: node.device.get_edge(coupler) for coupler in couplers}
+        device = configure_device("cz_rb", qubits, couplers, session_context)
+        transmons_dict = {qubit: device.get_element(qubit) for qubit in qubits}
+        edges_dict = {coupler: device.get_edge(coupler) for coupler in couplers}
         cz_rb_measurement = CZRBMeasurement(
             transmons=transmons_dict, couplers=edges_dict
         )
@@ -78,9 +77,9 @@ def _get_rb_measurement(redis_connection, session_context, node_data_dir, couple
     with loaded_redis(redis_connection, redis_data_file):
         ExtendedTransmon.close_all()
         qubits = sorted({q for coupler in couplers for q in coupler.split("_")})
-        node = CZRBNode(all_qubits=qubits, couplers=couplers, session=session_context)
-        transmons = {qubit: node.device.get_element(qubit) for qubit in qubits}
-        edges = {coupler: node.device.get_edge(coupler) for coupler in couplers}
+        device = configure_device("cz_rb", qubits, couplers, session_context)
+        transmons = {qubit: device.get_element(qubit) for qubit in qubits}
+        edges = {coupler: device.get_edge(coupler) for coupler in couplers}
     return CZRBMeasurement(transmons=transmons, couplers=edges)
 
 

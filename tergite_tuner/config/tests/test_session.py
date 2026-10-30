@@ -34,7 +34,6 @@ from tergite_tuner.config.types import (
 )
 from tergite_tuner.lib.nodes import (
     DEFAULT_IGNORED_NODES,
-    DEFAULT_NODE_CLS_MAP,
     DEFAULT_NODE_DAG_EDGES,
     DEFAULT_NODE_SPECS,
     NodeEnum,
@@ -316,7 +315,6 @@ def test_session_loads_node_vars_from_py_objects():
 def test_default_session_has_default_node_props():
     """default session has the default node vars."""
     session = SessionContext()
-    assert session.node_cls_map == DEFAULT_NODE_CLS_MAP
     assert session.node_specs == {}
     assert session.ignored_nodes == DEFAULT_IGNORED_NODES
     assert session.node_dag_edges == DEFAULT_NODE_DAG_EDGES
