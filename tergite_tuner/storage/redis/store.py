@@ -384,7 +384,7 @@ class RedisStore:
             try:
                 record = self._find_by_hash_key(key)
                 collection, pk = key.split(":", maxsplit=1)  # type: _Collection, str
-            except (KeyError, ValueError) as e:
+            except (KeyError, ValueError):
                 continue
 
             matched_fields_obj = record

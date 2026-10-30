@@ -14,8 +14,6 @@
 import os
 from pathlib import Path
 
-import pytest
-
 from tergite_tuner.lib.base.node import CouplerNode
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
     CZRBNodeAnalysis,

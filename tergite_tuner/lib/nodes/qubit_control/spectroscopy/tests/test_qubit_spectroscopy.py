@@ -14,7 +14,6 @@ import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
 
-from conftest import node_data_dir
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.analysis import (
     QubitSpectroscopy12MultidimAnalysis,

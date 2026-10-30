@@ -49,9 +49,6 @@ class RamseyDetuningsBaseQubitAnalysis(BaseQubitAnalysis):
 
             guess = model.guess(magnitudes, t=ramsey_delays)
             fit_result = model.fit(magnitudes, params=guess, t=ramsey_delays)
-            fit_y = model.eval(
-                fit_result.params, **{model.independent_vars[0]: self.fit_ramsey_delays}
-            )
             fitted_detuning = fit_result.params["frequency"].value
             fitted_detunings.append(fitted_detuning)
 

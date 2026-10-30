@@ -14,7 +14,6 @@
 import pytest
 import xarray as xr
 
-from conftest import node_data_dir
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis import (
     ROThreeStateAmplitudeNodeAnalysis,

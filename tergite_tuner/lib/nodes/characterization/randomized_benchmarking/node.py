@@ -65,7 +65,6 @@ class RandomizedBenchmarkingNode(QubitNode):
         for index, qubit in enumerate(self.all_qubits):
             samples = self.schedule_samplespace["number_of_cliffords"][qubit]
             number_of_samples = len(samples) * self.loops
-            noise_scale = 0.005 * index
             np.random.seed(123)
             measured_s21 = np.random.rand(number_of_samples)
             data_array = xarray.DataArray(measured_s21)

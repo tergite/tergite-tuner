@@ -15,7 +15,7 @@
 Module containing a class that fits data from a resonator spectroscopy experiment.
 """
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray as xr

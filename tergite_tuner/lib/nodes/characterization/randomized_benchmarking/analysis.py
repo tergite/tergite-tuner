@@ -67,9 +67,6 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
         standard_mean_probabilities_state_0 = standard_probabilities.sel(state=0).mean(
             self.seed_coord
         )
-        standard_mean_probabilities_state_1 = standard_probabilities.sel(state=1).mean(
-            self.seed_coord
-        )
         standard_mean_probabilities_state_2 = standard_probabilities.sel(state=2).mean(
             self.seed_coord
         )
@@ -114,12 +111,6 @@ class RandomizedBenchmarkingQubitAnalysis(BaseQubitAnalysis):
             )
             interleaved_mean_probabilities_state_0 = interleaved_probabilities.sel(
                 state=0
-            ).mean(self.seed_coord)
-            interleaved_mean_probabilities_state_1 = interleaved_probabilities.sel(
-                state=1
-            ).mean(self.seed_coord)
-            interleaved_mean_probabilities_state_2 = interleaved_probabilities.sel(
-                state=2
             ).mean(self.seed_coord)
 
             guess = model.guess(

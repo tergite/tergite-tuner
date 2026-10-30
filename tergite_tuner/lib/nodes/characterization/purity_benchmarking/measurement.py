@@ -75,7 +75,6 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
             this_transmon = self.transmons[this_qubit]
             mw_ef_amp180 = this_transmon.r12.ef_amp180()
             mw_ef_motzoi = this_transmon.r12.ef_motzoi()
-            mw_pulse_duration = this_transmon.rxy.duration()
             mw_pulse_port = this_transmon.ports.microwave()
             mw_ef_duration = this_transmon.r12.ef_duration()
             # Get the total number of Clifford gate decompositions available

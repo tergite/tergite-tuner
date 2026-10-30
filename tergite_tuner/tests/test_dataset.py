@@ -51,7 +51,7 @@ def test_save_dataset_with_working_points(tmp_path, redis_connection, session_co
     """
     for nodes like cz calibration where two coords are packed into a Multindex object
     """
-    with loaded_redis(redis_connection, _REDIS_FILE) as conn:
+    with loaded_redis(redis_connection, _REDIS_FILE):
         ExtendedTransmon.close_all()  # ensure no other transmon objects are instantiated
         coupler = "q13_q14"
         couplers = [coupler]

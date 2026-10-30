@@ -11,11 +11,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import os
-from pathlib import Path
 
 import numpy as np
-import pytest
 
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.measurement import (
     RandomizedBenchmarkingMeasurement,
@@ -45,7 +42,6 @@ def test_align_cliffords(redis_connection, session_context, node_data_dir):
             all_qubits=qubits, couplers=couplers, session=session_context
         )
         transmons_dict = {qubit: node.device.get_element(qubit) for qubit in qubits}
-        edges_dict = {coupler: node.device.get_edge(coupler) for coupler in couplers}
         measurement_class = RandomizedBenchmarkingMeasurement(transmons=transmons_dict)
 
         node.schedule_keywords["loop_repetitions"] = 2

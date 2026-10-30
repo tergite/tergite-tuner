@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from conftest import session_context
 from tergite_tuner.lib.base.utils.analysis_utils import filter_ds_by_element
 from tergite_tuner.lib.nodes.qubit_control.motzoi_parameter.analysis import (
     Motzoi01NodeAnalysis,

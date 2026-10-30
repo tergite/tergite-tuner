@@ -18,7 +18,6 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from os import PathLike
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type
 
 import numpy as np
@@ -36,7 +35,7 @@ from tergite_tuner.lib.utils.schedule_execution import (
     execute_schedule,
 )
 from tergite_tuner.storage.fs.dataset import save_dataset
-from tergite_tuner.utils.dicts import insert_nested_key, to_flat_map
+from tergite_tuner.utils.dicts import insert_nested_key
 from tergite_tuner.utils.hardware.spi import SpiDAC
 from tergite_tuner.utils.logging import logger
 from tergite_tuner.utils.logging.visuals import print_measurement_info

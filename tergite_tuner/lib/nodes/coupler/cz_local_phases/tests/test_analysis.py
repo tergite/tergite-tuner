@@ -13,7 +13,6 @@
 
 import xarray as xr
 
-from conftest import node_data_dir
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
     CZLocalPhasesCouplerAnalysis,
 )
@@ -33,9 +32,6 @@ def test_cz_local_phases(redis_connection, session_context, node_data_dir):
                 session_context,
             )
             qoi = analysis.process_coupler(dataset, "q13_q14")
-
-            cz_dynamic_control = qoi.analysis_result["cz_dynamic_control"]["value"]
-            cz_dynamic_target = qoi.analysis_result["cz_dynamic_target"]["value"]
 
             assert qoi.analysis_successful
 

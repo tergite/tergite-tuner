@@ -15,7 +15,6 @@ tergite_tuner/lib/base/utils/figure_utils.py: too-many-locals create_figure_with
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: too-many-locals PurityBenchmarkingQubitAnalysis._process_and_normalize_data
 tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py: too-many-locals PurityBenchmarkingMeasurement.schedule_function
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: too-many-locals RandomizedBenchmarkingQubitAnalysis.analyse_qubit
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: too-many-statements RandomizedBenchmarkingQubitAnalysis.analyse_qubit
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py: too-many-locals RandomizedBenchmarkingMeasurement.rb_shot
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_analysis.py: too-many-locals test_randomized_benchmarking_analysis
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: too-many-locals test_align_cliffords
@@ -68,6 +67,5 @@ tergite_tuner/lib/nodes/readout/ro_frequency_optimization/node.py: too-many-loca
 tergite_tuner/lib/nodes/schedule_node.py: too-many-locals OuterScheduleNode.measure_node
 tergite_tuner/lib/utils/analysis_models.py: too-many-locals ThreeClassBoundary.__init__
 tergite_tuner/lib/utils/classification_functions.py: too-many-locals generate_iq_shots
-tergite_tuner/tests/test_dataset.py: too-many-locals test_save_dataset_with_working_points
 tergite_tuner/tuner.py: too-many-locals _set_output_attenuations
 tergite_tuner/utils/types/extended_transmon.py: too-many-locals _ExtendedDispersiveMeasurement.__init__

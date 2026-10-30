@@ -13,7 +13,6 @@
 """Tests for the pydantic schemas defined in ``tergite_tuner.config.files``."""
 
 import json
-from os import path
 from pathlib import Path
 
 import pytest

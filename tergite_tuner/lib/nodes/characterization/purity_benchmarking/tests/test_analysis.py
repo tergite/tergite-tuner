@@ -11,7 +11,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from pathlib import Path
 
 import numpy as np
 import xarray as xr

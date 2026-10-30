@@ -167,9 +167,6 @@ class CZCalibrationCouplerAnalysis(BaseCouplerAnalysis):
             target_probabilities = self.target_qubit_probabilities.isel(
                 {self.cz_working_points_coord: i}
             )
-            control_probabilities = self.control_qubit_probabilities.isel(
-                {self.cz_working_points_coord: i}
-            )
 
             # plot sinusoidal fits
             target_fit_points = self.target_plot_points_0.isel(

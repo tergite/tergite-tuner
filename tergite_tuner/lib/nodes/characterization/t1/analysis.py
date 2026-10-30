@@ -18,7 +18,6 @@ Module containing a class that fits and plots data from a T1 experiment.
 """
 
 import numpy as np
-from matplotlib.axes import Axes
 
 from tergite_tuner.lib.base.analysis import BaseAllQubitsAnalysis, BaseQubitAnalysis
 from tergite_tuner.lib.utils.fitting_models import ExpDecayModel

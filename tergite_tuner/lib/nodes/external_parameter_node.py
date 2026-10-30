@@ -50,7 +50,6 @@ class ExternalParameterNode(MeasurementType):
         iterations = product(*(range(n) for n in external_dimensions))
         all_iterations = math.prod(external_dimensions)
         external_dim = list(self.node.external_samplespace.keys())[0]
-        external_settables = self.node.external_samplespace.keys()
 
         result_dataset = xarray.Dataset()
 
@@ -62,7 +61,6 @@ class ExternalParameterNode(MeasurementType):
             self.node.reduced_external_samplespace = reduce_samplespace(
                 this_iteration, self.node.external_samplespace
             )
-            element_dict = list(self.node.reduced_external_samplespace.values())[0]
 
             self.node.pre_measurement_operation(
                 reduced_ext_space=self.node.reduced_external_samplespace

@@ -80,11 +80,6 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
         mean_probabilities_01 = self.P01.mean(self.seed_coord)
         mean_probabilities_10 = self.P10.mean(self.seed_coord)
         mean_probabilities_11 = self.P11.mean(self.seed_coord)
-        mean_probabilities_02 = self.P02.mean(self.seed_coord)
-        mean_probabilities_20 = self.P20.mean(self.seed_coord)
-        mean_probabilities_21 = self.P21.mean(self.seed_coord)
-        mean_probabilities_12 = self.P12.mean(self.seed_coord)
-        mean_probabilities_22 = self.P22.mean(self.seed_coord)
 
         # probabilities to of states in the computational subspace
         mean_probabilities_chi_1 = (
@@ -223,9 +218,7 @@ class CZRBCouplerAnalysis(BaseCouplerAnalysis):
         self.standard_lambda_r = standard_fit_Pideal_result.params["p"].value
 
         L1_standard = (1 - self.standard_lambda_L) * (1 - self.standard_AM)
-        L2_standard = (1 - self.standard_lambda_L) * self.standard_AM
         L1_interleaved = (1 - self.interleaved_lambda_L) * (1 - self.interleaved_AM)
-        L2_interleaved = (1 - self.interleaved_lambda_L) * self.interleaved_AM
         self.one_minus_L1_CZ = (1 - L1_interleaved) / (1 - L1_standard)
         self.lambda_r_CZ = self.interleaved_lambda_r / self.standard_lambda_r
 
