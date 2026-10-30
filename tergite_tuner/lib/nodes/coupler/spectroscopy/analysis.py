@@ -12,6 +12,7 @@
 # that they have been altered from the originals.
 
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
@@ -34,76 +35,6 @@ class CouplerAnticrossingAnalysis(CouplerAnalysis):
     """
     This class analyzes the qubit spectroscopy data as a function of the current for a coupler.
     """
-
-    def _find_crossing_currents(
-        self,
-        currents,
-        frequencies,
-        threshold=2e6,
-        spurious_threshold=3e5,
-        min_interval=0.0003,
-        resonator_crossings=[],
-        resonator_crossings_interval=0.00015,
-    ):
-        # Step 1: Clean up spurious values and fill in small gaps
-        freqs = np.array(frequencies)
-        currents = np.array(currents)
-        nan_positions = np.isnan(freqs)
-        freqs = freqs[~nan_positions]
-        currents = currents[~nan_positions]
-
-        for i in range(1, len(freqs) - 1):
-            prev, curr, nxt = freqs[i - 1], freqs[i], freqs[i + 1]
-
-            # Fill single zero gap if neighboring values are close
-            if curr == 0 and abs(prev - nxt) < spurious_threshold:
-                freqs[i] = (prev + nxt) / 2
-
-            # Remove isolated non-zero point between zeros
-            if prev == 0 and nxt == 0:
-                freqs[i] = 0
-
-        # Step 2: Find significant jumps across zero gaps
-        temp_crossings = []
-        crossing_currents = []
-
-        i = 0
-        while i < len(freqs) - 1:
-            if freqs[i] == 0:
-                i += 1
-                continue
-
-            # Look ahead to next non-zero point
-            j = i + 1
-            while j < len(freqs) and freqs[j] == 0:
-                j += 1
-            if j >= len(freqs):
-                break
-
-            if abs(freqs[i] - freqs[j]) > threshold:
-                temp_crossings.append(currents[i])
-                temp_crossings.extend(currents[i + 1 : j])
-                temp_crossings.append(currents[j])
-
-            # Evaluate grouping for minimum interval
-            if (
-                temp_crossings
-                and (currents[i] - temp_crossings[0]) > min_interval
-                or (len(temp_crossings) > 0 and j == len(freqs) - 1)
-            ):
-                mid_current = np.mean(temp_crossings)
-                too_close = any(
-                    abs(mid_current - rc) <= resonator_crossings_interval
-                    for rc in resonator_crossings
-                )
-
-                if not too_close:
-                    crossing_currents.append(mid_current)
-                temp_crossings = []
-
-            i += 1
-
-        return crossing_currents
 
     def detect_peaks(self, qubit_specs_dataarray: xarray.DataArray):
         detected_frequencies = []
@@ -139,7 +70,7 @@ class CouplerAnticrossingAnalysis(CouplerAnalysis):
             self.detect_peaks(target_qubit_magnitudes)
         )
         self.resonator_crossing_points = []
-        self.control_crossing_currents = self._find_crossing_currents(
+        self.control_crossing_currents = find_crossing_currents(
             self.control_qubit_detected_currents,
             self.control_qubit_detected_frequencies,
             threshold,
@@ -148,7 +79,7 @@ class CouplerAnticrossingAnalysis(CouplerAnalysis):
             self.resonator_crossing_points,
             resonator_crossings_interval,
         )
-        self.target_crossing_currents = self._find_crossing_currents(
+        self.target_crossing_currents = find_crossing_currents(
             self.target_qubit_detected_currents,
             self.target_qubit_detected_frequencies,
             threshold,
@@ -234,71 +165,6 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
             detected_currents.append(current)
         return detected_frequencies, detected_currents
 
-    def _find_crossing_currents(
-        self,
-        currents,
-        frequencies,
-        threshold=2e6,
-        spurious_threshold=3e5,
-        min_interval=0.0003,
-        resonator_crossings=[],
-        resonator_crossings_interval=0.00015,
-    ):
-        # Step 1: Clean up spurious values and fill in small gaps
-        freqs = frequencies.copy()
-
-        for i in range(1, len(freqs) - 1):
-            prev, curr, nxt = freqs[i - 1], freqs[i], freqs[i + 1]
-
-            # Fill single zero gap if neighboring values are close
-            if curr == 0 and abs(prev - nxt) < spurious_threshold:
-                freqs[i] = (prev + nxt) / 2
-
-            # Remove isolated non-zero point between zeros
-            if prev == 0 and nxt == 0:
-                freqs[i] = 0
-
-        # Step 2: Find significant jumps across zero gaps
-        temp_crossings = []
-        crossing_currents = []
-
-        i = 0
-        while i < len(freqs) - 1:
-            # Look ahead to next non-zero point
-            j = i + 1
-            while j < len(freqs) and freqs[j] == 0:
-                j += 1
-            if j >= len(freqs):
-                break
-
-            if freqs[i] == 0:
-                i += 1
-                continue
-
-            # Detect transition
-            if abs(freqs[i] - freqs[j]) > threshold:
-                temp_crossings.append(currents[i])
-                temp_crossings.extend(currents[i + 1 : j])
-                temp_crossings.append(currents[j])
-
-            # Evaluate grouping for minimum interval
-            if temp_crossings:
-                span = currents[j] - min(temp_crossings)
-                if span > min_interval or j == len(freqs) - 1:
-                    mid_current = np.mean(temp_crossings)
-                    too_close = any(
-                        abs(mid_current - rc) <= resonator_crossings_interval
-                        for rc in resonator_crossings
-                    )
-
-                    if not too_close:
-                        crossing_currents.append(mid_current)
-                    temp_crossings = []
-
-            i += 1
-
-        return crossing_currents
-
     def analyse(self) -> Fits | None:
         """
         This function analyzes the coupler data to find crossing currents for both qubits.
@@ -320,14 +186,14 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
         self.target_qubit_detected_frequencies, self.control_qubit_detected_currents = (
             self.detect_peaks(self.target_qubit_data_var)
         )
-        self.control_crossing_currents = self._find_crossing_currents(
+        self.control_crossing_currents = find_crossing_currents(
             self.control_qubit_detected_currents,
             self.control_qubit_detected_frequencies,
             threshold,
             spurious_threshold,
             min_interval,
         )
-        self.target_crossing_currents = self._find_crossing_currents(
+        self.target_crossing_currents = find_crossing_currents(
             self.target_qubit_detected_currents,
             self.target_qubit_detected_frequencies,
             threshold,
@@ -391,3 +257,58 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
         figures_list.append(fig)
         figures_dictionary[self.coupler] = figures_list
         return
+
+
+def find_crossing_currents(
+    currents: Sequence[float],
+    frequencies: Sequence[float],
+    threshold: float = 2e6,
+    spurious_threshold: float = 3e5,
+    min_interval: float = 0.0003,
+    resonator_crossings: Sequence[float] = (),
+    resonator_crossings_interval: float = 0.00015,
+) -> list[float]:
+    """The mean current of each group of frequency jumps over ``threshold``, but those near a resonator crossing.
+
+    A zero frequency is a dropout; a group closes once it spans ``min_interval``, or at the last point.
+    """
+    frequencies = np.asarray(frequencies, dtype=float)
+    is_detected = ~np.isnan(frequencies)
+    currents = np.asarray(currents)[is_detected]
+    frequencies = _fill_dropouts(frequencies[is_detected], spurious_threshold)
+    last = len(frequencies) - 1
+    group = []
+    crossings = []
+    for i in range(last):
+        if frequencies[i] == 0:
+            continue
+        j = i + 1
+        while j <= last and frequencies[j] == 0:
+            j += 1
+        if j > last:
+            break
+        if abs(frequencies[i] - frequencies[j]) > threshold:
+            group.extend(currents[i : j + 1])
+        if group and (currents[i] - group[0] > min_interval or j == last):
+            mid_current = np.mean(group)
+            if all(
+                abs(mid_current - crossing) > resonator_crossings_interval
+                for crossing in resonator_crossings
+            ):
+                crossings.append(mid_current)
+            group = []
+    return crossings
+
+
+def _fill_dropouts(
+    frequencies: np.ndarray, spurious_threshold: float
+) -> np.ndarray:
+    """Fills a single dropout between close neighbours, and drops a point isolated between dropouts."""
+    frequencies = frequencies.copy()
+    for i in range(1, len(frequencies) - 1):
+        previous, current, following = frequencies[i - 1 : i + 2]
+        if current == 0 and abs(previous - following) < spurious_threshold:
+            frequencies[i] = (previous + following) / 2
+        if previous == 0 and following == 0:
+            frequencies[i] = 0
+    return frequencies

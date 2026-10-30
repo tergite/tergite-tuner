@@ -135,8 +135,6 @@ tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: E722 Do not use bare `ex
 tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/coupler/cz_local_phases/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/test_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
-tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutable data structures for argument defaults
-tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py: B006 Do not use mutable data structures for argument defaults
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_qubit_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_res_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
 tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py: B007 Loop control variable `qubit` not used within loop body
