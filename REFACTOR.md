@@ -521,6 +521,12 @@ On top of those, there are three single-qubit tables (`clifford_group.py:39`, `c
    Of the three `ExpDecayModel` copies, keep the one in `analysis_models.py`, and keep one copy of `mitigate`.
 4. **Library check, recorded in the commit.** qiskit's `Clifford` composes and inverts, but it synthesises to cx/h/s. Our native X/Y90 + CZ decomposition would then need a transpile step and a heavy dependency, and pyGSTi is heavier still. Our own code wins: this is convention 9's "fighting the library" case.
 
+**Built.** One group, in `lib/utils/cliffords/`, for all three nodes; no compiled program moved. Where it departs from the plan:
+- **A package, not one module**: the group, its Pauli transfer matrices and its sequence helpers, about 900 lines together.
+- **Single-qubit RB keeps its sequences**: the old table is the group's Epstein decomposition element for element, and `randomized_benchmarking_sequence` takes the qubit's generator as its seed, so each length keeps drawing from one stream.
+- **Only purity's `ExpDecayModel` was a copy**, merged into `analysis_models`' with its own first guesses passed in; `fitting_models`' is T1 and T2's decay-time model and stays. The `mitigate` copies were already gone.
+- The two-qubit table built in memory raised the dummy tune-up's peak from 610 to 719 MB, under the baseline's 841 MB.
+
 ## Step 9: long functions and the rest
 
 1. **Long functions become compositions**, one per commit, with unit tests for the pure steps. The largest, after step 6 has moved them:
