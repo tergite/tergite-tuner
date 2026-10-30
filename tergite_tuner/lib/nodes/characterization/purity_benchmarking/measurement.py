@@ -18,20 +18,19 @@ import numpy as np
 
 from tergite_tuner.backend import (
     X90,
-    DRAGPulse,
     ExtendedTransmon,
     H,
     Measure,
     Reset,
     Rxy,
     Schedule,
-    X,
 )
 from tergite_tuner.lib.base.measurement import BaseMeasurement
 from tergite_tuner.lib.utils.cliffords.clifford_group import get_rxy_angles
 from tergite_tuner.lib.utils.cliffords.randomized_benchmarking import (
     randomized_benchmarking_sequence,
 )
+from tergite_tuner.lib.utils.schedules import prepare_state
 
 
 class PurityBenchmarkingMeasurement(BaseMeasurement):
@@ -49,89 +48,54 @@ class PurityBenchmarkingMeasurement(BaseMeasurement):
         number_of_cliffords: dict[str, np.ndarray],
         repetitions: int = 1024,
     ) -> Schedule:
-        """
-        Generate a schedule for performing purity benchmarking using Clifford gates.
-        The goal is to measure the purity of the qubit states after applying each sequence
-        of Clifford gates.
-
-        Schedule sequence:
-            Reset -> Apply Clifford operations -> Measure X -> Reset ->
-            Apply Clifford operations -> Measure Y
-            -> Reset -> Apply Clifford operations -> Measure Z
-
-        Parameters:
-        ----------
-        repetitions: int
-            The number of times the Schedule will be repeated.
-        number_of_cliffords: dict[str, np.ndarray]
-            The number of random Clifford operations applied on each qubit state.
-            This parameter is swept over.
-
-        Returns:
-        -------
-        Schedule:
-            An experiment schedule.
-        """
-        # Create a new Schedule object with the specified number of repetitions
+        """Each qubit's random Clifford sequences, each measured in X, Y and Z, then the calibration points."""
         schedule = Schedule("purity_benchmarking", repetitions)
         qubits = self.transmons.keys()
         # This is the common reference operation so the qubits can be operated in parallel
         root_relaxation = schedule.add(Reset(*qubits), label="Start")
-
-        for this_qubit, clifford_sequence_lengths in number_of_cliffords.items():
-            this_transmon = self.transmons[this_qubit]
-            mw_ef_amp180 = this_transmon.r12.ef_amp180()
-            mw_ef_motzoi = this_transmon.r12.ef_motzoi()
-            mw_pulse_port = this_transmon.ports.microwave()
-            mw_ef_duration = this_transmon.r12.ef_duration()
-            # Use the seed for reproducibility of random sequences
-            seed = seeds[this_qubit]
-            rng = np.random.default_rng(seed)
+        for qubit, lengths in number_of_cliffords.items():
+            rng = np.random.default_rng(seeds[qubit])
             schedule.add(Reset(*qubits), ref_op=root_relaxation, ref_pt="end")
             acq_index = 0
-            # The removal of the three last is because the calibration
-            # Unique is because so we don't use the same number of cliffords twice
-            for this_number_of_cliffords in np.unique(clifford_sequence_lengths[:-3]):
-                random_sequence = randomized_benchmarking_sequence(
-                    this_number_of_cliffords, apply_inverse=False, seed=rng
+            # the last three lengths are the calibration points'; each length runs once
+            for length in np.unique(lengths[:-3]):
+                sequence = randomized_benchmarking_sequence(
+                    length, apply_inverse=False, seed=rng
                 )
-
-                # Has to measure in every bases to be able to calculate purity
-                for basis in ["X", "Y", "Z"]:
-                    for clifford_idx in random_sequence:
-                        for theta, phi in get_rxy_angles(clifford_idx):
-                            schedule.add(Rxy(qubit=this_qubit, theta=theta, phi=phi))
-                    if basis == "X":  # Prepare for X basis measurement
-                        schedule.add(H(this_qubit))
-                    elif basis == "Y":  # Prepare for Y basis measurement
-                        schedule.add(X90(this_qubit))
-                    schedule.add(Measure(this_qubit, acq_index=acq_index))
-                    schedule.add(Reset(this_qubit))
+                # purity needs all three
+                for basis in ("X", "Y", "Z"):
+                    self._add_basis_measurement(
+                        schedule, qubit, sequence, basis, acq_index
+                    )
                     acq_index += 1
-
-            # Calibration measurements
-            schedule.add(Reset(this_qubit))
-            schedule.add(Measure(this_qubit, acq_index=acq_index))
-            schedule.add(Reset(this_qubit))
-
-            schedule.add(X(this_qubit))
-            schedule.add(Measure(this_qubit, acq_index=acq_index + 1))
-            schedule.add(Reset(this_qubit))
-
-            # This is not used so it could perhaps be removed.
-            # If removed the "-3" should be changed to "-2"
-            schedule.add(X(this_qubit))
-            schedule.add(
-                DRAGPulse(
-                    duration=mw_ef_duration,
-                    G_amp=mw_ef_amp180,
-                    D_amp=mw_ef_motzoi,
-                    port=mw_pulse_port,
-                    clock=f"{this_qubit}.12",
-                    phase=0,
-                ),
-            )
-            schedule.add(Measure(this_qubit, acq_index=acq_index + 2))
-            schedule.add(Reset(this_qubit))
-
+            self._add_calibration_points(schedule, qubit, acq_index)
         return schedule
+
+    def _add_basis_measurement(
+        self,
+        schedule: Schedule,
+        qubit: str,
+        sequence: np.ndarray,
+        basis: str,
+        acq_index: int,
+    ) -> None:
+        """Applies ``sequence``'s Cliffords, then rotates ``basis`` onto Z and measures."""
+        for clifford in sequence:
+            for theta, phi in get_rxy_angles(clifford):
+                schedule.add(Rxy(qubit=qubit, theta=theta, phi=phi))
+        if basis == "X":
+            schedule.add(H(qubit))
+        elif basis == "Y":
+            schedule.add(X90(qubit))
+        schedule.add(Measure(qubit, acq_index=acq_index))
+        schedule.add(Reset(qubit))
+
+    def _add_calibration_points(
+        self, schedule: Schedule, qubit: str, acq_index: int
+    ) -> None:
+        """Measures |0>, |1> and |2> from ``acq_index`` on; the analysis does not use |2>."""
+        schedule.add(Reset(qubit))
+        for state in (0, 1, 2):
+            prepare_state(schedule, self.transmons[qubit], state)
+            schedule.add(Measure(qubit, acq_index=acq_index + state))
+            schedule.add(Reset(qubit))
