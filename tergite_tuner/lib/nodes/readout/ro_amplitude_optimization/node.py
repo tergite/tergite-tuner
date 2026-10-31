@@ -64,6 +64,18 @@ def get_schedule(
     loop_repetitions: int,
     state: int,
 ) -> Schedule:
+    """The schedule that prepares each state and reads it out at each amplitude, ``loop_repetitions`` times.
+
+    Args:
+        transmons: the qubits' transmons by name.
+        qubit_states: each qubit's states to prepare.
+        ro_amplitudes: each qubit's readout amplitudes.
+        loop_repetitions: how many shots to take of each point.
+        state: the highest state prepared: 1 for two states, 2 for three.
+
+    Returns:
+        The schedule.
+    """
     return ROAmplitudeOptimizationMeasurement(transmons).schedule_function(
         ro_amplitudes, qubit_states, loop_repetitions, qubit_state=state
     )
@@ -72,12 +84,32 @@ def get_schedule(
 def get_amplitudes(
     qubit: str, session: "SessionContext", low: float, high: float, points: int
 ) -> np.ndarray:
-    """``points`` amplitudes from ``low`` to ``high`` times the qubit's punchout amplitude."""
+    """``points`` amplitudes from ``low`` to ``high`` times the qubit's punchout amplitude.
+
+    Args:
+        qubit: the qubit.
+        session: the session whose device state holds the punchout amplitude.
+        low: the lowest amplitude, as a fraction of the punchout amplitude.
+        high: the highest amplitude, as a fraction of the punchout amplitude.
+        points: how many amplitudes.
+
+    Returns:
+        The amplitudes.
+    """
     punchout = float(session.state.read("transmons", qubit, "measure:pulse_amp"))
     return np.linspace(punchout * low, punchout * high, points)
 
 
 def get_optimal_amplitude(qubit: str, session: "SessionContext") -> np.ndarray:
+    """The three-state readout amplitude already stored, as the only point of the sweep.
+
+    Args:
+        qubit: the qubit.
+        session: the session whose device state holds the amplitude.
+
+    Returns:
+        The one amplitude.
+    """
     amplitude = session.state.read("transmons", qubit, "measure_3state_opt:pulse_amp")
     return np.array([float(amplitude)])
 
@@ -85,7 +117,16 @@ def get_optimal_amplitude(qubit: str, session: "SessionContext") -> np.ndarray:
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    """Shots around each state's corner of a triangle that grows with the amplitude's index."""
+    """Shots around each state's corner of a triangle that grows with the amplitude's index.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the prepared states and readout amplitudes.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        S21 with an axis per state, amplitude and loop.
+    """
     rng = np.random.default_rng(0)
     states, amplitudes = len(sweeps["qubit_states"]), len(sweeps["ro_amplitudes"])
     shots = np.empty((states, amplitudes, LOOPS), dtype=complex)

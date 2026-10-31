@@ -76,6 +76,9 @@ def read_result(
         session: the session to read.
         session_only: keep only the fields this session's nodes wrote: each written
             path's group (``rxy`` for ``rxy:amp180``), the path itself, or its ``_error``.
+
+    Returns:
+        The qubits' and couplers' calibration values.
     """
     should_keep_field = None
     if session_only:

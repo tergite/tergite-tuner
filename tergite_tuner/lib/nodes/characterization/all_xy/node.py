@@ -37,13 +37,31 @@ DUMMY_ERROR = 0.01
 def get_schedule(
     transmons: Mapping[str, ExtendedTransmon], XY_index: dict[str, np.ndarray]
 ) -> Schedule:
+    """The AllXY schedule: each pulse pair, then the calibration points, on every qubit.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        XY_index: each qubit's pulse pair indices.
+
+    Returns:
+        The schedule.
+    """
     return AllXYMeasurement(transmons).schedule_function(XY_index)
 
 
 def get_dummy_s21(
     _qubit: str, _sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    """The ideal populations off by ``DUMMY_ERROR``, then the |0> and |1> calibration points."""
+    """The ideal populations off by ``DUMMY_ERROR``, then the |0> and |1> calibration points.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        _sweeps: unused; part of the ``get_dummy_s21`` signature.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21, a point per pulse pair, then the two calibration points.
+    """
     populations = IDEAL_POPULATIONS + DUMMY_ERROR
     return np.concatenate([populations, [0.0, 1.0]]).astype(complex)
 

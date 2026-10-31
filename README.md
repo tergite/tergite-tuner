@@ -310,6 +310,8 @@ You can find a few examples in the [`./examples`](./examples) folder
 ### ToDo
 
 - [ ] Update export to BCC to be more generic to allow any BaseModel class to be output
+- [ ] Give `tergite_tuner/backend/`, the node `measurement.py` modules, `config/session.py`, `config/types/cluster.py`,
+  `lib/run.py` and `lib/utils/schedules.py` Google-style docstrings once `feature/qblox-scheduler`, which rewrites them, is merged
 
 #### On a real device
 

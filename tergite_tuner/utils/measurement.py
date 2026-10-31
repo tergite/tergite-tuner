@@ -17,7 +17,8 @@ import numpy
 
 
 def samplespace_dimensions(samplespace: dict, loops=None) -> list[int]:
-    """
+    """The size of each swept setting, and of the loops, as a dataset is shaped.
+
     example of a samplespace:
     samplespace = {
           'frequencies': {
@@ -30,6 +31,14 @@ def samplespace_dimensions(samplespace: dict, loops=None) -> list[int]:
            }
     }
     the resulting dimensions are then [3,5]
+
+    Args:
+        samplespace: each swept setting's values, by element; every element has as
+            many values as the first.
+        loops: the number of loops, a last dimension if given.
+
+    Returns:
+        A dimension per setting, in order, then the loops.
     """
     dimensions = []
     settable_quantities = samplespace.keys()

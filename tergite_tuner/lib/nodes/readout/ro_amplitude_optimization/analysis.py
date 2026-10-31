@@ -34,6 +34,11 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
     """Classifies a qubit's readout shots at each amplitude; ``analyse`` gives the best amplitude's."""
 
     def populate_coords(self):
+        """Finds the amplitude, state and loop coordinates, and stacks the loops and states into shots.
+
+        Raises:
+            ValueError: if the dataset has any other coordinate.
+        """
         for coord in self.S21.coords:
             if "amplitudes" in str(coord):
                 self.amplitude_coord = coord
@@ -50,7 +55,14 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
         self.qubit_states = self.S21_stacked[self.state_coord].values
 
     def IQ(self, index: int) -> np.ndarray:
-        """Extracts I/Q components from the dataset at a given index."""
+        """Extracts I/Q components from the dataset at a given index.
+
+        Args:
+            index: the readout amplitude's index.
+
+        Returns:
+            The amplitude's shots, a row of I and Q each.
+        """
 
         IQ_complex = self.S21_stacked[self.data_var].isel({self.amplitude_coord: index})
         I = IQ_complex.real.values
@@ -74,11 +86,25 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
     def plot_iq_scatter(
         self, ax, iq_points: np.ndarray, marker: str, color: str, label: str = ""
     ):
+        """Draws shots in the IQ plane.
+
+        Args:
+            ax: the axis to draw on.
+            iq_points: the shots, a row of I and Q each.
+            marker: the shots' marker.
+            color: the shots' colour.
+            label: the shots' legend entry; none if empty.
+        """
         self.mark_size = 40
         styles = {"marker": marker, "s": self.mark_size, "color": color}
         ax.scatter(iq_points[:, 0], iq_points[:, 1], **styles, label=label)
 
     def primary_plotter(self, ax):
+        """Draws the assignment fidelity per readout amplitude, the best one starred.
+
+        Args:
+            ax: the axis to draw on.
+        """
         ax.set_xlabel("RO amplitude")
         ax.set_ylabel("assignment fidelity")
         ax.plot(self.amplitudes, self.fidelities)
@@ -86,6 +112,12 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
         ax.grid()
 
     def plot(self, primary_axis, secondary_axes):
+        """Draws the fidelities and the best amplitude's shots, with the qubit in the legend.
+
+        Args:
+            primary_axis: the axis for the fidelity per amplitude.
+            secondary_axes: the two axes for the best amplitude's shots.
+        """
         self.plotter(
             primary_axis, secondary_axes
         )  # Assuming node_analysis object is available
@@ -98,7 +130,17 @@ class OptimalROAmplitudeQubitAnalysis(ElementAnalysis):
 
 
 class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
+    """Finds the readout amplitude that best tells 0 from 1, and its thresholded acquisition."""
+
     def analyse(self) -> Fits:
+        """Classifies 0 and 1 at each amplitude, and rotates the best one's shots onto the I axis.
+
+        Returns:
+            The best ``measure_2state_opt:pulse_amp``, the ``acq_rotation`` in degrees
+            and ``acq_threshold`` that put 0 at negative and 1 at positive I, the
+            discriminant's ``lda_coef_0``, ``lda_coef_1`` and ``lda_intercept``, and the
+            ``analysis`` for the plot.
+        """
         self.populate_coords()
         self.classify_amplitudes()
 
@@ -145,6 +187,13 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         }
 
     def plotter(self, ax, secondary_axes):
+        """Draws the fidelities, then the best amplitude's shots as measured and as rotated.
+
+        Args:
+            ax: the axis for the fidelity per amplitude.
+            secondary_axes: the axes for the measured shots, with the boundary, and
+                the rotated shots, with the threshold.
+        """
         self.primary_plotter(ax)
         iq_axis = secondary_axes[0]
 
@@ -206,8 +255,16 @@ class OptimalROTwoStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 
 
 class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
+    """Finds the readout amplitude that best tells 0, 1 and 2 apart, and the boundaries between them."""
+
     def analyse(self) -> Fits:
-        """The best amplitude's three-state boundaries: their centroid and the angle of each pair's boundary."""
+        """The best amplitude's three-state boundaries: their centroid and the angle of each pair's boundary.
+
+        Returns:
+            The best ``measure_3state_opt:pulse_amp``, the boundaries' ``centroid_I``
+            and ``centroid_Q``, ``omega_01``, ``omega_12`` and ``omega_20``,
+            ``inv_cm_opt``, always 0, and the ``analysis`` for the plot.
+        """
         self.populate_coords()
         self.classify_amplitudes()
 
@@ -244,6 +301,12 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         }
 
     def plot_classified_IQ_points(self, iq_axis, amplitude_index: int):
+        """Draws the best amplitude's shots, coloured by the state they were prepared in.
+
+        Args:
+            iq_axis: the axis to draw on.
+            amplitude_index: unused; the best amplitude's shots are drawn.
+        """
 
         angle = 0
         rotation_angle_rad = np.deg2rad(angle)
@@ -265,6 +328,12 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
         self.plot_iq_scatter(iq_axis, self.IQ2_fp, "x", "lime")
 
     def plotter(self, ax, secondary_axes):
+        """Draws the fidelities, the best amplitude's shots with the boundaries, and its confusion matrix.
+
+        Args:
+            ax: the axis for the fidelity per amplitude.
+            secondary_axes: the axes for the shots and the confusion matrix.
+        """
         self.primary_plotter(ax)
 
         iq_axis = secondary_axes[0]
@@ -300,19 +369,44 @@ class ROThreeStateAmplitudeQubitAnalysis(OptimalROAmplitudeQubitAnalysis):
 def analyse_two_state_ro_amplitude(
     s21: xr.DataArray, session: "SessionContext"
 ) -> Fits:
+    """The two-state readout's best amplitude, rotation and threshold.
+
+    Args:
+        s21: the qubit's shots over prepared state, readout amplitude and loop.
+        session: the session the analysis reads.
+
+    Returns:
+        The fits of ``OptimalROTwoStateAmplitudeQubitAnalysis.analyse``.
+    """
     return OptimalROTwoStateAmplitudeQubitAnalysis(s21, session).analyse()
 
 
 def analyse_three_state_ro_amplitude(
     s21: xr.DataArray, session: "SessionContext"
 ) -> Fits:
+    """The three-state readout's best amplitude and boundaries.
+
+    Args:
+        s21: the qubit's shots over prepared state, readout amplitude and loop.
+        session: the session the analysis reads.
+
+    Returns:
+        The fits of ``ROThreeStateAmplitudeQubitAnalysis.analyse``.
+    """
     return ROThreeStateAmplitudeQubitAnalysis(s21, session).analyse()
 
 
 def plot_ro_amplitude(
     axes: np.ndarray, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
-    """The fidelity per amplitude, then the best amplitude's shots, on three axes."""
+    """The fidelity per amplitude, then the best amplitude's shots, on three axes.
+
+    Args:
+        axes: the column of three axes to draw on.
+        _s21: unused; part of the ``plot`` signature.
+        fits: the qubit's fits, whose ``analysis`` draws itself; nothing is drawn if empty.
+        _session: unused; part of the ``plot`` signature.
+    """
     if fits:
         fits["analysis"].value.plot(axes[0], list(axes[1:]))
 
@@ -320,7 +414,15 @@ def plot_ro_amplitude(
 def get_iq_limits(
     iq: np.ndarray, centers: np.ndarray
 ) -> tuple[tuple[float, float], tuple[float, float]]:
-    """Square I and Q limits that hold the shots and the origin, padded by half the centres' distance."""
+    """Square I and Q limits that hold the shots and the origin, padded by half the centres' distance.
+
+    Args:
+        iq: the shots, a row of I and Q each.
+        centers: the states' centres, a row of I and Q each.
+
+    Returns:
+        The I limits and the Q limits, each as (low, high).
+    """
     lower = np.minimum(iq.min(axis=0), 0)
     span = (np.maximum(iq.max(axis=0), 0) - lower).max()
     padding = np.linalg.norm(centers[0] - centers[1]) / 2

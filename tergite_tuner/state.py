@@ -40,7 +40,16 @@ class DeviceState:
         self.load(records or {})
 
     def read(self, collection: Collection, element: str, path: str) -> Any:
-        """The value at the colon-separated ``path``, or ``None`` if it is missing."""
+        """The value at the colon-separated ``path``, or ``None`` if it is missing.
+
+        Args:
+            collection: ``transmons``, ``couplers`` or ``cs``.
+            element: the qubit or coupler.
+            path: the field's path, such as ``rxy:amp180``.
+
+        Returns:
+            The value, with any override over it.
+        """
         value: Any = self.get_record(collection, element)
         for segment in path.split(":"):
             if not isinstance(value, Mapping) or segment not in value:
@@ -49,7 +58,15 @@ class DeviceState:
         return value
 
     def get_record(self, collection: Collection, element: str) -> dict[str, Any]:
-        """A copy of the element's record, with the overrides over it."""
+        """A copy of the element's record, with the overrides over it.
+
+        Args:
+            collection: ``transmons``, ``couplers`` or ``cs``.
+            element: the qubit or coupler.
+
+        Returns:
+            The record's fields, nested; empty if the element has none.
+        """
         record = copy.deepcopy(self._records[collection].get(element, {}))
         _merge_record(record, self._overrides[collection].get(element, {}))
         return record
@@ -61,7 +78,13 @@ class DeviceState:
     ) -> Records:
         """A copy of the records of ``elements``, or of all, without the overrides.
 
-        ``should_keep_field(field)`` picks a record's top-level fields when given.
+        Args:
+            elements: the qubits and couplers to copy; all if None.
+            should_keep_field: picks a record's top-level fields; all if None.
+
+        Returns:
+            The records by collection and element; elements left with no field are
+            dropped.
         """
         records: Records = {}
         for collection, collection_records in self._records.items():
@@ -78,11 +101,20 @@ class DeviceState:
         return records
 
     def load(self, records: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> None:
-        """Merges ``records``, whose fields may be nested or colon-separated paths."""
+        """Merges ``records``, whose fields may be nested or colon-separated paths.
+
+        Args:
+            records: by collection, then element, each element's fields.
+        """
         _merge(self._records, records)
 
     def write(self, records: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> None:
-        """Merges ``records``, as ``load`` does, and keeps their parameter paths."""
+        """Merges ``records``, as ``load`` does, and keeps their parameter paths.
+
+        Args:
+            records: by collection, then element, each element's fields; paths in
+                ``cs`` are not kept.
+        """
         _merge(self._records, records)
         for collection, collection_records in records.items():
             if collection != "cs":
@@ -92,9 +124,15 @@ class DeviceState:
     def add_overrides(
         self, records: Mapping[str, Mapping[str, Mapping[str, Any]]]
     ) -> None:
+        """Sets values over the records until ``clear_overrides``, as a node's config does.
+
+        Args:
+            records: by collection, then element, each element's fields.
+        """
         _merge(self._overrides, records)
 
     def clear_overrides(self) -> None:
+        """Drops every override, leaving the records as loaded and written."""
         self._overrides = {collection: {} for collection in COLLECTIONS}
 
     def __deepcopy__(self, memo: dict) -> "DeviceState":

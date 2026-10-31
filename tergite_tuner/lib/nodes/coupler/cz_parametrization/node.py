@@ -51,24 +51,59 @@ AMPLITUDES = np.linspace(0.50, 0.95, 25)
 
 
 def get_frequencies(coupler: str, session: "SessionContext") -> np.ndarray:
-    """28 frequencies from 10 MHz below to 4 MHz above the coupler's CZ transition."""
+    """28 frequencies from 10 MHz below to 4 MHz above the coupler's CZ transition.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's qubits.
+
+    Returns:
+        The CZ frequencies to sweep, in Hz.
+    """
     return np.linspace(-10e6, 4e6, 28) + get_transition_frequency(coupler, session)
 
 
 def get_parking_current(coupler: str, session: "SessionContext") -> np.ndarray:
+    """The coupler's stored initial parking current, as the one point of the current sweep.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's current.
+
+    Returns:
+        The parking current, in A, in a one-point array.
+    """
     return np.array(
         [float(get_coupler_value(coupler, "initial_parking_current", session))]
     )
 
 
 def get_analysis_keywords(coupler: str, session: "SessionContext") -> dict[str, Any]:
+    """The coupler's keywords for CZ parametrization's analysis.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's phase path.
+
+    Returns:
+        The coupler's ``phase_path``.
+    """
     return {"phase_path": get_phase_path(coupler, session)}
 
 
 def get_dummy_s21(
     qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
 ) -> np.ndarray:
-    """Shots whose probabilities make a blob over amplitude and frequency, a peak for one qubit and a dip for the other."""
+    """Shots whose probabilities make a blob over amplitude and frequency, a peak for one qubit and a dip for the other.
+
+    Args:
+        qubit: the qubit whose shots these are.
+        sweeps: each swept setting's values.
+        session: the session, whose couplers and device state shape the shots.
+
+    Returns:
+        The qubit's IQ shots, flattened.
+    """
     amplitudes, frequencies = (
         sweeps["cz_pulse_amplitudes"],
         sweeps["cz_pulse_frequencies"],

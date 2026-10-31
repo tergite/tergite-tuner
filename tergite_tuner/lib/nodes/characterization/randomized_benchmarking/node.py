@@ -53,6 +53,23 @@ def get_schedule(
     loop_repetitions: int,
     multiplexing: str,
 ) -> Schedule:
+    """The randomized benchmarking schedule: a random Clifford sequence per length, each ending in a three-state readout.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        number_of_cliffords: each qubit's sequence lengths.
+        seeds: each qubit's seed for the random sequences.
+        interleave_gate: each qubit's interleaved gate, or ``Standard`` for none.
+        loop_repetitions: how many times the shot repeats.
+        multiplexing: ``parallel`` to measure the qubits at once, or ``one_by_one``.
+
+    Returns:
+        The schedule.
+
+    Raises:
+        NotImplementedError: if an interleaved gate is not X, Y, X90 or Y90.
+        ValueError: if ``multiplexing`` is neither ``parallel`` nor ``one_by_one``.
+    """
     return RandomizedBenchmarkingMeasurement(transmons).schedule_function(
         seeds, number_of_cliffords, loop_repetitions, interleave_gate, multiplexing
     )
@@ -61,6 +78,16 @@ def get_schedule(
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Random shots, the same on every run.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values, of which ``number_of_cliffords`` is used.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21, a shot per sequence length and loop.
+    """
     return np.random.default_rng(0).random((len(sweeps["number_of_cliffords"]), LOOPS))
 
 

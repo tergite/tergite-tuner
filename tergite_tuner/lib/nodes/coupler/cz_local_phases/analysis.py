@@ -35,11 +35,19 @@ if TYPE_CHECKING:
 
 
 class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
+    """Finds the dynamic phase a coupler's CZ adds to each of its qubits, from Ramseys with the gate on and off."""
+
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
         super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
 
     def analyse(self) -> Fits | None:
+        """Fits each qubit's |1> probability over the Ramsey phases, with the CZ on and off.
+
+        Returns:
+            The fits ``cz_dynamic_control`` and ``cz_dynamic_target``: the phase, in
+            degrees, the CZ adds to each qubit, negated for ``reverse_phase_qubits``.
+        """
         self._find_coords()
         self.control_qubit_probabilities = calculate_probabilities(
             self.control_qubit_data_var, self.session.state
@@ -114,6 +122,11 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
         return phis, plot_points.rename({"plot_points": phases_coord})
 
     def plotter(self, figures_dictionary):
+        """Draws each qubit's |1> probabilities, swapped and not, with the fits the phases come from.
+
+        Args:
+            figures_dictionary: takes the coupler's figure, under the coupler's name.
+        """
         figure, axes = plt.subplots(ncols=2, nrows=2, sharey=True, sharex=True)
         target_probabilities = self.target_qubit_probabilities.sel({"state": 1})
         control_probabilities = self.control_qubit_probabilities.sel({"state": 1})
@@ -165,7 +178,15 @@ class CZLocalPhasesCouplerAnalysis(CouplerAnalysis):
 
 
 def get_gate_phase(phis: xr.DataArray, gate_mode_coord: str) -> float:
-    """The phase, in degrees, the gate adds: the fitted phase with it less the phase without."""
+    """The phase, in degrees, the gate adds: the fitted phase with it less the phase without.
+
+    Args:
+        phis: the fitted phases, in radians, with the gate on and off.
+        gate_mode_coord: the coordinate saying whether the gate is on.
+
+    Returns:
+        The gate's phase, in degrees.
+    """
     on = phis.sel({gate_mode_coord: True})
     off = phis.sel({gate_mode_coord: False})
     return np.rad2deg((on - off).item())

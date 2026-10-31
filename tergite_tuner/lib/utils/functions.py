@@ -14,13 +14,16 @@
 
 
 def exponential_decay_function(m: float, p: float, A: float, B: float) -> float:
-    """
-    Exponential decay function.
-    :param m: Exponent base.
-    :param p: Decay factor.
-    :param A: Amplitude.
-    :param B: Offset.
-    :return: Result of the exponential decay function.
+    """Exponential decay function, ``A * p**m + B``.
+
+    Args:
+        m: the exponent, such as a sequence length.
+        p: the decay factor.
+        A: the amplitude.
+        B: the offset.
+
+    Returns:
+        The decay at ``m``.
     """
     return A * p**m + B
 
@@ -28,16 +31,15 @@ def exponential_decay_function(m: float, p: float, A: float, B: float) -> float:
 def isosceles_triangle(
     base_length: float = 0.002, height: float = 0.003, center: tuple = (0, 0)
 ) -> tuple:
-    """
-    Returns the coordinates of three points defining an isosceles triangle.
+    """The coordinates of three points defining an isosceles triangle.
 
-    Parameters:
-        base_length (float): Length of the base of the triangle.
-        height (float): Height from base to apex.
-        center (tuple): (x, y) coordinates of the midpoint of the base.
+    Args:
+        base_length: Length of the base of the triangle.
+        height: Height from base to apex.
+        center: (x, y) coordinates of the midpoint of the base.
 
     Returns:
-        tuple: Three coordinate pairs (base_left, base_right, apex).
+        Three coordinate pairs (base_left, base_right, apex).
     """
     cx, cy = center
     half_base = base_length / 2

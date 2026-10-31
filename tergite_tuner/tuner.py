@@ -84,7 +84,14 @@ class NodeManager:
                 self.node_graph.add_node(member)
 
     def topo_order(self, target_node: NodeEnum) -> List[NodeEnum]:
-        """Return ``target_node``'s ancestors in topological order plus itself."""
+        """Return ``target_node``'s ancestors in topological order plus itself.
+
+        Args:
+            target_node: the node to calibrate last.
+
+        Returns:
+            The nodes to run, in order, leaving out the session's ignored nodes.
+        """
         order = get_dependencies_in_topological_order(
             self.node_graph,
             target_node,
@@ -95,6 +102,13 @@ class NodeManager:
     def inspect_node(
         self, node: NodeEnum, *, ignore_spec: bool = False, save_plot: bool = False
     ):
+        """Calibrates ``node``, unless it is already in spec.
+
+        Args:
+            node: the node to inspect.
+            ignore_spec: calibrate even if the node is in spec.
+            save_plot: save the node's plots in its data folder.
+        """
         node_spec = self.nodes[node]
         node_name = node.value
         elements = run.get_elements(node_spec, self.session)
@@ -216,6 +230,9 @@ def reanalyse(
         refresh_session: whether to refresh the session context before running; defaults to True.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
+
+    Returns:
+        the session context and the results from that session
     """
     if session is None:
         session = SessionContext.from_env(env_file, **session_options)

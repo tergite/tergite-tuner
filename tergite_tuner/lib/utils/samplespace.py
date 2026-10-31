@@ -23,6 +23,15 @@ if TYPE_CHECKING:
 
 
 def resonator_samples(qubit: str, session: "SessionContext") -> np.ndarray:
+    """Readout frequencies over 4 MHz around the resonator's ``VNA_frequency``.
+
+    Args:
+        qubit: the qubit whose resonator to sweep.
+        session: the session, whose device config holds the VNA frequency.
+
+    Returns:
+        The frequencies to sweep, in Hz.
+    """
     res_spec_samples = 91
     sweep_range = 4.0e6
     vna_frequency = session.device_config.resonators[qubit]["VNA_frequency"]
@@ -34,9 +43,18 @@ def resonator_samples(qubit: str, session: "SessionContext") -> np.ndarray:
 def qubit_samples(
     qubit: str, session: "SessionContext", transition: str = "01"
 ) -> np.ndarray:
-    """
+    """Drive frequencies over 6 MHz around the qubit's VNA frequency for a transition.
+
+    Args:
+        qubit: the qubit to sweep.
+        session: the session, whose device config holds the VNA frequencies.
+        transition: ``"01"`` or ``"12"``.
+
+    Returns:
+        The frequencies to sweep, in Hz.
+
     Raises:
-        ValueError: If `transition` is not one of "01", or "12
+        ValueError: If `transition` is not one of "01" or "12".
     """
     qub_spec_samples = 71
     sweep_range = 6e6

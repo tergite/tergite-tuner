@@ -34,7 +34,16 @@ model = RabiModel()
 
 
 def analyse_rabi(s21: xr.DataArray, _session: "SessionContext") -> Fits | None:
-    """The pi pulse's ``amp180`` from a cosine fitted to ``|S21|`` against drive amplitude."""
+    """The pi pulse's ``amp180`` from a cosine fitted to ``|S21|`` against drive amplitude.
+
+    Args:
+        s21: the qubit's S21, a point per drive amplitude.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        ``amp180``, the pi amplitude, and ``model``, the fit, to plot; None if the pi
+        amplitude is at or above ``MAX_PI_AMPLITUDE``.
+    """
     amplitudes = s21.coords[get_coord_name("mw_amplitudes", s21.attrs["qubit"])].values
     magnitudes = np.abs(s21.values)
     guess = model.guess(magnitudes, drive_amp=amplitudes)
@@ -48,6 +57,14 @@ def analyse_rabi(s21: xr.DataArray, _session: "SessionContext") -> Fits | None:
 def plot_rabi(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
+    """Draws ``|S21|`` against drive amplitude, and the fitted cosine if there is one.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21.
+        fits: the qubit's fits.
+        _session: unused; part of the ``plot`` signature.
+    """
     amplitudes = s21.coords[get_coord_name("mw_amplitudes", s21.attrs["qubit"])].values
     if "model" in fits:
         fit_amplitudes = np.linspace(amplitudes[0], amplitudes[-1], 200)
@@ -68,7 +85,17 @@ def plot_rabi(
 def analyse_n_rabi(
     s21: xr.DataArray, session: "SessionContext", amp180_field: str
 ) -> Fits:
-    """``amp180``: the stored ``amp180_field`` plus the correction with the least ``|S21|`` over all repetitions."""
+    """``amp180``: the stored ``amp180_field`` plus the correction with the least ``|S21|`` over all repetitions.
+
+    Args:
+        s21: the qubit's S21, a point per amplitude correction and number of pi pulses.
+        session: the session, whose device state holds the current pi amplitude.
+        amp180_field: the device state's field of the pi amplitude, such as
+            ``rxy:amp180``.
+
+    Returns:
+        ``amp180``, the corrected pi amplitude, and ``correction``, what was added.
+    """
     qubit = s21.attrs["qubit"]
     sums = np.abs(s21).sum(get_coord_name("X_repetitions", qubit))
     correction = sums.idxmin().item()
@@ -82,6 +109,14 @@ def analyse_n_rabi(
 def plot_n_rabi(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
+    """Draws ``|S21|`` against amplitude correction and pi pulses, and marks the chosen correction.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21.
+        fits: the qubit's fits.
+        _session: unused; part of the ``plot`` signature.
+    """
     x = get_coord_name("mw_amplitudes_sweep", s21.attrs["qubit"])
     np.abs(s21).plot(ax=axis, x=x, cmap="RdBu_r")
     axis.set_xlabel("mw amplitude correction")

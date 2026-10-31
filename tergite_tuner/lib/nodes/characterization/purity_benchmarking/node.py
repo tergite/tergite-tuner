@@ -50,6 +50,17 @@ def get_schedule(
     seeds: dict[str, int],
     repetitions: int,
 ) -> Schedule:
+    """The purity benchmarking schedule: random Clifford sequences, each measured in the X, Y and Z bases.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        number_of_cliffords: each qubit's sequence lengths, then its calibration points.
+        seeds: each qubit's seed for the random sequences.
+        repetitions: how many shots to average each point over.
+
+    Returns:
+        The schedule.
+    """
     return PurityBenchmarkingMeasurement(transmons).schedule_function(
         seeds, number_of_cliffords, repetitions
     )
@@ -58,7 +69,17 @@ def get_schedule(
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    """A Bloch vector along Z, its purity falling by ``DUMMY_UNITARITY`` per Clifford, as |1> populations."""
+    """A Bloch vector along Z, its purity falling by ``DUMMY_UNITARITY`` per Clifford, as |1> populations.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values, of which ``number_of_cliffords`` is used.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21, three bases per sequence length, then the |0>, |1> and |2>
+        calibration points.
+    """
     lengths = sweeps["number_of_cliffords"][:-3:3]
     z_population = (1 + np.sqrt(DUMMY_UNITARITY**lengths)) / 2
     bases = np.stack([np.full_like(z_population, 0.5)] * 2 + [z_population], axis=1)

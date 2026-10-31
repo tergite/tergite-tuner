@@ -63,6 +63,16 @@ def get_t2_schedule(
     delays: dict[str, np.ndarray],
     multiplexing: str,
 ) -> Schedule:
+    """The T2 schedule: a Ramsey sequence of two X90 pulses each delay apart.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        delays: each qubit's delays, in seconds.
+        multiplexing: ``parallel`` to measure the qubits at once, or ``one_by_one``.
+
+    Returns:
+        The schedule.
+    """
     return T2Measurement(transmons).schedule_function(delays, multiplexing)
 
 
@@ -71,12 +81,32 @@ def get_echo_schedule(
     delays: dict[str, np.ndarray],
     multiplexing: str,
 ) -> Schedule:
+    """The T2 echo schedule: a Ramsey sequence with an X pulse halfway through each delay.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        delays: each qubit's delays, in seconds.
+        multiplexing: ``parallel`` to measure the qubits at once, or ``one_by_one``.
+
+    Returns:
+        The schedule.
+    """
     return T2EchoMeasurement(transmons).schedule_function(delays, multiplexing)
 
 
 def get_dummy_t2(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Ramsey fringes decaying with a T2 of ``DUMMY_T2_US``.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values, of which ``delays`` is used.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21 at each delay.
+    """
     delays = sweeps["delays"] * 1e6
     fringes = np.cos(2 * np.pi * DUMMY_FREQUENCY_PER_US * delays)
     return 1e-4 * (1 + fringes * np.exp(-delays / DUMMY_T2_US))
@@ -85,6 +115,16 @@ def get_dummy_t2(
 def get_dummy_echo(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """An exponential decay with a T2 echo four times ``DUMMY_T2_US``.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values, of which ``delays`` is used.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21 at each delay.
+    """
     return 1e-3 * np.exp(-sweeps["delays"] * 1e6 / (4 * DUMMY_T2_US)) + 1e-4
 
 

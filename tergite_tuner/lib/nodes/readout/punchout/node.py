@@ -42,6 +42,16 @@ def get_schedule(
     ro_frequencies: dict[str, np.ndarray],
     ro_amplitudes: dict[str, np.ndarray],
 ) -> Schedule:
+    """The punchout schedule: each qubit's resonator spectroscopy at each readout amplitude.
+
+    Args:
+        transmons: the qubits' transmons by name.
+        ro_frequencies: each qubit's readout frequencies.
+        ro_amplitudes: each qubit's readout amplitudes.
+
+    Returns:
+        The schedule.
+    """
     return PunchoutMeasurement(transmons).schedule_function(
         ro_frequencies, ro_amplitudes
     )
@@ -50,7 +60,16 @@ def get_schedule(
 def get_dummy_s21(
     qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
 ) -> np.ndarray:
-    """The ground-state resonator, the same at every amplitude."""
+    """The ground-state resonator, the same at every amplitude.
+
+    Args:
+        qubit: the qubit.
+        sweeps: the readout frequencies and amplitudes.
+        session: the session the dummy resonator reads.
+
+    Returns:
+        S21 with an axis per frequency and per amplitude.
+    """
     spectrum = get_dummy_resonator(qubit, sweeps, session, state=0)
     return np.tile(spectrum[:, None], (1, len(sweeps["ro_amplitudes"])))
 

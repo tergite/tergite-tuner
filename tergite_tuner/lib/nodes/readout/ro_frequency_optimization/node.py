@@ -44,6 +44,16 @@ def get_schedule(
     ro_opt_frequencies: dict[str, np.ndarray],
     qubit_states: dict[str, np.ndarray],
 ) -> Schedule:
+    """The schedule that prepares each state and reads it out at each frequency.
+
+    Args:
+        transmons: the qubits' transmons by name.
+        ro_opt_frequencies: each qubit's readout frequencies.
+        qubit_states: each qubit's states to prepare.
+
+    Returns:
+        The schedule.
+    """
     return ROFrequencyOptimizationMeasurement(transmons).schedule_function(
         ro_opt_frequencies, qubit_states
     )
@@ -52,7 +62,16 @@ def get_schedule(
 def get_dummy_s21(
     qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
 ) -> np.ndarray:
-    """The resonator with the qubit in each state, as resonator spectroscopy's dummy shifts it."""
+    """The resonator with the qubit in each state, as resonator spectroscopy's dummy shifts it.
+
+    Args:
+        qubit: the qubit.
+        sweeps: the readout frequencies and prepared states.
+        session: the session the dummy resonator reads.
+
+    Returns:
+        S21 with an axis per frequency and per state.
+    """
     frequencies = {"ro_frequencies": sweeps["ro_opt_frequencies"]}
     return np.stack(
         [

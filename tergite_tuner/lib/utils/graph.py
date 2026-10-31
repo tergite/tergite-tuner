@@ -37,8 +37,18 @@ def get_dependencies_in_topological_order(
 ) -> List[_T]:
     """The ancestors of ``target_node`` but ``exclude_nodes``, each after its own ancestors.
 
-    Ancestors on the same level come in no set order. Raises ``RuntimeError`` if
-    there is no such order, as for a cycle.
+    Ancestors on the same level come in no set order.
+
+    Args:
+        graph: the dependency graph, an edge from each node to the nodes that need it.
+        target_node: the node whose dependencies to list.
+        exclude_nodes: nodes to leave out; their own dependencies are still listed.
+
+    Returns:
+        The dependencies, in an order they can run in; ``target_node`` is not among them.
+
+    Raises:
+        RuntimeError: if there is no such order, as for a cycle.
     """
     exclude_set = set(exclude_nodes)
 

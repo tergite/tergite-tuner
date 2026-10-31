@@ -33,7 +33,12 @@ def draw_arrow_chart(header: str, node_list: list[str]):
 
 
 def print_measurement_info(duration: float, measurement: Tuple[int, int]) -> None:
-    """Log information about the current measurement."""
+    """Log information about the current measurement.
+
+    Args:
+        duration: the schedule's duration, in seconds.
+        measurement: the measurement's index and the number of measurements.
+    """
     measurement_message = (
         f". Measurement {measurement[0] + 1} of {measurement[1]}"
         if measurement[1] > 1

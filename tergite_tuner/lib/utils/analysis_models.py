@@ -49,6 +49,18 @@ class RamseyModel(lmfit.model.Model):
         self.set_param_hint("n_factor", expr="1", vary=False)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
+        """Initial parameters for fitting ``data``, from its spread and its FFT.
+
+        Args:
+            data: the measured signal at each delay.
+            **kws: ``t``, the delays, and any parameter values to override.
+
+        Returns:
+            The initial parameters.
+
+        Raises:
+            ValueError: if ``t`` is not given.
+        """
         t = kws.get("t", None)
         if t is None:
             raise ValueError(
@@ -79,6 +91,18 @@ def cos_func(
     offset: float,
     phase: float,
 ) -> float:
+    """``amplitude * cos(2*pi * frequency * drive_amp + phase) + offset``.
+
+    Args:
+        drive_amp: the drive amplitude.
+        frequency: the oscillations per unit of drive amplitude.
+        amplitude: the oscillation's amplitude.
+        offset: the signal's offset.
+        phase: the phase in radians.
+
+    Returns:
+        The signal at ``drive_amp``.
+    """
     return amplitude * np.cos(2 * np.pi * frequency * drive_amp + phase) + offset
 
 
@@ -101,6 +125,16 @@ class RabiModel(lmfit.model.Model):
         self.set_param_hint("amp180", expr="1/(2*frequency)", vary=False)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
+        """Initial parameters for fitting ``data``, from its spread and its FFT.
+
+        Args:
+            data: the measured signal at each drive amplitude.
+            **kws: ``drive_amp``, the drive amplitudes, and any parameter values to
+                override.
+
+        Returns:
+            The initial parameters, or None if ``drive_amp`` is not given.
+        """
         drive_amp = kws.get("drive_amp", None)
         if drive_amp is None:
             return None
@@ -205,11 +239,29 @@ class ThreeClassBoundary:
         self.y_intercepts = (y_intercept0, y_intercept1, y_intercept2)
 
     def intersection_I(self, index_a: int, index_b: int):
+        """The I coordinate where two classes' discriminant lines cross.
+
+        Args:
+            index_a: the first class.
+            index_b: the second class.
+
+        Returns:
+            The crossing's I coordinate.
+        """
         numerator = self.y_intercepts[index_a] - self.y_intercepts[index_b]
         denominator = self.slopes[index_a] - self.slopes[index_b]
         return numerator / denominator
 
     def intersection_Q(self, index_a: int, index_b: int):
+        """The Q coordinate where two classes' discriminant lines cross.
+
+        Args:
+            index_a: the first class.
+            index_b: the second class.
+
+        Returns:
+            The crossing's Q coordinate.
+        """
         numerator = self.y_intercepts[index_a] - self.y_intercepts[index_b]
         denominator = self.slopes[index_a] - self.slopes[index_b]
         return (
@@ -217,8 +269,16 @@ class ThreeClassBoundary:
         )
 
     def omega(self, index_a: int, index_b: int):
-        """
+        """The direction from the centroid of the boundary between two classes.
+
         Be careful: angle defined in the [0,360) range
+
+        Args:
+            index_a: the first class.
+            index_b: the second class.
+
+        Returns:
+            The boundary's angle to the I axis, in degrees.
         """
         i_point = self.intersection_I(index_a, index_b)
         q_point = self.intersection_Q(index_a, index_b)
@@ -230,6 +290,7 @@ class ThreeClassBoundary:
 
     @property
     def centroid(self):
+        """The ``(I, Q)`` point where the three boundaries meet."""
         centroid_I = (
             self.intersection_I(0, 1)
             + self.intersection_I(1, 2)
@@ -244,19 +305,31 @@ class ThreeClassBoundary:
 
     @property
     def omega_01(self):
+        """The angle in degrees, in [0, 360), of the boundary between |0> and |1>."""
         return self.omega(0, 1)
 
     @property
     def omega_12(self):
+        """The angle in degrees, in [0, 360), of the boundary between |1> and |2>."""
         return self.omega(1, 2)
 
     @property
     def omega_20(self):
+        """The angle in degrees, in [0, 360), of the boundary between |2> and |0>."""
         return self.omega(2, 0)
 
     def boundary_line(
         self, class_a: int, class_b: int
     ) -> tuple[np.ndarray, np.ndarray]:
+        """The points to plot the boundary between two classes, from the centroid.
+
+        Args:
+            class_a: the first class.
+            class_b: the second class.
+
+        Returns:
+            The line's I values and Q values.
+        """
         i_point = self.intersection_I(class_a, class_b)
         q_point = self.intersection_Q(class_a, class_b)
         i_values = np.linspace(self.centroid[0], i_point, 100)
@@ -280,7 +353,16 @@ class ExpDecayModel(lmfit.model.Model):
         self.set_param_hint("p", vary=True, min=0)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
-        """Guesses ``A`` and ``B`` unless ``amplitude`` and ``offset`` are given; needs ``m``."""
+        """Guesses ``A`` and ``B`` unless ``amplitude`` and ``offset`` are given; needs ``m``.
+
+        Args:
+            data: the measured fidelity at each sequence length.
+            **kws: ``m``, the sequence lengths; ``amplitude`` and ``offset``, to set
+                ``A`` and ``B``; and any parameter values to override.
+
+        Returns:
+            The initial parameters, or None if ``m`` is not given.
+        """
         m = kws.get("m", None)
 
         if m is None:
@@ -301,10 +383,24 @@ def sin_func(
     offset: float,
     phase: float = 0,
 ) -> float:
+    """``amplitude * cos(2*pi * frequency * x + phase) + offset``.
+
+    Args:
+        x: where to evaluate the oscillation.
+        frequency: the oscillations per unit of ``x``.
+        amplitude: the oscillation's amplitude.
+        offset: the signal's offset.
+        phase: the phase in radians.
+
+    Returns:
+        The signal at ``x``.
+    """
     return amplitude * np.cos(2 * np.pi * frequency * x + phase) + offset
 
 
 class SineOscillatingModel(lmfit.model.Model):
+    """A sinusoid with a free phase, to fit oscillations against any swept setting."""
+
     def __init__(self, *args, **kwargs):
         # pass in the defining equation so the user doesn't have to later.
         super().__init__(sin_func, *args, **kwargs)
@@ -313,6 +409,15 @@ class SineOscillatingModel(lmfit.model.Model):
         self.set_param_hint("frequency", min=0)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
+        """Initial parameters for fitting ``data``, from its spread and its FFT.
+
+        Args:
+            data: the measured signal at each ``x``.
+            **kws: ``x``, the swept values, and any parameter values to override.
+
+        Returns:
+            The initial parameters.
+        """
         independent_values = kws.get("x")
 
         amp_guess = abs(max(data) - min(data)) / 2  # amp is positive by convention
@@ -331,6 +436,16 @@ class SineOscillatingModel(lmfit.model.Model):
 def fit_sine_phase(
     model: lmfit.Model, data: np.ndarray, x: np.ndarray, plot_x: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
-    """The phase ``model`` fits to ``data`` over ``x``, and its fit over ``plot_x``, as ``xr.apply_ufunc`` takes them."""
+    """The phase ``model`` fits to ``data`` over ``x``, and its fit over ``plot_x``, as ``xr.apply_ufunc`` takes them.
+
+    Args:
+        model: a model with a ``phase`` parameter, such as ``SineOscillatingModel``.
+        data: the measured signal.
+        x: the swept values.
+        plot_x: where to evaluate the fit for plotting.
+
+    Returns:
+        The fitted phase, and the fit at ``plot_x``, each wrapped in an array.
+    """
     fit = model.fit(data, params=model.guess(data, x=x), x=x)
     return np.array([fit.values["phase"]]), np.array([model.eval(fit.params, x=plot_x)])

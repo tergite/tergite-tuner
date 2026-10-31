@@ -62,12 +62,32 @@ def get_schedule(
     delays: dict[str, np.ndarray],
     multiplexing: str,
 ) -> Schedule:
+    """The T1 schedule: an X pulse, then a measurement after each delay.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        delays: each qubit's delays, in seconds.
+        multiplexing: ``parallel`` to measure the qubits at once, or ``one_by_one``.
+
+    Returns:
+        The schedule.
+    """
     return T1Measurement(transmons).schedule_function(delays, multiplexing)
 
 
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """An exponential decay with a T1 of ``DUMMY_T1``.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values, of which ``delays`` is used.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21 at each delay.
+    """
     return 1e-3 * np.exp(-sweeps["delays"] / DUMMY_T1) + 1e-4
 
 

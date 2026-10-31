@@ -24,7 +24,15 @@ BAND_HEIGHT = 0.8
 
 
 def create_figure_with_top_band(nrows: int, ncols: int) -> tuple[Figure, np.ndarray]:
-    """A figure with a blank band on top for metadata, over an ``nrows`` by ``ncols`` grid of axes."""
+    """A figure with a blank band on top for metadata, over an ``nrows`` by ``ncols`` grid of axes.
+
+    Args:
+        nrows: the grid's rows.
+        ncols: the grid's columns.
+
+    Returns:
+        The figure, and its grid's axes as an ``nrows`` by ``ncols`` array.
+    """
     subplot_size = SUBPLOT_SIZES.get(ncols, SUBPLOT_SIZE)
     width = ncols * subplot_size
     plots_height = nrows * subplot_size

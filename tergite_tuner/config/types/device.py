@@ -191,6 +191,10 @@ class DeviceConfig(BaseModel):
         Defaults: 30 dB on qubits and couplers, 60 dB on resonators
         (which matches the QCM-RF / QRM-RF maxima documented at
         https://docs.qblox.com).
+
+        Returns:
+            The attenuation in dB of each qubit, coupler and resonator, keyed by
+            ``"qubit"``, ``"coupler"`` and ``"resonator"`` and then by name.
         """
         xy = MappingProxyType(
             {q: data.get("attenuation", 30) for q, data in self.qubits.items()}

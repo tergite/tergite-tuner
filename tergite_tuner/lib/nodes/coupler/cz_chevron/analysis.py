@@ -34,6 +34,7 @@ CURVE_POINTS = 200
 
 
 class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
+    """Finds a coupler's CZ working points in its chevron of populations over CZ frequency and duration."""
 
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
         super().__init__(dataset, session, **keywords)
@@ -41,6 +42,15 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
 
     def apply_sinusoidal_slices_fit(self, data):
+        """Fits a sine to one frequency's leads over the CZ durations.
+
+        Args:
+            data: the combined leads of the control and target, one per duration.
+
+        Returns:
+            The fitted period as the CZ duration, NaN if the fit failed or its
+            oscillations are too weak, and the fitted curve over the plot's durations.
+        """
         # durations is the independent variable in the cosine definition
         guess = self.model.guess(data, x=self.durations)
         try:
@@ -62,7 +72,12 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             return np.array([np.nan]), np.array([np.nan])
 
     def analyse(self) -> Fits | None:
-        """The (frequency, duration) points where the chevron returns to |11>, as CZ working points."""
+        """The (frequency, duration) points where the chevron returns to |11>, as CZ working points.
+
+        Returns:
+            The fits ``cz_working_frequencies`` and ``cz_working_durations_in_ns``,
+            each a list written as a string.
+        """
         self.calculate_probabilities()
         self.fit_plot_durations = np.linspace(
             self.durations[0], self.durations[-1], CURVE_POINTS
@@ -105,7 +120,11 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
         return get_fits_from_result(analysis_result, True)
 
     def plotter(self, figures_dictionary):
+        """Draws each qubit's state populations over frequency and duration, with the working points.
 
+        Args:
+            figures_dictionary: takes the coupler's figure, under the coupler's name.
+        """
         current_probabilities = self.probabilities
         current_probabilities.plot(
             x=self.frequencies_coord, cmap="RdBu_r", row="qubit", col="state"
@@ -141,7 +160,19 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 def get_chevron_leads(
     control: xr.DataArray, target: xr.DataArray, phase_path: str
 ) -> tuple[xr.DataArray, xr.DataArray]:
-    """Each qubit's population at its end of the phase path, less its |1>: |2> for the control and |0> for the target via 20, the reverse via 02."""
+    """Each qubit's population at its end of the phase path, less its |1>: |2> for the control and |0> for the target via 20, the reverse via 02.
+
+    Args:
+        control: the control's state populations.
+        target: the target's state populations.
+        phase_path: ``via_20`` or ``via_02``.
+
+    Returns:
+        The control's lead and the target's lead.
+
+    Raises:
+        ValueError: if the phase path is neither.
+    """
     ends = {"via_20": (2, 0), "via_02": (0, 2)}
     if phase_path not in ends:
         raise ValueError(f"Invalid phase path:{phase_path}")
@@ -153,7 +184,14 @@ def get_chevron_leads(
 
 
 def get_durations_in_ns(durations: np.ndarray) -> np.ndarray:
-    """Durations in seconds, rounded down to whole nanoseconds and then to multiples of 4 ns."""
+    """Durations in seconds, rounded down to whole nanoseconds and then to multiples of 4 ns.
+
+    Args:
+        durations: the durations, in seconds.
+
+    Returns:
+        The durations in whole nanoseconds, multiples of 4.
+    """
     # rounded to a millionth of a nanosecond first, so 100e-9 is 100 ns, not 99
     nanoseconds = np.floor(np.round(durations * 1e9, 6)).astype(int)
     return (nanoseconds // 4) * 4

@@ -24,6 +24,13 @@ class ExtendedLogger(logging.Logger):
     """A logger with a ``status`` level, between INFO and WARNING."""
 
     def status(self, message: str, *args: object, **kwargs: object) -> None:
+        """Logs ``message`` at the ``STATUS`` level, as ``info`` logs at INFO.
+
+        Args:
+            message: the message, formatted with ``args``.
+            *args: the message's formatting arguments.
+            **kwargs: what ``logging.Logger.log`` takes, such as ``exc_info``.
+        """
         if self.isEnabledFor(STATUS_LEVEL):
             self._log(STATUS_LEVEL, message, args, **kwargs)
 
@@ -34,6 +41,11 @@ def setup_logging(
     """Logs to the console at ``stdout_level``, and to ``log_dir``'s log file at ``file_level``.
 
     Replaces the handlers an earlier call added, as each run calls it.
+
+    Args:
+        stdout_level: the console's lowest level.
+        file_level: the log file's lowest level.
+        log_dir: the folder of the log file; no file is written if None.
     """
     for handler in list(logger.handlers):
         logger.removeHandler(handler)

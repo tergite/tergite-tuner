@@ -21,7 +21,18 @@ from pydantic import BaseModel
 def load_config[ModelT: BaseModel](
     model: type[ModelT], path: str | PathLike[str]
 ) -> ModelT:
-    """The ``model`` in the file at ``path``: JSON for a ``.json`` file, TOML otherwise."""
+    """The ``model`` in the file at ``path``: JSON for a ``.json`` file, TOML otherwise.
+
+    Args:
+        model: the pydantic model the file holds.
+        path: the file.
+
+    Returns:
+        The validated model.
+
+    Raises:
+        pydantic.ValidationError: if the file does not match the model.
+    """
     path = Path(path)
     if path.suffix == ".json":
         data = json.loads(path.read_text())
