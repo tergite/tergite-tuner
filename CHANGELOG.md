@@ -9,6 +9,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Changed
 
+- Required pydantic 2.11.3 and pydantic-settings 2.9.1 or later, below 3, instead of their 2.11 and 2.9 series; an application that installs the tuner could not use a newer pydantic-settings
 - Named the result models in `tergite_tuner.export` for what they hold: `QubitResults` and `CouplerResults` are public, replacing the private `_QubitInRedis` and `_CouplerInRedis`, and the JSON they read and write is unchanged
 
 ## [2026.10.0-rc.2] - 2026-10-31
