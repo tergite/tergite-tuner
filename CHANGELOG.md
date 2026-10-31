@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.3] - 2026-10-31
+
 ### Changed
 
 - Required pydantic 2.11.3 and pydantic-settings 2.9.1 or later, below 3, instead of their 2.11 and 2.9 series; an application that installs the tuner could not use a newer pydantic-settings
