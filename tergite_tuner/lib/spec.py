@@ -51,7 +51,7 @@ class NodeSpec:
         analyse: the fits of one element's S21, which has a coordinate per swept
             setting, named by ``get_coord_name``, given the session; None if the
             element failed.
-        qois: the Redis field each fit is stored in; fits it does not name are not stored.
+        qois: the device state's field each fit is stored in; fits it does not name are not stored.
         sweeps: each swept setting's values for an element, in the order the dataset
             is reshaped: the first setting varies fastest.
         get_dummy_s21: an element's S21 in dummy mode, given its sweeps' values, with

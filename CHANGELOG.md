@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Changed
+
+- Named the result models in `tergite_tuner.export` for what they hold: `QubitResults` and `CouplerResults` are public, replacing the private `_QubitInRedis` and `_CouplerInRedis`, and the JSON they read and write is unchanged
+
 ## [2026.10.0-rc.2] - 2026-10-31
 
 ### Added
