@@ -12,19 +12,16 @@
 
 """Export a session's calibrated parameter values, and as a BCC calibration seed."""
 
+from __future__ import annotations
+
 import ast
 import re
 from os import PathLike
 from typing import (
     Annotated,
     Any,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
     TypeVar,
-    Union,
     Unpack,
 )
 
@@ -72,7 +69,7 @@ _SEED_UNITS = {
 
 def read_result(
     session: SessionContext, session_only: bool = True
-) -> "CalibrationResults":
+) -> CalibrationResults:
     """The session's device state on its qubits and couplers.
 
     Args:
@@ -97,10 +94,10 @@ def read_result(
 
 
 def generate_calib_seed_file(
-    path: Union[str, "PathLike[str]"] = "calibration.seed.toml",
-    session: Optional[SessionContext] = None,
-    env_file: Optional[Union[str, "PathLike[str]"]] = None,
-    coupler_name_map: Optional[Dict[str, str]] = None,
+    path: str | PathLike[str] = "calibration.seed.toml",
+    session: SessionContext | None = None,
+    env_file: str | PathLike[str] | None = None,
+    coupler_name_map: dict[str, str] | None = None,
     **session_options: Unpack[SessionOptions],
 ):
     """Writes the calibration seed tergite-backend reads, from the session's device state, as TOML to ``path``.
@@ -146,37 +143,8 @@ def generate_calib_seed_file(
         tomlkit.dump(seed, file)
 
 
-def _validate_numpy_tuple(v: Any) -> Any:
-    """Validates a field of tuples of numpy float64"""
-    if isinstance(v, str):
-        try:
-            v = ast.literal_eval(_NUMPY_FLOAT_PATTERN.sub("", v))
-        except (ValueError, SyntaxError) as e:
-            raise ValueError(f"Could not parse numpy tuple string: {e}")
-
-    if isinstance(v, (list, tuple)):
-        return tuple(np.float64(item) for item in v)
-    return v
-
-
-# The Annotated Field
-NumpyFloatTuple = Annotated[
-    Tuple[np.float64, np.float64], BeforeValidator(_validate_numpy_tuple)
-]
-
-
-def _parse_list_string(v: Any) -> Any:
-    """Parses a list an analysis wrote as a string, as ``str(values)``."""
-    if isinstance(v, str):
-        return ast.literal_eval(_NUMPY_FLOAT_PATTERN.sub("", v))
-    return v
-
-
-NumberList = Annotated[List[float], BeforeValidator(_parse_list_string)]
-
-
-class _RedisDict(BaseModel):
-    """A representation of dictionaries in redis"""
+class _ResultsModel(BaseModel):
+    """Stored values, by name; a "nan" value is left out."""
 
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
@@ -189,19 +157,19 @@ class _RedisDict(BaseModel):
         return data
 
 
-class CalibrationResults(_RedisDict):
-    """The combined data structure of Bcc params as saved in redis"""
+class CalibrationResults(_ResultsModel):
+    """The device state's values and calibration statuses, by element."""
 
-    transmons: Dict[str, "_QubitInRedis"] = {}
-    couplers: Dict[str, "_CouplerInRedis"] = {}
-    cs: Dict[str, "_CsInRedis"] = {}
+    transmons: dict[str, QubitResults] = {}
+    couplers: dict[str, CouplerResults] = {}
+    cs: dict[str, _CalibrationStatuses] = {}
 
 
-class _QubitInRedis(_RedisDict):
-    """The data structure of qubits as saved in redis"""
+class QubitResults(_ResultsModel):
+    """A qubit's stored values."""
 
-    clock_freqs: Optional["_QubitClockFreqsInRedis"] = None
-    rxy: Optional["_QubitRxyInRedis"] = None
+    clock_freqs: _QubitClockFreqs | None = None
+    rxy: _QubitRxy | None = None
     t1_time: float | None = None
     t1_time_error: float | None = None
     t2_echo_time: float | None = None
@@ -211,14 +179,14 @@ class _QubitInRedis(_RedisDict):
     lda_coef_0: float | None = None
     lda_coef_1: float | None = None
     lda_intercept: float | None = None
-    measure: Optional["_QubitMeasureInRedis"] = None
-    measure_1: Optional["_QubitMeasureInRedis"] = None
-    measure_2: Optional["_QubitMeasureInRedis"] = None
-    measure1: Optional["_QubitMeasureInRedis"] = None
-    measure2: Optional["_QubitMeasureInRedis"] = None
-    extended_clock_freqs: Optional["_QubitExtendedClockFreqsInRedis"] = None
-    measure_2state_opt: Optional["_QubitMeasureInRedis"] = None
-    measure_3state_opt: Optional["_QubitMeasureInRedis"] = None
+    measure: _QubitMeasure | None = None
+    measure_1: _QubitMeasure | None = None
+    measure_2: _QubitMeasure | None = None
+    measure1: _QubitMeasure | None = None
+    measure2: _QubitMeasure | None = None
+    extended_clock_freqs: _QubitExtendedClockFreqs | None = None
+    measure_2state_opt: _QubitMeasure | None = None
+    measure_3state_opt: _QubitMeasure | None = None
     omega_20: float | None = None
     omega_20_error: float | None = None
     center_0: NumpyFloatTuple | None = Field(None, alias="center|0>")
@@ -229,12 +197,12 @@ class _QubitInRedis(_RedisDict):
     centroid_I: float | None = None
     centroid_Q: float | None = None
     centroid_Q_error: float | None = None
-    spec: Optional["_QubitSpecInRedis"] = None
+    spec: _QubitSpec | None = None
     resonator_minimum: float | None = None
     resonator_minimum_error: float | None = None
     resonator_minimum_1: float | None = None
     resonator_minimum_1_error: float | None = None
-    r12: Optional["_QubitR12InRedis"] = None
+    r12: _QubitR12 | None = None
     inv_cm_opt_error: float | None = None
     fidelity_error: float | None = None
     lda_intercept_error: float | None = None
@@ -255,14 +223,14 @@ class _QubitInRedis(_RedisDict):
     VNA_f01_frequency: float | None = None
     VNA_f12_frequency: float | None = None
     fidelity: float | None = None
-    reset: Optional["_ResetInRedis"] = None
+    reset: _Reset | None = None
     readout_matrix: (
-        Annotated[List[List[float]], BeforeValidator(_parse_list_string)] | None
+        Annotated[list[list[float]], BeforeValidator(_parse_list_string)] | None
     ) = None
 
 
-class _CouplerInRedis(_RedisDict):
-    """The data structure of coupler as saved in redis"""
+class CouplerResults(_ResultsModel):
+    """A coupler's stored values."""
 
     cz_pulse_frequency: float | None = None
     cz_pulse_amplitude: float | None = None
@@ -279,18 +247,18 @@ class _CouplerInRedis(_RedisDict):
     cz_dynamic_control_error: float | None = None
     control_local_phase: float | None = None
     cz_working_frequencies_error: float | None = None
-    spec: Optional["_CouplerSpecInRedis"] = None
+    spec: _CouplerSpec | None = None
     cz_working_frequencies: NumberList | None = None
     cz_pulse_duration_error: float | None = None
     cz_working_durations_in_ns_error: float | None = None
-    reset: Optional["_ResetInRedis"] = None
+    reset: _Reset | None = None
     tqg_fidelity: float | None = None
     cz_dynamic_target_error: float | None = None
     attenuation: float | None = None
 
 
-class _CsInRedis(_RedisDict):
-    """The data structure of CS (calibration supervisor) as saved in redis"""
+class _CalibrationStatuses(_ResultsModel):
+    """Each node's calibration status for an element."""
 
     resonator_spectroscopy: _NodeState | None = None
     qubit_01_spectroscopy: _NodeState | None = None
@@ -316,8 +284,8 @@ class _CsInRedis(_RedisDict):
     punchout: _NodeState | None = None
 
 
-class _QubitClockFreqsInRedis(_RedisDict):
-    """The data structure of qubit:clock_freqs as saved in redis"""
+class _QubitClockFreqs(_ResultsModel):
+    """A qubit's ``clock_freqs``."""
 
     f01: float | None = None
     f01_error: float | None = None
@@ -327,8 +295,8 @@ class _QubitClockFreqsInRedis(_RedisDict):
     f12_error: float | None = None
 
 
-class _QubitRxyInRedis(_RedisDict):
-    """The data structure of qubit:rxy as saved in redis"""
+class _QubitRxy(_ResultsModel):
+    """A qubit's ``rxy``."""
 
     amp180: float | None = None
     amp180_error: float | None = None
@@ -338,8 +306,8 @@ class _QubitRxyInRedis(_RedisDict):
     sigma: float = 0
 
 
-class _QubitMeasureInRedis(_RedisDict):
-    """The data structure of qubit:measure*  as saved in redis"""
+class _QubitMeasure(_ResultsModel):
+    """A qubit's ``measure*``."""
 
     acq_delay: float | None = None
     integration_time: float | None = None
@@ -353,8 +321,8 @@ class _QubitMeasureInRedis(_RedisDict):
     acq_rotation_error: float | None = None
 
 
-class _QubitExtendedClockFreqsInRedis(_RedisDict):
-    """The data structure of qubit:extended_clock_freqs as saved in redis"""
+class _QubitExtendedClockFreqs(_ResultsModel):
+    """A qubit's ``extended_clock_freqs``."""
 
     readout_2state_opt: float | None = None
     readout_3state_opt: float | None = None
@@ -366,8 +334,8 @@ class _QubitExtendedClockFreqsInRedis(_RedisDict):
     readout_2state_opt_error: float | None = None
 
 
-class _QubitSpecInRedis(_RedisDict):
-    """The data structure of qubit:spec as saved in redis"""
+class _QubitSpec(_ResultsModel):
+    """A qubit's ``spec``."""
 
     spec_ampl_12_optimal: float | None = None
     spec_ampl_optimal: float | None = None
@@ -377,8 +345,8 @@ class _QubitSpecInRedis(_RedisDict):
     spec_duration: float | None = None
 
 
-class _QubitR12InRedis(_RedisDict):
-    """The data structure of qubit:r12 as saved in redis"""
+class _QubitR12(_ResultsModel):
+    """A qubit's ``r12``."""
 
     ef_amp180_error: float | None = None
     ef_motzoi: float | None = None
@@ -386,20 +354,20 @@ class _QubitR12InRedis(_RedisDict):
     ef_motzoi_error: float | None = None
 
 
-class _CouplerSpecInRedis(_RedisDict):
-    """The data structure of coupler:spec as saved in redis"""
+class _CouplerSpec(_ResultsModel):
+    """A coupler's ``spec``."""
 
     spec_amp: float | None = None
     spec_duration: float | None = None
 
 
-class _ResetInRedis(_RedisDict):
-    """The data structure of coupler:reset as saved in redis"""
+class _Reset(_ResultsModel):
+    """An element's ``reset``."""
 
     duration: float | None = None
 
 
-def _get_qubit_seed(qubit: str, item: "_QubitInRedis") -> dict[str, Any]:
+def _get_qubit_seed(qubit: str, item: QubitResults) -> dict[str, Any]:
     """A qubit's seed entry from its calibrated values."""
     return dict(
         id=qubit,
@@ -414,7 +382,7 @@ def _get_qubit_seed(qubit: str, item: "_QubitInRedis") -> dict[str, Any]:
     )
 
 
-def _get_coupler_seed(name: str, item: "_CouplerInRedis") -> dict[str, Any]:
+def _get_coupler_seed(name: str, item: CouplerResults) -> dict[str, Any]:
     """A coupler's seed entry, under its name in the backend."""
     return dict(
         id=name,
@@ -428,7 +396,7 @@ def _get_coupler_seed(name: str, item: "_CouplerInRedis") -> dict[str, Any]:
     )
 
 
-def _get_resonator_seed(qubit: str, item: "_QubitInRedis") -> dict[str, Any]:
+def _get_resonator_seed(qubit: str, item: QubitResults) -> dict[str, Any]:
     """A qubit's readout resonator's seed entry."""
     return dict(
         id=qubit,
@@ -442,10 +410,38 @@ def _get_resonator_seed(qubit: str, item: "_QubitInRedis") -> dict[str, Any]:
     )
 
 
-def _get_lda_seed(item: "_QubitInRedis") -> dict[str, Any]:
+def _get_lda_seed(item: QubitResults) -> dict[str, Any]:
     """A qubit's linear discriminant's coefficients and intercept."""
     return dict(
         coef_0=item.lda_coef_0,
         coef_1=item.lda_coef_1,
         intercept=item.lda_intercept,
     )
+
+
+def _validate_numpy_tuple(v: Any) -> Any:
+    """Validates a field of tuples of numpy float64"""
+    if isinstance(v, str):
+        try:
+            v = ast.literal_eval(_NUMPY_FLOAT_PATTERN.sub("", v))
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"Could not parse numpy tuple string: {e}")
+
+    if isinstance(v, (list, tuple)):
+        return tuple(np.float64(item) for item in v)
+    return v
+
+
+NumpyFloatTuple = Annotated[
+    tuple[np.float64, np.float64], BeforeValidator(_validate_numpy_tuple)
+]
+
+
+def _parse_list_string(v: Any) -> Any:
+    """Parses a list an analysis wrote as a string, as ``str(values)``."""
+    if isinstance(v, str):
+        return ast.literal_eval(_NUMPY_FLOAT_PATTERN.sub("", v))
+    return v
+
+
+NumberList = Annotated[list[float], BeforeValidator(_parse_list_string)]

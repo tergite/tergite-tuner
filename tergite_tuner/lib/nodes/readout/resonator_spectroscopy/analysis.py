@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 model = fm.ResonatorModel()
 
-# the Redis field of the readout frequency with the qubit in each state
+# the device state's field for the readout frequency with the qubit in each state
 READOUT_FIELDS = (
     "clock_freqs:readout",
     "extended_clock_freqs:readout_1",

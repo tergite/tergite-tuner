@@ -26,7 +26,7 @@ class NodeEnum(str, Enum):
     """An enumeration of all calibration nodes.
 
     Each member's value is the lowercase canonical string name used
-    everywhere external — redis hash fields, log lines, env-var
+    everywhere external — device state fields, log lines, env-var
     payloads, exported JSON. Subclassing :class:`str` means that:
 
     * ``NodeEnum.T1.value == "t1"`` (and ``str(NodeEnum.T1) == "t1"``

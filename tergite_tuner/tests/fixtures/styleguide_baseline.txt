@@ -81,7 +81,6 @@ private-helper-position: tergite_tuner/backend/spi.py::OperatingSystem
 private-helper-position: tergite_tuner/backend/spi.py::SpiDAC
 private-helper-position: tergite_tuner/config/session.py::SessionContext
 private-helper-position: tergite_tuner/config/session.py::SessionOptions
-private-helper-position: tergite_tuner/export.py::CalibrationResults
 type-hints: tergite_tuner/backend/device.py::close_device_resources
 type-hints: tergite_tuner/backend/edge.py::ExtendedCompositeSquareEdge.__init__
 type-hints: tergite_tuner/backend/spi.py::SpiDAC.close_spi_rack
