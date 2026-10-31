@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Added
+
+- Created a GitHub release for each tag, with its CHANGELOG.md section as the notes, a pre-release for a release candidate; a tag without a section now fails before it is published to PyPI
+
 ## [2026.10.0-rc.4] - 2026-10-31
 
 ### Changed
