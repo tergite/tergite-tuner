@@ -43,19 +43,44 @@ WORKING_POINTS = 15
 
 
 def get_frequencies(coupler: str, session: "SessionContext") -> np.ndarray:
-    """Thirty frequencies over 6 MHz around the coupler's known CZ frequency."""
+    """Thirty frequencies over 6 MHz around the coupler's known CZ frequency.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's CZ frequency.
+
+    Returns:
+        The CZ frequencies to sweep, in Hz.
+    """
     frequency = float(get_coupler_value(coupler, "cz_pulse_frequency", session))
     return np.linspace(-3.0e6, 3.0e6, 30) + frequency
 
 
 def get_durations(coupler: str, session: "SessionContext") -> np.ndarray:
-    """From 24 ns, in 8 ns steps, to twice the known half duration, in 4 ns, plus 40 ns of slack."""
+    """From 24 ns, in 8 ns steps, to twice the known half duration, in 4 ns, plus 40 ns of slack.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's CZ half duration.
+
+    Returns:
+        The CZ durations to sweep, in seconds.
+    """
     half_duration = float(get_coupler_value(coupler, "cz_half_duration", session))
     max_duration_in_ns = (round(2 * half_duration / 1e-9) // 4) * 4 + 40
     return np.arange(24e-9, max_duration_in_ns * 1e-9, 8e-9)
 
 
 def get_analysis_keywords(coupler: str, session: "SessionContext") -> dict[str, Any]:
+    """The coupler's keywords for CZ chevron's analysis.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's phase path.
+
+    Returns:
+        The coupler's ``phase_path`` and the ``number_of_working_points``.
+    """
     return {
         "phase_path": get_phase_path(coupler, session),
         "number_of_working_points": WORKING_POINTS,
@@ -65,6 +90,16 @@ def get_analysis_keywords(coupler: str, session: "SessionContext") -> dict[str, 
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Random IQ shots for a dummy run.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: each swept setting's values.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        Shots with an axis per CZ duration and loop.
+    """
     return get_random_shots(sweeps, LOOPS, ("cz_pulse_durations",))
 
 

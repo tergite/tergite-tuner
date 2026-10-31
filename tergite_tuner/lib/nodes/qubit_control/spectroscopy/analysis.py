@@ -46,6 +46,12 @@ class QubitSpectroscopyMaxThresholdQubitAnalysis:
         self.qubit_specs_dataarray = qubit_specs_dataarray
 
     def process_qubit(self):
+        """The frequency of the spectroscopy's maximum, if it stands out from the rest.
+
+        Returns:
+            The frequency, or NaN if the maximum is less than
+            ``SIGNIFICANCE_THRESHOLD`` standard deviations above the mean.
+        """
         for coord in self.qubit_specs_dataarray:
             if "frequencies" in coord:
                 self.frequencies_coord = coord
@@ -78,6 +84,15 @@ def analyse_qubit_spectroscopy(
     """The ``frequency`` and spectroscopy ``amplitude`` of the strongest peak over all amplitudes.
 
     The amplitudes are the qubit's own sweep, unless ``amplitude_coord`` names an outer one.
+
+    Args:
+        s21: the qubit's S21, a point per frequency and amplitude.
+        _session: unused; part of the ``analyse`` signature.
+        amplitude_coord: the coordinate of the amplitudes, if not the qubit's own sweep.
+
+    Returns:
+        ``frequency``, the qubit's frequency, and ``amplitude``, the spectroscopy
+        amplitude that shows it best.
     """
     qubit = s21.attrs["qubit"]
     frequency_coord = get_coord_name("spec_frequencies", qubit)
@@ -94,6 +109,14 @@ def analyse_qubit_spectroscopy(
 def plot_qubit_spectroscopy(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
+    """Draws ``|S21|`` against frequency and amplitude, and marks the peak found.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21.
+        fits: the qubit's fits.
+        _session: unused; part of the ``plot`` signature.
+    """
     np.abs(s21).plot(ax=axis, x=get_coord_name("spec_frequencies", s21.attrs["qubit"]))
     if fits:
         axis.scatter(fits["frequency"].value, fits["amplitude"].value, s=52, c="red")

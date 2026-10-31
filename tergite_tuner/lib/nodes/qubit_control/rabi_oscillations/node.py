@@ -58,6 +58,16 @@ def get_rabi_schedule(
     mw_amplitudes: dict[str, np.ndarray],
     state: int,
 ) -> Schedule:
+    """The Rabi schedule: a DRAG pulse at each drive amplitude, then a measurement.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        mw_amplitudes: each qubit's drive amplitudes.
+        state: the state the transition starts from: 0 for 0-1, 1 for 1-2.
+
+    Returns:
+        The schedule.
+    """
     return RabiOscillationsMeasurement(transmons).schedule_function(
         mw_amplitudes, qubit_state=state
     )
@@ -69,6 +79,17 @@ def get_n_rabi_schedule(
     X_repetitions: dict[str, np.ndarray],
     state: int,
 ) -> Schedule:
+    """The NRabi schedule: trains of pi pulses, each corrected in amplitude, then a measurement.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        mw_amplitudes_sweep: each qubit's corrections to its pi amplitude.
+        X_repetitions: each qubit's numbers of pi pulse pairs.
+        state: the state the transition starts from: 0 for 0-1, 1 for 1-2.
+
+    Returns:
+        The schedule.
+    """
     return NRabiOscillationsMeasurement(transmons).schedule_function(
         mw_amplitudes_sweep, X_repetitions, qubit_state=state
     )
@@ -77,6 +98,16 @@ def get_n_rabi_schedule(
 def get_dummy_rabi(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Rabi oscillations with a pi amplitude of 0.5.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values, of which ``mw_amplitudes`` is used.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21 at each drive amplitude.
+    """
     params = rabi.make_params(amplitude=0.2, frequency=1, offset=0.2)
     return rabi.eval(params=params, drive_amp=sweeps["mw_amplitudes"])
 
@@ -84,7 +115,17 @@ def get_dummy_rabi(
 def get_dummy_n_rabi(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    """Oscillations whose minimum is at ``DUMMY_CORRECTION`` for every number of pi pulses."""
+    """Oscillations whose minimum is at ``DUMMY_CORRECTION`` for every number of pi pulses.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values: ``mw_amplitudes_sweep`` and ``X_repetitions``.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21, a row per amplitude correction and a column per number of pi
+        pulses.
+    """
     columns = []
     for repetitions in sweeps["X_repetitions"]:
         frequency = 2 * repetitions

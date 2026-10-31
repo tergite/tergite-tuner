@@ -60,6 +60,16 @@ def get_schedule(
     ro_frequencies: dict[str, np.ndarray],
     state: int,
 ) -> Schedule:
+    """The resonator spectroscopy schedule, with each qubit prepared in ``state``.
+
+    Args:
+        transmons: the qubits' transmons by name.
+        ro_frequencies: each qubit's readout frequencies.
+        state: the state to prepare each qubit in: 0, 1 or 2.
+
+    Returns:
+        The schedule.
+    """
     return ResonatorSpectroscopyMeasurement(transmons).schedule_function(
         ro_frequencies, qubit_state=state
     )
@@ -71,6 +81,17 @@ def get_dummy_s21(
     session: "SessionContext",
     state: int,
 ) -> np.ndarray:
+    """A resonator below the qubit's VNA frequency, shifted further for each higher ``state``.
+
+    Args:
+        qubit: the qubit.
+        sweeps: the readout frequencies.
+        session: the session whose device config holds the VNA frequency.
+        state: the qubit's state: 0, 1 or 2.
+
+    Returns:
+        S21 at each readout frequency.
+    """
     frequency = session.device_config.resonators[qubit]["VNA_frequency"]
     params = resonator.make_params(
         fr=frequency - DUMMY_SHIFTS[state],

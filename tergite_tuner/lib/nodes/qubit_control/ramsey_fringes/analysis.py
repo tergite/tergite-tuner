@@ -38,6 +38,16 @@ def analyse_ramsey(
     Each artificial detuning's fringes are fitted for their detuning, which is signed
     by where the fitted detunings turn, and a line through them crosses zero at the
     correction.
+
+    Args:
+        s21: the qubit's S21, a point per delay and artificial detuning.
+        session: the session, whose device state holds the current frequency.
+        frequency_field: the device state's field of the frequency, such as
+            ``clock_freqs:f01``.
+
+    Returns:
+        ``frequency``, the corrected frequency, ``correction``, what was added, and,
+        to plot, ``signed_detunings`` and the ``line`` fitted through them.
     """
     qubit = s21.attrs["qubit"]
     artificial_detunings = s21.coords[
@@ -58,6 +68,14 @@ def analyse_ramsey(
 def plot_ramsey(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
+    """Draws the fitted detunings against the artificial ones, the line through them, and the correction.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21.
+        fits: the qubit's fits.
+        _session: unused; part of the ``plot`` signature.
+    """
     detunings = s21.coords[
         get_coord_name("artificial_detunings", s21.attrs["qubit"])
     ].values

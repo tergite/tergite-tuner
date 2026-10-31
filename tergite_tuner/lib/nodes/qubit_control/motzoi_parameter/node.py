@@ -50,6 +50,17 @@ def get_schedule(
     X_repetitions: dict[str, np.ndarray],
     state: int,
 ) -> Schedule:
+    """The motzoi schedule: a DRAG pulse and its inverse, X_repetitions times at each motzoi, then a measurement.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        mw_motzois: each qubit's DRAG motzois.
+        X_repetitions: each qubit's numbers of pulse and inverse pairs.
+        state: the state the transition starts from: 0 for 0-1, 1 for 1-2.
+
+    Returns:
+        The schedule.
+    """
     return MotzoiParameterMeasurement(transmons).schedule_function(
         mw_motzois, X_repetitions, qubit_state=state
     )
@@ -58,7 +69,16 @@ def get_schedule(
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
-    """Oscillations whose minimum is at ``DUMMY_MOTZOI`` for every number of repetitions."""
+    """Oscillations whose minimum is at ``DUMMY_MOTZOI`` for every number of repetitions.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values: ``mw_motzois`` and ``X_repetitions``.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21, a row per motzoi and a column per number of repetitions.
+    """
     columns = []
     for repetitions in sweeps["X_repetitions"]:
         frequency = repetitions / 2

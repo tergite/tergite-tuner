@@ -39,6 +39,8 @@ STATE_COLOURS = ("blue", "green", "red")
 
 
 class ResonatorFit(NamedTuple):
+    """A resonator fit: the lmfit result, its dip's frequency, its loaded quality factor ``Ql`` and the data's minimum."""
+
     result: lmfit.model.ModelResult
     frequency: float
     Ql: float
@@ -50,6 +52,13 @@ def fit_resonator(frequencies: np.ndarray, s21: np.ndarray) -> ResonatorFit | No
 
     ``frequency`` is the fitted dip's minimum, and ``minimum`` the swept frequency
     with the smallest ``|s21|``.
+
+    Args:
+        frequencies: the swept readout frequencies.
+        s21: the complex S21 at each frequency.
+
+    Returns:
+        The fit, or None if it raised.
     """
     guess = model.guess(s21, f=frequencies)
     try:
@@ -81,7 +90,15 @@ def fit_resonator(frequencies: np.ndarray, s21: np.ndarray) -> ResonatorFit | No
 
 
 def analyse_resonator(s21: xr.DataArray, _session: "SessionContext") -> Fits | None:
-    """The resonator's ``frequency``, ``Ql`` and data ``minimum``, and the lmfit ``model``."""
+    """The resonator's ``frequency``, ``Ql`` and data ``minimum``, and the lmfit ``model``.
+
+    Args:
+        s21: the qubit's S21 over readout frequency.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        The fits, or None if the resonator fit raised.
+    """
     fit = fit_resonator(s21.coords[s21.dims[0]].values, s21.values)
     if fit is None:
         return None
@@ -96,7 +113,15 @@ def analyse_resonator(s21: xr.DataArray, _session: "SessionContext") -> Fits | N
 def plot_resonator(
     axis: Axes, s21: xr.DataArray, fits: Fits, session: "SessionContext", state: int
 ) -> None:
-    """The fit and its frequency, with the readout frequencies of the states below ``state``."""
+    """The fit and its frequency, with the readout frequencies of the states below ``state``.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21 over readout frequency.
+        fits: the qubit's fits; without a successful ``model`` only ``|S21|`` is drawn.
+        session: the session whose device state holds the lower states' readout frequencies.
+        state: the qubit's state during the spectroscopy: 0, 1 or 2.
+    """
     if "model" not in fits or not fits["model"].value.success:
         axis.plot(s21.coords[s21.dims[0]].values, np.abs(s21.values))
     else:

@@ -52,6 +52,18 @@ def get_schedule(
     artificial_detunings: dict[str, np.ndarray],
     state: int,
 ) -> Schedule:
+    """The Ramsey schedule: two pi-half pulses each delay apart, at each artificial detuning.
+
+    Args:
+        transmons: the qubits to measure, by name.
+        ramsey_delays: each qubit's delays between the pulses, in seconds.
+        artificial_detunings: each qubit's detunings of the drive from its frequency,
+            in Hz.
+        state: the state the transition starts from: 0 for 0-1, 1 for 1-2.
+
+    Returns:
+        The schedule.
+    """
     return RamseyDetuningsMeasurement(transmons).schedule_function(
         artificial_detunings, ramsey_delays, qubit_state=state
     )
@@ -60,6 +72,17 @@ def get_schedule(
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Ramsey fringes of a qubit ``DUMMY_DETUNING`` from its stored frequency.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: the qubit's sweeps' values: ``ramsey_delays`` and
+            ``artificial_detunings``.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        The qubit's S21, a row per delay and a column per artificial detuning.
+    """
     columns = []
     for detuning in sweeps["artificial_detunings"]:
         params = ramsey.make_params(

@@ -58,7 +58,16 @@ peak = LorentzianModel()
 def get_dummy_anticrossing(
     qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
 ) -> np.ndarray:
-    """A qubit peak the coupler pushes away as its current nears the asymptotes."""
+    """A qubit peak the coupler pushes away as its current nears the asymptotes.
+
+    Args:
+        qubit: the qubit, whose ``VNA_f01_frequency`` the peak starts from.
+        sweeps: the ``dc_currents`` point and the ``spec_frequencies``.
+        session: the session, whose device config holds the qubit.
+
+    Returns:
+        The qubit's ``|S21|`` over the spectroscopy frequencies.
+    """
     low, high = DUMMY_ASYMPTOTES
     current = sweeps["dc_currents"]
     frequency = session.device_config.qubits[qubit]["VNA_f01_frequency"]
@@ -70,6 +79,16 @@ def get_dummy_anticrossing(
 def get_dummy_resonator_vs_current(
     qubit: str, sweeps: Mapping[str, np.ndarray], session: "SessionContext"
 ) -> np.ndarray:
+    """The dummy resonator spectroscopy at |0>, the same at every coupler current.
+
+    Args:
+        qubit: the qubit whose resonator is measured.
+        sweeps: each swept setting's values.
+        session: the session, whose device config holds the resonator.
+
+    Returns:
+        The resonator's S21 over the readout frequencies.
+    """
     return get_dummy_resonator(qubit, sweeps, session, state=0)
 
 

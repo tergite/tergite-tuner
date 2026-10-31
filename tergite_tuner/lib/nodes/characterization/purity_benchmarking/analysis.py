@@ -39,6 +39,12 @@ class PurityBenchmarkingQubitAnalysis(ElementAnalysis):
         self.fit_results = {}
 
     def analyse(self) -> Fits:
+        """Fits an exponential decay to the purity, averaged over the seeds, against the number of Cliffords.
+
+        Returns:
+            ``purity_fidelity``, the purity's decay per Clifford, and ``analysis``, this
+            object, to plot.
+        """
         # Identify and store relevant coordinates and initialize data storage
         self.number_cliffords_coord, self.seed_coord = self._identify_coords()
         self.number_of_repetitions = self.dataset.sizes[self.seed_coord]
@@ -155,6 +161,9 @@ class PurityBenchmarkingQubitAnalysis(ElementAnalysis):
     def plotter(self, ax: Axes):
         """
         Plot the normalized data and fitted exponential decay curve.
+
+        Args:
+            ax: the axis to draw on.
         """
         # Plot normalized data for each repetition with low transparency
         for repetition_index, real_values in self.purity_results_dict.items():

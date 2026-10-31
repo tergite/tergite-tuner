@@ -14,6 +14,8 @@
 
 
 class BaseMeasurement:
+    """Base of the measurements that build a node's schedule over its transmons and couplers."""
+
     def __init__(self, transmons: dict, couplers=None):
         if couplers is None:
             couplers = {}

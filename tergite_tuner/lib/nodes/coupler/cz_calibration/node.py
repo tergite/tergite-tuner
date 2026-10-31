@@ -50,7 +50,15 @@ FIXED_DURATION_WIDTH, FIXED_DURATION_POINTS = 0.2e6, 20
 
 
 def get_working_points(coupler: str, session: "SessionContext") -> np.ndarray:
-    """The (frequency, duration) pairs CZ chevron found, or, on a fixed-duration coupler, frequencies around the stored one."""
+    """The (frequency, duration) pairs CZ chevron found, or, on a fixed-duration coupler, frequencies around the stored one.
+
+    Args:
+        coupler: the coupler.
+        session: the session, whose device state holds the coupler's values.
+
+    Returns:
+        The working points, one (frequency, duration in seconds) row each.
+    """
     if coupler in session.fixed_duration_couplers:
         duration = float(get_coupler_value(coupler, "cz_pulse_duration", session))
         frequency = float(get_coupler_value(coupler, "cz_pulse_frequency", session))
@@ -72,6 +80,16 @@ def get_working_points(coupler: str, session: "SessionContext") -> np.ndarray:
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Random IQ shots for a dummy run.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: each swept setting's values.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        Shots with an axis per Ramsey phase, control state and loop.
+    """
     return get_random_shots(sweeps, LOOPS, ("ramsey_phases", "control_ons"))
 
 

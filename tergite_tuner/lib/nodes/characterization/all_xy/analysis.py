@@ -36,7 +36,16 @@ GATE_NAMES = {
 
 
 def analyse_all_xy(s21: xr.DataArray, _session: "SessionContext") -> Fits:
-    """Each pair's |1> population, from the |0> and |1> calibration points last, and their mean deviation from the ideal."""
+    """Each pair's |1> population, from the |0> and |1> calibration points last, and their mean deviation from the ideal.
+
+    Args:
+        s21: the qubit's S21, a point per pulse pair, then the two calibration points.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        ``error``, the mean deviation from the ideal populations with its standard
+        deviation as the error, and ``populations``, each pair's |1> population.
+    """
     values = s21.values
     calibration_0, calibration_1 = values[-2], values[-1]
     populations = np.real(
@@ -52,6 +61,14 @@ def analyse_all_xy(s21: xr.DataArray, _session: "SessionContext") -> Fits:
 def plot_all_xy(
     axis: Axes, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
+    """Draws each pulse pair's |1> population against the ideal one.
+
+    Args:
+        axis: the axis to draw on.
+        _s21: unused; part of the ``plot`` signature.
+        fits: the qubit's fits from ``analyse_all_xy``.
+        _session: unused; part of the ``plot`` signature.
+    """
     pairs = np.arange(len(IDEAL_POPULATIONS))
     axis.plot(pairs, IDEAL_POPULATIONS, "k--", lw=1, label="ideal")
     axis.plot(pairs, fits["populations"].value, "bo", ms=5.0)
@@ -64,7 +81,11 @@ def plot_all_xy(
 
 
 def get_pair_labels() -> list[str]:
-    """Each pulse pair's gates, as ``XY90``."""
+    """Each pulse pair's gates, as ``XY90``.
+
+    Returns:
+        A label per pulse pair, in the measurement's order.
+    """
     return [
         "".join(GATE_NAMES[(pulse["theta"], pulse["phi"])] for pulse in pulses)
         for pulses in all_XY_angles.values()

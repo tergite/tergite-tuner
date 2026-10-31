@@ -26,7 +26,15 @@ if TYPE_CHECKING:
 
 
 def analyse_motzoi(s21: xr.DataArray, _session: "SessionContext") -> Fits:
-    """``motzoi``: the one with the least ``|S21|`` summed over all repetitions."""
+    """``motzoi``: the one with the least ``|S21|`` summed over all repetitions.
+
+    Args:
+        s21: the qubit's S21, a point per motzoi and number of repetitions.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        ``motzoi``, the DRAG motzoi to store.
+    """
     sums = np.abs(s21).sum(get_coord_name("X_repetitions", s21.attrs["qubit"]))
     return {"motzoi": Fit(sums.idxmin().item())}
 
@@ -34,6 +42,14 @@ def analyse_motzoi(s21: xr.DataArray, _session: "SessionContext") -> Fits:
 def plot_motzoi(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
+    """Draws ``|S21|`` against motzoi and repetitions, and marks the chosen motzoi.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21.
+        fits: the qubit's fits.
+        _session: unused; part of the ``plot`` signature.
+    """
     x = get_coord_name("mw_motzois", s21.attrs["qubit"])
     np.abs(s21).plot(ax=axis, x=x, cmap="RdBu_r")
     if "motzoi" in fits:

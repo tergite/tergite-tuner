@@ -43,17 +43,33 @@ class DecayFits(NamedTuple):
 
 
 class CZRBCouplerAnalysis(CouplerAnalysis):
+    """Finds a coupler's CZ fidelity from two-qubit randomized benchmarking, standard and interleaved."""
 
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
         super().__init__(dataset, session, **keywords)
         self.single_model = ExpDecayModel(inverted=False)
 
     def state_probabilities(self, c_qubit_state: int, t_qubit_state: int):
+        """The probability of a two-qubit state, as the product of each qubit's.
+
+        Args:
+            c_qubit_state: the control's state.
+            t_qubit_state: the target's state.
+
+        Returns:
+            The state's probability over the Clifford counts, seeds and modes.
+        """
         c_state_probs = self.control_qubit_probabilities.sel({"state": c_qubit_state})
         t_state_probs = self.target_qubit_probabilities.sel({"state": t_qubit_state})
         return c_state_probs * t_state_probs
 
     def analyse(self) -> Fits | None:
+        """Fits the decays of |00> and of the computational subspace over the number of Cliffords.
+
+        Returns:
+            The fit ``cz_fidelity``, marked ``failed`` if it, or Nakamura's fidelity,
+            is not finite, as without interleaved sequences.
+        """
         self._find_coords()
         self.control_qubit_probabilities = calculate_probabilities(
             self.control_qubit_data_var, self.session.state
@@ -137,6 +153,11 @@ class CZRBCouplerAnalysis(CouplerAnalysis):
         return self.single_model.eval(result.params, m=self.fit_n_cliffords)
 
     def plotter(self, figures_dictionary):
+        """Draws the |00> decays, and the leakage and reduced ideal decays.
+
+        Args:
+            figures_dictionary: takes the coupler's figure, under the coupler's name.
+        """
         figure, (decay_axis, leakage_axis) = plt.subplots(ncols=2)
         self._plot_decays(decay_axis)
         self._plot_leakage(leakage_axis)
@@ -221,6 +242,13 @@ def get_cz_fidelities(
     """The CZ's fidelity from the |00> decays' ratio, and Nakamura's from the leakage and reduced ideal decays.
 
     NaN without interleaved sequences, or for a standard decay fitted to zero.
+
+    Args:
+        standard: the decays of the standard sequences.
+        interleaved: the decays of the sequences interleaved with the CZ, if measured.
+
+    Returns:
+        The CZ's fidelity, and Nakamura's.
     """
     if interleaved is None:
         return np.nan, np.nan

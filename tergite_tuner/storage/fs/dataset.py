@@ -24,19 +24,46 @@ from tergite_tuner.utils.logging import logger
 
 
 def to_real_dataset(iq_dataset: xarray.Dataset) -> xarray.Dataset:
+    """The complex ``iq_dataset`` as real numbers, for a file format without complex ones.
+
+    Args:
+        iq_dataset: the dataset of complex S21.
+
+    Returns:
+        The dataset with a last ``ReIm`` dimension: the real part, then the imaginary.
+    """
     ds = iq_dataset.expand_dims("ReIm", axis=-1)  # Add ReIm axis at the end
     ds = xarray.concat([ds.real, ds.imag], dim="ReIm")
     return ds
 
 
 def get_unique_data_path(parent: Path, name: str) -> Path:
-    """A new folder's path in ``parent``, named for the time, a random id and ``name``; not created."""
+    """A new folder's path in ``parent``, named for the time, a random id and ``name``; not created.
+
+    Args:
+        parent: the folder to put it in.
+        name: the end of its name, such as the node's.
+
+    Returns:
+        The folder's path.
+    """
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:19]
     return Path(parent) / f"{timestamp}-{str(uuid4())[:6]}-{name}"
 
 
 def load_dataset(node_name: str, data_path: Path) -> xarray.Dataset:
-    """The dataset ``save_dataset`` saved for ``node_name`` in ``data_path``."""
+    """The dataset ``save_dataset`` saved for ``node_name`` in ``data_path``.
+
+    Args:
+        node_name: the node whose dataset to load.
+        data_path: the node's data folder.
+
+    Returns:
+        The dataset, its ``working_points`` decoded if it has them.
+
+    Raises:
+        FileNotFoundError: if the folder has no dataset for the node.
+    """
     dataset_path = Path(data_path) / f"dataset_{node_name}.hdf5"
     if not dataset_path.exists():
         raise FileNotFoundError(f"Dataset file not found: {dataset_path}")

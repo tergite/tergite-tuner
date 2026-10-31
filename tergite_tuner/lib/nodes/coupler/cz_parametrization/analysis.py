@@ -34,11 +34,13 @@ NEIGHBOUR_WEIGHTS = np.array(
 
 
 class CZParametrizationAnalysis(CouplerAnalysis):
+    """Base of the CZ analyses that read both qubits' state populations over the CZ pulse's settings."""
 
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
         super().__init__(dataset, session, **keywords)
 
     def calculate_probabilities(self):
+        """Finds the swept settings in the dataset, and classifies both qubits' shots into ``probabilities``."""
         dataset = self.S21
         for coord in dataset.coords:
             coord = str(coord)
@@ -72,8 +74,15 @@ class CZParametrizationAnalysis(CouplerAnalysis):
 
 
 class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
+    """Finds the CZ pulse's frequency and amplitude, and the coupler's parking current, that best exchange population along the phase path."""
 
     def analyse(self) -> Fits | None:
+        """Scores every frequency and amplitude at each parking current, and keeps the best.
+
+        Returns:
+            The fits ``cz_pulse_frequency``, ``cz_pulse_amplitude`` and
+            ``parking_current``, marked ``failed`` if no point scores above 1.
+        """
         self.calculate_probabilities()
         self.optimal_values = xr.DataArray(name=self.coupler)
         for current_index in range(len(self.dc_currents)):
@@ -121,6 +130,11 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
         )
 
     def plotter(self, figures_dictionary: dict[str, list]):
+        """Draws both qubits' populations over frequency and amplitude, a figure per parking current, with each one's best point.
+
+        Args:
+            figures_dictionary: takes the coupler's figures, under the coupler's name.
+        """
         figures_list = []
         for current_index, current in enumerate(self.dc_currents):
 
@@ -178,7 +192,19 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
 def get_path_scores(
     control: xr.DataArray, target: xr.DataArray, phase_path: str
 ) -> xr.DataArray:
-    """How far each point moves the population along the phase path: |2> for the control and |0> for the target via 20, the reverse via 02."""
+    """How far each point moves the population along the phase path: |2> for the control and |0> for the target via 20, the reverse via 02.
+
+    Args:
+        control: the control's state populations.
+        target: the target's state populations.
+        phase_path: ``via_20`` or ``via_02``.
+
+    Returns:
+        Each point's score; higher is better.
+
+    Raises:
+        ValueError: if the phase path is neither.
+    """
     if phase_path == "via_20":
         control_end, target_end = 2, 0
     elif phase_path == "via_02":
@@ -189,7 +215,14 @@ def get_path_scores(
 
 
 def get_smoothed_scores(scores: xr.DataArray) -> xr.DataArray:
-    """The scores weighted with their nearest neighbours', points off the grid counting -1."""
+    """The scores weighted with their nearest neighbours', points off the grid counting -1.
+
+    Args:
+        scores: each point's score, over frequency and amplitude.
+
+    Returns:
+        The smoothed scores, on the same grid.
+    """
     smoothed = scores.copy(deep=True)
     smoothed.values = convolve(
         smoothed.values,

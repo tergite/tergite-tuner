@@ -29,6 +29,15 @@ DUMMY_RADIUS_SPREAD = 0.1
 
 
 def assign_state(iq_values: xr.DataArray, state: "DeviceState") -> xr.DataArray:
+    """Classifies each shot as 0, 1 or 2 with the qubit's three-state discriminator.
+
+    Args:
+        iq_values: one qubit's IQ shots, with the qubit in its ``qubit`` attribute.
+        state: the device state holding the qubit's discriminator.
+
+    Returns:
+        Each shot's state, shaped as ``iq_values``.
+    """
     centroid_i, centroid_q, omega_01, omega_12, omega_20 = _get_discriminator(
         iq_values.attrs["qubit"], state
     )
@@ -67,6 +76,18 @@ def assign_state(iq_values: xr.DataArray, state: "DeviceState") -> xr.DataArray:
 
 
 def calculate_probabilities(iq_data_var: xr.DataArray, state: "DeviceState"):
+    """The fraction of a qubit's shots in 0, 1 and 2 at each point, over the ``loops`` dimension.
+
+    Args:
+        iq_data_var: one qubit's IQ shots, with a ``loops`` coordinate.
+        state: the device state holding the qubit's discriminator.
+
+    Returns:
+        The probabilities, with a ``state`` dimension added and ``loops`` removed.
+
+    Raises:
+        ValueError: if ``iq_data_var`` has no ``loops`` coordinate.
+    """
     if "loops" not in iq_data_var.coords:
         raise ValueError("Dataarray does not contain loop coordinate")
     states_array = assign_state(iq_data_var, state)
@@ -105,6 +126,15 @@ def generate_iq_shots(
     """``loops`` shots per point that the qubit's discriminator reads with ``probabilities``, for dummy datasets.
 
     The inverse of ``calculate_probabilities``; each point's probabilities are like [0.2, 0.3, 0.5].
+
+    Args:
+        probabilities: each point's probabilities of 0, 1 and 2.
+        qubit: the qubit whose discriminator reads the shots.
+        loops: the shots per point.
+        state: the device state holding the qubit's discriminator.
+
+    Returns:
+        The IQ shots, loop by loop, each loop a shot per point.
     """
     centroid_i, centroid_q, *omegas = _get_discriminator(qubit, state)
     state_angles = get_state_angles(*omegas)
@@ -125,7 +155,16 @@ def generate_iq_shots(
 def get_state_angles(
     omega_01: float, omega_12: float, omega_20: float
 ) -> dict[int, float]:
-    """Each state's angle, in degrees, halfway between the two boundaries around it."""
+    """Each state's angle, in degrees, halfway between the two boundaries around it.
+
+    Args:
+        omega_01: the angle of the boundary between 0 and 1, in degrees.
+        omega_12: the angle of the boundary between 1 and 2, in degrees.
+        omega_20: the angle of the boundary between 2 and 0, in degrees.
+
+    Returns:
+        Each state's angle from the discriminator's centroid.
+    """
     boundaries = sorted(
         {"01": omega_01, "12": omega_12, "20": omega_20}.items(),
         key=lambda item: item[1],
@@ -142,7 +181,16 @@ def get_state_angles(
 def classify_shots(
     iq: np.ndarray, states: np.ndarray, lda: "LinearDiscriminantAnalysis"
 ) -> tuple[np.ndarray, np.ndarray, float]:
-    """Each shot's state as ``lda`` fitted to them classifies it, the normalised confusion matrix, and the assignment fidelity, its mean diagonal."""
+    """Each shot's state as ``lda`` fitted to them classifies it, the normalised confusion matrix, and the assignment fidelity, its mean diagonal.
+
+    Args:
+        iq: the shots, as rows of I and Q.
+        states: the state each shot was prepared in.
+        lda: the discriminant to fit to the shots.
+
+    Returns:
+        The shots' classified states, the confusion matrix and the assignment fidelity.
+    """
     classified = lda.fit(iq, states).predict(iq)
     matrix = confusion_matrix(states, classified, normalize="true")
     return classified, matrix, np.trace(matrix) / len(np.unique(states))

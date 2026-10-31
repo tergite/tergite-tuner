@@ -32,6 +32,13 @@ SweepFn = Callable[[str, "SessionContext"], np.ndarray]
 
 
 class Fit(NamedTuple):
+    """One value an analysis gives back, and its uncertainty.
+
+    Attributes:
+        value: the fitted value, or any object the analysis passes on to its plot.
+        error: the value's uncertainty; 0 when it has none.
+    """
+
     value: Any
     error: float = 0
 
@@ -117,6 +124,11 @@ class ElementAnalysis:
         self.session = session
 
     def analyse(self) -> Fits | None:
+        """Fits the element's S21.
+
+        Returns:
+            The element's fits, or None if its analysis failed.
+        """
         raise NotImplementedError
 
 
@@ -151,13 +163,27 @@ class CouplerAnalysis:
             setattr(self, name, value)
 
     def analyse(self) -> Fits | None:
+        """Fits the coupler's dataset.
+
+        Returns:
+            The coupler's fits, or None if its analysis failed.
+        """
         raise NotImplementedError
 
 
 def get_fits_from_result(
     result: Mapping[str, Mapping[str, Any]], is_successful: bool
 ) -> Fits | None:
-    """The fits of an analysis reporting ``{field: {"value": ..., "error": ...}}``."""
+    """The fits of an analysis reporting ``{field: {"value": ..., "error": ...}}``.
+
+    Args:
+        result: each field's value and error.
+        is_successful: whether the analysis succeeded; if not, the fits are marked
+            ``failed``.
+
+    Returns:
+        A fit per field, plus ``failed`` if the analysis did not succeed.
+    """
     fits = {name: Fit(item["value"], item["error"]) for name, item in result.items()}
     if not is_successful:
         # failed fits keep their values, to plot and inspect, but are not stored
@@ -166,7 +192,14 @@ def get_fits_from_result(
 
 
 def is_failed(fits: Fits | None) -> bool:
-    """Whether an element's analysis failed: it gave no fits, or marked them ``failed``."""
+    """Whether an element's analysis failed: it gave no fits, or marked them ``failed``.
+
+    Args:
+        fits: what the element's analysis gave back.
+
+    Returns:
+        True if the analysis failed.
+    """
     return fits is None or "failed" in fits
 
 
@@ -176,6 +209,13 @@ def get_coupler_analyser(
     """An ``analyse`` that builds an ``analysis_cls`` for the coupler and keeps its figures in the fits.
 
     The figures are drawn here so the analysis, as large as the dataset, is freed before they are saved.
+
+    Args:
+        analysis_cls: the coupler analysis to run.
+
+    Returns:
+        A ``NodeSpec.analyse`` taking the coupler's dataset, the session and its
+        analysis keywords.
     """
 
     def analyse(
@@ -198,7 +238,14 @@ def get_coupler_analyser(
 def save_coupler_figures(
     dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
 ) -> None:
-    """Saves the figures in the fits as ``<node>_<coupler>_<index>_preview.png``."""
+    """Saves the figures in the fits as ``<node>_<coupler>_<index>_preview.png``.
+
+    Args:
+        dataset: the coupler's dataset, which names the node and the coupler.
+        fits: the coupler's fits, whose ``figures`` are saved; nothing is saved if empty.
+        data_path: the node's data folder.
+        _session: unused; part of the ``save_details`` signature.
+    """
     if not fits:
         return
     name, coupler = dataset.attrs["node"], dataset.attrs["coupler"]
@@ -218,7 +265,15 @@ def save_coupler_figures(
 
 
 def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
-    """A ``get_schedule`` that builds ``measurement_cls`` over the transmons, and over the edges in a coupler node."""
+    """A ``get_schedule`` that builds ``measurement_cls`` over the transmons, and over the edges in a coupler node.
+
+    Args:
+        measurement_cls: the measurement whose ``schedule_function`` makes the schedule.
+
+    Returns:
+        A ``NodeSpec.get_schedule`` taking the transmons, the edges if any, and the
+        schedule's keywords.
+    """
 
     def get_schedule(
         transmons: Mapping[str, ExtendedTransmon],
@@ -238,27 +293,55 @@ def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
 def get_class_analyser(
     analysis_cls: type[ElementAnalysis],
 ) -> Callable[[xr.DataArray, "SessionContext"], Fits | None]:
-    """An ``analyse`` that builds an ``analysis_cls`` for the element and runs it."""
+    """An ``analyse`` that builds an ``analysis_cls`` for the element and runs it.
+
+    Args:
+        analysis_cls: the element analysis to run.
+
+    Returns:
+        A ``NodeSpec.analyse`` taking the element's S21 and the session.
+    """
     return lambda s21, session: analysis_cls(s21, session).analyse()
 
 
 def plot_class_analysis(
     axis: Any, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
-    """A ``plot`` for the analysis object an ``ElementAnalysis`` puts in its fits."""
+    """A ``plot`` for the analysis object an ``ElementAnalysis`` puts in its fits.
+
+    Args:
+        axis: the axis to draw on.
+        _s21: unused; part of the ``plot`` signature.
+        fits: the element's fits, whose ``analysis`` draws itself; nothing is drawn if empty.
+        _session: unused; part of the ``plot`` signature.
+    """
     if fits:
         fits["analysis"].value.plotter(axis)
 
 
 def get_fixed_sweep(values: np.ndarray) -> SweepFn:
-    """A sweep over the same ``values`` for every element."""
+    """A sweep over the same ``values`` for every element.
+
+    Args:
+        values: the setting's values.
+
+    Returns:
+        A sweep giving ``values`` for any element.
+    """
     return lambda _element, _session: values
 
 
 def get_waits_between_points(
     seconds: float,
 ) -> Callable[["Hardware", Mapping[str, Mapping[str, Any]], int], None]:
-    """A ``set_external`` that lets the device settle ``seconds`` before every point but the first."""
+    """A ``set_external`` that lets the device settle ``seconds`` before every point but the first.
+
+    Args:
+        seconds: how long to wait before each point.
+
+    Returns:
+        A ``NodeSpec.set_external`` that waits on the hardware.
+    """
 
     def wait(hardware: "Hardware", _point: Mapping, index: int) -> None:
         if index > 0:
@@ -268,4 +351,13 @@ def get_waits_between_points(
 
 
 def get_coord_name(quantity: str, element: str) -> str:
+    """The name of an element's coordinate for a swept setting in the node's dataset.
+
+    Args:
+        quantity: the swept setting, such as ``mw_amplitudes``.
+        element: the qubit or coupler.
+
+    Returns:
+        The coordinate's name, such as ``mw_amplitudesq00``.
+    """
     return f"{quantity}{element}"

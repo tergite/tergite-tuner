@@ -36,6 +36,15 @@ class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
         self.fit_results = {}
 
     def analyse(self) -> Fits:
+        """Fits the decay of the |0> population, averaged over the seeds, against the number of Cliffords.
+
+        The shots are classified into |0>, |1> and |2> with the qubit's stored
+        discriminator. Interleaved, the fidelity is the interleaved gate's.
+
+        Returns:
+            ``fidelity``, the decay's p or the interleaved gate's fidelity, ``leakage``,
+            from the rise of |2>, and ``analysis``, this object, to plot.
+        """
         model = ExpDecayModel()
         self._find_coords()
         iq_array = self.S21[self.data_var].assign_attrs(qubit=self.qubit)
@@ -114,6 +123,11 @@ class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
         )
 
     def plotter(self, ax):
+        """Draws each state's population against the number of Cliffords, and the fitted decays.
+
+        Args:
+            ax: the axis to draw on.
+        """
         standard_probabilities = self.state_probabilities.sel(
             {self.interleave_gate_coord: "Standard"}
         )
@@ -161,7 +175,16 @@ class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
 
 
 def get_rb_fidelity(standard_p: float, interleaved_p: float | None) -> float:
-    """The standard decay's p, or, interleaved, the gate's fidelity from the two decays."""
+    """The standard decay's p, or, interleaved, the gate's fidelity from the two decays.
+
+    Args:
+        standard_p: the p of the decay without an interleaved gate.
+        interleaved_p: the p of the decay with the gate interleaved, or None if
+            there is none.
+
+    Returns:
+        The fidelity.
+    """
     if interleaved_p is None:
         return standard_p
     return 1 - 0.5 * (1 - interleaved_p / standard_p)

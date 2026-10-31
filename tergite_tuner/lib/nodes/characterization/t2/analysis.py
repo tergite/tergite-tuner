@@ -77,6 +77,16 @@ class T2Model(lmfit.model.Model):
         self.set_param_hint("cz", expr="2/(2*frequency)-phase", vary=False)
 
     def guess(self, data, **kws) -> lmfit.parameter.Parameters:
+        """Guesses the starting parameters of a fit to ``data``.
+
+        Args:
+            data: the values to fit, at each delay.
+            **kws: ``x``, the delays, and any parameter values to use instead of
+                the guesses.
+
+        Returns:
+            The guessed parameters, or None without ``x``.
+        """
         x = kws.get("x", None)
         if x is None:
             return None
@@ -108,6 +118,19 @@ def analyse_decay(
 
     Delays are in microseconds, and ``|S21|`` in microvolts. None if a repetition cannot be
     fitted: an oscillation guessed at 0 Hz divides by zero in the model's expressions.
+
+    Args:
+        s21: the qubit's S21, a point per delay and repetition.
+        _session: unused; part of the ``analyse`` signature.
+        model: the decay to fit.
+        time_parameter: the model's parameter that is the decay time.
+        repetitions_coord: the dimension of the repetitions.
+        guess_variable: the name ``model.guess`` takes the delays by.
+
+    Returns:
+        ``time``, the mean decay time in microseconds with the repetitions' spread as
+        error, and ``params``, the mean fit's parameters, to plot; None if a repetition
+        cannot be fitted.
     """
     delays = s21.coords[get_coord_name("delays", s21.attrs["qubit"])].values * 1e6
     magnitudes = np.abs(s21)
@@ -144,7 +167,19 @@ def plot_decay(
     label: str,
     should_show_spread: bool,
 ) -> None:
-    """Each repetition, and the mean fit, with its one-sigma band if ``should_show_spread``."""
+    """Each repetition, and the mean fit, with its one-sigma band if ``should_show_spread``.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21, a point per delay and repetition.
+        fits: the qubit's fits from ``analyse_decay``; only the repetitions are drawn if empty.
+        _session: unused; part of the ``plot`` signature.
+        model: the fitted decay.
+        time_parameter: the model's parameter that is the decay time.
+        repetitions_coord: the dimension of the repetitions.
+        label: the decay time's name in the legend, such as ``T1``.
+        should_show_spread: whether to shade the band one spread either side of the mean.
+    """
     delays = _plot_repetitions(axis, s21, repetitions_coord)
     if fits:
         fit_delays = np.linspace(delays[0], delays[-1], 400)

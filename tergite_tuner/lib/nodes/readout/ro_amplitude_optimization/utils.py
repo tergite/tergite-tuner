@@ -23,9 +23,24 @@ def align_on_y_axis(
     first_state_index=1,
 ) -> tuple[np.ndarray, float, float]:
     """
-    Translate and rotate the IQ samples so that all the |0> are on the I<0 semi-plane
+    Rotate the IQ samples so that all the |0> are on the I<0 semi-plane
     and all the |1> states are on the I>0 semi plane in accordance to Quantify Scheduler
     convention for Thresholded Acquisitions
+
+    Args:
+        iq_points: the shots, a row of I and Q each.
+        classified_states: the state each shot was read as.
+        boundary_angle_rad: the angle of the boundary between the two states.
+        absolute_threshold: the boundary's distance from the origin.
+        zero_state_index: the label of the state put at negative I.
+        first_state_index: the label of the state put at positive I.
+
+    Returns:
+        The rotated shots, the rotation angle in radians, and the threshold on the
+        rotated I axis.
+
+    Raises:
+        ValueError: if the threshold does not fall between the two states' centres.
     """
     rotation_angle_rad = np.pi / 2 - boundary_angle_rad
     rotation_matrix = np.array(

@@ -34,12 +34,20 @@ if TYPE_CHECKING:
 
 
 class CZCalibrationCouplerAnalysis(CouplerAnalysis):
+    """Finds a coupler's CZ working point from the target's Ramsey phase with the control on and off."""
+
     def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
         super().__init__(dataset, session, **keywords)
         self.model = SineOscillatingModel()
         self.model.set_param_hint("phase", min=-360, max=360, vary=True)
 
     def analyse(self) -> Fits | None:
+        """Picks the working point whose CZ shifts the target's phase closest to 180 degrees.
+
+        Returns:
+            The fits ``cz_pulse_frequency`` and ``cz_pulse_duration`` of that working
+            point, and ``cz_phase``, the phase it adds, in degrees.
+        """
         self._find_coords()
         self.control_qubit_probabilities = calculate_probabilities(
             self.control_qubit_data_var, self.session.state
@@ -106,6 +114,11 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
                 self.loops_coord = coord
 
     def plotter(self, figures_dictionary):
+        """Draws the target's fitted phases at each working point, and their differences.
+
+        Args:
+            figures_dictionary: takes the coupler's figure, under the coupler's name.
+        """
         rows = max(1, int(np.ceil((self.number_of_wp + 1) / PLOT_COLUMNS)))
         figure, axes = plt.subplots(
             ncols=PLOT_COLUMNS, nrows=rows, sharex=True, sharey=True, squeeze=False
@@ -174,5 +187,13 @@ class CZCalibrationCouplerAnalysis(CouplerAnalysis):
 
 
 def get_distances_from_pi(phi_on: xr.DataArray, phi_off: xr.DataArray) -> xr.DataArray:
-    """How far, in degrees, the phase the control adds is from 180°, a CZ's."""
+    """How far, in degrees, the phase the control adds is from 180°, a CZ's.
+
+    Args:
+        phi_on: the target's phase, in radians, with the control in |1>.
+        phi_off: the target's phase, in radians, with the control in |0>.
+
+    Returns:
+        The distance from 180°, in degrees, per working point.
+    """
     return abs((np.rad2deg(phi_on - phi_off) + 360) % 360 - 180)

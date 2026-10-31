@@ -30,6 +30,13 @@ def analyse_ro_frequency(s21: xr.DataArray, _session: "SessionContext") -> Fits:
     """``frequency``: where the states' S21 lie furthest apart.
 
     With three states, the distance weighs the 1-2 pair twice, as it is the closest.
+
+    Args:
+        s21: the qubit's S21 over readout frequency and prepared state.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        ``frequency``, and the ``distance`` at each frequency for the plot.
     """
     s21s = _get_state_s21s(s21)
     if len(s21s) == 2:
@@ -46,7 +53,14 @@ def analyse_ro_frequency(s21: xr.DataArray, _session: "SessionContext") -> Fits:
 def plot_two_state_ro_frequency(
     axes: np.ndarray, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
-    """The two states' traces on the IQ plane, then their magnitudes and phases, with the optimum."""
+    """The two states' traces on the IQ plane, then their magnitudes and phases, with the optimum.
+
+    Args:
+        axes: the column of three axes to draw on.
+        s21: the qubit's S21 over readout frequency and prepared state.
+        fits: the qubit's fits; without them the optimum is not marked.
+        _session: unused; part of the ``plot`` signature.
+    """
     s21_0, s21_1 = _get_state_s21s(s21)
     frequencies = s21_0.coords[s21_0.dims[0]].values
     iq_axis, magnitude_axis, phase_axis = axes
@@ -77,7 +91,14 @@ def plot_two_state_ro_frequency(
 def plot_three_state_ro_frequency(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
-    """The three states' magnitudes and their weighted distance, with the optimum."""
+    """The three states' magnitudes and their weighted distance, with the optimum.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21 over readout frequency and prepared state.
+        fits: the qubit's fits; without them only the magnitudes are drawn.
+        _session: unused; part of the ``plot`` signature.
+    """
     s21s = _get_state_s21s(s21)
     frequencies = s21s[0].coords[s21s[0].dims[0]].values
     axis.set_xlabel("RO frequency")

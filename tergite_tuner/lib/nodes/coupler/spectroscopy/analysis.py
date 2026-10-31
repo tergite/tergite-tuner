@@ -37,6 +37,14 @@ class CouplerAnticrossingAnalysis(CouplerAnalysis):
     """
 
     def detect_peaks(self, qubit_specs_dataarray: xarray.DataArray):
+        """Finds a qubit's frequency at each coupler current.
+
+        Args:
+            qubit_specs_dataarray: the qubit's ``|S21|`` over drive frequency and current.
+
+        Returns:
+            The detected frequencies, and the currents they were detected at.
+        """
         detected_frequencies = []
         detected_currents = []
         for current in self.dc_currents:
@@ -48,6 +56,12 @@ class CouplerAnticrossingAnalysis(CouplerAnalysis):
         return detected_frequencies, detected_currents
 
     def analyse(self) -> Fits | None:
+        """Finds the coupler currents where each qubit's frequency jumps, its anticrossings.
+
+        Returns:
+            The fits ``control_qubit_crossing_points`` and
+            ``target_qubit_crossing_points``: each qubit's crossing currents, in A.
+        """
         for coord in self.dataset[self.data_var].coords:
             if "frequencies" in coord:
                 self.frequencies = coord
@@ -155,6 +169,14 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
     """
 
     def detect_peaks(self, res_specs_dataarray: xarray.DataArray):
+        """Finds a resonator's frequency at each coupler current.
+
+        Args:
+            res_specs_dataarray: the resonator's S21 over frequency and current.
+
+        Returns:
+            The fitted resonator frequencies, and the currents they were fitted at.
+        """
         detected_frequencies = []
         detected_currents = []
         for current in self.dc_currents:
@@ -166,8 +188,11 @@ class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
         return detected_frequencies, detected_currents
 
     def analyse(self) -> Fits | None:
-        """
-        This function analyzes the coupler data to find crossing currents for both qubits.
+        """Finds the coupler currents where each qubit's resonator frequency jumps.
+
+        Returns:
+            The fits ``control_resonator_crossing_points`` and
+            ``target_resonator_crossing_points``: each resonator's crossing currents, in A.
         """
         for coord in self.dataset[self.data_var].coords:
             if "frequencies" in coord:
@@ -271,6 +296,20 @@ def find_crossing_currents(
     """The mean current of each group of frequency jumps over ``threshold``, but those near a resonator crossing.
 
     A zero frequency is a dropout; a group closes once it spans ``min_interval``, or at the last point.
+
+    Args:
+        currents: the coupler currents, in A.
+        frequencies: the frequency detected at each current, in Hz; NaN where none was.
+        threshold: the smallest jump, in Hz, that counts as a crossing.
+        spurious_threshold: how close, in Hz, the neighbours of a single dropout must be
+            for it to be filled in.
+        min_interval: the span of currents, in A, a group closes at.
+        resonator_crossings: currents, in A, of known resonator crossings to ignore.
+        resonator_crossings_interval: how close, in A, a crossing must be to a
+            resonator crossing to be ignored.
+
+    Returns:
+        The crossing currents, in A.
     """
     frequencies = np.asarray(frequencies, dtype=float)
     is_detected = ~np.isnan(frequencies)

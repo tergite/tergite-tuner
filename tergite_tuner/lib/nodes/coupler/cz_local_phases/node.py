@@ -45,6 +45,16 @@ LOOPS = 512
 def get_dummy_s21(
     _qubit: str, sweeps: Mapping[str, np.ndarray], _session: "SessionContext"
 ) -> np.ndarray:
+    """Random IQ shots for a dummy run.
+
+    Args:
+        _qubit: unused; part of the ``get_dummy_s21`` signature.
+        sweeps: each swept setting's values.
+        _session: unused; part of the ``get_dummy_s21`` signature.
+
+    Returns:
+        Shots with an axis per local phase, gate mode, swap and loop.
+    """
     return get_random_shots(sweeps, LOOPS, ("local_phases", "gate_modes", "swap"))
 
 

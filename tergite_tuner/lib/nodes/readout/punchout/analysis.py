@@ -41,6 +41,15 @@ def analyse_punchout(s21: xr.DataArray, _session: "SessionContext") -> Fits | No
     """``amplitude``: the largest before the fitted resonator frequency shifts.
 
     Amplitudes whose resonator fit raised are skipped. The qubit fails if none fitted.
+
+    Args:
+        s21: the qubit's S21 over readout frequency and amplitude.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        ``amplitude`` and its resonator ``frequency``, with each amplitude's
+        ``detected_frequencies`` and ``resonator_fits`` for the plots; None if no
+        amplitude fitted.
     """
     qubit = s21.attrs["qubit"]
     amplitudes = s21.coords[get_coord_name("ro_amplitudes", qubit)].values
@@ -79,7 +88,14 @@ def analyse_punchout(s21: xr.DataArray, _session: "SessionContext") -> Fits | No
 def plot_punchout(
     axis: Axes, s21: xr.DataArray, fits: Fits, _session: "SessionContext"
 ) -> None:
-    """``|S21|``, normalised per amplitude, with the fitted frequencies and the chosen amplitude."""
+    """``|S21|``, normalised per amplitude, with the fitted frequencies and the chosen amplitude.
+
+    Args:
+        axis: the axis to draw on.
+        s21: the qubit's S21 over readout frequency and amplitude.
+        fits: the qubit's fits; without them only ``|S21|`` is drawn.
+        _session: unused; part of the ``plot`` signature.
+    """
     qubit = s21.attrs["qubit"]
     amplitude_coord = get_coord_name("ro_amplitudes", qubit)
     magnitudes = np.abs(s21)
@@ -113,7 +129,14 @@ def plot_punchout(
 def save_punchout_spectroscopies(
     s21: xr.DataArray, fits: Fits, data_path: Path, session: "SessionContext"
 ) -> None:
-    """Each amplitude's resonator fit, the chosen one framed in red."""
+    """Saves each amplitude's resonator fit, the chosen one framed in red, as ``punchout_<qubit>_spectroscopies.png``.
+
+    Args:
+        s21: the qubit's S21 over readout frequency and amplitude.
+        fits: the qubit's fits; nothing is saved if empty.
+        data_path: the node's data folder.
+        session: the session the resonator plots read.
+    """
     if not fits:
         return
     qubit = s21.attrs["qubit"]
