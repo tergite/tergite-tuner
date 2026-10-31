@@ -7,6 +7,12 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.4] - 2026-10-31
+
+### Changed
+
+- Gave the public functions and classes Google-style docstrings, saying what each does for the caller, its arguments, what it returns and what it raises; those in the modules `feature/qblox-scheduler` rewrites come once it is merged
+
 ## [2026.10.0-rc.3] - 2026-10-31
 
 ### Changed
