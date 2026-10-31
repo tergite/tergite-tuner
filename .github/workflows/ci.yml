@@ -48,9 +48,23 @@ jobs:
       startsWith(github.ref, 'refs/tags/') || 
       (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'release')
     needs: tests
+    permissions:
+      contents: write
     steps:
       - name: Checkout the commit
         uses: actions/checkout@v4
+      # the GitHub release's notes are the tag's CHANGELOG.md section; read first, a tag
+      # without one fails before anything is published
+      - name: Read the release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          awk -v heading="## [${TAG#v}]" '
+            index($0, heading) == 1 { is_found = 1; next }
+            is_found && /^## \[/ { exit }
+            is_found { print }
+            END { if (!is_found) exit 1 }' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
       - name: Set up Python 3.13
         uses: actions/setup-python@v4
         with:
@@ -77,6 +91,17 @@ jobs:
           twine upload --skip-existing \
             -u __token__ \
             -p ${{ secrets.PYPI_API_TOKEN }} dist/*;
+      - name: Create the GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          # a release candidate must not become the repository's latest release
+          IS_PRERELEASE: ${{ contains(github.ref_name, '-rc') }}
+        # the wheel and sdist are left to PyPI, where pip takes the tuner from
+        run: >-
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag
+          --prerelease="$IS_PRERELEASE" --notes-file "$RUNNER_TEMP/notes.md"
 
   upstream:
     name: Update upstream
