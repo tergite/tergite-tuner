@@ -59,6 +59,23 @@ def test_create_serial_device(session_context):
         close_device_resources(test_device)
 
 
+def test_a_device_of_one_qubit_leaves_out_its_couplers(session_context):
+    """Ramsey 12 runs on one qubit at a time, with the session's couplers"""
+    with loaded_state(session_context, state_file):
+        ExtendedTransmon.close_all()
+        test_device = configure_device(
+            "test_device",
+            qubits=DEFAULT_TEST_QUBITS[:1],
+            couplers=DEFAULT_TEST_COUPLERS,
+            session=session_context,
+        )
+
+        assert test_device.edges() == []
+        test_device.generate_compilation_config()
+
+        close_device_resources(test_device)
+
+
 def test_save_serial_device(tmp_path, session_context):
     with loaded_state(session_context, state_file):
         # ensure no other transmon objects are instantiated
