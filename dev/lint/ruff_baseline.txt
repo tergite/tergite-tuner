@@ -96,7 +96,6 @@ tergite_tuner/export.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/export.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/export.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/export.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/export.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for type annotation
 tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for type annotation

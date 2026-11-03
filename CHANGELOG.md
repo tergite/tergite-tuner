@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Added
+
+- Added each coupler's `control_qubit` and `target_qubit` to `CouplerResults` and to the BCC seed it exports, from the device config, so that a backend knows whose phase each of the CZ's phase corrections is instead of guessing
+
 ## [2026.10.0-rc.5] - 2026-10-31
 
 ### Added

@@ -52,7 +52,9 @@
         "spec_duration": 4e-06
       },
       "target_local_phase": "nan",
-      "tqg_fidelity": "nan"
+      "tqg_fidelity": "nan",
+      "control_qubit": "q12",
+      "target_qubit": "q11"
     }
   },
   "cs": {
