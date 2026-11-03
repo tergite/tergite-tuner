@@ -14,6 +14,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 ### Fixed
 
 - Fixed a node run on some of a session's qubits building the couplers of the others into its device, which then failed to compile: tergite-backend's Ramsey 12, one qubit at a time, failed on any device with couplers
+- Fixed qubit spectroscopy of several amplitudes failing to compile at its 6 us pulses, whose soft square waveforms of four amplitudes overflow a sequencer's memory: it plays long square pulses beyond 4 us
 
 ## [2026.10.0-rc.5] - 2026-10-31
 
