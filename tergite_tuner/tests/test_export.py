@@ -48,8 +48,6 @@ def test_read_results_default():
     expected_result = {
         "couplers": {
             "q11_q12": {
-                "control_qubit": "q12",
-                "target_qubit": "q11",
                 "cz_dynamic_amplitude": 0.24,
                 "cz_dynamic_control_error": 0.0,
                 "cz_working_durations_in_ns": [

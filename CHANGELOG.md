@@ -7,10 +7,6 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
-### Added
-
-- Added each coupler's `control_qubit` and `target_qubit` to `CouplerResults` and to the BCC seed it exports, from the device config, so that a backend knows whose phase each of the CZ's phase corrections is instead of guessing
-
 ### Fixed
 
 - Fixed a node run on some of a session's qubits building the couplers of the others into its device, which then failed to compile: tergite-backend's Ramsey 12, one qubit at a time, failed on any device with couplers

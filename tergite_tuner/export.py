@@ -35,9 +35,6 @@ _CalibValueType = TypeVar("_CalibValueType", int, float, str)
 _NodeState = Literal["calibrated", "not_calibrated"]
 _DOWNCONVERT_FREQUENCY = 4.4e9
 _NUMPY_FLOAT_PATTERN = re.compile(r"np\.float\d*")
-# a coupler's qubits by role, from the device config, kept in every read as they say whose
-# phase each of its CZ's phase corrections is
-_COUPLER_ROLES = ("control_qubit", "target_qubit")
 _SEED_UNITS = {
     "qubit": dict(
         frequency="Hz",
@@ -88,7 +85,7 @@ def read_result(
         written_paths = session.state.written_paths
 
         def should_keep_field(field: str) -> bool:
-            return field in _COUPLER_ROLES or any(
+            return any(
                 field in (path.split(":")[0], path, f"{path}_error")
                 for path in written_paths
             )
@@ -238,8 +235,6 @@ class QubitResults(_ResultsModel):
 class CouplerResults(_ResultsModel):
     """A coupler's stored values."""
 
-    control_qubit: str | None = None
-    target_qubit: str | None = None
     cz_pulse_frequency: float | None = None
     cz_pulse_amplitude: float | None = None
     parking_current: float | None = None
@@ -391,16 +386,9 @@ def _get_qubit_seed(qubit: str, item: QubitResults) -> dict[str, Any]:
 
 
 def _get_coupler_seed(name: str, item: CouplerResults) -> dict[str, Any]:
-    """A coupler's seed entry, under its name in the backend, with its qubits' roles
-    where the device config gives them."""
-    roles = {}
-    if item.control_qubit is not None:
-        roles["control_qubit"] = item.control_qubit
-    if item.target_qubit is not None:
-        roles["target_qubit"] = item.target_qubit
+    """A coupler's seed entry, under its name in the backend."""
     return dict(
         id=name,
-        **roles,
         frequency=_DOWNCONVERT_FREQUENCY - item.cz_pulse_frequency,
         cz_pulse_amplitude=item.cz_pulse_amplitude,
         cz_pulse_dc_bias=item.parking_current or 0,  # might be None

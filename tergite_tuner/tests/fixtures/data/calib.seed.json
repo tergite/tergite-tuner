@@ -9,9 +9,7 @@
         "frequency": 4176200000.0,
         "id": "q11_q12",
         "pulse_type": "wacqt_cz",
-        "target_rz_lambda": 2.3387411976724017,
-        "control_qubit": "q12",
-        "target_qubit": "q11"
+        "target_rz_lambda": 2.3387411976724017
       }
     ],
     "discriminators": {
