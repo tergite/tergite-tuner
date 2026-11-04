@@ -44,9 +44,9 @@ def test_recovery_clifford_produces_identity(
     # Compute the product of the net clifford and the recovery clifford
     clifford = net_clifford * recovery_clifford
 
-    assert clifford == clifford_cls(
-        0
-    ), "The product of a single-qubit sequence and its recovery should be the identity"
+    assert clifford == clifford_cls(0), (
+        "The product of a single-qubit sequence and its recovery should be the identity"
+    )
 
 
 @pytest.mark.parametrize(
@@ -69,9 +69,9 @@ def test_interleaved_randomized_benchmarking(
     net_clifford = calculate_net_clifford(sequence[:-1], clifford_cls)
     # Compute the product of the net clifford and the recovery clifford
     clifford = net_clifford * recovery_clifford
-    assert clifford == clifford_cls(
-        0
-    ), "The product of a single-qubit sequence and its recovery should be the identity"
+    assert clifford == clifford_cls(0), (
+        "The product of a single-qubit sequence and its recovery should be the identity"
+    )
 
 
 def test_interleaved_cz():

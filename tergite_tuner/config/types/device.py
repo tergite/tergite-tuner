@@ -164,8 +164,7 @@ class DeviceConfig(BaseModel):
         coupler = self.couplers.get(coupler_name)
         if coupler is None:
             raise KeyError(
-                f"Coupler name {coupler_name} is not found in the device "
-                "configuration."
+                f"Coupler name {coupler_name} is not found in the device configuration."
             )
         try:
             return coupler["control_qubit"], coupler["target_qubit"]

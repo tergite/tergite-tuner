@@ -137,7 +137,6 @@ class CZParametrizationCouplerAnalysis(CZParametrizationAnalysis):
         """
         figures_list = []
         for current_index, current in enumerate(self.dc_currents):
-
             marker = "8"
             if current_index == self.optimal_current_index:
                 marker = "*"

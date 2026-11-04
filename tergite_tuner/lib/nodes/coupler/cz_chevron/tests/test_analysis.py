@@ -66,7 +66,6 @@ def test_cz_chevron_analysis_bad_data(session_context, node_data_dir):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
-
             # Run the single coupler analysis
             analysis = CZChevronCouplerAnalysis(
                 get_coupler_dataset(dataset, "q14_q15", "cz_chevron"),

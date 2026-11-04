@@ -40,9 +40,9 @@ def test_identity_clifford(cleared_clifford_caches, cls):
     ptm = cls(0).pauli_transfer_matrix
     size = ptm.shape[0]
     eye = np.identity(size)
-    assert np.array_equal(
-        eye, ptm
-    ), f"The identity {cls.__name__} should have an identity PTM"
+    assert np.array_equal(eye, ptm), (
+        f"The identity {cls.__name__} should have an identity PTM"
+    )
 
 
 @pytest.mark.parametrize("cls", _CLASSES)
@@ -53,9 +53,9 @@ def test_get_inverse(cleared_clifford_caches, cls):
     # Check that the inverse is correct up to a global-phase
     c_eye = c_inv * c  # this should be the identity
     eye = cls(0)  # This should be the identity
-    assert (
-        c_eye == eye
-    ), f"The product of a {cls.__name__} and its inverse should be the identity"
+    assert c_eye == eye, (
+        f"The product of a {cls.__name__} and its inverse should be the identity"
+    )
 
 
 def test_two_qubit_clifford_caching(cleared_clifford_caches):

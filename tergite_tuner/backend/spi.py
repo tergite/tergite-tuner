@@ -47,7 +47,6 @@ def _find_and_validate_spi_port(spi_serial_port: str):
     # We validate on unix based systems whether the port is actually taken
     current_os = _get_os()
     if current_os == OperatingSystem.LINUX or current_os == OperatingSystem.MAC:
-
         # Path to serial devices
         path = Path("/dev/")
 

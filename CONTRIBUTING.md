@@ -24,7 +24,7 @@ requests.
 2. If you've added code that should be tested, add tests.
 3. If you've changed APIs, update the documentation. Read the section below on documentation.
 4. Ensure the test suite passes. Run: `pytest tergite_tuner`
-5. Make sure your code lints. This can be done by running: `black tergite_tuner --check`
+5. Make sure your code lints. This can be done by running: `ruff format --check tergite_tuner dev conftest.py`
 6. Create the merge request!
 
 ### Issues and bug reports
