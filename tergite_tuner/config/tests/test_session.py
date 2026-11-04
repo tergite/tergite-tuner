@@ -126,7 +126,7 @@ def test_session_overrides_optional_vars(tmp_path, clean_environ):
 def test_session_coerces_string_values(tmp_path, clean_environ):
     """Values from the ``.env`` file (always strings) are coerced to the field type."""
     sample = tmp_path / ".env"
-    sample.write_text("SPI_SERIAL_PORT='/dev/ttyUSB0'\n" "STDOUT_LOG_LEVEL='30'\n")
+    sample.write_text("SPI_SERIAL_PORT='/dev/ttyUSB0'\nSTDOUT_LOG_LEVEL='30'\n")
 
     session = SessionContext.from_env(sample)
     assert session.spi_serial_port == "/dev/ttyUSB0"

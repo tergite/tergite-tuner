@@ -35,7 +35,6 @@ from tergite_tuner.lib.utils.schedules import (
 
 
 class CZChevronMeasurement(BaseMeasurement):
-
     def __init__(
         self,
         transmons: dict[str, ExtendedTransmon],

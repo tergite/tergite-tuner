@@ -66,7 +66,6 @@ GATES = {
 
 
 class CZRBMeasurement(BaseMeasurement):
-
     def __init__(
         self,
         transmons: dict[str, ExtendedTransmon],

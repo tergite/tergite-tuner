@@ -34,11 +34,13 @@ def test_a_session_starts_from_the_device_config_of_its_elements(session_context
     device = session_context.device_config
     state = session_context.state
 
-    assert state.read("transmons", "q00", "measure:pulse_duration") == (
-        device.qubits["q00"]["measure"]["pulse_duration"]
+    assert (
+        state.read("transmons", "q00", "measure:pulse_duration")
+        == (device.qubits["q00"]["measure"]["pulse_duration"])
     )
-    assert state.read("couplers", "q00_q01", "cz_pulse_amplitude") == (
-        device.couplers["q00_q01"]["cz_pulse_amplitude"]
+    assert (
+        state.read("couplers", "q00_q01", "cz_pulse_amplitude")
+        == (device.couplers["q00_q01"]["cz_pulse_amplitude"])
     )
     assert set(state.get_records()["transmons"]) == set(session_context.qubits)
 
@@ -86,8 +88,9 @@ def test_update_gives_the_state_the_config_of_added_qubits(session_context):
     config = session_context.device_config.qubits["q01"]
     state = session_context.state
     assert state.read("transmons", "q00", "rxy:amp180") == 0.5
-    assert state.read("transmons", "q01", "measure:pulse_duration") == (
-        config["measure"]["pulse_duration"]
+    assert (
+        state.read("transmons", "q01", "measure:pulse_duration")
+        == (config["measure"]["pulse_duration"])
     )
 
 
