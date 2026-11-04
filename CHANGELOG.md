@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.6] - 2026-11-04
+
 ### Fixed
 
 - Fixed a node run on some of a session's qubits building the couplers of the others into its device, which then failed to compile: tergite-backend's Ramsey 12, one qubit at a time, failed on any device with couplers
