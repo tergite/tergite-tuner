@@ -17,7 +17,9 @@ import pytest
 from tergite_tuner.backend import ExtendedTransmon, configure_device
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
     TwoTonesAmplitudeMeasurement,
+    TwoTonesMultidimMeasurement,
 )
+from tergite_tuner.tests.utils.fixtures import DEFAULT_TEST_QUBITS
 
 
 @pytest.mark.usefixtures("seeded_state")
@@ -35,3 +37,26 @@ def test_amplitude_spectroscopy_accepts_long_spectroscopy_pulses(session_context
     )
 
     assert schedule.operations
+
+
+@pytest.mark.usefixtures("seeded_state")
+@pytest.mark.parametrize(
+    "duration, expected", [(4e-6, "SoftSquarePulse"), (6e-6, "long_square_pulse")]
+)
+def test_spectroscopy_plays_long_square_pulses_beyond_the_waveform_memory(
+    session_context, duration, expected
+):
+    """Four soft square waveforms of 6 us, 24000 samples, would not fit in 16384"""
+    ExtendedTransmon.close_all()
+    qubit = DEFAULT_TEST_QUBITS[0]
+    device = configure_device("spectroscopy", [qubit], [], session_context)
+    transmon = device.get_element(qubit)
+    transmon.spec.spec_duration(duration)
+
+    schedule = TwoTonesMultidimMeasurement({qubit: transmon}).schedule_function(
+        spec_frequencies={qubit: np.linspace(4.0e9, 4.1e9, 3)},
+        spec_pulse_amplitudes={qubit: np.linspace(1e-3, 8e-3, 5)},
+    )
+
+    names = {operation.name for operation in schedule.operations.values()}
+    assert expected in names

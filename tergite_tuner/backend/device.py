@@ -41,12 +41,11 @@ def configure_device(
         )
         device.add_element(transmon)
 
-    if couplers is not None:
-        for coupler in couplers:
-            edge = _load_coupler(
-                session.state.get_record("couplers", coupler), coupler=coupler
-            )
-            device.add_edge(edge)
+    for coupler in _get_couplers_among(couplers or [], qubits):
+        edge = _load_coupler(
+            session.state.get_record("couplers", coupler), coupler=coupler
+        )
+        device.add_edge(edge)
 
     device.hardware_config(session.cluster_config)
     return device
@@ -90,6 +89,16 @@ def save_serial_device(device: QuantumDevice, data_path: str) -> None:
     Path(data_path).mkdir(parents=True, exist_ok=True)
     with open(f"{data_path}/{name}.json", "w") as f:
         json.dump(serial_device, f, indent=4)
+
+
+def _get_couplers_among(couplers: list[str], qubits: list[str]) -> list[str]:
+    """The couplers both of whose qubits are among ``qubits``: an edge of a qubit the
+    device lacks would fail its compilation."""
+    return [
+        coupler
+        for coupler in couplers
+        if all(qubit in qubits for qubit in coupler.split("_"))
+    ]
 
 
 def _load_transmon(

@@ -95,8 +95,10 @@ class TwoTonesMultidimMeasurement(BaseMeasurement):
         transmon = self.transmons[qubit]
         duration = transmon.spec.spec_duration()
         clock = get_drive_clock(qubit, qubit_state)
-        # long pulses would not fit in the waveform memory
-        pulse = long_square_pulse if duration > 6e-6 else SoftSquarePulse
+        # the amplitudes share a normalized waveform only where its samples round
+        # equal, which leaves four of AMPLITUDES' five: four of 4 us fit in a
+        # sequencer's 16384 samples, of 6 us they do not
+        pulse = long_square_pulse if duration > 4e-6 else SoftSquarePulse
         # the amplitudes vary fastest, so the frequency changes once per sweep of them
         if acq_index % len(spec_pulse_amplitudes[qubit]) == 0:
             schedule.add(
