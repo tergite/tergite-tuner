@@ -115,7 +115,7 @@ A test that changes module state resets it: call `ExtendedTransmon.close_all()` 
 
 ## 7. CI
 
-GitLab CI ([.gitlab-ci.yml](.gitlab-ci.yml)) and GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) run the same job on Python 3.13, on every merge request, on `main` and on tags: `uv sync --locked`, which fails on a stale `uv.lock`; `black --check`; the ruff, pylint and vulture baselines; then pytest with coverage, which includes the style-guide test. A `v*` tag on GitHub also builds and publishes the package. GitLab is the source of truth; GitHub is a mirror.
+GitLab CI ([.gitlab-ci.yml](.gitlab-ci.yml)) and GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) run the same job on Python 3.13, on every merge request, on `main` and on tags: `uv sync --locked`, which fails on a stale `uv.lock`; `ruff format --check`; the ruff, pylint and vulture baselines; then pytest with coverage, which includes the style-guide test. A `v*` tag on GitHub also builds and publishes the package. GitLab is the source of truth; GitHub is a mirror.
 
 ## 8. Working on this repo
 
@@ -133,7 +133,7 @@ One logical change per commit, decided before editing. Never add assistant attri
 
 ### Verifying a change
 
-**Every commit** runs `black --check`, the three lint baselines and the style-guide test, then the tests the change can affect, logged as [below](#slow-commands). A change that alters a compiled program or an analysis's values on purpose rewrites its golden with `UPDATE_GOLDENS=1`, without `-n`, and its commit says why.
+**Every commit** runs `ruff format --check`, the three lint baselines and the style-guide test, then the tests the change can affect, logged as [below](#slow-commands). A change that alters a compiled program or an analysis's values on purpose rewrites its golden with `UPDATE_GOLDENS=1`, without `-n`, and its commit says why.
 
 **Before a merge request**:
 
@@ -173,7 +173,7 @@ The conventions are tergite-frontend's, so the two read alike. Code reads like a
 
 ### Lint
 
-`black` formats. `ruff check` lints, with the isort rules (no separate isort); `pylint` checks duplicate code and function size; `vulture` finds unused definitions. Each has a baseline of the findings that predate it in `dev/lint/`:
+`ruff format` formats. `ruff check` lints, with the isort rules (no separate isort); `pylint` checks duplicate code and function size; `vulture` finds unused definitions. Each has a baseline of the findings that predate it in `dev/lint/`:
 
 ```bash
 uv run python -m dev.lint.baseline ruff      # or pylint, vulture

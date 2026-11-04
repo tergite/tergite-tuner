@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --all-groups
       - name: Format
-        run: uv run --locked black --check tergite_tuner dev conftest.py
+        run: uv run --locked ruff format --check tergite_tuner dev conftest.py
       - name: Lint
         run: |
           uv run --locked python -m dev.lint.baseline ruff

@@ -62,7 +62,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "black>=24.10.0",
     # Exact pins: the lint baselines in dev/lint/ are only stable against one version
     "pylint==4.1.3",
     "ruff==0.15.1",
@@ -90,7 +89,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["F", "I", "E", "W", "B", "UP", "SIM", "C4", "RET", "ARG", "T20"]
-# black wraps the code; the lines it cannot wrap are long strings
+# ruff format wraps the code; the lines it cannot wrap are long strings
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
