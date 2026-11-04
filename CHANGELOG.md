@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.7] - 2026-11-04
+
 ### Changed
 
 - Changed the code formatter from black to `ruff format`, the tool that already lints the code; contributors run `ruff format` where they ran black, which is no longer a dev dependency

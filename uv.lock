@@ -3003,7 +3003,7 @@ wheels = [
 
 [[package]]
 name = "tergite-tuner"
-version = "2026.10.0rc6"
+version = "2026.10.0rc7"
 source = { editable = "." }
 dependencies = [
     { name = "cf-xarray" },
