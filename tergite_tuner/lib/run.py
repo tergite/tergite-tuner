@@ -27,6 +27,7 @@ from tergite_tuner.backend import (
     CompiledSchedule,
     Hardware,
     QuantumDevice,
+    Schedule,
     close_device_resources,
     compile_schedule,
     configure_device,
@@ -96,6 +97,17 @@ def compile_node(
     sweeps: Sweeps,
     session: "SessionContext | None" = None,
 ) -> CompiledSchedule:
+    schedule = get_node_schedule(spec, device, sweeps, session)
+    return compile_schedule(schedule, device, name=spec.name.value)
+
+
+def get_node_schedule(
+    spec: NodeSpec,
+    device: QuantumDevice,
+    sweeps: Sweeps,
+    session: "SessionContext | None" = None,
+) -> Schedule:
+    """The node's schedule over ``sweeps`` on ``device``'s elements, with its keywords, uncompiled."""
     transmons = {qubit: device.get_element(qubit) for qubit in device.elements()}
     keywords = dict(spec.schedule_keywords)
     if spec.element == "coupler":
@@ -104,8 +116,7 @@ def compile_node(
         keywords |= spec.get_schedule_keywords(session)
     if spec.loops is not None:
         keywords["loop_repetitions"] = spec.loops
-    schedule = spec.get_schedule(transmons, **sweeps, **keywords)
-    return compile_schedule(schedule, device, name=spec.name.value)
+    return spec.get_schedule(transmons, **sweeps, **keywords)
 
 
 def measure(
