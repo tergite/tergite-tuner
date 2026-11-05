@@ -41,79 +41,51 @@ MAX_REPORTED_ROWS = 5
 NUMBER_LIST = re.compile(r"\[[-+.\de\s,]*\]")
 
 
-def compile_to_device(schedule: Any, device: Any, name: str) -> Any:
-    """Compiles ``schedule``'s gates into ``device``'s pulses, timed absolutely, without hardware.
+def read_snapshot_file(path: Path) -> dict[str, Any]:
+    """The record ``write_snapshot_file`` wrote to ``path``."""
+    return json.loads(path.read_text())
+
+
+def to_plain(value: Any) -> Any:
+    """``value`` as JSON holds it.
 
     Args:
-        schedule: the schedule.
-        device: the quantum device whose elements and edges translate the gates.
-        name: the compiler's name.
+        value: numbers, strings, enums, arrays and mappings of them.
 
     Returns:
-        The device-compiled schedule.
+        The value in Python's own types; anything else as its ``repr``.
     """
-    config = device.generate_compilation_config().model_copy(
-        update={"hardware_compilation_config": None}
-    )
-    return config.backend(name=name).compile(schedule=schedule, config=config)
+    if isinstance(value, Enum):
+        return to_plain(value.value)
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    if isinstance(value, (float, np.floating)):
+        return float(value)
+    if isinstance(value, (complex, np.complexfloating)):
+        return [float(value.real), float(value.imag)]
+    if isinstance(value, Mapping):
+        return {str(key): to_plain(item) for key, item in value.items()}
+    if isinstance(value, np.ndarray):
+        return to_plain(value.tolist())
+    if isinstance(value, (list, tuple, range)):
+        return [to_plain(item) for item in value]
+    if value is None or isinstance(value, str):
+        return value
+    return repr(value)
 
 
-def get_snapshot(schedule: Any) -> dict[str, Any]:
-    """A device-compiled schedule's clocks, repetitions and events, its alike events grouped.
+def write_snapshot_file(path: Path, record: Mapping[str, Any]) -> None:
+    """Writes ``record`` as JSON, each list of numbers on one line.
 
     Args:
-        schedule: a schedule compiled by ``compile_to_device``.
-
-    Returns:
-        ``repetitions``; ``clocks``, each clock's frequency; and ``events``, a list of
-        groups, each with the ``fields`` its events share and the ``columns`` they vary in.
+        path: the file.
+        record: snapshots and what they were taken of, as ``to_plain`` gives them.
     """
-    groups: dict[str, list[dict[str, float]]] = {}
-    for event in _iterate_events(schedule, 0.0):
-        fields = {
-            key: _round_nested(value)
-            for key, value in event.items()
-            if not _is_number(value)
-        }
-        numbers = {
-            key: float(value) for key, value in event.items() if _is_number(value)
-        }
-        key = json.dumps({"fields": fields, "columns": sorted(numbers)}, sort_keys=True)
-        groups.setdefault(key, []).append(numbers)
-    return {
-        "repetitions": schedule.repetitions,
-        "clocks": dict(sorted(_get_clocks(schedule).items())),
-        "events": [_get_group(key, rows) for key, rows in sorted(groups.items())],
-    }
-
-
-def find_differences(
-    expected: Mapping[str, Any], actual: Mapping[str, Any]
-) -> list[str]:
-    """How ``actual`` differs from ``expected``, two snapshots, beyond the tolerances.
-
-    Args:
-        expected: the snapshot taken as right.
-        actual: the snapshot to check.
-
-    Returns:
-        One line per difference; empty if they match.
-    """
-    differences = []
-    if expected["repetitions"] != actual["repetitions"]:
-        differences.append(
-            f"repetitions: {expected['repetitions']} != {actual['repetitions']}"
-        )
-    differences += _find_clock_differences(expected["clocks"], actual["clocks"])
-    expected_groups = {_get_group_key(group): group for group in expected["events"]}
-    actual_groups = {_get_group_key(group): group for group in actual["events"]}
-    for key in sorted(expected_groups.keys() - actual_groups.keys()):
-        differences.append(f"missing {_describe(expected_groups[key])}")
-    for key in sorted(actual_groups.keys() - expected_groups.keys()):
-        differences.append(f"unexpected {_describe(actual_groups[key])}")
-    for key in sorted(expected_groups.keys() & actual_groups.keys()):
-        differences += _find_row_differences(expected_groups[key], actual_groups[key])
-    return differences
+    text = json.dumps(record, indent=1, sort_keys=True)
+    text = NUMBER_LIST.sub(lambda match: re.sub(r"\s+", "", match[0]), text)
+    path.write_text(text + "\n")
 
 
 def find_value_differences(expected: Any, actual: Any, path: str = "") -> list[str]:
@@ -152,70 +124,142 @@ def find_value_differences(expected: Any, actual: Any, path: str = "") -> list[s
     return [] if is_equal else [f"{path}: {actual!r} != {expected!r}"]
 
 
-def to_sweeps(values: Mapping[str, Any]) -> dict[str, Any]:
+def to_sweeps(values: Any) -> Any:
     """Sweeps as a schedule takes them, from their ``to_plain`` form: each list an array.
 
     Args:
-        values: each setting's values per element, or a point's value per element.
+        values: each setting's values per element, a point's value per element, or one value.
 
     Returns:
-        The same mapping, its lists numpy arrays.
+        The same values, each list a numpy array.
+    """
+    if isinstance(values, Mapping):
+        return {key: to_sweeps(item) for key, item in values.items()}
+    if isinstance(values, list):
+        return np.asarray(values)
+    return values
+
+
+def compile_to_device(schedule: Any, device: Any, name: str) -> Any:
+    """Compiles ``schedule``'s gates into ``device``'s pulses, timed absolutely, without hardware.
+
+    Args:
+        schedule: the schedule.
+        device: the quantum device whose elements and edges translate the gates.
+        name: the compiler's name.
+
+    Returns:
+        The device-compiled schedule.
+    """
+    config = device.generate_compilation_config().model_copy(
+        update={"hardware_compilation_config": None}
+    )
+    return config.backend(name=name).compile(schedule=schedule, config=config)
+
+
+def get_snapshot(schedule: Any) -> dict[str, Any]:
+    """A device-compiled schedule's clocks, repetitions and events, its alike events grouped.
+
+    Args:
+        schedule: a schedule compiled by ``compile_to_device``.
+
+    Returns:
+        ``repetitions``; ``clocks``, each clock's frequency; and ``events``, a list of
+        groups, each with the ``fields`` its events share and the ``columns`` they vary in.
     """
     return {
-        key: to_sweeps(item)
-        if isinstance(item, Mapping)
-        else np.asarray(item)
-        if isinstance(item, list)
-        else item
-        for key, item in values.items()
+        "repetitions": schedule.repetitions,
+        "clocks": dict(sorted(_get_clocks(schedule).items())),
+        "events": _get_groups(_iterate_events(schedule, 0.0)),
     }
 
 
-def write_snapshot_file(path: Path, record: Mapping[str, Any]) -> None:
-    """Writes ``record`` as JSON, each list of numbers on one line.
+def find_differences(
+    expected: Mapping[str, Any], actual: Mapping[str, Any]
+) -> list[str]:
+    """How ``actual`` differs from ``expected``, two snapshots, beyond the tolerances.
 
     Args:
-        path: the file.
-        record: snapshots and what they were taken of, as ``to_plain`` gives them.
-    """
-    text = json.dumps(record, indent=1, sort_keys=True)
-    text = NUMBER_LIST.sub(lambda match: re.sub(r"\s+", "", match[0]), text)
-    path.write_text(text + "\n")
-
-
-def read_snapshot_file(path: Path) -> dict[str, Any]:
-    """The record ``write_snapshot_file`` wrote to ``path``."""
-    return json.loads(path.read_text())
-
-
-def to_plain(value: Any) -> Any:
-    """``value`` as JSON holds it.
-
-    Args:
-        value: numbers, strings, enums, arrays and mappings of them.
+        expected: the snapshot taken as right.
+        actual: the snapshot to check.
 
     Returns:
-        The value in Python's own types; anything else as its ``repr``.
+        One line per difference; empty if they match.
     """
-    if isinstance(value, Enum):
-        return to_plain(value.value)
-    if isinstance(value, (bool, np.bool_)):
-        return bool(value)
-    if isinstance(value, (int, np.integer)):
-        return int(value)
-    if isinstance(value, (float, np.floating)):
-        return float(value)
-    if isinstance(value, (complex, np.complexfloating)):
-        return [float(value.real), float(value.imag)]
-    if isinstance(value, Mapping):
-        return {str(key): to_plain(item) for key, item in value.items()}
-    if isinstance(value, np.ndarray):
-        return to_plain(value.tolist())
-    if isinstance(value, (list, tuple, range)):
-        return [to_plain(item) for item in value]
-    if value is None or isinstance(value, str):
-        return value
-    return repr(value)
+    differences = []
+    if expected["repetitions"] != actual["repetitions"]:
+        differences.append(
+            f"repetitions: {expected['repetitions']} != {actual['repetitions']}"
+        )
+    differences += _find_clock_differences(expected["clocks"], actual["clocks"])
+    return differences + _find_group_differences(expected["events"], actual["events"])
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_close(expected: float, actual: float) -> bool:
+    return math.isclose(
+        actual, expected, rel_tol=RELATIVE_TOLERANCE, abs_tol=ABSOLUTE_TOLERANCE
+    )
+
+
+def _get_clocks(schedule: Any) -> dict[str, float]:
+    clocks = {
+        name: float(resource.data["freq"])
+        for name, resource in schedule.resources.items()
+        if resource.data.get("freq") is not None
+    }
+    for operation in schedule.operations.values():
+        child = getattr(operation, "body", operation)
+        if hasattr(child, "resources"):
+            clocks |= _get_clocks(child)
+    return clocks
+
+
+def _get_groups(events: Iterator[dict[str, Any]]) -> list[dict[str, Any]]:
+    """``events`` grouped by their fields but numbers, each group's numbers its columns."""
+    groups: dict[str, list[dict[str, float]]] = {}
+    for event in events:
+        fields = {
+            key: _round_nested(value)
+            for key, value in event.items()
+            if not _is_number(value)
+        }
+        numbers = {
+            key: float(value) for key, value in event.items() if _is_number(value)
+        }
+        key = json.dumps({"fields": fields, "columns": sorted(numbers)}, sort_keys=True)
+        groups.setdefault(key, []).append(numbers)
+    return [_get_group(key, rows) for key, rows in sorted(groups.items())]
+
+
+def _round_nested(value: Any) -> Any:
+    """``value`` with the numbers inside its lists and mappings rounded to ``SIGNIFICANT_DIGITS``."""
+    if isinstance(value, list):
+        return [
+            _round(item) if _is_number(item) else _round_nested(item) for item in value
+        ]
+    if isinstance(value, dict):
+        return {key: _round_nested(item) for key, item in value.items()}
+    return value
+
+
+def _round(value: float, digits: int = SIGNIFICANT_DIGITS) -> float:
+    return float(f"{value:.{digits}g}")
+
+
+def _get_group(key: str, rows: list[dict[str, float]]) -> dict[str, Any]:
+    """A group's shared fields and its columns, a constant column kept as its one value."""
+    names = json.loads(key)["columns"]
+    rows = sorted(rows, key=lambda row: [_round(row[name]) for name in names])
+    columns = {}
+    for name in names:
+        values = [_round(row[name], STORED_DIGITS) for row in rows]
+        is_constant = all(value == values[0] for value in values)
+        columns[name] = values[0] if is_constant else values
+    return {"fields": json.loads(key)["fields"], "count": len(rows), "columns": columns}
 
 
 def _iterate_events(operation: Any, start: float) -> Iterator[dict[str, Any]]:
@@ -241,31 +285,6 @@ def _iterate_events(operation: Any, start: float) -> Iterator[dict[str, Any]]:
             yield {"kind": kind, **event, "t": start + info["t0"]}
 
 
-def _get_clocks(schedule: Any) -> dict[str, float]:
-    clocks = {
-        name: float(resource.data["freq"])
-        for name, resource in schedule.resources.items()
-        if resource.data.get("freq") is not None
-    }
-    for operation in schedule.operations.values():
-        child = getattr(operation, "body", operation)
-        if hasattr(child, "resources"):
-            clocks |= _get_clocks(child)
-    return clocks
-
-
-def _get_group(key: str, rows: list[dict[str, float]]) -> dict[str, Any]:
-    """A group's shared fields and its columns, a constant column kept as its one value."""
-    names = json.loads(key)["columns"]
-    rows = sorted(rows, key=lambda row: [_round(row[name]) for name in names])
-    columns = {}
-    for name in names:
-        values = [_round(row[name], STORED_DIGITS) for row in rows]
-        is_constant = all(value == values[0] for value in values)
-        columns[name] = values[0] if is_constant else values
-    return {"fields": json.loads(key)["fields"], "count": len(rows), "columns": columns}
-
-
 def _find_clock_differences(
     expected: Mapping[str, float], actual: Mapping[str, float]
 ) -> list[str]:
@@ -276,6 +295,45 @@ def _find_clock_differences(
         or name not in actual
         or not _is_close(expected[name], actual[name])
     ]
+
+
+def _find_group_differences(
+    expected: list[Mapping[str, Any]], actual: list[Mapping[str, Any]]
+) -> list[str]:
+    """The groups ``actual`` lacks, those it adds, and those whose rows differ."""
+    expected_groups = {_get_group_key(group): group for group in expected}
+    actual_groups = {_get_group_key(group): group for group in actual}
+    missing = [
+        f"missing {_describe(expected_groups[key])}"
+        for key in sorted(expected_groups.keys() - actual_groups.keys())
+    ]
+    unexpected = [
+        f"unexpected {_describe(actual_groups[key])}"
+        for key in sorted(actual_groups.keys() - expected_groups.keys())
+    ]
+    differing = [
+        difference
+        for key in sorted(expected_groups.keys() & actual_groups.keys())
+        for difference in _find_row_differences(
+            expected_groups[key], actual_groups[key]
+        )
+    ]
+    return missing + unexpected + differing
+
+
+def _get_group_key(group: Mapping[str, Any]) -> str:
+    return json.dumps(
+        {"fields": group["fields"], "columns": sorted(group["columns"])}, sort_keys=True
+    )
+
+
+def _describe(group: Mapping[str, Any]) -> str:
+    fields = ", ".join(
+        f"{key}={value}"
+        for key, value in group["fields"].items()
+        if key in ("kind", "wf_func", "port", "clock", "protocol")
+    )
+    return f"{group['count']} x [{fields}] varying in {sorted(group['columns'])}"
 
 
 def _find_row_differences(
@@ -298,43 +356,3 @@ def _find_row_differences(
             )
             differences.append(f"{label}: {name} differs in {len(rows)} rows ({shown})")
     return differences
-
-
-def _get_group_key(group: Mapping[str, Any]) -> str:
-    return json.dumps(
-        {"fields": group["fields"], "columns": sorted(group["columns"])}, sort_keys=True
-    )
-
-
-def _describe(group: Mapping[str, Any]) -> str:
-    fields = ", ".join(
-        f"{key}={value}"
-        for key, value in group["fields"].items()
-        if key in ("kind", "wf_func", "port", "clock", "protocol")
-    )
-    return f"{group['count']} x [{fields}] varying in {sorted(group['columns'])}"
-
-
-def _round_nested(value: Any) -> Any:
-    """``value`` with the numbers inside its lists and mappings rounded to ``SIGNIFICANT_DIGITS``."""
-    if isinstance(value, list):
-        return [
-            _round(item) if _is_number(item) else _round_nested(item) for item in value
-        ]
-    if isinstance(value, dict):
-        return {key: _round_nested(item) for key, item in value.items()}
-    return value
-
-
-def _is_number(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def _is_close(expected: float, actual: float) -> bool:
-    return math.isclose(
-        actual, expected, rel_tol=RELATIVE_TOLERANCE, abs_tol=ABSOLUTE_TOLERANCE
-    )
-
-
-def _round(value: float, digits: int = SIGNIFICANT_DIGITS) -> float:
-    return float(f"{value:.{digits}g}")

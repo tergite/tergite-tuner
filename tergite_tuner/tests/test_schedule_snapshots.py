@@ -82,41 +82,40 @@ def test_default_sweeps_match_the_snapshot(node_name, session_context):
 def test_schedules_match_the_snapshot(node_name, session_context):
     path = SNAPSHOT_DIR / f"{node_name}.json"
     record = read_snapshot_file(path)
-    spec = DEFAULT_NODE_SPECS[NodeEnum(node_name)]
+    snapshots = _get_snapshots(node_name, record, session_context)
 
-    with loaded_state(session_context, STATE_FILE):
+    if _should_update():
+        record["schedules"] = [
+            {"outer_point": expected["outer_point"], **snapshot}
+            for expected, snapshot in zip(record["schedules"], snapshots, strict=True)
+        ]
+        write_snapshot_file(path, record)
+    assert _find_point_differences(record["schedules"], snapshots) == []
+
+
+def _should_update() -> bool:
+    if not os.environ.get("UPDATE_GOLDENS"):
+        return False
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        pytest.fail("UPDATE_GOLDENS rewrites shared files: run it without -n")
+    return True
+
+
+def _get_snapshots(node_name: str, record: dict, session: SessionContext) -> list[dict]:
+    """The snapshot of the node's schedule at each outer point ``record`` lists, on its sweeps."""
+    spec = DEFAULT_NODE_SPECS[NodeEnum(node_name)]
+    with loaded_state(session, STATE_FILE):
         ExtendedTransmon.close_all()
-        device = configure_device(
-            node_name, TEST_QUBITS, TEST_COUPLERS, session_context
-        )
+        device = configure_device(node_name, TEST_QUBITS, TEST_COUPLERS, session)
         try:
-            snapshots = [
+            return [
                 _get_point_snapshot(
-                    spec,
-                    device,
-                    record["sweeps"] | expected["outer_point"],
-                    session_context,
+                    spec, device, record["sweeps"] | expected["outer_point"], session
                 )
                 for expected in record["schedules"]
             ]
         finally:
             close_device_resources(device)
-
-    if _should_update():
-        schedules = [
-            {"outer_point": expected["outer_point"], **snapshot}
-            for expected, snapshot in zip(record["schedules"], snapshots, strict=True)
-        ]
-        record["schedules"] = schedules
-        write_snapshot_file(path, record)
-    differences = [
-        f"point {index} {expected['outer_point']}: {difference}"
-        for index, (expected, snapshot) in enumerate(
-            zip(record["schedules"], snapshots, strict=True)
-        )
-        for difference in find_differences(expected, snapshot)
-    ]
-    assert differences == []
 
 
 def _get_point_snapshot(
@@ -126,9 +125,9 @@ def _get_point_snapshot(
     return get_snapshot(compile_to_device(schedule, device, spec.name.value))
 
 
-def _should_update() -> bool:
-    if not os.environ.get("UPDATE_GOLDENS"):
-        return False
-    if os.environ.get("PYTEST_XDIST_WORKER"):
-        pytest.fail("UPDATE_GOLDENS rewrites shared files: run it without -n")
-    return True
+def _find_point_differences(expected: list[dict], actual: list[dict]) -> list[str]:
+    return [
+        f"point {index} {wanted['outer_point']}: {difference}"
+        for index, (wanted, found) in enumerate(zip(expected, actual, strict=True))
+        for difference in find_differences(wanted, found)
+    ]
