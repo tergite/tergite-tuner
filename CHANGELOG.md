@@ -9,6 +9,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [2026.10.0-rc.8] - 2026-11-05
 
+### Added
+
+- Added snapshots of every node's default sweeps and device-compiled schedules, checked by `test_schedule_snapshots.py`; where a changed schedule golden only said a node's program moved, the test now names the pulse, setting and time that did
+
 ## [2026.10.0-rc.7] - 2026-11-04
 
 ### Changed
