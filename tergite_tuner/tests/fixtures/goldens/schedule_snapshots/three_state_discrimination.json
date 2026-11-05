@@ -1,0 +1,343 @@
+{
+ "default_sweeps": {
+  "sweeps": {
+   "qubit_states": {
+    "q00": [
+     0,
+     1,
+     2
+    ],
+    "q01": [
+     0,
+     1,
+     2
+    ]
+   },
+   "ro_amplitudes": {
+    "q00": [
+     0.04821428571428571
+    ],
+    "q01": [
+     0.05892857142857143
+    ]
+   }
+  },
+  "outer_sweeps": {},
+  "external_sweeps": {}
+ },
+ "schedule_keywords": {
+  "loop_repetitions": 1000,
+  "qubit_state": 2
+ },
+ "sweeps": {
+  "qubit_states": {
+   "q00": [
+    0,
+    1,
+    2
+   ],
+   "q01": [
+    0,
+    1,
+    2
+   ]
+  },
+  "ro_amplitudes": {
+   "q00": [
+    0.04821428571428571
+   ],
+   "q01": [
+    0.05892857142857143
+   ]
+  }
+ },
+ "schedules": [
+  {
+   "outer_point": {},
+   "repetitions": 1,
+   "clocks": {
+    "cl0.baseband": 0.0,
+    "digital": 0.0,
+    "q00.01": 4741499559.458488,
+    "q00.12": 4488401716.352375,
+    "q00.ro_3st_opt": 6826311111.111111,
+    "q01.01": 4266043761.8823304,
+    "q01.12": 4110614017.9213386,
+    "q01.ro_3st_opt": 6411444444.444445
+   },
+   "events": [
+    {
+     "fields": {
+      "clock": "q00.01",
+      "kind": "pulse_info",
+      "port": "q00:mw",
+      "reference_magnitude": null,
+      "sigma": null,
+      "wf_func": "quantify_scheduler.waveforms.drag"
+     },
+     "count": 2,
+     "columns": {
+      "D_amp": -0.0538461538462,
+      "G_amp": 0.730848820408,
+      "duration": 4.4e-08,
+      "nr_sigma": 4.0,
+      "phase": 0.0,
+      "t": [
+       0.001203692,
+       0.001607376
+      ]
+     }
+    },
+    {
+     "fields": {
+      "clock": "q00.12",
+      "kind": "pulse_info",
+      "port": "q00:mw",
+      "reference_magnitude": null,
+      "sigma": null,
+      "wf_func": "quantify_scheduler.waveforms.drag"
+     },
+     "count": 1,
+     "columns": {
+      "D_amp": 0.0461538461538,
+      "G_amp": 0.563374271822,
+      "duration": 7.6e-08,
+      "nr_sigma": 4.0,
+      "phase": 0.0,
+      "t": 0.00160742
+     }
+    },
+    {
+     "fields": {
+      "clock": "q01.01",
+      "kind": "pulse_info",
+      "port": "q01:mw",
+      "reference_magnitude": null,
+      "sigma": null,
+      "wf_func": "quantify_scheduler.waveforms.drag"
+     },
+     "count": 2,
+     "columns": {
+      "D_amp": 0.0230769230769,
+      "G_amp": 0.394218321535,
+      "duration": 4.4e-08,
+      "nr_sigma": 4.0,
+      "phase": 0.0,
+      "t": [
+       0.001203692,
+       0.001607376
+      ]
+     }
+    },
+    {
+     "fields": {
+      "clock": "q01.12",
+      "kind": "pulse_info",
+      "port": "q01:mw",
+      "reference_magnitude": null,
+      "sigma": null,
+      "wf_func": "quantify_scheduler.waveforms.drag"
+     },
+     "count": 1,
+     "columns": {
+      "D_amp": 0.323076923077,
+      "G_amp": 0.587195516154,
+      "duration": 7.6e-08,
+      "nr_sigma": 4.0,
+      "phase": 0.0,
+      "t": 0.00160742
+     }
+    },
+    {
+     "fields": {
+      "acq_return_type": "<class 'complex'>",
+      "bin_mode": "append",
+      "clock": "q00.ro_3st_opt",
+      "kind": "acquisition_info",
+      "port": "q00:res",
+      "protocol": "SSBIntegrationComplex",
+      "waveforms": [
+       {
+        "amp": 1,
+        "clock": "q00.ro_3st_opt",
+        "duration": 3.4e-06,
+        "port": "q00:res",
+        "t0": 0,
+        "wf_func": "quantify_scheduler.waveforms.square"
+       },
+       {
+        "amp": [
+         0.0,
+         1.0
+        ],
+        "clock": "q00.ro_3st_opt",
+        "duration": 3.4e-06,
+        "port": "q00:res",
+        "t0": 0,
+        "wf_func": "quantify_scheduler.waveforms.square"
+       }
+      ]
+     },
+     "count": 3,
+     "columns": {
+      "acq_channel": 0.0,
+      "acq_index": [
+       0.0,
+       1.0,
+       2.0
+      ],
+      "duration": 3.4e-06,
+      "phase": 0.0,
+      "t": [
+       0.000800292,
+       0.001203976,
+       0.001607736
+      ]
+     }
+    },
+    {
+     "fields": {
+      "acq_return_type": "<class 'complex'>",
+      "bin_mode": "append",
+      "clock": "q01.ro_3st_opt",
+      "kind": "acquisition_info",
+      "port": "q01:res",
+      "protocol": "SSBIntegrationComplex",
+      "waveforms": [
+       {
+        "amp": 1,
+        "clock": "q01.ro_3st_opt",
+        "duration": 3.4e-06,
+        "port": "q01:res",
+        "t0": 0,
+        "wf_func": "quantify_scheduler.waveforms.square"
+       },
+       {
+        "amp": [
+         0.0,
+         1.0
+        ],
+        "clock": "q01.ro_3st_opt",
+        "duration": 3.4e-06,
+        "port": "q01:res",
+        "t0": 0,
+        "wf_func": "quantify_scheduler.waveforms.square"
+       }
+      ]
+     },
+     "count": 3,
+     "columns": {
+      "acq_channel": 1.0,
+      "acq_index": [
+       0.0,
+       1.0,
+       2.0
+      ],
+      "duration": 3.4e-06,
+      "phase": 0.0,
+      "t": [
+       0.000800292,
+       0.001203976,
+       0.001607736
+      ]
+     }
+    },
+    {
+     "fields": {
+      "clock": "q00.ro_3st_opt",
+      "kind": "pulse_info",
+      "port": "q00:res",
+      "reference_magnitude": null,
+      "wf_func": "quantify_scheduler.waveforms.square"
+     },
+     "count": 3,
+     "columns": {
+      "amp": 0.0482142857143,
+      "duration": 3.8e-06,
+      "t": [
+       0.000800052,
+       0.001203736,
+       0.001607496
+      ]
+     }
+    },
+    {
+     "fields": {
+      "clock": "q01.ro_3st_opt",
+      "kind": "pulse_info",
+      "port": "q01:res",
+      "reference_magnitude": null,
+      "wf_func": "quantify_scheduler.waveforms.square"
+     },
+     "count": 3,
+     "columns": {
+      "amp": 0.0589285714286,
+      "duration": 3.8e-06,
+      "t": [
+       0.000800052,
+       0.001203736,
+       0.001607496
+      ]
+     }
+    },
+    {
+     "fields": {
+      "clock": "cl0.baseband",
+      "kind": "pulse_info",
+      "port": null,
+      "wf_func": null
+     },
+     "count": 16,
+     "columns": {
+      "duration": [
+       8e-09,
+       8e-09,
+       4.4e-08,
+       4.4e-08,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004,
+       0.0004
+      ],
+      "t": [
+       0.0,
+       2.011128008,
+       0.000800008,
+       0.000800008,
+       8e-09,
+       8e-09,
+       0.000400008,
+       0.000400008,
+       0.000400008,
+       0.000400008,
+       0.000803692,
+       0.000803692,
+       0.001207376,
+       0.001207376,
+       0.001611136,
+       0.001611136
+      ]
+     }
+    },
+    {
+     "fields": {
+      "kind": "control_flow"
+     },
+     "count": 1,
+     "columns": {
+      "repetitions": 1000.0,
+      "t": 8e-09
+     }
+    }
+   ]
+  }
+ ]
+}
