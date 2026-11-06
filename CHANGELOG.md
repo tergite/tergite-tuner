@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Changed
+
+- Changed the README to a short quick start that tunes a qubit on a dummy cluster, with configuration, the entry points and the open work each in a page under `docs/`, and the testing and code conventions moved from DESIGN.md to CONTRIBUTING.md
+
 ### Fixed
 
 - Fixed `uv sync` and `pip install` picking Python 3.14, on which the pinned pydantic-core does not build; the package now requires Python 3.13

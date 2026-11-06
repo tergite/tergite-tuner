@@ -26,307 +26,66 @@ If you are reading this on GitHub, then you are looking at a mirror.
 **This project owes its very existence to the tireless work of the authors and contributors of 
 [tergite-autocalibration](https://github.com/tergite/tergite-autocalibration).**
 
-## Quick Start
-
-### Requirements
-
-- Python ≥ 3.13 (a fresh `conda` or `venv` environment is fine).
-
-### Installation
+## Installation
 
 ```shell
 pip install tergite-tuner
 ```
 
-Copy the [example environment file](./.example.env) and edit it as needed.  
+It needs Python 3.13.
 
-The `.env` file controls the cluster IP, target node,
-qubits/couplers under calibration, and so on.   
+## Quick Start
 
-Every field on `SessionContext` can be set in the `.env` or as an environment variable
-(in upper case), or passed as a keyword argument to the public API of the entry point functions.
-A keyword argument wins over an environment variable, which wins over the `.env` file.
+This tunes up one qubit on a dummy cluster, so it needs no hardware. It uses the example configs at the root
+of this repository.
 
-`IS_RECALIBRATION` and `IGNORE_SPEC` default to `True`: a run recalibrates the nodes,
-whatever their calibration status, without resetting the cluster or setting the couplers'
-currents. Set both to `False` to tune up the device from the device config.
+- Clone the repo and install it with [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
+```shell
+git clone https://github.com/tergite/tergite-tuner.git
+cd tergite-tuner
+uv sync
+```
 
-On top of having a `.env` file, more configuration files maybe required. 
-(See [`.example.env` file](./.example.env) for more details)
+- Copy the example environment file
 
-- [`cluster_config.json`](./cluster_config.example.json): 
-  It is the [`quantify-scheduler`](https://quantify-os.org/docs/quantify-scheduler/v0.27.1/tutorials/Compiling%20to%20Hardware.html#hardware-compilation-configuration) configuration json file
-- [`device_config.toml`](./device_config.example.toml): 
-  It contains details about the quantum chip, including initial values of params of the chip.
-- [`node_config.toml`](./node_config.example.toml): 
-  It contains details about the calibration nodes to run, including initial values for each node
-- __Optional:__ [`spi_config.toml`](./spi_config.example.toml): 
-  It contains details about the SPI instrument for driving the couplers. 
+```shell
+cp .example.env .env
+```
 
-The contents of each of these files can as well be passed to the entry functions
-as python objects e.g.
+- In `.env`, set the cluster to a dummy one, and choose a qubit and the node to stop at
+
+```shell
+CLUSTER_MODE='dummy'
+QUBITS='q06'
+TARGET_NODE='qubit_01_spectroscopy'
+```
+
+- Save this as `tune.py`, and run it with `uv run python tune.py`
 
 ```python
 from tergite_tuner import tune_device
-from tergite_tuner.config.types import (
-    DeviceConfig, 
-    ClusterConfig, 
-    SpiConfig, 
-    NodeConfig,
-)
 
-_, results = tune_device(
-    device_config=DeviceConfig(
-        name = "matthias",
-        resonator={
-            "all": {"attenuation": 10},
-            "q01": { "VNA_frequency": 6433000000.0 },
-            "q02":{ "VNA_frequency": 6290000000.0 },
-        },
-        # ...
-    ), 
-    node_config=NodeConfig.model_validate(
-        {
-            "qubit_spectroscopy_vs_current": {
-                "all": {
-                    "spec.spec_duration": 6e-6,
-                    "reset.duration": 200e-6,
-                },
-            }
-        }
-    ), 
-    spi_config=SpiConfig.model_validate({
-        "q11_q12": {
-            "spi_module_number": 1,
-            "dac_name": "dac0",
-            "edge_group": 1,
-        },        
-        "q12_q13": {
-            "spi_module_number": 2,
-            "dac_name": "dac1",
-            "edge_group": 2,
-        }
-    }),                
-    cluster_config=ClusterConfig.model_validate({
-      "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-      "hardware_description": {
-        "clusterA": {
-          "instrument_type": "Cluster",
-          "ref": "internal",
-          "modules": {
-            "1": {
-              "instrument_type": "QCM_RF"
-            },
-          }
-        }
-      },
-      # ...
-    })
-)
+session, results = tune_device(env_file=".env")
+print(results.transmons["q06"].clock_freqs)
 ```
 
-#### Customization of Nodes
+It runs resonator spectroscopy, then qubit spectroscopy, in under a minute, and prints the frequencies it
+found. Each run's data and `results.json` are in `out/`.
 
-A node is a `NodeSpec`: its schedule, sweeps, analysis and the device state's fields it sets.
-You can pass in your own specs, to replace a default node or add one, with `node_specs`.
+To tune a real device, set `CLUSTER_MODE='real'` and `CLUSTER_IP`, and describe your chip and cluster in the
+config files: see [docs/configuration.md](./docs/configuration.md).
 
-You can also change the order in which the nodes run or even choose to skip some of them
-by supplying your own `ignored_nodes: tuple[NodeEnum, ...] = ...` and 
-`node_dag_edges: tuple[tuple[NodeEnum, NodeEnum], ...]` as args to the entry point functions.
+## Documentation
 
-```python
-
-import dataclasses
-
-from tergite_tuner import tune_device, NodeEnum
-from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
-
-
-def analyse_my_way(s21, session):
-    ...
-
-
-_, results = tune_device(
-    node_specs={
-        NodeEnum.QUBIT_01_SPECTROSCOPY: dataclasses.replace(
-            DEFAULT_NODE_SPECS[NodeEnum.QUBIT_01_SPECTROSCOPY], analyse=analyse_my_way
-        ),
-    },
-    node_dag_edges=(
-        (NodeEnum.PUNCHOUT, NodeEnum.TOF,),
-        (NodeEnum.QUBIT_01_SPECTROSCOPY, NodeEnum.COUPLER_ANTICROSSING),
-    ),
-    ignored_nodes=(NodeEnum.PUNCHOUT,)
-)
-```
-
-### Public API
-
-The library exposes the following entry points from
-`tergite_tuner.__init__`:
-
-```python
-from tergite_tuner import (
-    tune_device,
-    reanalyse,
-    generate_calib_seed_file,
-    run_node,
-    read_result,
-    NodeEnum,
-    SessionContext,
-    CalibrationResults,
-)
-```
-
-#### Run the full calibration pipeline
-
-```python
-from tergite_tuner import tune_device, read_result
-from tergite_tuner.lib.nodes import NodeEnum
-
-# Use a .env file as the only source of configuration
-_, results = tune_device(env_file=".env")
-
-# Or override individual SessionContext fields inline
-session, results = tune_device(
-    env_file=".env",
-    target_node=NodeEnum.RABI_OSCILLATIONS,
-    qubits=["q00", "q01"],
-    couplers=["q00_q01"],
-)
-
-# you can even pass a session from before or construct it yourself with 
-# SessionContext.from_env()
-tune_device(session=session, refresh_session=False)
-
-# if you disabled session-refresh, you can read all results on 
-# that session at once
-results = read_result(session)
-```
-
-`tune_device` constructs a `SessionContext`, walks the dependency
-DAG up to `target_node`, and calibrates any nodes that are not yet
-in spec.
-
-#### Recalibrate the device
-
-A session's device state starts from `device_config.toml`, and nothing carries over from an earlier run
-unless you pass it in: give an earlier calibration's results as `calibration`, as `tune_device` returns them
-or as the `results.json` each run writes in its folder.
-A session keeps its state across the calls you pass it to.
-
-```python
-from tergite_tuner import tune_device, NodeEnum
-
-# Use a .env file as the only source of configuration
-_, results = tune_device(env_file=".env")
-
-# Or override individual SessionContext fields inline
-session, results = tune_device(
-    env_file=".env",
-    target_node=NodeEnum.RABI_OSCILLATIONS,
-    qubits=["q00", "q01"],
-    couplers=["q00_q01"],
-    is_recalibration=False,
-    ignore_spec=False,
-)
-
-# you can even pass a session from before or construct it yourself with 
-# SessionContext.from_env()
-_, results = tune_device(session=session, refresh_session=False)
-
-# you could clear up all the data files after the run
-_, results = tune_device(
-    session=session, refresh_session=False, keep_data_files=False)
-```
-
-#### Run one node
-
-```python
-from tergite_tuner import run_node, NodeEnum, read_result
-
-# Use a .env file as the only source of configuration
-session, results = run_node(
-    env_file=".env", node=NodeEnum.QUBIT_01_SPECTROSCOPY)
-
-# Or override individual SessionContext fields inline
-_, results = run_node(
-    env_file=".env",
-    qubits=["q00", "q01"],
-    couplers=["q00_q01"],
-    node=NodeEnum.QUBIT_01_SPECTROSCOPY
-)
-
-# you can even pass a session from before or construct it yourself with 
-# SessionContext.from_env()
-run_node(
-    node=NodeEnum.QUBIT_01_SPECTROSCOPY, session=session, refresh_session=False)
-
-# if you disabled session-refresh, you can read all results on 
-# that session at once
-results = read_result(session)
-
-# you could clear up all the data files after the run
-_, results = run_node(
-    node=NodeEnum.QUBIT_01_SPECTROSCOPY,
-    session=session,
-    refresh_session=False,
-    keep_data_files=False,
-)
-```
-
-#### Re-run analysis on already-recorded data
-
-```python
-from pathlib import Path
-from tergite_tuner import reanalyse
-
-_, results = reanalyse(
-    env_file=".env",
-    data_dir=Path("out/<run>/<node folder>"),  # the folder holding dataset_<node>.hdf5
-)
-```
-
-#### Generate a BCC calibration seed
-
-```python
-from tergite_tuner import generate_calib_seed_file, tune_device
-
-# From a session a run calibrated, as 'calibration.seed.toml' by default
-session, _ = tune_device(env_file=".env")
-generate_calib_seed_file(session=session)
-
-# Or from earlier results, with the qubits and couplers from the .env file
-generate_calib_seed_file(
-    env_file=".env", calibration=results, path="/path/to/destination/toml/file"
-)
-```
-
-### Samples
-
-You can find a few examples in the [`./examples`](./examples) folder
-
-### ToDo
-
-- [ ] Update export to BCC to be more generic to allow any BaseModel class to be output
-- [ ] Give `tergite_tuner/backend/`, the node `measurement.py` modules, `config/session.py`, `config/types/cluster.py`,
-  `lib/run.py` and `lib/utils/schedules.py` Google-style docstrings once `feature/qblox-scheduler`, which rewrites them, is merged
-
-#### On a real device
-
-These need a real Cluster, with `CLUSTER_MODE='real'`; a dummy run cannot show them.
-
-- [ ] Run resonator spectroscopy, also at |2>; bring-up, 01 and 12 qubit spectroscopy with the example node config; Rabi, motzoi and the readout optimizations; T1 and T2. Each should complete, and its values match a run of 2026.06.0.
-- [ ] Run coupler anticrossing, resonator spectroscopy vs current, then CZ chevron, calibration, local phases and RB on one coupler; their crossings and fidelities should match an earlier run. CZ parametrization on two couplers excites each coupler's qubits only in its own shots, and CZ RB on two couplers raises `ValueError`.
-- [ ] Run punchout, the longest schedule at about 264 s, and a CZ calibration with its real `loop_repetitions`: neither raises a timeout, and punchout leaves quantify-scheduler's `GRID_TIME_TOLERANCE_TIME` at `0.0011`.
-- [ ] Run a tune-up through CZ calibration with `save_plot`, then a second session with `calibration` set to the first's `results.json`: its nodes start from the first run's values, and the plots look as before.
-- [ ] Run single-qubit RB, interleaved with X90, purity benchmarking and AllXY: each stores its values, and RB's fidelity matches an earlier run.
-- [ ] Check the fixes a dummy run cannot: `CLUSTER_IP` with no Cluster raises `ClusterUnreachableError` and the Python session survives; `save_plot` over SSH without a display saves its plots; Rabi and three-state readout amplitude optimization give each qubit its own pulse duration; a `spec_duration` of 8 µs compiles; resonator spectroscopy 1 stores a quality factor of about 10⁴ as `Ql_1`.
-- [ ] Decide, from recorded data: re-enabling qubit spectroscopy's peak check, which has passed every peak since 2024, and Rabi's fit uncertainty, fixed at 0; the 1-2 pulse duration, the readout motzoi and reanalysis's double correction; the CZ phase's sign and units, which lose the sign today.
-- [ ] Run tergite-backend's recalibration against this build: its one-qubit-at-a-time nodes measure one qubit each.
-- [ ] Once a real run passes, drop what is installed but never imported, with `override-dependencies` in uv: PyQt5 and pyqtgraph through quantify-core, plotly through quantify-scheduler, and `ipykernel` with jedi and debugpy through qcodes, about 230 MB of the install. Check the imports of a real run first; tergite-backend, which shares the environment, takes the same overrides.
-- [ ] Compare a full tune-up's seed file with one from 2026.06.0, made the same day.
+| Document | Read it to |
+| --- | --- |
+| [docs/configuration.md](./docs/configuration.md) | configure a run: the `.env` file and the config files |
+| [docs/usage.md](./docs/usage.md) | tune up, recalibrate, run one node, reanalyse, write a seed for tergite-backend, or customise the nodes |
+| [examples/](./examples) | see complete calibration scripts |
+| [DESIGN.md](./DESIGN.md) | understand how the tuner is built, before changing it |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | run the tests and follow the code conventions |
+| [docs/open_work.md](./docs/open_work.md) | see what is unfinished, and what still needs a real device |
 
 ## Contributing to the project
 
