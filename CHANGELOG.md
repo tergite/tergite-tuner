@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `uv sync` and `pip install` picking Python 3.14, on which the pinned pydantic-core does not build; the package now requires Python 3.13
+
 ## [2026.10.0-rc.8] - 2026-11-05
 
 ### Added
