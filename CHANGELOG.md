@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.9] - 2026-11-06
+
 ### Changed
 
 - Changed the README to a short quick start that tunes a qubit on a dummy cluster, with configuration, the entry points and the open work each in a page under `docs/`, and the testing and code conventions moved from DESIGN.md to CONTRIBUTING.md
