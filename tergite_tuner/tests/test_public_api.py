@@ -9,7 +9,7 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-"""The entry points called the ways the README shows."""
+"""The entry points called the ways docs/usage.md shows."""
 
 import dataclasses
 import re

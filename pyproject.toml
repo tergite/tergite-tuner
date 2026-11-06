@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tergite-tuner"
-version = "2026.10.0-rc.8"
+version = "2026.10.0-rc.9"
 description = "Library to tune up the WACQT quantum computers"
 readme = "README.md"
 classifiers = [
@@ -39,7 +39,7 @@ authors = [
 maintainers = [
     { name = "Chalmers Next Labs AB", email = "contact@quantum.chalmersnextlabs.se" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "numpy>=2.0",
     "qblox-instruments~=0.14.2",
