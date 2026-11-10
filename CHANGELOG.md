@@ -11,6 +11,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 - Fixed a measurement that raised mid-sweep leaving its external settings as its last point set them: coupler spectroscopy left a coupler at a swept current, up to 3.1 mA, until the next run
 - Fixed coupler spectroscopy in a recalibration, the default, setting every coupler's current to 0 A as it ended, though it had set none: the couplers stayed off their parking currents for the rest of the run
+- Fixed a run with `keep_data_files=False`, as tergite-backend's recalibration runs each node, keeping its folder, log and datasets in `data_dir` when it raised; it deletes them however it ends
 
 ## [2026.10.0-rc.9] - 2026-11-06
 

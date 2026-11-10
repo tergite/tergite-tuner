@@ -74,6 +74,26 @@ def test_a_failed_measurement_resets_its_external_settings(
     reset_external.assert_called_once()
 
 
+def test_unkept_data_files_of_a_failed_run_are_deleted(
+    session_context, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "tergite_tuner.lib.run.run_schedule", Mock(side_effect=TimeoutError("cluster"))
+    )
+    data_dir = tmp_path / "out"
+
+    with pytest.raises(TimeoutError):
+        run_dummy_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY,
+            session_context,
+            data_dir,
+            keep_data_files=False,
+        )
+
+    assert list(data_dir.rglob("*")) == []
+
+
 @pytest.mark.parametrize(
     "node",
     [NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT, NodeEnum.COUPLER_ANTICROSSING],

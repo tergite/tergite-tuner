@@ -251,11 +251,24 @@ def _tune(
     refresh_session: bool = True,
     keep_data_files: bool = True,
 ) -> None:
-    """Runs only ``node``, or every node up to the session's target node."""
+    """Runs only ``node``, or every node up to the session's target node; without
+    ``keep_data_files``, deletes the run's folder however the run ends."""
     if refresh_session:
         session.state.written_paths.clear()
     run_path = get_unique_data_path(session.data_dir, "run")
     setup_logging(session.stdout_log_level, session.file_log_level, run_path)
+    try:
+        _run_nodes(session, run_path, node)
+    except BaseException:
+        if not keep_data_files:
+            _delete_run_folder(session, run_path)
+        raise
+    _close_run(session, run_path, keep_data_files)
+
+
+def _run_nodes(session: SessionContext, run_path: Path, node: NodeEnum | None) -> None:
+    """Connects the hardware and runs only ``node``, or every node up to the session's
+    target node, writing into ``run_path``."""
     hardware = Hardware(session)
     node_manager = NodeManager(hardware, session=session, run_path=run_path)
     topo_order = [node] if node else node_manager.topo_order(session.target_node)
@@ -276,7 +289,6 @@ def _tune(
             save_plot=session.save_plot,
         )
         logger.info(f"{calibration_node.value} node is completed")
-    _close_run(session, run_path, keep_data_files)
 
 
 def _reanalyse(
@@ -354,6 +366,10 @@ def _close_run(
             results.model_dump_json(by_alias=True, exclude_none=True, indent=2)
         )
     else:
-        # closes the run's log file before its folder goes
-        setup_logging(session.stdout_log_level, session.file_log_level)
-        shutil.rmtree(run_path)
+        _delete_run_folder(session, run_path)
+
+
+def _delete_run_folder(session: SessionContext, run_path: Path) -> None:
+    """Deletes the run's folder, closing its log file first."""
+    setup_logging(session.stdout_log_level, session.file_log_level)
+    shutil.rmtree(run_path, ignore_errors=True)
