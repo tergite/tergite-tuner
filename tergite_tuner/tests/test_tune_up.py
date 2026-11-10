@@ -15,6 +15,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from tergite_tuner.backend.spi import SpiDAC
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.runs import DEFAULT_NODES, run_dummy_node
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -71,3 +72,21 @@ def test_a_failed_measurement_resets_its_external_settings(
         run_dummy_node(NodeEnum.T1, session, tmp_path)
 
     reset_external.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "node",
+    [NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT, NodeEnum.COUPLER_ANTICROSSING],
+    ids=lambda node: node.value,
+)
+def test_a_recalibration_leaves_the_couplers_currents_as_they_are(
+    node, session_context, tmp_path, monkeypatch
+):
+    """A recalibration sets no current, so the couplers stay at their parking currents"""
+    monkeypatch.chdir(tmp_path)
+    set_dac_current = Mock()
+    monkeypatch.setattr(SpiDAC, "set_dac_current", set_dac_current)
+
+    run_dummy_node(node, session_context, tmp_path)
+
+    set_dac_current.assert_not_called()

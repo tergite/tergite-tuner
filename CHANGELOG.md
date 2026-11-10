@@ -10,6 +10,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 ### Fixed
 
 - Fixed a measurement that raised mid-sweep leaving its external settings as its last point set them: coupler spectroscopy left a coupler at a swept current, up to 3.1 mA, until the next run
+- Fixed coupler spectroscopy in a recalibration, the default, setting every coupler's current to 0 A as it ended, though it had set none: the couplers stayed off their parking currents for the rest of the run
 
 ## [2026.10.0-rc.9] - 2026-11-06
 
