@@ -128,7 +128,8 @@ def measure(
     """The node's dataset: its schedule run on ``hardware``, or dummy data in dummy mode.
 
     The schedule runs once per point of its outer and external sweeps, compiled again
-    for each outer point, and each run's dataset gains a dimension per such setting.
+    for each outer point, and each run's dataset gains a dimension per such setting. The
+    external settings are reset after the last point, or after a point that raised.
     """
     sweeps = get_sweeps(spec, session)
     if spec.element == "coupler":
@@ -142,30 +143,35 @@ def measure(
         for outer in get_points(get_outer_sweeps(spec, session))
         for external in external_points
     ]
-    for index, (outer_point, external_point) in enumerate(runs):
-        point_sweeps = sweeps | outer_point
-        if compiled_schedule is None or spec.outer_sweeps:
-            compiled_schedule = compile_node(spec, device, point_sweeps, session)
-        if spec.set_external is not None:
-            spec.set_external(hardware, external_point, index % len(external_points))
-        point_dataset = _run_once(
-            spec,
-            hardware,
-            compiled_schedule,
-            point_sweeps | external_point,
-            sweeps,
-            session,
-            list(device.elements()),
-            (index, len(runs)),
-        )
-        point_dataset = _add_point_dimensions(
-            point_dataset, outer_point | external_point
-        )
-        dataset = xr.merge(
-            [point_dataset, dataset], join="outer", compat="no_conflicts"
-        )
-    if spec.reset_external is not None:
-        spec.reset_external(hardware)
+    try:
+        for index, (outer_point, external_point) in enumerate(runs):
+            point_sweeps = sweeps | outer_point
+            if compiled_schedule is None or spec.outer_sweeps:
+                compiled_schedule = compile_node(spec, device, point_sweeps, session)
+            if spec.set_external is not None:
+                spec.set_external(
+                    hardware, external_point, index % len(external_points)
+                )
+            point_dataset = _run_once(
+                spec,
+                hardware,
+                compiled_schedule,
+                point_sweeps | external_point,
+                sweeps,
+                session,
+                list(device.elements()),
+                (index, len(runs)),
+            )
+            point_dataset = _add_point_dimensions(
+                point_dataset, outer_point | external_point
+            )
+            dataset = xr.merge(
+                [point_dataset, dataset], join="outer", compat="no_conflicts"
+            )
+    finally:
+        # however the measurement ends, as a coupler is left at a swept current otherwise
+        if spec.reset_external is not None:
+            spec.reset_external(hardware)
     logger.info("Finished measurement")
     return dataset
 

@@ -7,6 +7,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed a measurement that raised mid-sweep leaving its external settings as its last point set them: coupler spectroscopy left a coupler at a swept current, up to 3.1 mA, until the next run
+
 ## [2026.10.0-rc.9] - 2026-11-06
 
 ### Changed

@@ -10,9 +10,12 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import dataclasses
+from unittest.mock import Mock
 
 import pytest
 
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.runs import DEFAULT_NODES, run_dummy_node
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -47,3 +50,24 @@ def test_unkept_data_files_delete_only_the_runs_folder(
     )
 
     assert sorted(data_dir.rglob("*")) == [earlier_file.parent, earlier_file]
+
+
+def test_a_failed_measurement_resets_its_external_settings(
+    session_context, tmp_path, monkeypatch
+):
+    """An external setting, such as a coupler's DC current, is left as the last point
+    set it otherwise"""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "tergite_tuner.lib.run.run_schedule", Mock(side_effect=TimeoutError("cluster"))
+    )
+    reset_external = Mock()
+    spec = dataclasses.replace(
+        DEFAULT_NODE_SPECS[NodeEnum.T1], reset_external=reset_external
+    )
+    session = session_context.model_copy(update={"node_specs": {NodeEnum.T1: spec}})
+
+    with pytest.raises(TimeoutError):
+        run_dummy_node(NodeEnum.T1, session, tmp_path)
+
+    reset_external.assert_called_once()
