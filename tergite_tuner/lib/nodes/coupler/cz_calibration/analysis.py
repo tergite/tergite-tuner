@@ -13,13 +13,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.figure import Figure
 
-from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
+from tergite_tuner.lib.spec import Fit, Fits, get_coupler_data, get_fits_from_result
 from tergite_tuner.lib.utils.analysis_models import (
     SineOscillatingModel,
     fit_sine_phase,
@@ -33,157 +34,114 @@ if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
-class CZCalibrationCouplerAnalysis(CouplerAnalysis):
-    """Finds a coupler's CZ working point from the target's Ramsey phase with the control on and off."""
+class PhaseCalibration(NamedTuple):
+    """The target's |0> probabilities and fitted phases at each working point, to plot.
 
-    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
-        super().__init__(dataset, session, **keywords)
-        self.model = SineOscillatingModel()
-        self.model.set_param_hint("phase", min=-360, max=360, vary=True)
+    Attributes:
+        target_qubit: the coupler's target qubit.
+        probabilities: the target's |0> probability per working point, Ramsey phase
+            and control mode.
+        phis: the target's fitted phase, in radians, per working point and control mode.
+        fits: the fitted sines over the Ramsey phases.
+        frequencies: each working point's CZ frequency.
+        durations: each working point's CZ duration.
+        optimal_index: the index of the chosen working point.
+        coords: the names of the ``control``, ``working_points`` and
+            ``target_phases`` coordinates.
+    """
 
-    def analyse(self) -> Fits | None:
-        """Picks the working point whose CZ shifts the target's phase closest to 180 degrees.
+    target_qubit: str
+    probabilities: xr.DataArray
+    phis: xr.DataArray
+    fits: xr.DataArray
+    frequencies: tuple[float, ...]
+    durations: tuple[float, ...]
+    optimal_index: int
+    coords: dict[str, str]
 
-        Returns:
-            The fits ``cz_pulse_frequency`` and ``cz_pulse_duration`` of that working
-            point, and ``cz_phase``, the phase it adds, in degrees.
-        """
-        self._find_coords()
-        self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.state
+
+def analyse_cz_calibration(dataset: xr.Dataset, session: "SessionContext") -> Fits:
+    """Picks the working point whose CZ shifts the target's phase closest to 180 degrees.
+
+    Args:
+        dataset: the coupler's variables, saved in real and imaginary parts.
+        session: the session, whose device state holds the discriminators.
+
+    Returns:
+        The fits ``cz_pulse_frequency`` and ``cz_pulse_duration`` of that working
+        point, ``cz_phase``, the phase it adds, in degrees, and, to plot, the
+        ``calibration``.
+    """
+    data = get_coupler_data(dataset, session)
+    coords = _find_coords(data.s21, data.target_qubit)
+    frequencies, durations = zip(*data.s21[coords["working_points"]].values)
+    probabilities = calculate_probabilities(data.target, session.state).sel(
+        {"state": 0}
+    )
+    # the phase of the target's |0> at each working point, with and without the control
+    phis, sine_fits = _fit_phases(
+        probabilities,
+        data.s21[coords["target_phases"]].values,
+        coords["target_phases"],
+    )
+    distances = get_distances_from_pi(
+        phis.sel({coords["control"]: True}), phis.sel({coords["control"]: False})
+    )
+    optimal_index = distances.argmin().item()
+    analysis_result = {
+        "cz_pulse_frequency": {"value": frequencies[optimal_index], "error": 0},
+        "cz_pulse_duration": {"value": durations[optimal_index], "error": 0},
+        "cz_phase": {"value": distances.min().item() + 180, "error": 0},
+    }
+    calibration = PhaseCalibration(
+        target_qubit=data.target_qubit,
+        probabilities=probabilities,
+        phis=phis,
+        fits=sine_fits,
+        frequencies=frequencies,
+        durations=durations,
+        optimal_index=optimal_index,
+        coords=coords,
+    )
+    return {
+        **get_fits_from_result(analysis_result, True),
+        "calibration": Fit(calibration),
+    }
+
+
+def plot_cz_calibration(fits: Fits) -> list[Figure]:
+    """The target's fitted phases at each working point, and their differences.
+
+    Args:
+        fits: the coupler's fits.
+
+    Returns:
+        The coupler's one figure.
+    """
+    calibration = fits["calibration"].value
+    points = len(calibration.frequencies)
+    rows = max(1, int(np.ceil((points + 1) / PLOT_COLUMNS)))
+    figure, axes = plt.subplots(
+        ncols=PLOT_COLUMNS, nrows=rows, sharex=True, sharey=True, squeeze=False
+    )
+    for index in range(points):
+        _plot_working_point(
+            axes[index // PLOT_COLUMNS][index % PLOT_COLUMNS], calibration, index
         )
-        self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.state
-        )
-        self.fit_plot_phases = np.linspace(
-            self.target_phases[0], self.target_phases[-1], CURVE_POINTS
-        )
-        # the phase of the target's |0> at each working point, with and without the control
-        self.phi_0, plot_points = xr.apply_ufunc(
-            partial(
-                fit_sine_phase,
-                self.model,
-                x=self.target_phases,
-                plot_x=self.fit_plot_phases,
-            ),
-            self.target_qubit_probabilities.sel({"state": 0}),
-            input_core_dims=[[self.target_phase_coord]],
-            output_core_dims=[["phases"], ["plot_points"]],
-            vectorize=True,
-        )
-        self.target_plot_points_0 = plot_points.assign_coords(
-            {"plot_points": self.fit_plot_phases}
-        ).rename({"plot_points": self.target_phase_coord})
-
-        distances = get_distances_from_pi(
-            self.phi_0.sel({self.control_mode_coord: True}),
-            self.phi_0.sel({self.control_mode_coord: False}),
-        )
-        self.optimal_point_index = distances.argmin().item()
-        analysis_result = {
-            "cz_pulse_frequency": {
-                "value": self.frequencies[self.optimal_point_index],
-                "error": 0,
-            },
-            "cz_pulse_duration": {
-                "value": self.durations[self.optimal_point_index],
-                "error": 0,
-            },
-            "cz_phase": {"value": distances.min().item() + 180, "error": 0},
-        }
-        return get_fits_from_result(analysis_result, True)
-
-    def _find_coords(self) -> None:
-        for coord in self.S21.coords:
-            coord = str(coord)
-            if "control_ons" in coord:
-                self.control_mode_coord = coord
-            elif "dc_currents" in coord:
-                self.dc_currents_coord = coord
-                self.dc_currents = self.S21[self.dc_currents_coord].values
-            elif "working_points" in coord:
-                self.cz_working_points_coord = coord
-                self.cz_working_points = self.S21[coord].values
-                self.number_of_wp = self.S21[coord].size
-                self.frequencies, self.durations = zip(*self.cz_working_points)
-            elif "ramsey_phases" in coord:
-                if self.target_qubit in coord:
-                    self.target_phase_coord = coord
-                    self.target_phases = self.S21[coord].values
-            elif "loops" in coord:
-                self.loops_coord = coord
-
-    def plotter(self, figures_dictionary):
-        """Draws the target's fitted phases at each working point, and their differences.
-
-        Args:
-            figures_dictionary: takes the coupler's figure, under the coupler's name.
-        """
-        rows = max(1, int(np.ceil((self.number_of_wp + 1) / PLOT_COLUMNS)))
-        figure, axes = plt.subplots(
-            ncols=PLOT_COLUMNS, nrows=rows, sharex=True, sharey=True, squeeze=False
-        )
-        for index in range(len(self.cz_working_points)):
-            self._plot_working_point(
-                axes[index // PLOT_COLUMNS][index % PLOT_COLUMNS], index
-            )
-        figure.text(0.5, 0.04, self.target_phase_coord, ha="center")
-        figure.text(
-            0.04,
-            0.5,
-            rf"Target Qubit: {self.target_qubit}, $|0\rangle$ probailities",
-            va="center",
-            rotation="vertical",
-        )
-        summary_axis = axes[self.number_of_wp // PLOT_COLUMNS][
-            self.number_of_wp % PLOT_COLUMNS
-        ]
-        self._plot_phase_differences(summary_axis, axes)
-        figure.suptitle(
-            "Target Qubit State 0 Probabilities: \n orange: control is ON - black: control is OFF"
-        )
-        figures_dictionary[self.coupler] = [figure]
-
-    def _plot_working_point(self, axis: Any, index: int) -> None:
-        """The target's |0> probabilities and sine fits with the control on and off, best point in red."""
-        is_optimal = index == self.optimal_point_index
-        point = {self.cz_working_points_coord: index}
-        phi_on = self.phi_0.sel({self.control_mode_coord: True}).isel(point)
-        phi_off = self.phi_0.sel({self.control_mode_coord: False}).isel(point)
-        delta_phi = np.rad2deg((phi_off - phi_on).values.item())
-
-        fit_points = self.target_plot_points_0.isel(point)
-        probabilities = self.target_qubit_probabilities.isel(point)
-        for is_on, colour in ((True, "orange"), (False, "black")):
-            fit_points.sel({self.control_mode_coord: is_on}).plot(
-                ax=axis, x=self.target_phase_coord, color=colour
-            )
-        for is_on, colour in ((True, "orange"), (False, "black")):
-            probabilities.sel({"state": 0, self.control_mode_coord: is_on}).plot(
-                ax=axis,
-                x=self.target_phase_coord,
-                marker="o",
-                color=colour,
-                ls="",
-                **({} if is_on else {"label": rf"$\Delta\Phi$: {delta_phi:.1f} $^o$"}),
-            )
-        axis.set_title(
-            f"freq: {self.frequencies[index]:.3e} duration: {self.durations[index]:.3e}",
-            color="red" if is_optimal else "black",
-            fontsize=10,
-        )
-        axis.legend(facecolor="red" if is_optimal else "white")
-        axis.set_xlabel("")
-        axis.set_ylabel("")
-
-    def _plot_phase_differences(self, axis: Any, axes: np.ndarray) -> None:
-        """Each working point's phase difference against its frequency, on its own scales."""
-        phis_on = self.phi_0.sel({self.control_mode_coord: True})
-        phis_off = self.phi_0.sel({self.control_mode_coord: False})
-        for other in axes.ravel():
-            axis._shared_axes["x"].remove(other)
-            axis._shared_axes["y"].remove(other)
-        axis.plot(self.frequencies, np.rad2deg((phis_off - phis_on).values), "bo")
+    figure.text(0.5, 0.04, calibration.coords["target_phases"], ha="center")
+    figure.text(
+        0.04,
+        0.5,
+        rf"Target Qubit: {calibration.target_qubit}, $|0\rangle$ probailities",
+        va="center",
+        rotation="vertical",
+    )
+    summary_axis = axes[points // PLOT_COLUMNS][points % PLOT_COLUMNS]
+    _plot_phase_differences(summary_axis, axes, calibration)
+    figure.suptitle(
+        "Target Qubit State 0 Probabilities: \n orange: control is ON - black: control is OFF"
+    )
+    return [figure]
 
 
 def get_distances_from_pi(phi_on: xr.DataArray, phi_off: xr.DataArray) -> xr.DataArray:
@@ -197,3 +155,81 @@ def get_distances_from_pi(phi_on: xr.DataArray, phi_off: xr.DataArray) -> xr.Dat
         The distance from 180°, in degrees, per working point.
     """
     return abs((np.rad2deg(phi_on - phi_off) + 360) % 360 - 180)
+
+
+def _find_coords(s21: xr.Dataset, target_qubit: str) -> dict[str, str]:
+    """The names of the control mode, working points and target's Ramsey phases coordinates."""
+    coords = {}
+    for coord in s21.coords:
+        coord = str(coord)
+        if "control_ons" in coord:
+            coords["control"] = coord
+        elif "working_points" in coord:
+            coords["working_points"] = coord
+        elif "ramsey_phases" in coord and target_qubit in coord:
+            coords["target_phases"] = coord
+    return coords
+
+
+def _fit_phases(
+    probabilities: xr.DataArray, target_phases: np.ndarray, phases_coord: str
+) -> tuple[xr.DataArray, xr.DataArray]:
+    """The phase of a sine fitted to each |0> curve, and the fits over ``phases_coord``."""
+    plot_phases = np.linspace(target_phases[0], target_phases[-1], CURVE_POINTS)
+    model = SineOscillatingModel()
+    model.set_param_hint("phase", min=-360, max=360, vary=True)
+    phis, plot_points = xr.apply_ufunc(
+        partial(fit_sine_phase, model, x=target_phases, plot_x=plot_phases),
+        probabilities,
+        input_core_dims=[[phases_coord]],
+        output_core_dims=[["phases"], ["plot_points"]],
+        vectorize=True,
+    )
+    plot_points = plot_points.assign_coords({"plot_points": plot_phases})
+    return phis, plot_points.rename({"plot_points": phases_coord})
+
+
+def _plot_working_point(axis: Any, calibration: PhaseCalibration, index: int) -> None:
+    """The target's |0> probabilities and sine fits with the control on and off, best point in red."""
+    control, phases = calibration.coords["control"], calibration.coords["target_phases"]
+    is_optimal = index == calibration.optimal_index
+    point = {calibration.coords["working_points"]: index}
+    phi_on = calibration.phis.sel({control: True}).isel(point)
+    phi_off = calibration.phis.sel({control: False}).isel(point)
+    delta_phi = np.rad2deg((phi_off - phi_on).values.item())
+
+    fit_points = calibration.fits.isel(point)
+    probabilities = calibration.probabilities.isel(point)
+    for is_on, colour in ((True, "orange"), (False, "black")):
+        fit_points.sel({control: is_on}).plot(ax=axis, x=phases, color=colour)
+    for is_on, colour in ((True, "orange"), (False, "black")):
+        probabilities.sel({control: is_on}).plot(
+            ax=axis,
+            x=phases,
+            marker="o",
+            color=colour,
+            ls="",
+            **({} if is_on else {"label": rf"$\Delta\Phi$: {delta_phi:.1f} $^o$"}),
+        )
+    axis.set_title(
+        f"freq: {calibration.frequencies[index]:.3e} "
+        f"duration: {calibration.durations[index]:.3e}",
+        color="red" if is_optimal else "black",
+        fontsize=10,
+    )
+    axis.legend(facecolor="red" if is_optimal else "white")
+    axis.set_xlabel("")
+    axis.set_ylabel("")
+
+
+def _plot_phase_differences(
+    axis: Any, axes: np.ndarray, calibration: PhaseCalibration
+) -> None:
+    """Each working point's phase difference against its frequency, on its own scales."""
+    control = calibration.coords["control"]
+    phis_on = calibration.phis.sel({control: True})
+    phis_off = calibration.phis.sel({control: False})
+    for other in axes.ravel():
+        axis._shared_axes["x"].remove(other)
+        axis._shared_axes["y"].remove(other)
+    axis.plot(calibration.frequencies, np.rad2deg((phis_off - phis_on).values), "bo")

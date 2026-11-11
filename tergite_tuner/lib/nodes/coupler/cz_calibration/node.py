@@ -22,7 +22,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from tergite_tuner.lib.nodes.coupler.cz_calibration.analysis import (
-    CZCalibrationCouplerAnalysis,
+    analyse_cz_calibration,
+    plot_cz_calibration,
 )
 from tergite_tuner.lib.nodes.coupler.cz_calibration.measurement import (
     CZCalibrationMeasurement,
@@ -35,9 +36,8 @@ from tergite_tuner.lib.nodes.coupler.utils import (
 from tergite_tuner.lib.spec import (
     NodeSpec,
     get_class_schedule,
-    get_coupler_analyser,
+    get_coupler_figure_saver,
     get_fixed_sweep,
-    save_coupler_figures,
 )
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -98,7 +98,7 @@ CZ_CALIBRATION_SPECS = {
         name=NodeEnum.CZ_CALIBRATION,
         element="coupler",
         get_schedule=get_class_schedule(CZCalibrationMeasurement),
-        analyse=get_coupler_analyser(CZCalibrationCouplerAnalysis),
+        analyse=analyse_cz_calibration,
         qois={
             "cz_pulse_frequency": "cz_pulse_frequency",
             "cz_pulse_duration": "cz_pulse_duration",
@@ -113,7 +113,7 @@ CZ_CALIBRATION_SPECS = {
         qubit_sweeps=frozenset({"ramsey_phases"}),
         outer_sweeps={"working_points": get_working_points},
         get_schedule_keywords=get_coupler_keywords,
-        save_details=save_coupler_figures,
+        save_details=get_coupler_figure_saver(plot_cz_calibration),
     )
 }
 
