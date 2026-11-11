@@ -97,7 +97,7 @@ without `-n`, and its commit says why.
 | --- | --- |
 | `test_schedule_goldens.py` | a digest of every default node's compiled program |
 | `test_schedule_snapshots.py` | each node's sweeps, and every pulse, acquisition and loop of its compiled schedules, readably |
-| `test_reanalysis_goldens.py` | the values 19 nodes' analyses find in recorded datasets |
+| `test_reanalysis_goldens.py` | the values 21 nodes' analyses find in recorded datasets |
 
 Floating point differs between macOS and the CI runner's x86, and emulating x86 does not reproduce it: a
 golden whose value sits close to a threshold is verified by a CI pipeline, not locally.

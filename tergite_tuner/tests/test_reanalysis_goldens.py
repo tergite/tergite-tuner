@@ -63,9 +63,10 @@ def test_reanalysis_gives_the_golden_qois(case, session_context, tmp_path):
     assert {k: v for k, v in values.items() if k not in numbers} == {
         k: v for k, v in golden.items() if k not in numbers
     }
-    assert {k: values.get(k) for k in numbers} == {
+    assert {k: _to_number(values.get(k)) for k in numbers} == {
         k: pytest.approx(
-            golden[k], rel=LOOSE_TOLERANCES.get(k.split("/")[1], TOLERANCE)
+            _to_number(golden[k]),
+            rel=LOOSE_TOLERANCES.get(k.split("/")[1], TOLERANCE),
         )
         for k in numbers
     }
@@ -95,4 +96,15 @@ def _to_json(value):
 
 
 def _is_number(value) -> bool:
+    """Whether a golden value is a number, or one stored as a string, as the LDA coefficients are."""
+    if isinstance(value, str):
+        try:
+            float(value)
+        except ValueError:
+            return False
+        return True
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _to_number(value):
+    return float(value) if isinstance(value, str) else value
