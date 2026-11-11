@@ -90,7 +90,7 @@ uv run pytest tergite_tuner -n 4
 
 ### Goldens
 
-Three tests pin what the nodes do. A change that alters one on purpose rewrites it with `UPDATE_GOLDENS=1`,
+Four tests pin what the nodes do. A change that alters one on purpose rewrites it with `UPDATE_GOLDENS=1`,
 without `-n`, and its commit says why.
 
 | Test | Pins |
@@ -98,6 +98,7 @@ without `-n`, and its commit says why.
 | `test_schedule_goldens.py` | a digest of every default node's compiled program |
 | `test_schedule_snapshots.py` | each node's sweeps, and every pulse, acquisition and loop of its compiled schedules, readably |
 | `test_reanalysis_goldens.py` | the values 21 nodes' analyses find in recorded datasets |
+| `test_figure_goldens.py` | what the figures those nodes save draw: each axis's artists, labels, limits, colours and sizes; `SAVE_FIGURES=<folder>` also saves them to look at |
 
 Floating point differs between macOS and the CI runner's x86, and emulating x86 does not reproduce it: a
 golden whose value sits close to a threshold is verified by a CI pipeline, not locally.

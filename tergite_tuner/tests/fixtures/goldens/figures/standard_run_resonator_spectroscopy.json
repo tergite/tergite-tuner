@@ -1,0 +1,427 @@
+{
+ "resonator_spectroscopy": {
+  "axes": [
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": [
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "data",
+      "weight": "normal"
+     },
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "best fit",
+      "weight": "normal"
+     },
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "f = 6.831341E+09",
+      "weight": "normal"
+     }
+    ],
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#1f77b4ff",
+      "label": "data",
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 6834073301.189378,
+         "mean": 6832073301.189377,
+         "min": 6830073301.189378,
+         "nans": 0,
+         "std": 1167460.0476945403
+        },
+        {
+         "max": 0.020744458937631216,
+         "mean": 0.018899811365453097,
+         "min": 0.00906322700963004,
+         "nans": 0,
+         "std": 0.0029343273762043945
+        }
+       ],
+       "shape": [
+        91,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#ff7f0eff",
+      "label": "best fit",
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 6834073301.189378,
+         "mean": 6832073301.189378,
+         "min": 6830073301.189378,
+         "nans": 0,
+         "std": 1157590.9072023695
+        },
+        {
+         "max": 0.020781223111126658,
+         "mean": 0.01889651130082677,
+         "min": 0.008788699155999223,
+         "nans": 0,
+         "std": 0.002983773775990295
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#0000ffff",
+      "label": "f = 6.831341E+09",
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        6831340593.413651,
+        0.0
+       ],
+       [
+        6831340593.413651,
+        1.0
+       ]
+      ]
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.125,
+     0.11000000000000021,
+     0.32978723404255317,
+     0.6363636363636361
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q06",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "Frequency (Hz)",
+     "weight": "normal"
+    },
+    "xlim": [
+     6829873301.189378,
+     6834273301.189378
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "|S21| (V)",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.008189072958242852,
+     0.02138084930888303
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": [
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "data",
+      "weight": "normal"
+     },
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "best fit",
+      "weight": "normal"
+     },
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "f = 7.079561E+09",
+      "weight": "normal"
+     }
+    ],
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#1f77b4ff",
+      "label": "data",
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 7082671753.192583,
+         "mean": 7080671753.192584,
+         "min": 7078671753.192583,
+         "nans": 0,
+         "std": 1167460.0476945403
+        },
+        {
+         "max": 0.014744980435110685,
+         "mean": 0.013714176123294654,
+         "min": 0.007088166386634801,
+         "nans": 0,
+         "std": 0.001891974557464841
+        }
+       ],
+       "shape": [
+        91,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#ff7f0eff",
+      "label": "best fit",
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 7082671753.192583,
+         "mean": 7080671753.192583,
+         "min": 7078671753.192583,
+         "nans": 0,
+         "std": 1157590.9072023695
+        },
+        {
+         "max": 0.014829211196740058,
+         "mean": 0.01370794790005268,
+         "min": 0.0068119569471446935,
+         "nans": 0,
+         "std": 0.0019305973746823492
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#0000ffff",
+      "label": "f = 7.079561E+09",
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        7079560836.083993,
+        0.0
+       ],
+       [
+        7079560836.083993,
+        1.0
+       ]
+      ]
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.5702127659574467,
+     0.11000000000000021,
+     0.32978723404255317,
+     0.6363636363636361
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q07",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "Frequency (Hz)",
+     "weight": "normal"
+    },
+    "xlim": [
+     7078471753.192583,
+     7082871753.192583
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "|S21| (V)",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0064110942346649255,
+     0.015230073909219826
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.125,
+     0.8163636363636364,
+     0.03875000000000001,
+     0.0636363636363636
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.16375,
+     0.8163636363636364,
+     0.6975,
+     0.0636363636363636
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.8612500000000001,
+     0.8163636363636364,
+     0.03875000000000006,
+     0.0636363636363636
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   }
+  ],
+  "size": [
+   16.0,
+   8.8
+  ],
+  "texts": []
+ }
+}
