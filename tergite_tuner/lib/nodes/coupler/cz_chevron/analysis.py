@@ -48,8 +48,9 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
             data: the combined leads of the control and target, one per duration.
 
         Returns:
-            The fitted period as the CZ duration, NaN if the fit failed or its
-            oscillations are too weak, and the fitted curve over the plot's durations.
+            The fitted period as the CZ duration, NaN if the fit failed, did not
+            converge or its oscillations are too weak, and the fitted curve over the
+            plot's durations.
         """
         # durations is the independent variable in the cosine definition
         guess = self.model.guess(data, x=self.durations)
@@ -64,8 +65,9 @@ class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
 
             fit_data = self.model.eval(fit.params, x=self.fit_plot_durations)
 
-            # discard if the oscillations are not strong enough
-            if amplitude < 0.30:
+            # discard weak oscillations, and fits that stopped unconverged: where
+            # those stop depends on the process's and the platform's last bits
+            if amplitude < 0.30 or not fit.success:
                 duration = np.nan
             return np.array([duration]), np.array([fit_data])
         except:
