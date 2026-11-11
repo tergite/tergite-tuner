@@ -112,26 +112,6 @@ class NodeSpec:
     ) = None
 
 
-class ElementAnalysis:
-    """Base of the analyses that keep state between fitting and plotting one element."""
-
-    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
-        self.qubit = s21.attrs["qubit"]
-        self.data_var = f"y{self.qubit}"
-        self.S21 = s21.to_dataset(name=self.data_var)
-        self.dataset = self.S21
-        self.magnitudes = np.abs(self.S21)
-        self.session = session
-
-    def analyse(self) -> Fits | None:
-        """Fits the element's S21.
-
-        Returns:
-            The element's fits, or None if its analysis failed.
-        """
-        raise NotImplementedError
-
-
 class CouplerAnalysis:
     """Base of the coupler analyses: one coupler's variables, saved in real and imaginary parts.
 

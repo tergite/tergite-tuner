@@ -127,8 +127,6 @@ tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: ARG001 Unused function argument: `args`
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: ARG001 Unused function argument: `kwargs`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: ARG002 Unused method argument: `amplitude_index`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: E741 Ambiguous variable name: `I`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("drive_amp")` instead of `kws.get("drive_amp", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("t")` instead of `kws.get("t", None)`

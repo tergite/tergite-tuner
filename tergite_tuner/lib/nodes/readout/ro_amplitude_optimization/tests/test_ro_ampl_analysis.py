@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis import (
     analyse_three_state_ro_amplitude,
     get_iq_limits,
-    plot_ro_amplitude,
+    plot_three_state_ro_amplitude,
 )
 from tergite_tuner.tests.utils.datasets import get_s21
 
@@ -58,7 +58,9 @@ def test_plot_draws_fidelity_shots_and_confusion_matrix(node_data_dir):
     s21 = get_s21(node_data_dir / DATASET, "q13")
     figure, axes = plt.subplots(3)
 
-    plot_ro_amplitude(axes, s21, analyse_three_state_ro_amplitude(s21, None), None)
+    plot_three_state_ro_amplitude(
+        axes, s21, analyse_three_state_ro_amplitude(s21, None), None
+    )
 
     assert axes[0].lines and axes[1].collections and axes[2].images
     plt.close(figure)
