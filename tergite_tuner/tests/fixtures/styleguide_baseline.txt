@@ -96,7 +96,6 @@ type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysi
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._identify_coords
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis._process_and_normalize_data
 type-hints: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
 type-hints: tergite_tuner/lib/nodes/characterization/t1/measurement.py::T1Measurement.single_qubit_T1
 type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.__init__
@@ -168,7 +167,6 @@ verb: tergite_tuner/config/session.py::_default_data_dir
 verb: tergite_tuner/lib/nodes/characterization/all_xy/measurement.py::AllXYMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py::PurityBenchmarkingQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/characterization/purity_benchmarking/measurement.py::PurityBenchmarkingMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py::RandomizedBenchmarkingQubitAnalysis.plotter
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.rb_shot
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/characterization/randomized_benchmarking/measurement.py::RandomizedBenchmarkingMeasurement.single_qubit_rb_shot

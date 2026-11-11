@@ -16,11 +16,11 @@ import xarray as xr
 from matplotlib import pyplot as plt
 
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis import (
-    RandomizedBenchmarkingQubitAnalysis,
+    analyse_randomized_benchmarking,
     get_rb_fidelity,
+    plot_randomized_benchmarking,
 )
 from tergite_tuner.lib.run import get_element_s21s
-from tergite_tuner.lib.spec import plot_class_analysis
 from tergite_tuner.tests.utils.state import loaded_state
 
 _STATE_FILENAME = "state-2026-03-10-21-33-32.json"
@@ -32,9 +32,7 @@ def _get_fits(node_data_dir, session_context) -> dict:
     ) as data:
         s21s = get_element_s21s(data.load())
     return {
-        qubit: RandomizedBenchmarkingQubitAnalysis(
-            s21s[qubit], session_context
-        ).analyse()
+        qubit: analyse_randomized_benchmarking(s21s[qubit], session_context)
         for qubit in ("q11", "q15")
     }
 
@@ -54,7 +52,7 @@ def test_plotting(session_context, node_data_dir):
         fits = _get_fits(node_data_dir, session_context)["q11"]
     figure, axis = plt.subplots()
 
-    plot_class_analysis(axis, None, fits, session_context)
+    plot_randomized_benchmarking(axis, None, fits, session_context)
 
     assert axis.get_xlabel() == "number of cliffords"
     plt.close(figure)

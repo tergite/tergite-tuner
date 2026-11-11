@@ -11,12 +11,13 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import numpy as np
 import xarray as xr
+from matplotlib.axes import Axes
 
-from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
+from tergite_tuner.lib.spec import Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 
@@ -26,152 +27,110 @@ if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 
-class RandomizedBenchmarkingQubitAnalysis(ElementAnalysis):
+class DecayCurves(NamedTuple):
+    """The fitted decays, evaluated to plot.
+
+    Attributes:
+        cliffords: the numbers of Cliffords the curves are evaluated at.
+        standard: the |0> population's decay without an interleaved gate.
+        leakage: the |2> population's rise.
+        interleaved: the |0> population's decay with the gate interleaved, or None
+            if there is none.
     """
-    Analysis that fits an exponential decay function to randomized benchmarking data.
+
+    cliffords: np.ndarray
+    standard: np.ndarray
+    leakage: np.ndarray
+    interleaved: np.ndarray | None
+
+
+def analyse_randomized_benchmarking(
+    s21: xr.DataArray, session: "SessionContext"
+) -> Fits:
+    """Fits the decay of the |0> population, averaged over the seeds, against the number of Cliffords.
+
+    The shots are classified into |0>, |1> and |2> with the qubit's stored
+    discriminator. Interleaved, the fidelity is the interleaved gate's.
+
+    Args:
+        s21: the qubit's shots over interleaved gate, seed, number of Cliffords and loop.
+        session: the session, whose device state holds the discriminator.
+
+    Returns:
+        ``fidelity``, the decay's p or the interleaved gate's fidelity, ``leakage``,
+        from the rise of |2>, and, to plot, the ``probabilities`` without an
+        interleaved gate, ``standard_p``, ``interleaved_p`` and the ``curves``.
     """
+    gate_coord = _find_coord(s21, "interleave")
+    gates = s21[gate_coord].values
+    probabilities = calculate_probabilities(s21, session.state)
+    standard = probabilities.sel({gate_coord: "Standard"})
+    interleaved = probabilities.sel({gate_coord: gates[1]}) if gates.size == 2 else None
+    standard_p, interleaved_p, leakage, curves = _fit_decays(
+        standard,
+        interleaved,
+        s21[_find_coord(s21, "cliffords")],
+        _find_coord(s21, "seed"),
+    )
+    return {
+        "fidelity": Fit(get_rb_fidelity(standard_p, interleaved_p), np.nan),
+        "leakage": Fit(leakage, np.nan),
+        "probabilities": Fit(standard),
+        "standard_p": Fit(standard_p),
+        "interleaved_p": Fit(interleaved_p),
+        "curves": Fit(curves),
+    }
 
-    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
-        super().__init__(s21, session)
-        self.fit_results = {}
 
-    def analyse(self) -> Fits:
-        """Fits the decay of the |0> population, averaged over the seeds, against the number of Cliffords.
+def plot_randomized_benchmarking(
+    axis: Axes, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    """Draws each state's population against the number of Cliffords, and the fitted decays.
 
-        The shots are classified into |0>, |1> and |2> with the qubit's stored
-        discriminator. Interleaved, the fidelity is the interleaved gate's.
-
-        Returns:
-            ``fidelity``, the decay's p or the interleaved gate's fidelity, ``leakage``,
-            from the rise of |2>, and ``analysis``, this object, to plot.
-        """
-        model = ExpDecayModel()
-        self._find_coords()
-        iq_array = self.S21[self.data_var].assign_attrs(qubit=self.qubit)
-        self.state_probabilities = calculate_probabilities(iq_array, self.session.state)
-        self.fit_n_cliffords = np.linspace(
-            self.number_cliffords.values[0],
-            self.number_cliffords.values[-1],
-            CURVE_POINTS,
+    Args:
+        axis: the axis to draw on.
+        _s21: unused; part of the ``plot`` signature.
+        fits: the qubit's fits; nothing is drawn if empty.
+        _session: unused; part of the ``plot`` signature.
+    """
+    if not fits:
+        return
+    probabilities = fits["probabilities"].value
+    cliffords_coord = _find_coord(probabilities, "cliffords")
+    for state, colour in ((0, "b"), (1, "r"), (2, "g")):
+        probabilities.sel(state=state).plot.line(
+            ax=axis, x=cliffords_coord, c=colour, lw=0.5
         )
-
-        standard = self.state_probabilities.sel(
-            {self.interleave_gate_coord: "Standard"}
-        )
-        self.standard_p_value, self.standard_fit_y = self._fit_decay(
-            model, standard.sel(state=0).mean(self.seed_coord)
-        )
-        self.leakage, self.fit_y2 = self._fit_leakage(
-            model, standard.sel(state=2).mean(self.seed_coord)
-        )
-        interleaved_p = None
-        if self.interleaved_gate is not None:
-            interleaved = self.state_probabilities.sel(
-                {self.interleave_gate_coord: self.interleaved_gate}
-            )
-            self.interleaved_p_value, self.interleaved_fit_y = self._fit_decay(
-                model, interleaved.sel(state=0).mean(self.seed_coord)
-            )
-            interleaved_p = self.interleaved_p_value
-        self.fidelity = get_rb_fidelity(self.standard_p_value, interleaved_p)
-        return {
-            "fidelity": Fit(self.fidelity, np.nan),
-            "leakage": Fit(self.leakage, np.nan),
-            "analysis": Fit(self),
-        }
-
-    def _find_coords(self) -> None:
-        for coord in self.dataset[self.data_var].coords:
-            if "cliffords" in coord:
-                self.number_cliffords_coord = coord
-                self.number_cliffords = self.S21[coord]
-            elif "seed" in coord:
-                self.seed_coord = coord
-            elif "loops" in str(coord):
-                self.loops_coord = coord
-            elif "interleave" in str(coord):
-                self.interleave_gate_coord = coord
-                self.gates = self.S21[coord].values
-                self.number_of_gates = self.S21[coord].size
-                self.interleaved_gate = None
-        if self.number_of_gates == 2:
-            self.interleaved_gate = self.gates[1]
-
-    def _fit_decay(
-        self, model: ExpDecayModel, mean_0: xr.DataArray
-    ) -> tuple[float, np.ndarray]:
-        """The decay of |0>'s mean probability: its p, and the fitted curve."""
-        cliffords = self.number_cliffords.values
-        guess = model.guess(data=mean_0.values, m=cliffords)
-        result = model.fit(mean_0.values, params=guess, m=cliffords)
-        return result.params["p"].value, self._get_curve(model, result)
-
-    def _fit_leakage(
-        self, model: ExpDecayModel, mean_2: xr.DataArray
-    ) -> tuple[float, np.ndarray]:
-        """The leakage, one less the p of |2>'s rising population, and the fitted curve."""
-        guess = model.guess(data=mean_2.values, m=self.number_cliffords)
-        # an inverted decay
-        guess["A"].value = -1 / 2
-        guess["p"].value = 0.998
-        result = model.fit(mean_2, params=guess, m=self.number_cliffords)
-        return 1 - result.params["p"].value, self._get_curve(model, result)
-
-    def _get_curve(self, model: ExpDecayModel, result: Any) -> np.ndarray:
-        return model.eval(
-            result.params, **{model.independent_vars[0]: self.fit_n_cliffords}
-        )
-
-    def plotter(self, ax):
-        """Draws each state's population against the number of Cliffords, and the fitted decays.
-
-        Args:
-            ax: the axis to draw on.
-        """
-        standard_probabilities = self.state_probabilities.sel(
-            {self.interleave_gate_coord: "Standard"}
-        )
-
-        styles = dict(c="b", lw=0.5)
-        standard_probabilities.sel(state=0).plot.line(
-            ax=ax, x=self.number_cliffords_coord, **styles
-        )
-        styles = dict(c="r", lw=0.5)
-        standard_probabilities.sel(state=1).plot.line(
-            ax=ax, x=self.number_cliffords_coord, **styles
-        )
-        styles = dict(c="g", lw=0.5)
-        standard_probabilities.sel(state=2).plot.line(
-            ax=ax, x=self.number_cliffords_coord, **styles
-        )
-        ax.plot(
-            self.fit_n_cliffords,
-            self.standard_fit_y,
-            "b--",
+    curves = fits["curves"].value
+    standard_p = fits["standard_p"].value
+    axis.plot(
+        curves.cliffords,
+        curves.standard,
+        "b--",
+        lw=2,
+        label=rf"$p_{{SRB}}$ = {standard_p:.4f}",
+    )
+    axis.plot(
+        curves.cliffords,
+        curves.leakage,
+        "g--",
+        lw=2,
+        label=f"leakage = {fits['leakage'].value:.4f}",
+    )
+    if curves.interleaved is not None:
+        axis.plot(
+            curves.cliffords,
+            curves.interleaved,
+            "c--",
             lw=2,
-            label=rf"$p_{{SRB}}$ = {self.standard_p_value:.4f}",
+            label=rf"$p_{{IRB}}$ = {fits['interleaved_p'].value:.4f}",
         )
-        ax.plot(
-            self.fit_n_cliffords,
-            self.fit_y2,
-            "g--",
-            lw=2,
-            label=f"leakage = {self.leakage:.4f}",
-        )
-        if self.interleaved_gate is not None:
-            ax.plot(
-                self.fit_n_cliffords,
-                self.interleaved_fit_y,
-                "c--",
-                lw=2,
-                label=rf"$p_{{IRB}}$ = {self.interleaved_p_value:.4f}",
-            )
-        ax.set_ylabel("population", fontsize=14)
-        ax.set_xlabel("number of cliffords", fontsize=14)
-        ax.legend()
-        ax.tick_params(axis="both", which="major", labelsize=14)
-        ax.set_title("")
-        ax.grid()
+    axis.set_ylabel("population", fontsize=14)
+    axis.set_xlabel("number of cliffords", fontsize=14)
+    axis.legend()
+    axis.tick_params(axis="both", which="major", labelsize=14)
+    axis.set_title("")
+    axis.grid()
 
 
 def get_rb_fidelity(standard_p: float, interleaved_p: float | None) -> float:
@@ -188,3 +147,72 @@ def get_rb_fidelity(standard_p: float, interleaved_p: float | None) -> float:
     if interleaved_p is None:
         return standard_p
     return 1 - 0.5 * (1 - interleaved_p / standard_p)
+
+
+def _find_coord(array: xr.DataArray, part: str) -> str:
+    """The array's coordinate whose name holds ``part``; recorded datasets differ in the suffix."""
+    return next(str(coord) for coord in array.coords if part in str(coord))
+
+
+def _fit_decays(
+    standard: xr.DataArray,
+    interleaved: xr.DataArray | None,
+    cliffords: xr.DataArray,
+    seed_coord: str,
+) -> tuple[float, float | None, float, DecayCurves]:
+    """The p of |0>'s decay without and with the interleaved gate, the leakage, and their curves."""
+    model = ExpDecayModel()
+    curve_cliffords = np.linspace(
+        cliffords.values[0], cliffords.values[-1], CURVE_POINTS
+    )
+    standard_p, standard_curve = _fit_decay(
+        model, standard.sel(state=0).mean(seed_coord), cliffords, curve_cliffords
+    )
+    leakage, leakage_curve = _fit_leakage(
+        model, standard.sel(state=2).mean(seed_coord), cliffords, curve_cliffords
+    )
+    interleaved_p, interleaved_curve = None, None
+    if interleaved is not None:
+        interleaved_p, interleaved_curve = _fit_decay(
+            model,
+            interleaved.sel(state=0).mean(seed_coord),
+            cliffords,
+            curve_cliffords,
+        )
+    curves = DecayCurves(
+        curve_cliffords, standard_curve, leakage_curve, interleaved_curve
+    )
+    return standard_p, interleaved_p, leakage, curves
+
+
+def _fit_decay(
+    model: ExpDecayModel,
+    mean_0: xr.DataArray,
+    cliffords: xr.DataArray,
+    curve_cliffords: np.ndarray,
+) -> tuple[float, np.ndarray]:
+    """The decay of |0>'s mean probability: its p, and the fitted curve."""
+    guess = model.guess(data=mean_0.values, m=cliffords.values)
+    result = model.fit(mean_0.values, params=guess, m=cliffords.values)
+    return result.params["p"].value, _get_curve(model, result, curve_cliffords)
+
+
+def _fit_leakage(
+    model: ExpDecayModel,
+    mean_2: xr.DataArray,
+    cliffords: xr.DataArray,
+    curve_cliffords: np.ndarray,
+) -> tuple[float, np.ndarray]:
+    """The leakage, one less the p of |2>'s rising population, and the fitted curve."""
+    guess = model.guess(data=mean_2.values, m=cliffords)
+    # an inverted decay
+    guess["A"].value = -1 / 2
+    guess["p"].value = 0.998
+    result = model.fit(mean_2, params=guess, m=cliffords)
+    return 1 - result.params["p"].value, _get_curve(model, result, curve_cliffords)
+
+
+def _get_curve(
+    model: ExpDecayModel, result: Any, curve_cliffords: np.ndarray
+) -> np.ndarray:
+    return model.eval(result.params, **{model.independent_vars[0]: curve_cliffords})
