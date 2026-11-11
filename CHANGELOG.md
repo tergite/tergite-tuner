@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.11] - 2026-11-11
+
 ### Added
 
 - Added goldens of what each node's saved figures draw for its recorded dataset, checked by `test_figure_goldens.py`: each axis's artists, labels, limits, colours and sizes, where the reanalysis goldens pin only the stored values
