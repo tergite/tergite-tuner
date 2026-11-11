@@ -1,0 +1,623 @@
+{
+ "cz_local_phases_q13_q14_0": {
+  "axes": [
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": [
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "True",
+      "weight": "normal"
+     },
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "False",
+      "weight": "normal"
+     }
+    ],
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#ffa500ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 1.0,
+         "mean": 1.0,
+         "min": 1.0,
+         "nans": 0,
+         "std": 0.0
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 1.0,
+         "mean": 1.0,
+         "min": 1.0,
+         "nans": 0,
+         "std": 0.0
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.125,
+     0.53,
+     0.35227272727272724,
+     0.35
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "swap: False",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "local_phasesq13",
+     "weight": "normal"
+    },
+    "xlim": [
+     -18.0,
+     378.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq13",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.7456941786877089,
+     1.0122972475581113
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#ffa500ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 1.0,
+         "mean": 0.9935105846774194,
+         "min": 0.984375,
+         "nans": 0,
+         "std": 0.004132411373943191
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 1.0,
+         "mean": 0.9949596774193549,
+         "min": 0.990234375,
+         "nans": 0,
+         "std": 0.002706974679806053
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#ffa500ff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 104.18318164821933
+        },
+        {
+         "max": 1.0001789262458203,
+         "mean": 0.9934001533664096,
+         "min": 0.9876790122618344,
+         "nans": 0,
+         "std": 0.00440739930952232
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 104.18318164821933
+        },
+        {
+         "max": 0.9988677757508969,
+         "mean": 0.9949649567041304,
+         "min": 0.9910552923088772,
+         "nans": 0,
+         "std": 0.0027849555277589715
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.5477272727272726,
+     0.53,
+     0.3522727272727273,
+     0.35
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [
+     {
+      "color": "#ff0000ff",
+      "position": [
+       0.0,
+       0.0
+      ],
+      "size": 16.0,
+      "text": "$\\varphi_{01} = -132.9 ^o$",
+      "weight": "normal"
+     }
+    ],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "swapq13_q14 = False, state = 1, qubit = q14",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "local_phasesq14",
+     "weight": "normal"
+    },
+    "xlim": [
+     -18.0,
+     378.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq14",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.7456941786877089,
+     1.0122972475581113
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#ffa500ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 1.0,
+         "mean": 1.0,
+         "min": 1.0,
+         "nans": 0,
+         "std": 0.0
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 1.0,
+         "mean": 1.0,
+         "min": 1.0,
+         "nans": 0,
+         "std": 0.0
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#ffa500ff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 104.18318164821933
+        },
+        {
+         "max": 1.0,
+         "mean": 1.0,
+         "min": 1.0,
+         "nans": 0,
+         "std": 0.0
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 104.18318164821933
+        },
+        {
+         "max": 1.0,
+         "mean": 1.0,
+         "min": 1.0,
+         "nans": 0,
+         "std": 0.0
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.125,
+     0.10999999999999999,
+     0.35227272727272724,
+     0.35000000000000003
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [
+     {
+      "color": "#ff0000ff",
+      "position": [
+       0.0,
+       0.0
+      ],
+      "size": 16.0,
+      "text": "$\\varphi_{10} = 0.0 ^o$",
+      "weight": "normal"
+     }
+    ],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "swapq13_q14 = True, state = 1, qubit = q13",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "local_phasesq13",
+     "weight": "normal"
+    },
+    "xlim": [
+     -18.0,
+     378.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq13",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.7456941786877089,
+     1.0122972475581113
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": [
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "True",
+      "weight": "normal"
+     },
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "False",
+      "weight": "normal"
+     }
+    ],
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#ffa500ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 0.9921875,
+         "mean": 0.877961189516129,
+         "min": 0.763671875,
+         "nans": 0,
+         "std": 0.07903463474338981
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "None",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 360.0,
+         "mean": 180.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 107.33126291998991
+        },
+        {
+         "max": 0.9921875,
+         "mean": 0.8783392137096774,
+         "min": 0.7578125,
+         "nans": 0,
+         "std": 0.08038440509864897
+        }
+       ],
+       "shape": [
+        31,
+        2
+       ]
+      }
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.5477272727272726,
+     0.10999999999999999,
+     0.3522727272727273,
+     0.35000000000000003
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "swap: True",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "local_phasesq14",
+     "weight": "normal"
+    },
+    "xlim": [
+     -18.0,
+     378.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq14",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.7456941786877089,
+     1.0122972475581113
+    ]
+   }
+  ],
+  "size": [
+   12.0,
+   8.0
+  ],
+  "texts": []
+ }
+}

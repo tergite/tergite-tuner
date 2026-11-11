@@ -14,16 +14,18 @@
 # that they have been altered from the originals.
 
 
-from typing import TYPE_CHECKING, Any
+from functools import partial
+from typing import TYPE_CHECKING, NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.figure import Figure
 
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationAnalysis,
+    get_cz_probabilities,
 )
-from tergite_tuner.lib.spec import Fits, get_fits_from_result
+from tergite_tuner.lib.spec import Fit, Fits, get_coupler_data, get_fits_from_result
 from tergite_tuner.lib.utils.analysis_models import SineOscillatingModel
 
 if TYPE_CHECKING:
@@ -33,128 +35,116 @@ if TYPE_CHECKING:
 CURVE_POINTS = 200
 
 
-class CZChevronCouplerAnalysis(CZParametrizationAnalysis):
-    """Finds a coupler's CZ working points in its chevron of populations over CZ frequency and duration."""
+class Chevron(NamedTuple):
+    """Both qubits' populations over CZ frequency and duration, and the working points, to plot.
 
-    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
-        super().__init__(dataset, session, **keywords)
-        self.model = SineOscillatingModel()
-        self.model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
+    Attributes:
+        probabilities: both qubits' state populations.
+        frequencies: the working points' CZ frequencies.
+        durations_in_ns: the working points' CZ durations, in nanoseconds.
+        frequencies_coord: the name of the CZ frequencies' coordinate.
+    """
 
-    def apply_sinusoidal_slices_fit(self, data):
-        """Fits a sine to one frequency's leads over the CZ durations.
+    probabilities: xr.DataArray
+    frequencies: np.ndarray
+    durations_in_ns: np.ndarray
+    frequencies_coord: str
 
-        Args:
-            data: the combined leads of the control and target, one per duration.
 
-        Returns:
-            The fitted period as the CZ duration, NaN if the fit failed or its
-            oscillations are too weak, and the fitted curve over the plot's durations.
-        """
-        # durations is the independent variable in the cosine definition
-        guess = self.model.guess(data, x=self.durations)
-        try:
-            fit = self.model.fit(
-                data,
-                params=guess,
-                x=self.durations,
-            )
-            duration = fit.values["optimal_duration"]
-            amplitude = fit.values["amplitude"]
+def analyse_cz_chevron(
+    dataset: xr.Dataset, session: "SessionContext", phase_path: str
+) -> Fits:
+    """The (frequency, duration) points where the chevron returns to |11>, as CZ working points.
 
-            fit_data = self.model.eval(fit.params, x=self.fit_plot_durations)
+    Each frequency's leads along the phase path are fitted with a sine over the
+    durations, and its period is the frequency's working duration.
 
-            # discard if the oscillations are not strong enough
-            if amplitude < 0.30:
-                duration = np.nan
-            return np.array([duration]), np.array([fit_data])
-        except:
-            return np.array([np.nan]), np.array([np.nan])
+    Args:
+        dataset: the coupler's variables, saved in real and imaginary parts.
+        session: the session, whose device state holds the discriminators.
+        phase_path: ``via_20`` or ``via_02``.
 
-    def analyse(self) -> Fits | None:
-        """The (frequency, duration) points where the chevron returns to |11>, as CZ working points.
+    Returns:
+        The fits ``cz_working_frequencies`` and ``cz_working_durations_in_ns``,
+        each a list written as a string, and, to plot, the ``chevron``.
+    """
+    data = get_coupler_data(dataset, session)
+    probabilities, coords = get_cz_probabilities(data, session)
+    durations = probabilities[coords["durations"]].values
+    control_leads, target_leads = get_chevron_leads(
+        probabilities.sel({"qubit": data.control_qubit}),
+        probabilities.sel({"qubit": data.target_qubit}),
+        phase_path,
+    )
+    model = SineOscillatingModel()
+    model.set_param_hint("optimal_duration", expr="1/frequency", vary=False)
+    # a sine fitted to each frequency's column of durations
+    cz_durations, _ = xr.apply_ufunc(
+        partial(
+            _fit_period,
+            model,
+            durations=durations,
+            plot_durations=np.linspace(durations[0], durations[-1], CURVE_POINTS),
+        ),
+        control_leads + target_leads,
+        input_core_dims=[[coords["durations"]]],
+        output_core_dims=[["cz_pulse_durations"], ["plot_points"]],
+        vectorize=True,
+    )
+    # the rejected fits' columns go
+    cz_durations = cz_durations.dropna(dim=coords["frequencies"])
+    durations_in_ns = get_durations_in_ns(cz_durations.values.flatten())
+    frequencies = cz_durations[coords["frequencies"]].values
+    analysis_result = {
+        "cz_working_frequencies": {
+            "value": str(frequencies.astype(int).tolist()),
+            "error": 0,
+        },
+        "cz_working_durations_in_ns": {
+            "value": str(durations_in_ns.tolist()),
+            "error": 0,
+        },
+    }
+    chevron = Chevron(
+        probabilities, frequencies, durations_in_ns, coords["frequencies"]
+    )
+    return {**get_fits_from_result(analysis_result, True), "chevron": Fit(chevron)}
 
-        Returns:
-            The fits ``cz_working_frequencies`` and ``cz_working_durations_in_ns``,
-            each a list written as a string.
-        """
-        self.calculate_probabilities()
-        self.fit_plot_durations = np.linspace(
-            self.durations[0], self.durations[-1], CURVE_POINTS
+
+def plot_cz_chevron(fits: Fits) -> list[Figure]:
+    """Each qubit's state populations over frequency and duration, with the working points.
+
+    Args:
+        fits: the coupler's fits.
+
+    Returns:
+        The coupler's one figure.
+    """
+    chevron = fits["chevron"].value
+    chevron.probabilities.plot(
+        x=chevron.frequencies_coord, cmap="RdBu_r", row="qubit", col="state"
+    )
+    figure = plt.gcf()
+    # every working point is selected, and drawn on every one of the six faceting axes
+    if not chevron.durations_in_ns.size:
+        return [figure]
+    for axis in figure.axes:
+        axis.plot(
+            chevron.frequencies,
+            chevron.durations_in_ns * 1e-9,
+            marker="8",
+            ls="",
+            color="yellow",
         )
-        self.control_diffs, self.target_diffs = get_chevron_leads(
-            self.probabilities.sel({"qubit": self.control_qubit}),
-            self.probabilities.sel({"qubit": self.target_qubit}),
-            self.phase_path,
+        axis.plot(
+            chevron.frequencies,
+            chevron.durations_in_ns * 1e-9,
+            marker="*",
+            markersize=12,
+            ls="",
+            color="yellow",
         )
-        self.combined_data = self.control_diffs + self.target_diffs
-
-        # a sine fitted to each frequency's column of durations
-        cz_durations, _ = xr.apply_ufunc(
-            self.apply_sinusoidal_slices_fit,
-            self.combined_data,
-            input_core_dims=[[self.durations_coord]],
-            output_core_dims=[["cz_pulse_durations"], ["plot_points"]],
-            vectorize=True,
-        )
-        # the rejected fits' columns go
-        cz_durations = cz_durations.dropna(dim=self.frequencies_coord)
-        self.cz_working_durations_in_ns = get_durations_in_ns(
-            cz_durations.values.flatten()
-        )
-        self.cz_working_frequencies = cz_durations.cz_pulse_frequencies.values
-        # every working point is selected
-        self.selected_frequencies = self.cz_working_frequencies
-        self.selected_durations_in_ns = self.cz_working_durations_in_ns
-
-        analysis_result = {
-            "cz_working_frequencies": {
-                "value": str(self.selected_frequencies.astype(int).tolist()),
-                "error": 0,
-            },
-            "cz_working_durations_in_ns": {
-                "value": str(self.selected_durations_in_ns.tolist()),
-                "error": 0,
-            },
-        }
-        return get_fits_from_result(analysis_result, True)
-
-    def plotter(self, figures_dictionary):
-        """Draws each qubit's state populations over frequency and duration, with the working points.
-
-        Args:
-            figures_dictionary: takes the coupler's figure, under the coupler's name.
-        """
-        current_probabilities = self.probabilities
-        current_probabilities.plot(
-            x=self.frequencies_coord, cmap="RdBu_r", row="qubit", col="state"
-        )
-
-        fig = plt.gcf()
-        # if there are no working points return only the faceting plot
-        if self.cz_working_durations_in_ns.size == 0:
-            figures_dictionary[self.coupler] = [fig]
-            return
-
-        # plot the working points on every one of the six faceting axes
-        for ax in fig.axes:
-            ax.plot(
-                self.cz_working_frequencies,
-                self.cz_working_durations_in_ns * 1e-9,
-                marker="8",
-                ls="",
-                color="yellow",
-            )
-            ax.plot(
-                self.selected_frequencies,
-                self.selected_durations_in_ns * 1e-9,
-                marker="*",
-                markersize=12,
-                ls="",
-                color="yellow",
-            )
-
-        figures_dictionary[self.coupler] = [fig]
+    return [figure]
 
 
 def get_chevron_leads(
@@ -195,3 +185,31 @@ def get_durations_in_ns(durations: np.ndarray) -> np.ndarray:
     # rounded to a millionth of a nanosecond first, so 100e-9 is 100 ns, not 99
     nanoseconds = np.floor(np.round(durations * 1e9, 6)).astype(int)
     return (nanoseconds // 4) * 4
+
+
+def _fit_period(
+    model: SineOscillatingModel,
+    data: np.ndarray,
+    durations: np.ndarray,
+    plot_durations: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fits a sine to one frequency's leads over the CZ durations.
+
+    Returns:
+        The fitted period as the CZ duration, NaN if the fit failed, did not
+        converge or its oscillations are too weak, and the fitted curve over the
+        plot's durations.
+    """
+    guess = model.guess(data, x=durations)
+    try:
+        fit = model.fit(data, params=guess, x=durations)
+        duration = fit.values["optimal_duration"]
+        amplitude = fit.values["amplitude"]
+        fit_data = model.eval(fit.params, x=plot_durations)
+        # discard weak oscillations, and fits that stopped unconverged: where
+        # those stop depends on the process's and the platform's last bits
+        if amplitude < 0.30 or not fit.success:
+            duration = np.nan
+        return np.array([duration]), np.array([fit_data])
+    except Exception:
+        return np.array([np.nan]), np.array([np.nan])

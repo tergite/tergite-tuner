@@ -1,0 +1,365 @@
+{
+ "rabi_oscillations": {
+  "axes": [
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": [
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "\u03c0_ampl = 6.02E-01 (V)",
+      "weight": "normal"
+     }
+    ],
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#ff0000ff",
+      "label": "\u03c0_ampl = 6.02E-01 (V)",
+      "linestyle": "-",
+      "linewidth": 3.0,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 0.9,
+         "mean": 0.45100000000000007,
+         "min": 0.002,
+         "nans": 0,
+         "std": 0.2605296788618126
+        },
+        {
+         "max": 0.015068531381138858,
+         "mean": 0.012731838521673079,
+         "min": 0.00913873821105,
+         "nans": 0,
+         "std": 0.00200068588482465
+        }
+       ],
+       "shape": [
+        200,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#0000ffff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 3.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 0.9,
+         "mean": 0.45099999999999996,
+         "min": 0.002,
+         "nans": 0,
+         "std": 0.2635153590294965
+        },
+        {
+         "max": 0.015129603351331105,
+         "mean": 0.01270759092868604,
+         "min": 0.009106731339378546,
+         "nans": 0,
+         "std": 0.002010636366767966
+        }
+       ],
+       "shape": [
+        61,
+        2
+       ]
+      }
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.125,
+     0.11000000000000021,
+     0.32978723404255317,
+     0.6363636363636361
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q06",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "Amplitude (V)",
+     "weight": "normal"
+    },
+    "xlim": [
+     -0.0429,
+     0.9449000000000001
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "|S21| (V)",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.008805587738780919,
+     0.015430746951928732
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": [
+     {
+      "color": "#000000ff",
+      "size": 10.0,
+      "text": "\u03c0_ampl = 7.80E-01 (V)",
+      "weight": "normal"
+     }
+    ],
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#ff0000ff",
+      "label": "\u03c0_ampl = 7.80E-01 (V)",
+      "linestyle": "-",
+      "linewidth": 3.0,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 0.9,
+         "mean": 0.45100000000000007,
+         "min": 0.002,
+         "nans": 0,
+         "std": 0.2605296788618126
+        },
+        {
+         "max": 0.012009101317665263,
+         "mean": 0.009853045470089743,
+         "min": 0.007056359668251079,
+         "nans": 0,
+         "std": 0.0018208157371087527
+        }
+       ],
+       "shape": [
+        200,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#0000ffff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "o",
+      "markersize": 3.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 0.9,
+         "mean": 0.45099999999999996,
+         "min": 0.002,
+         "nans": 0,
+         "std": 0.2635153590294965
+        },
+        {
+         "max": 0.012018092227349224,
+         "mean": 0.009847680559605694,
+         "min": 0.007068831690913042,
+         "nans": 0,
+         "std": 0.0018292532244301005
+        }
+       ],
+       "shape": [
+        61,
+        2
+       ]
+      }
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.5702127659574467,
+     0.11000000000000021,
+     0.32978723404255317,
+     0.6363636363636361
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q07",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "Amplitude (V)",
+     "weight": "normal"
+    },
+    "xlim": [
+     -0.0429,
+     0.9449000000000001
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "|S21| (V)",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.006808273040296172,
+     0.01226617885530413
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.125,
+     0.8163636363636364,
+     0.03875000000000001,
+     0.0636363636363636
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.16375,
+     0.8163636363636364,
+     0.6975,
+     0.0636363636363636
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.8612500000000001,
+     0.8163636363636364,
+     0.03875000000000006,
+     0.0636363636363636
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   }
+  ],
+  "size": [
+   16.0,
+   8.8
+  ],
+  "texts": []
+ }
+}

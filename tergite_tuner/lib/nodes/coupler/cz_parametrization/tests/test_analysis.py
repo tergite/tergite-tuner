@@ -21,12 +21,12 @@ import xarray as xr
 
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationCouplerAnalysis,
+    analyse_cz_parametrization,
     get_path_scores,
     get_smoothed_scores,
 )
 from tergite_tuner.lib.run import get_coupler_datasets
-from tergite_tuner.lib.spec import is_failed, save_coupler_figures
+from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 from tergite_tuner.tests.utils.state import loaded_state
@@ -46,13 +46,11 @@ def test_cz_parametrization_analysis_good_data(session_context, node_data_dir):
         with xr.open_dataset(file_path) as dataset:
             coupler = "q14_q15"
 
-            # Run the single coupler analysis
-            analysis = CZParametrizationCouplerAnalysis(
+            qoi = analyse_cz_parametrization(
                 get_coupler_dataset(dataset, coupler, "cz_parametrization"),
                 session_context,
                 phase_path="via_20",
             )
-            qoi = analysis.analyse()
 
             # Compare the output values
             assert math.isclose(qoi["cz_pulse_frequency"].value, 415004736.84210527)
@@ -71,13 +69,11 @@ def test_cz_parametrization_analysis_bad_data(session_context, node_data_dir):
         with xr.open_dataset(file_path) as dataset:
             coupler = "q14_q15"
 
-            # Run the single coupler analysis
-            analysis = CZParametrizationCouplerAnalysis(
+            qoi = analyse_cz_parametrization(
                 get_coupler_dataset(dataset, coupler, "cz_parametrization"),
                 session_context,
                 phase_path="via_20",
             )
-            qoi = analysis.analyse()
 
             # Make sure that the analysis returns as unsuccessful
             assert is_failed(qoi)
@@ -100,10 +96,9 @@ def test_plotting(session_context, tmp_path, node_data_dir):
         dataset = get_coupler_datasets(
             load_dataset("cz_parametrization", tmp_path), "cz_parametrization"
         )[coupler]
-        fits = DEFAULT_NODE_SPECS[NodeEnum.CZ_PARAMETRIZATION].analyse(
-            dataset, session_context, phase_path="via_20"
-        )
-        save_coupler_figures(dataset, fits, tmp_path, session_context)
+        spec = DEFAULT_NODE_SPECS[NodeEnum.CZ_PARAMETRIZATION]
+        fits = spec.analyse(dataset, session_context, phase_path="via_20")
+        spec.save_details(dataset, fits, tmp_path, session_context)
 
         # Check whether output images exist
         for i in range(5):

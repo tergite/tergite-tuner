@@ -1,0 +1,761 @@
+{
+ "n_rabi_oscillations": {
+  "axes": [
+   {
+    "collections": [
+     {
+      "clim": [
+       0.008185488036102919,
+       0.017177223378977428
+      ],
+      "cmap": "RdBu_r",
+      "coordinates": {
+       "max": 22.0,
+       "mean": 5.0,
+       "min": -2.0,
+       "nans": 0,
+       "shape": [
+        5,
+        31,
+        2
+       ],
+       "std": 7.810274339333289
+      },
+      "facecolors": [
+       "#1f77b4ff"
+      ],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "type": "QuadMesh",
+      "values": {
+       "max": 0.017177223378977428,
+       "mean": 0.011522304680126468,
+       "min": 0.008185488036102919,
+       "nans": 0,
+       "shape": [
+        4,
+        30
+       ],
+       "std": 0.003176750885197367
+      }
+     }
+    ],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "--",
+      "linewidth": 4.0,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        0.001551724137931032,
+        0.0
+       ],
+       [
+        0.001551724137931032,
+        1.0
+       ]
+      ]
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.125,
+     0.1100000000000001,
+     0.16756756756756752,
+     0.611111111111111
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q13",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "mw amplitude correction",
+     "weight": "normal"
+    },
+    "xlim": [
+     -0.04655172413793103,
+     0.04655172413793103
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "X_repetitionsq13 [NA]",
+     "weight": "normal"
+    },
+    "ylim": [
+     -2.0,
+     22.0
+    ]
+   },
+   {
+    "collections": [
+     {
+      "clim": [
+       0.01494064889752542,
+       0.022123800690980144
+      ],
+      "cmap": "RdBu_r",
+      "coordinates": {
+       "max": 22.0,
+       "mean": 5.0,
+       "min": -2.0,
+       "nans": 0,
+       "shape": [
+        5,
+        31,
+        2
+       ],
+       "std": 7.810274339333289
+      },
+      "facecolors": [
+       "#1f77b4ff"
+      ],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "type": "QuadMesh",
+      "values": {
+       "max": 0.022123800690980144,
+       "mean": 0.017591750062794637,
+       "min": 0.01494064889752542,
+       "nans": 0,
+       "shape": [
+        4,
+        30
+       ],
+       "std": 0.002385001517401742
+      }
+     }
+    ],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "--",
+      "linewidth": 4.0,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        0.007758620689655174,
+        0.0
+       ],
+       [
+        0.007758620689655174,
+        1.0
+       ]
+      ]
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.40777027027027024,
+     0.1100000000000001,
+     0.16756756756756752,
+     0.611111111111111
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q14",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "mw amplitude correction",
+     "weight": "normal"
+    },
+    "xlim": [
+     -0.04655172413793103,
+     0.04655172413793103
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "X_repetitionsq14 [NA]",
+     "weight": "normal"
+    },
+    "ylim": [
+     -2.0,
+     22.0
+    ]
+   },
+   {
+    "collections": [
+     {
+      "clim": [
+       0.009892972086857636,
+       0.01655650273955715
+      ],
+      "cmap": "RdBu_r",
+      "coordinates": {
+       "max": 22.0,
+       "mean": 5.0,
+       "min": -2.0,
+       "nans": 0,
+       "shape": [
+        5,
+        31,
+        2
+       ],
+       "std": 7.810274339333289
+      },
+      "facecolors": [
+       "#1f77b4ff"
+      ],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "type": "QuadMesh",
+      "values": {
+       "max": 0.01655650273955715,
+       "mean": 0.0125722022608965,
+       "min": 0.009892972086857636,
+       "nans": 0,
+       "shape": [
+        4,
+        30
+       ],
+       "std": 0.002252545928308733
+      }
+     }
+    ],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "--",
+      "linewidth": 4.0,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        -0.001551724137931032,
+        0.0
+       ],
+       [
+        -0.001551724137931032,
+        1.0
+       ]
+      ]
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.6905405405405405,
+     0.1100000000000001,
+     0.16756756756756752,
+     0.611111111111111
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q15",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "mw amplitude correction",
+     "weight": "normal"
+    },
+    "xlim": [
+     -0.04655172413793103,
+     0.04655172413793103
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "X_repetitionsq15 [NA]",
+     "weight": "normal"
+    },
+    "ylim": [
+     -2.0,
+     22.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.125,
+     0.7911111111111111,
+     0.037575757575757596,
+     0.0888888888888889
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.1625757575757576,
+     0.7911111111111111,
+     0.699848484848485,
+     0.0888888888888889
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.8624242424242426,
+     0.7911111111111111,
+     0.037575757575757596,
+     0.0888888888888889
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [
+     {
+      "clim": null,
+      "cmap": null,
+      "facecolors": [],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "segments": [],
+      "type": "LineCollection",
+      "values": null
+     },
+     {
+      "clim": [
+       0.008185488036102919,
+       0.017177223378977428
+      ],
+      "cmap": "RdBu_r",
+      "coordinates": {
+       "max": 1.0,
+       "mean": 0.2563406778537701,
+       "min": 0.0,
+       "nans": 0,
+       "shape": [
+        257,
+        2,
+        2
+       ],
+       "std": 0.4293870752501726
+      },
+      "facecolors": [
+       "#1f77b4ff"
+      ],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "type": "QuadMesh",
+      "values": {
+       "columns": [
+        {
+         "max": 0.017159661395885876,
+         "mean": 0.01268135570754017,
+         "min": 0.00820305001919447,
+         "nans": 0,
+         "std": 0.0025956706067234683
+        }
+       ],
+       "shape": [
+        256,
+        1
+       ]
+      }
+     }
+    ],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.3030405405405405,
+     0.1100000000000001,
+     0.0314189189189189,
+     0.611111111111111
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq13 [NA]",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.008185488036102919,
+     0.017177223378977428
+    ]
+   },
+   {
+    "collections": [
+     {
+      "clim": null,
+      "cmap": null,
+      "facecolors": [],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "segments": [],
+      "type": "LineCollection",
+      "values": null
+     },
+     {
+      "clim": [
+       0.01494064889752542,
+       0.022123800690980144
+      ],
+      "cmap": "RdBu_r",
+      "coordinates": {
+       "max": 1.0,
+       "mean": 0.2592661123971264,
+       "min": 0.0,
+       "nans": 0,
+       "shape": [
+        257,
+        2,
+        2
+       ],
+       "std": 0.42773235947191673
+      },
+      "facecolors": [
+       "#1f77b4ff"
+      ],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "type": "QuadMesh",
+      "values": {
+       "columns": [
+        {
+         "max": 0.022109771097633554,
+         "mean": 0.01853222479425278,
+         "min": 0.01495467849087201,
+         "nans": 0,
+         "std": 0.002073581490438181
+        }
+       ],
+       "shape": [
+        256,
+        1
+       ]
+      }
+     }
+    ],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.5858108108108108,
+     0.1100000000000001,
+     0.0314189189189189,
+     0.611111111111111
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq14 [NA]",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.01494064889752542,
+     0.022123800690980144
+    ]
+   },
+   {
+    "collections": [
+     {
+      "clim": null,
+      "cmap": null,
+      "facecolors": [],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "segments": [],
+      "type": "LineCollection",
+      "values": null
+     },
+     {
+      "clim": [
+       0.009892972086857636,
+       0.01655650273955715
+      ],
+      "cmap": "RdBu_r",
+      "coordinates": {
+       "max": 1.0,
+       "mean": 0.2566123687066037,
+       "min": 0.0,
+       "nans": 0,
+       "shape": [
+        257,
+        2,
+        2
+       ],
+       "std": 0.42923117737488087
+      },
+      "facecolors": [
+       "#1f77b4ff"
+      ],
+      "label": null,
+      "offsets": [
+       [
+        0.0,
+        0.0
+       ]
+      ],
+      "type": "QuadMesh",
+      "values": {
+       "columns": [
+        {
+         "max": 0.016543488031251094,
+         "mean": 0.013224737413207392,
+         "min": 0.00990598679516369,
+         "nans": 0,
+         "std": 0.0019235809321188964
+        }
+       ],
+       "shape": [
+        256,
+        1
+       ]
+      }
+     }
+    ],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.868581081081081,
+     0.1100000000000001,
+     0.0314189189189189,
+     0.611111111111111
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "yq15 [NA]",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.009892972086857636,
+     0.01655650273955715
+    ]
+   }
+  ],
+  "size": [
+   16.5,
+   6.3
+  ],
+  "texts": []
+ }
+}

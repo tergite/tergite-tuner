@@ -18,8 +18,9 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_calibration.analysis import (
-    CZCalibrationCouplerAnalysis,
+    analyse_cz_calibration,
     get_distances_from_pi,
+    plot_cz_calibration,
 )
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.storage.fs.dataset import load_dataset
@@ -36,11 +37,10 @@ def test_cz_calibration_success(session_context, node_data_dir):
         with xr.open_dataset(file_path) as dataset:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
 
-            analysis = CZCalibrationCouplerAnalysis(
+            qoi = analyse_cz_calibration(
                 get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
                 session_context,
             )
-            qoi = analysis.analyse()
 
             cz_pulse_frequency = qoi["cz_pulse_frequency"].value
             cz_pulse_duration = qoi["cz_pulse_duration"].value
@@ -63,7 +63,7 @@ def test_decode_multi_index(node_data_dir):
 
 def test_plotting(session_context, node_data_dir):
     """
-    Test that the plotter produces a figure with the right number of axes
+    Test that the plot produces a figure with the right number of axes
     """
     state_file = node_data_dir / _STATE_FILENAME
     with loaded_state(session_context, state_file):
@@ -71,19 +71,12 @@ def test_plotting(session_context, node_data_dir):
         with xr.open_dataset(file_path) as dataset:
             dataset = cf.decode_compress_to_multi_index(dataset, "working_points")
 
-            analysis = CZCalibrationCouplerAnalysis(
-                get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
-                session_context,
+            (figure,) = plot_cz_calibration(
+                analyse_cz_calibration(
+                    get_coupler_dataset(dataset, "q13_q14", "cz_calibration"),
+                    session_context,
+                )
             )
-
-            figures_dictionary = {}
-
-            analysis.analyse()
-            analysis.plotter(figures_dictionary)
-
-            assert "q13_q14" in figures_dictionary
-
-            figure = figures_dictionary["q13_q14"][0]
 
             # axes are the (freq, duration) plots + figure title +
             # figure x label + figure y label + global trend plot

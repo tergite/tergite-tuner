@@ -38,7 +38,7 @@ STANDARD_RUN_DIR = Path(
     )
 )
 STANDARD_STATE = get_fixture_path("states", "standard_state.json")
-# Left out: purity benchmarking, Rabi and Rabi 12, qubit 01 and 12 spectroscopy and resonator
+# Left out: Rabi and Rabi 12, qubit 01 and 12 spectroscopy and resonator
 # spectroscopy, whose datasets predate the per-variable ``qubit`` attribute the node analysis
 # splits on; the Ramsey standard run, whose device values were not recorded; and the
 # anticrossing without crossings, on q16_q17, which the fixture device config lacks.
@@ -54,10 +54,23 @@ class Result:
 
 @dataclass(frozen=True)
 class GoldenCase:
+    """A recorded dataset and how its node analyses it.
+
+    Attributes:
+        node: the node that analyses the dataset.
+        dataset: the dataset's path, under the nodes' folder or the standard run's.
+        state_file: the device state to analyse with; the dataset's own, or the
+            standard run's, if None.
+        analysis_keywords: each element's analysis keywords, if not the node's own.
+        states: how many of the recorded prepared states to keep, as the first ones;
+            all if None.
+    """
+
     node: NodeEnum
     dataset: str
     state_file: str | None = None
     analysis_keywords: dict = field(default_factory=dict)
+    states: int | None = None
 
 
 RECORDED_DATASETS = {
@@ -72,9 +85,7 @@ RECORDED_DATASETS = {
     "cz_chevron": GoldenCase(
         NodeEnum.CZ_CHEVRON,
         "coupler/cz_chevron/tests/data/dataset_cz_chevron_0.hdf5",
-        analysis_keywords={
-            "q13_q14": {"phase_path": "via_20", "number_of_working_points": 3}
-        },
+        analysis_keywords={"q13_q14": {"phase_path": "via_20"}},
     ),
     "cz_local_phases": GoldenCase(
         NodeEnum.CZ_LOCAL_PHASES,
@@ -126,6 +137,16 @@ RECORDED_DATASETS = {
     "ro_amplitude_three_state_optimization": GoldenCase(
         NodeEnum.RO_AMPLITUDE_THREE_STATE_OPTIMIZATION,
         "readout/ro_amplitude_optimization/tests/data/dataset_ro_amplitude_three_state_optimization.hdf5",
+    ),
+    # no two-state recording was kept, so the three-state one's states 0 and 1 stand in
+    "ro_amplitude_two_state_optimization": GoldenCase(
+        NodeEnum.RO_AMPLITUDE_TWO_STATE_OPTIMIZATION,
+        "readout/ro_amplitude_optimization/tests/data/dataset_ro_amplitude_three_state_optimization.hdf5",
+        states=2,
+    ),
+    "purity_benchmarking": GoldenCase(
+        NodeEnum.PURITY_BENCHMARKING,
+        "characterization/purity_benchmarking/tests/data/dataset_purity_benchmarking_0.hdf5",
     ),
     "ro_frequency_three_state_optimization": GoldenCase(
         NodeEnum.RO_FREQUENCY_THREE_STATE_OPTIMIZATION,
@@ -191,7 +212,9 @@ def get_analyser(
     spec = DEFAULT_NODE_SPECS[golden_case.node]
     node_name = golden_case.node.value
     copy_dataset(
-        get_dataset_path(golden_case.dataset), data_path / f"dataset_{node_name}.hdf5"
+        get_dataset_path(golden_case.dataset),
+        data_path / f"dataset_{node_name}.hdf5",
+        golden_case.states,
     )
 
     def analyse() -> dict[str, Result]:
@@ -227,11 +250,23 @@ def get_dataset_path(dataset: str) -> Path:
     return NODES_DIR / dataset
 
 
-def copy_dataset(source: Path, target: Path) -> None:
-    """Datasets recorded before configure_dataset set ``elements`` get it from their variables (``yq06``)."""
+def copy_dataset(source: Path, target: Path, states: int | None = None) -> None:
+    """Copies a recorded dataset, giving it the element attributes datasets are now saved with.
+
+    Args:
+        source: the recorded dataset.
+        target: where the copy goes.
+        states: how many of the prepared states to keep, as the first ones; all if None.
+    """
     with xr.open_dataset(source) as dataset:
         if "elements" not in dataset.attrs:
             dataset.attrs["elements"] = [str(var)[1:] for var in dataset.data_vars]
+        for var in dataset.data_vars.values():
+            var.attrs.setdefault("element", var.attrs.get("qubit"))
+        if states is not None:
+            dataset = dataset.isel(
+                {dim: slice(states) for dim in dataset.dims if "qubit_states" in dim}
+            )
         dataset.load().to_netcdf(target)
 
 

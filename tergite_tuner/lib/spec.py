@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 
 from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -44,6 +45,26 @@ class Fit(NamedTuple):
 
 
 Fits = Mapping[str, Fit]
+
+
+class CouplerData(NamedTuple):
+    """One coupler's dataset, as the coupler analyses read it.
+
+    Attributes:
+        coupler: the coupler.
+        control_qubit: the coupler's control qubit.
+        target_qubit: the coupler's target qubit.
+        s21: both qubits' complex S21, a variable each.
+        control: the control qubit's complex S21.
+        target: the target qubit's complex S21.
+    """
+
+    coupler: str
+    control_qubit: str
+    target_qubit: str
+    s21: xr.Dataset
+    control: xr.DataArray
+    target: xr.DataArray
 
 
 @dataclass(frozen=True)
@@ -112,65 +133,6 @@ class NodeSpec:
     ) = None
 
 
-class ElementAnalysis:
-    """Base of the analyses that keep state between fitting and plotting one element."""
-
-    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
-        self.qubit = s21.attrs["qubit"]
-        self.data_var = f"y{self.qubit}"
-        self.S21 = s21.to_dataset(name=self.data_var)
-        self.dataset = self.S21
-        self.magnitudes = np.abs(self.S21)
-        self.session = session
-
-    def analyse(self) -> Fits | None:
-        """Fits the element's S21.
-
-        Returns:
-            The element's fits, or None if its analysis failed.
-        """
-        raise NotImplementedError
-
-
-class CouplerAnalysis:
-    """Base of the coupler analyses: one coupler's variables, saved in real and imaginary parts.
-
-    ``keywords`` become attributes, as the node's analysis keywords for the coupler.
-    """
-
-    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
-        self.session = session
-        self.name = dataset.attrs["node"]
-        self.coupler = dataset.attrs["coupler"]
-        self.control_qubit, self.target_qubit = (
-            session.device_config.get_control_target_qubit_pair_by_coupler(self.coupler)
-        )
-        self.dataset = dataset
-        self.coord = dataset.coords
-        self.data_var = list(dataset.data_vars)[0]
-        self.S21 = dataset.isel(ReIm=0) + 1j * dataset.isel(ReIm=1)
-        for var in self.S21.data_vars:
-            self.S21[var].attrs = dataset[var].attrs
-        self.magnitudes = np.abs(self.S21)
-        for var in self.S21.data_vars.values():
-            if var.attrs["qubit"] == self.control_qubit:
-                self.control_qubit_data_var = var
-            elif var.attrs["qubit"] == self.target_qubit:
-                self.target_qubit_data_var = var
-            else:
-                raise ValueError("No control or target qubits")
-        for name, value in keywords.items():
-            setattr(self, name, value)
-
-    def analyse(self) -> Fits | None:
-        """Fits the coupler's dataset.
-
-        Returns:
-            The coupler's fits, or None if its analysis failed.
-        """
-        raise NotImplementedError
-
-
 def get_fits_from_result(
     result: Mapping[str, Mapping[str, Any]], is_successful: bool
 ) -> Fits | None:
@@ -203,65 +165,71 @@ def is_failed(fits: Fits | None) -> bool:
     return fits is None or "failed" in fits
 
 
-def get_coupler_analyser(
-    analysis_cls: type[CouplerAnalysis],
-) -> Callable[..., Fits | None]:
-    """An ``analyse`` that builds an ``analysis_cls`` for the coupler and keeps its figures in the fits.
-
-    The figures are drawn here so the analysis, as large as the dataset, is freed before they are saved.
+def get_coupler_data(dataset: xr.Dataset, session: "SessionContext") -> CouplerData:
+    """A coupler's dataset, saved in real and imaginary parts, as complex S21 per qubit.
 
     Args:
-        analysis_cls: the coupler analysis to run.
+        dataset: the coupler's variables, which name the coupler.
+        session: the session, whose device config names the coupler's control and
+            target qubits.
 
     Returns:
-        A ``NodeSpec.analyse`` taking the coupler's dataset, the session and its
-        analysis keywords.
+        The coupler's data.
+
+    Raises:
+        ValueError: if a variable is of neither of the coupler's qubits.
     """
+    coupler = dataset.attrs["coupler"]
+    control_qubit, target_qubit = (
+        session.device_config.get_control_target_qubit_pair_by_coupler(coupler)
+    )
+    s21 = dataset.isel(ReIm=0) + 1j * dataset.isel(ReIm=1)
+    for var in s21.data_vars:
+        s21[var].attrs = dataset[var].attrs
+    variables = {}
+    for var in s21.data_vars.values():
+        if var.attrs["qubit"] not in (control_qubit, target_qubit):
+            raise ValueError("No control or target qubits")
+        variables[var.attrs["qubit"]] = var
+    return CouplerData(
+        coupler,
+        control_qubit,
+        target_qubit,
+        s21,
+        variables[control_qubit],
+        variables[target_qubit],
+    )
 
-    def analyse(
-        dataset: xr.Dataset, session: "SessionContext", **keywords: Any
-    ) -> Fits | None:
-        analysis = analysis_cls(dataset, session, **keywords)
-        fits = analysis.analyse()
-        if fits is None:
-            return None
-        figures = {}
-        analysis.plotter(figures_dictionary=figures)
-        for figure in figures.get(analysis.coupler, []):
-            # out of pyplot's registry, so a run that saves no plots does not keep them open
-            plt.close(figure)
-        return {**fits, "figures": Fit(figures.get(analysis.coupler, []))}
 
-    return analyse
+def get_coupler_figure_saver(
+    draw: Callable[[Fits], list[Figure]],
+) -> Callable[[xr.Dataset, Fits, Path, "SessionContext"], None]:
+    """A ``save_details`` that draws a coupler's figures from its fits and saves them.
 
-
-def save_coupler_figures(
-    dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
-) -> None:
-    """Saves the figures in the fits as ``<node>_<coupler>_<index>_preview.png``.
+    Each figure is saved as ``<node>_<coupler>_<index>_preview.png``, then closed.
 
     Args:
-        dataset: the coupler's dataset, which names the node and the coupler.
-        fits: the coupler's fits, whose ``figures`` are saved; nothing is saved if empty.
-        data_path: the node's data folder.
-        _session: unused; part of the ``save_details`` signature.
+        draw: the coupler's figures, given its fits.
+
+    Returns:
+        A ``NodeSpec.save_details`` taking the coupler's dataset, which names the node
+        and the coupler, its fits, the node's data folder and the session; it saves
+        nothing if the fits are empty.
     """
-    if not fits:
-        return
-    name, coupler = dataset.attrs["node"], dataset.attrs["coupler"]
-    for index, figure in enumerate(fits["figures"].value):
-        geometry = figure.axes[0].get_gridspec().get_geometry()
-        nrows, ncols = geometry
-        if geometry == (2, 3):
-            figure.set_size_inches(14, 9)
-        elif geometry == (1, 1):
-            figure.set_size_inches(9, 6)
-        elif geometry == (1, 2):
-            figure.set_size_inches(12, 8)
-        else:
-            figure.set_size_inches(ncols * 6, nrows * 4)
-        path = data_path / f"{name}_{coupler}_{index}_preview.png"
-        figure.savefig(path, bbox_inches="tight", dpi=100)
+
+    def save(
+        dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
+    ) -> None:
+        if not fits:
+            return
+        figures = draw(fits)
+        _save_figures(
+            figures, dataset.attrs["node"], dataset.attrs["coupler"], data_path
+        )
+        for figure in figures:
+            plt.close(figure)
+
+    return save
 
 
 def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
@@ -288,35 +256,6 @@ def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
         return measurement.schedule_function(**keywords)
 
     return get_schedule
-
-
-def get_class_analyser(
-    analysis_cls: type[ElementAnalysis],
-) -> Callable[[xr.DataArray, "SessionContext"], Fits | None]:
-    """An ``analyse`` that builds an ``analysis_cls`` for the element and runs it.
-
-    Args:
-        analysis_cls: the element analysis to run.
-
-    Returns:
-        A ``NodeSpec.analyse`` taking the element's S21 and the session.
-    """
-    return lambda s21, session: analysis_cls(s21, session).analyse()
-
-
-def plot_class_analysis(
-    axis: Any, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
-) -> None:
-    """A ``plot`` for the analysis object an ``ElementAnalysis`` puts in its fits.
-
-    Args:
-        axis: the axis to draw on.
-        _s21: unused; part of the ``plot`` signature.
-        fits: the element's fits, whose ``analysis`` draws itself; nothing is drawn if empty.
-        _session: unused; part of the ``plot`` signature.
-    """
-    if fits:
-        fits["analysis"].value.plotter(axis)
 
 
 def get_fixed_sweep(values: np.ndarray) -> SweepFn:
@@ -361,3 +300,22 @@ def get_coord_name(quantity: str, element: str) -> str:
         The coordinate's name, such as ``mw_amplitudesq00``.
     """
     return f"{quantity}{element}"
+
+
+def _save_figures(
+    figures: list[Figure], name: str, coupler: str, data_path: Path
+) -> None:
+    """Saves a coupler's figures as ``<node>_<coupler>_<index>_preview.png``, sized by their grid."""
+    for index, figure in enumerate(figures):
+        geometry = figure.axes[0].get_gridspec().get_geometry()
+        nrows, ncols = geometry
+        if geometry == (2, 3):
+            figure.set_size_inches(14, 9)
+        elif geometry == (1, 1):
+            figure.set_size_inches(9, 6)
+        elif geometry == (1, 2):
+            figure.set_size_inches(12, 8)
+        else:
+            figure.set_size_inches(ncols * 6, nrows * 4)
+        path = data_path / f"{name}_{coupler}_{index}_preview.png"
+        figure.savefig(path, bbox_inches="tight", dpi=100)

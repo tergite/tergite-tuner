@@ -103,12 +103,6 @@ tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for ty
 tergite_tuner/lib/nodes/__init__.py: UP035 Import from `collections.abc` instead: `Mapping`
 tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/lib/nodes/characterization/all_xy/measurement.py: ARG002 Unused method argument: `XY_index`
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: C416 Unnecessary list comprehension (rewrite using `list()`)
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
-tergite_tuner/lib/nodes/characterization/randomized_benchmarking/analysis.py: C408 Unnecessary `dict()` call (rewrite as a literal)
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: E713 Test for membership should be `not in`
 tergite_tuner/lib/nodes/characterization/t2/analysis.py: SIM910 Use `kws.get("x")` instead of `kws.get("x", None)`
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: B905 `zip()` without an explicit `strict=` parameter
@@ -117,7 +111,6 @@ tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: UP006 Use `tuple`
 tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/lib/nodes/coupler/cz_calibration/node.py: B905 `zip()` without an explicit `strict=` parameter
 tergite_tuner/lib/nodes/coupler/cz_calibration/node.py: B905 `zip()` without an explicit `strict=` parameter
-tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py: E722 Do not use bare `except`
 tergite_tuner/lib/nodes/coupler/cz_parametrization/tests/test_measurement.py: C420 Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_qubit_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
 tergite_tuner/lib/nodes/coupler/spectroscopy/tests/test_res_spec_vs_current_coupler_analysis.py: RET504 Unnecessary assignment to `crossings` before `return` statement
@@ -133,8 +126,6 @@ tergite_tuner/lib/nodes/qubit_control/spectroscopy/tests/test_qubit_spectroscopy
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py: ARG002 Unused method argument: `args`
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: ARG001 Unused function argument: `args`
 tergite_tuner/lib/nodes/readout/resonator_spectroscopy/tests/test_resonator_spectroscopy.py: ARG001 Unused function argument: `kwargs`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: ARG002 Unused method argument: `amplitude_index`
-tergite_tuner/lib/nodes/readout/ro_amplitude_optimization/analysis.py: E741 Ambiguous variable name: `I`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("drive_amp")` instead of `kws.get("drive_amp", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("m")` instead of `kws.get("m", None)`
 tergite_tuner/lib/utils/analysis_models.py: SIM910 Use `kws.get("t")` instead of `kws.get("t", None)`

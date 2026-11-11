@@ -12,276 +12,167 @@
 # that they have been altered from the originals.
 
 
-from collections.abc import Sequence
-from typing import TYPE_CHECKING
+"""Coupler spectroscopy's analyses: the coupler currents where a qubit's or resonator's frequency jumps."""
+
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray
+from matplotlib.figure import Figure
 
-from tergite_tuner.lib.nodes.qubit_control.spectroscopy.analysis import (
-    QubitSpectroscopyMaxThresholdQubitAnalysis,
-)
 from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.analysis import (
     fit_resonator,
 )
-from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
+from tergite_tuner.lib.spec import Fit, Fits, get_coupler_data, get_fits_from_result
+from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
-    pass
+    from tergite_tuner.config.session import SessionContext
+
+# how many standard deviations a qubit spectroscopy's maximum must stand above its mean
+PEAK_SIGNIFICANCE = 2.7
 
 
-class CouplerAnticrossingAnalysis(CouplerAnalysis):
-    """
-    This class analyzes the qubit spectroscopy data as a function of the current for a coupler.
-    """
+class CrossingSearch(NamedTuple):
+    """Each qubit's ``|S21|`` over frequency and coupler current, the frequency found at each current, and the crossings, to plot.
 
-    def detect_peaks(self, qubit_specs_dataarray: xarray.DataArray):
-        """Finds a qubit's frequency at each coupler current.
-
-        Args:
-            qubit_specs_dataarray: the qubit's ``|S21|`` over drive frequency and current.
-
-        Returns:
-            The detected frequencies, and the currents they were detected at.
-        """
-        detected_frequencies = []
-        detected_currents = []
-        for current in self.dc_currents:
-            ds = qubit_specs_dataarray.sel({self.current_coord: current})
-            freq_analysis = QubitSpectroscopyMaxThresholdQubitAnalysis(ds)
-            qubit_frequency = freq_analysis.process_qubit()
-            detected_frequencies.append(qubit_frequency)
-            detected_currents.append(current)
-        return detected_frequencies, detected_currents
-
-    def analyse(self) -> Fits | None:
-        """Finds the coupler currents where each qubit's frequency jumps, its anticrossings.
-
-        Returns:
-            The fits ``control_qubit_crossing_points`` and
-            ``target_qubit_crossing_points``: each qubit's crossing currents, in A.
-        """
-        for coord in self.dataset[self.data_var].coords:
-            if "frequencies" in coord:
-                self.frequencies = coord
-            elif "currents" in coord:
-                self.current_coord = coord
-                self.dc_currents = self.dataset[self.current_coord].values
-
-        threshold = 2000000
-        spurious_threshold = 300000
-        min_interval = 0.0003
-        resonator_crossings_interval = 0.00015
-
-        control_qubit_magnitudes = xarray.ufuncs.abs(self.control_qubit_data_var)
-        target_qubit_magnitudes = xarray.ufuncs.abs(self.target_qubit_data_var)
-        (
-            self.control_qubit_detected_frequencies,
-            self.control_qubit_detected_currents,
-        ) = self.detect_peaks(control_qubit_magnitudes)
-        self.target_qubit_detected_frequencies, self.target_qubit_detected_currents = (
-            self.detect_peaks(target_qubit_magnitudes)
-        )
-        self.resonator_crossing_points = []
-        self.control_crossing_currents = find_crossing_currents(
-            self.control_qubit_detected_currents,
-            self.control_qubit_detected_frequencies,
-            threshold,
-            spurious_threshold,
-            min_interval,
-            self.resonator_crossing_points,
-            resonator_crossings_interval,
-        )
-        self.target_crossing_currents = find_crossing_currents(
-            self.target_qubit_detected_currents,
-            self.target_qubit_detected_frequencies,
-            threshold,
-            spurious_threshold,
-            min_interval,
-            self.resonator_crossing_points,
-            resonator_crossings_interval,
-        )
-
-        analysis_succesful = True
-        analysis_result = {
-            "control_qubit_crossing_points": {
-                "value": self.control_crossing_currents,
-                "error": 0,
-            },
-            "target_qubit_crossing_points": {
-                "value": self.target_crossing_currents,
-                "error": 0,
-            },
-        }
-
-        return get_fits_from_result(analysis_result, analysis_succesful)
-
-    def plotter(self, figures_dictionary: dict[str, list]):
-        """
-        Create the anticrossing figures and populate the figures dictionary.
-        Args:
-             figures_dictionary: A reference to the figures dictionary that the base
-             analysis plots the key is the coupler labe and the value is a list
-             containing the anticrossing figure for that coupler
-        """
-        figures_list = []
-        fig, (ax1, ax2) = plt.subplots(2, 1)
-        control_qubit_magnitudes = xarray.ufuncs.abs(self.control_qubit_data_var)
-        target_qubit_magnitudes = xarray.ufuncs.abs(self.target_qubit_data_var)
-        control_qubit_magnitudes.plot(ax=ax1, x=self.current_coord)
-        target_qubit_magnitudes.plot(ax=ax2, x=self.current_coord)
-
-        ax1.scatter(
-            self.control_qubit_detected_currents,
-            self.control_qubit_detected_frequencies,
-            s=52,
-            c="red",
-        )
-        for cross_current in self.control_crossing_currents:
-            ax1.axvline(
-                cross_current,
-                color="grey",
-                linestyle="dashed",
-                linewidth=2,
-            )
-        ax2.scatter(
-            self.target_qubit_detected_currents,
-            self.target_qubit_detected_frequencies,
-            s=52,
-            c="red",
-        )
-        for cross_current in self.target_crossing_currents:
-            ax2.axvline(
-                cross_current,
-                color="grey",
-                linestyle="dashed",
-                linewidth=2,
-            )
-        figures_list.append(fig)
-        figures_dictionary[self.coupler] = figures_list
-        return
-
-
-class ResonatorSpectroscopyVsCurrentCouplerAnalysis(CouplerAnalysis):
-    """
-    This class analyzes the resonator spectroscopy data as a function of the current for a coupler.
+    Attributes:
+        control: the control's ``|S21|``.
+        target: the target's ``|S21|``.
+        currents: the coupler currents.
+        control_frequencies: the control's frequency found at each current.
+        target_frequencies: the target's, likewise.
+        control_crossings: the currents where the control's frequency jumps.
+        target_crossings: the currents where the target's frequency jumps.
+        current_coord: the name of the currents' coordinate.
     """
 
-    def detect_peaks(self, res_specs_dataarray: xarray.DataArray):
-        """Finds a resonator's frequency at each coupler current.
+    control: xarray.DataArray
+    target: xarray.DataArray
+    currents: list[float]
+    control_frequencies: list[float]
+    target_frequencies: list[float]
+    control_crossings: list[float]
+    target_crossings: list[float]
+    current_coord: str
 
-        Args:
-            res_specs_dataarray: the resonator's S21 over frequency and current.
 
-        Returns:
-            The fitted resonator frequencies, and the currents they were fitted at.
-        """
-        detected_frequencies = []
-        detected_currents = []
-        for current in self.dc_currents:
-            darray = res_specs_dataarray.sel({self.current_coord: current})
-            frequencies = darray.coords[darray.dims[0]].values
-            resonator_frequency = fit_resonator(frequencies, darray.values).frequency
-            detected_frequencies.append(resonator_frequency)
-            detected_currents.append(current)
-        return detected_frequencies, detected_currents
+def analyse_coupler_anticrossing(
+    dataset: xarray.Dataset, session: "SessionContext"
+) -> Fits:
+    """Finds the coupler currents where each qubit's frequency jumps, its anticrossings.
 
-    def analyse(self) -> Fits | None:
-        """Finds the coupler currents where each qubit's resonator frequency jumps.
+    Args:
+        dataset: the coupler's variables, saved in real and imaginary parts.
+        session: the session, whose device config names the coupler's qubits.
 
-        Returns:
-            The fits ``control_resonator_crossing_points`` and
-            ``target_resonator_crossing_points``: each resonator's crossing currents, in A.
-        """
-        for coord in self.dataset[self.data_var].coords:
-            if "frequencies" in coord:
-                self.frequencies = coord
-            elif "currents" in coord:
-                self.current_coord = coord
-                self.dc_currents = self.dataset[self.current_coord].values
+    Returns:
+        The fits ``control_qubit_crossing_points`` and
+        ``target_qubit_crossing_points``: each qubit's crossing currents, in A; and,
+        to plot, the ``search``.
+    """
+    search = _search_crossings(
+        dataset,
+        session,
+        lambda s21: xarray.ufuncs.abs(s21),
+        _find_peak_frequency,
+        {
+            "threshold": 2000000,
+            "spurious_threshold": 300000,
+            "min_interval": 0.0003,
+            "resonator_crossings": [],
+            "resonator_crossings_interval": 0.00015,
+        },
+    )
+    analysis_result = {
+        "control_qubit_crossing_points": {
+            "value": search.control_crossings,
+            "error": 0,
+        },
+        "target_qubit_crossing_points": {"value": search.target_crossings, "error": 0},
+    }
+    return {**get_fits_from_result(analysis_result, True), "search": Fit(search)}
 
-        threshold = 30000
-        spurious_threshold = 4000
-        min_interval = 0.0005  # Adjust based on data range
 
-        self.control_qubit_detected_frequencies, self.target_qubit_detected_currents = (
-            self.detect_peaks(self.control_qubit_data_var)
-        )
-        self.target_qubit_detected_frequencies, self.control_qubit_detected_currents = (
-            self.detect_peaks(self.target_qubit_data_var)
-        )
-        self.control_crossing_currents = find_crossing_currents(
-            self.control_qubit_detected_currents,
-            self.control_qubit_detected_frequencies,
-            threshold,
-            spurious_threshold,
-            min_interval,
-        )
-        self.target_crossing_currents = find_crossing_currents(
-            self.target_qubit_detected_currents,
-            self.target_qubit_detected_frequencies,
-            threshold,
-            spurious_threshold,
-            min_interval,
-        )
+def analyse_resonator_spectroscopy_vs_current(
+    dataset: xarray.Dataset, session: "SessionContext"
+) -> Fits:
+    """Finds the coupler currents where each qubit's resonator frequency jumps.
 
-        analysis_succesful = True
-        analysis_result = {
-            "control_resonator_crossing_points": {
-                "value": self.control_crossing_currents,
-                "error": 0,
-            },
-            "target_resonator_crossing_points": {
-                "value": self.target_crossing_currents,
-                "error": 0,
-            },
-        }
-        return get_fits_from_result(analysis_result, analysis_succesful)
+    Args:
+        dataset: the coupler's variables, saved in real and imaginary parts.
+        session: the session, whose device config names the coupler's qubits.
 
-    def plotter(self, figures_dictionary):
-        """
-        Create the anticrossing figures and populate the figures dictionary.
-        Args:
-             figures_dictionary: A reference to the figures dictionary that the base
-             analysis plots the key is the coupler labe and the value is a list
-             containing the anticrossing figure for that coupler
-        """
-        figures_list = []
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        control_qubit_magnitudes = xarray.ufuncs.abs(self.control_qubit_data_var)
-        target_qubit_magnitudes = xarray.ufuncs.abs(self.target_qubit_data_var)
-        control_qubit_magnitudes.plot(ax=ax1)
-        target_qubit_magnitudes.plot(ax=ax2)
-        ax1.scatter(
-            self.control_qubit_detected_frequencies,
-            self.control_qubit_detected_currents,
-            s=52,
-            c="red",
-        )
-        for cross_current in self.control_crossing_currents:
-            ax1.axhline(
-                cross_current,
-                color="grey",
-                linestyle="dashed",
-                linewidth=2,
-            )
-        ax2.scatter(
-            self.target_qubit_detected_frequencies,
-            self.target_qubit_detected_currents,
-            s=52,
-            c="red",
-        )
-        for cross_current in self.target_crossing_currents:
-            ax2.axhline(
-                cross_current,
-                color="grey",
-                linestyle="dashed",
-                linewidth=2,
-            )
-        figures_list.append(fig)
-        figures_dictionary[self.coupler] = figures_list
-        return
+    Returns:
+        The fits ``control_resonator_crossing_points`` and
+        ``target_resonator_crossing_points``: each resonator's crossing currents,
+        in A; and, to plot, the ``search``.
+    """
+    search = _search_crossings(
+        dataset,
+        session,
+        lambda s21: s21,
+        _fit_resonator_frequency,
+        {"threshold": 30000, "spurious_threshold": 4000, "min_interval": 0.0005},
+    )
+    analysis_result = {
+        "control_resonator_crossing_points": {
+            "value": search.control_crossings,
+            "error": 0,
+        },
+        "target_resonator_crossing_points": {
+            "value": search.target_crossings,
+            "error": 0,
+        },
+    }
+    return {**get_fits_from_result(analysis_result, True), "search": Fit(search)}
+
+
+def plot_coupler_anticrossing(fits: Fits) -> list[Figure]:
+    """Each qubit's ``|S21|`` over current, its frequency found at each, and its anticrossings.
+
+    Args:
+        fits: the coupler's fits.
+
+    Returns:
+        The coupler's one figure.
+    """
+    search = fits["search"].value
+    figure, axes = plt.subplots(2, 1)
+    for axis, magnitudes, frequencies, crossings in (
+        (axes[0], search.control, search.control_frequencies, search.control_crossings),
+        (axes[1], search.target, search.target_frequencies, search.target_crossings),
+    ):
+        magnitudes.plot(ax=axis, x=search.current_coord)
+        axis.scatter(search.currents, frequencies, s=52, c="red")
+        for crossing in crossings:
+            axis.axvline(crossing, color="grey", linestyle="dashed", linewidth=2)
+    return [figure]
+
+
+def plot_resonator_spectroscopy_vs_current(fits: Fits) -> list[Figure]:
+    """Each resonator's ``|S21|`` over frequency and current, its frequency fitted at each current, and its crossings.
+
+    Args:
+        fits: the coupler's fits.
+
+    Returns:
+        The coupler's one figure.
+    """
+    search = fits["search"].value
+    figure, axes = plt.subplots(1, 2)
+    xarray.ufuncs.abs(search.control).plot(ax=axes[0])
+    xarray.ufuncs.abs(search.target).plot(ax=axes[1])
+    for axis, frequencies, crossings in (
+        (axes[0], search.control_frequencies, search.control_crossings),
+        (axes[1], search.target_frequencies, search.target_crossings),
+    ):
+        axis.scatter(frequencies, search.currents, s=52, c="red")
+        for crossing in crossings:
+            axis.axhline(crossing, color="grey", linestyle="dashed", linewidth=2)
+    return [figure]
 
 
 def find_crossing_currents(
@@ -349,3 +240,58 @@ def _fill_dropouts(frequencies: np.ndarray, spurious_threshold: float) -> np.nda
         if previous == 0 and following == 0:
             frequencies[i] = 0
     return frequencies
+
+
+def _search_crossings(
+    dataset: xarray.Dataset,
+    session: "SessionContext",
+    get_signal: Callable[[xarray.DataArray], xarray.DataArray],
+    find_frequency: Callable[[xarray.DataArray], float],
+    thresholds: dict,
+) -> CrossingSearch:
+    """Each qubit's frequency at each coupler current, found in ``get_signal`` of its S21, and the currents where it jumps."""
+    data = get_coupler_data(dataset, session)
+    first = data.s21[list(data.s21.data_vars)[0]]
+    current_coord = next(str(coord) for coord in first.coords if "currents" in coord)
+    currents = list(data.s21[current_coord].values)
+    control, target = get_signal(data.control), get_signal(data.target)
+    control_frequencies = [
+        find_frequency(control.sel({current_coord: current})) for current in currents
+    ]
+    target_frequencies = [
+        find_frequency(target.sel({current_coord: current})) for current in currents
+    ]
+    return CrossingSearch(
+        control=control,
+        target=target,
+        currents=currents,
+        control_frequencies=control_frequencies,
+        target_frequencies=target_frequencies,
+        control_crossings=find_crossing_currents(
+            currents, control_frequencies, **thresholds
+        ),
+        target_crossings=find_crossing_currents(
+            currents, target_frequencies, **thresholds
+        ),
+        current_coord=current_coord,
+    )
+
+
+def _find_peak_frequency(magnitudes: xarray.DataArray) -> float:
+    """The frequency of a qubit spectroscopy's maximum, or NaN if it does not stand ``PEAK_SIGNIFICANCE`` standard deviations above the mean."""
+    # TODO: scipy's find_peaks, by prominence, would do this
+    maximum = magnitudes.max()
+    mean = magnitudes.mean().item()
+    std = magnitudes.std().item()
+    if abs((maximum - mean) / std) < PEAK_SIGNIFICANCE:
+        logger.warning(
+            "This spectroscopy doeas not have a proper maximum, it is ok if this is in a transition region in the coupler spectroscopy"
+        )
+        return np.nan
+    return magnitudes.idxmax().item()
+
+
+def _fit_resonator_frequency(s21: xarray.DataArray) -> float:
+    """The resonator's frequency fitted to its S21 over frequency."""
+    frequencies = s21.coords[s21.dims[0]].values
+    return fit_resonator(frequencies, s21.values).frequency

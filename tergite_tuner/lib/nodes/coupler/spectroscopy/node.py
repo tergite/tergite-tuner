@@ -21,8 +21,10 @@ import numpy as np
 from lmfit.models import LorentzianModel
 
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
-    CouplerAnticrossingAnalysis,
-    ResonatorSpectroscopyVsCurrentCouplerAnalysis,
+    analyse_coupler_anticrossing,
+    analyse_resonator_spectroscopy_vs_current,
+    plot_coupler_anticrossing,
+    plot_resonator_spectroscopy_vs_current,
 )
 from tergite_tuner.lib.nodes.coupler.utils import reset_dc_currents, set_dc_currents
 from tergite_tuner.lib.nodes.qubit_control.spectroscopy.measurement import (
@@ -37,9 +39,8 @@ from tergite_tuner.lib.nodes.readout.resonator_spectroscopy.node import (
 from tergite_tuner.lib.spec import (
     NodeSpec,
     get_class_schedule,
-    get_coupler_analyser,
+    get_coupler_figure_saver,
     get_fixed_sweep,
-    save_coupler_figures,
 )
 from tergite_tuner.lib.utils.samplespace import qubit_samples, resonator_samples
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -96,7 +97,7 @@ COUPLER_ANTICROSSING_SPEC = NodeSpec(
     name=NodeEnum.COUPLER_ANTICROSSING,
     element="coupler",
     get_schedule=get_class_schedule(TwoTonesMultidimMeasurement),
-    analyse=get_coupler_analyser(CouplerAnticrossingAnalysis),
+    analyse=analyse_coupler_anticrossing,
     qois={
         "control_qubit_crossing_points": "control_qubit_crossing_points",
         "target_qubit_crossing_points": "target_qubit_crossing_points",
@@ -108,7 +109,7 @@ COUPLER_ANTICROSSING_SPEC = NodeSpec(
     external_sweeps={"dc_currents": get_fixed_sweep(QUBIT_CURRENTS)},
     set_external=set_dc_currents,
     reset_external=reset_dc_currents,
-    save_details=save_coupler_figures,
+    save_details=get_coupler_figure_saver(plot_coupler_anticrossing),
 )
 
 COUPLER_SPECTROSCOPY_SPECS = {
@@ -116,7 +117,7 @@ COUPLER_SPECTROSCOPY_SPECS = {
         name=NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT,
         element="coupler",
         get_schedule=get_class_schedule(ResonatorSpectroscopyMeasurement),
-        analyse=get_coupler_analyser(ResonatorSpectroscopyVsCurrentCouplerAnalysis),
+        analyse=analyse_resonator_spectroscopy_vs_current,
         qois={
             "control_resonator_crossing_points": "control_resonator_crossing_points",
             "target_resonator_crossing_points": "target_resonator_crossing_points",
@@ -127,7 +128,7 @@ COUPLER_SPECTROSCOPY_SPECS = {
         external_sweeps={"dc_currents": get_fixed_sweep(RESONATOR_CURRENTS)},
         set_external=set_dc_currents,
         reset_external=reset_dc_currents,
-        save_details=save_coupler_figures,
+        save_details=get_coupler_figure_saver(plot_resonator_spectroscopy_vs_current),
     ),
     NodeEnum.COUPLER_ANTICROSSING: COUPLER_ANTICROSSING_SPEC,
     # the same measurement, after resonator spectroscopy vs current in the graph

@@ -22,17 +22,13 @@ import numpy as np
 
 from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.analysis import (
-    RandomizedBenchmarkingQubitAnalysis,
+    analyse_randomized_benchmarking,
+    plot_randomized_benchmarking,
 )
 from tergite_tuner.lib.nodes.characterization.randomized_benchmarking.measurement import (
     RandomizedBenchmarkingMeasurement,
 )
-from tergite_tuner.lib.spec import (
-    NodeSpec,
-    get_class_analyser,
-    get_fixed_sweep,
-    plot_class_analysis,
-)
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
@@ -96,11 +92,11 @@ RANDOMIZED_BENCHMARKING_SPECS = {
         name=NodeEnum.RANDOMIZED_BENCHMARKING,
         element="qubit",
         get_schedule=get_schedule,
-        analyse=get_class_analyser(RandomizedBenchmarkingQubitAnalysis),
+        analyse=analyse_randomized_benchmarking,
         qois={"fidelity": "fidelity", "leakage": "leakage"},
         sweeps={"number_of_cliffords": get_fixed_sweep(CLIFFORDS)},
         get_dummy_s21=get_dummy_s21,
-        plot=plot_class_analysis,
+        plot=plot_randomized_benchmarking,
         schedule_keywords={"multiplexing": "parallel"},
         loops=LOOPS,
         outer_sweeps={

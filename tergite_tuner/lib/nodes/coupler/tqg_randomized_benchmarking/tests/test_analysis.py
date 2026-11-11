@@ -17,9 +17,10 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
-    CZRBCouplerAnalysis,
     DecayFits,
+    analyse_cz_rb,
     get_cz_fidelities,
+    plot_cz_rb,
 )
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
@@ -34,11 +35,9 @@ def test_cz_rb(session_context, node_data_dir):
     with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_rb.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            analysis = CZRBCouplerAnalysis(
-                get_coupler_dataset(dataset, "q12_q13", "cz_rb"),
-                session_context,
+            qoi = analyse_cz_rb(
+                get_coupler_dataset(dataset, "q12_q13", "cz_rb"), session_context
             )
-            qoi = analysis.analyse()
 
             cz_fidelity = qoi["cz_fidelity"].value
 
@@ -48,25 +47,17 @@ def test_cz_rb(session_context, node_data_dir):
 
 def test_plotting(session_context, node_data_dir):
     """
-    Test that the plotter produces a figure with the right number of axes
+    Test that the plot produces a figure with the right number of axes
     """
     state_file = node_data_dir / _STATE_FILENAME
     with loaded_state(session_context, state_file):
         file_path = node_data_dir / "dataset_cz_rb.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            analysis = CZRBCouplerAnalysis(
-                get_coupler_dataset(dataset, "q12_q13", "cz_rb"),
-                session_context,
+            (figure,) = plot_cz_rb(
+                analyse_cz_rb(
+                    get_coupler_dataset(dataset, "q12_q13", "cz_rb"), session_context
+                )
             )
-
-            figures_dictionary = {}
-
-            analysis.analyse()
-            analysis.plotter(figures_dictionary)
-
-            assert "q12_q13" in figures_dictionary
-
-            figure = figures_dictionary["q12_q13"][0]
 
             # one axis for the standard exponentials and one for the leakage RB exponentials
             assert len(figure.get_axes()) == 2
@@ -87,10 +78,9 @@ def test_a_decay_fitted_to_zero_fails_the_fits(
         loaded_state(session_context, node_data_dir / _STATE_FILENAME),
         xr.open_dataset(node_data_dir / "dataset_cz_rb.hdf5") as dataset,
     ):
-        analysis = CZRBCouplerAnalysis(
+        fits = analyse_cz_rb(
             get_coupler_dataset(dataset, "q12_q13", "cz_rb"), session_context
         )
-        fits = analysis.analyse()
 
     assert is_failed(fits)
 

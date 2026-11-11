@@ -1,0 +1,23 @@
+{
+  "q13/is_successful": true,
+  "q13/lda_coef_0": "376.2851574046032",
+  "q13/lda_coef_1": "-568.9113645079466",
+  "q13/lda_intercept": "12.866547954134909",
+  "q13/measure_2state_opt:acq_rotation": 56.518846705981694,
+  "q13/measure_2state_opt:acq_threshold": -0.018863337878833996,
+  "q13/measure_2state_opt:pulse_amp": 0.04259310344827586,
+  "q14/is_successful": true,
+  "q14/lda_coef_0": "-404.0541449086709",
+  "q14/lda_coef_1": "-365.596641784787",
+  "q14/lda_intercept": "14.15377823316378",
+  "q14/measure_2state_opt:acq_rotation": 137.86054607865296,
+  "q14/measure_2state_opt:acq_threshold": -0.025974798103709135,
+  "q14/measure_2state_opt:pulse_amp": 0.04259310344827586,
+  "q15/is_successful": true,
+  "q15/lda_coef_0": "-425.3268687667832",
+  "q15/lda_coef_1": "133.83931314355982",
+  "q15/lda_intercept": "3.6624240646381674",
+  "q15/measure_2state_opt:acq_rotation": 197.4674341191777,
+  "q15/measure_2state_opt:acq_threshold": -0.008213779964093839,
+  "q15/measure_2state_opt:pulse_amp": 0.03928275862068965
+}

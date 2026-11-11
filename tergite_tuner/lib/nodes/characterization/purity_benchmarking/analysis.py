@@ -11,181 +11,141 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""
-Module containing classes that model, fit and plot data from the purity benchmarking experiment.
-"""
+"""Purity benchmarking's analysis: the purity's decay per Clifford."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 import xarray as xr
 from matplotlib.axes import Axes
 
-from tergite_tuner.lib.spec import ElementAnalysis, Fit, Fits
+from tergite_tuner.lib.spec import Fit, Fits
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
+# the last points are the |0>, |1> and spare calibration points
+CALIBRATION_POINTS = 3
+CURVE_POINTS = 400
 
-class PurityBenchmarkingQubitAnalysis(ElementAnalysis):
+
+class PurityCurves(NamedTuple):
+    """The purities and the fitted decay, to plot.
+
+    Attributes:
+        cliffords: the numbers of Cliffords measured.
+        purities: each seed's purity per number of Cliffords.
+        curve_cliffords: the numbers of Cliffords the fitted curve is evaluated at.
+        curve: the fitted decay at ``curve_cliffords``.
+        best_fit: the fitted decay at ``cliffords``.
     """
-    Analysis that fits an exponential decay function to purity benchmarking data.
+
+    cliffords: np.ndarray
+    purities: list[list[float]]
+    curve_cliffords: np.ndarray
+    curve: np.ndarray
+    best_fit: np.ndarray
+
+
+def analyse_purity_benchmarking(s21: xr.DataArray, _session: "SessionContext") -> Fits:
+    """Fits an exponential decay to the purity, averaged over the seeds, against the number of Cliffords.
+
+    Each seed's shots are rotated and scaled by its |0> and |1> calibration points,
+    and each Clifford sequence's X, Y and Z measurements give its purity.
+
+    Args:
+        s21: the qubit's S21, a point per measurement and seed.
+        _session: unused; part of the ``analyse`` signature.
+
+    Returns:
+        ``purity_fidelity``, the purity's decay per Clifford, and, to plot, the
+        ``curves``.
     """
+    cliffords_coord = _find_coord(s21, "cliffords")
+    seed_coord = _find_coord(s21, "seed")
+    cliffords = np.unique(s21[cliffords_coord].values[:-CALIBRATION_POINTS])
+    normalised = [
+        _get_normalised(s21.isel({seed_coord: seed}).values.flatten())
+        for seed in range(s21.sizes[seed_coord])
+    ]
+    purities = [_get_purities(values) for values in normalised]
+    average_purity = np.sum(purities, axis=0) / len(purities)
+    logger.info(np.sum(normalised, axis=0) / len(normalised))
+    logger.info(average_purity)
 
-    def __init__(self, s21: xr.DataArray, session: "SessionContext"):
-        super().__init__(s21, session)
-        self.fit_results = {}
+    model = ExpDecayModel()
+    guess = model.guess(
+        data=average_purity,
+        m=cliffords,
+        amplitude=average_purity[0],
+        offset=average_purity[-4],
+    )
+    result = model.fit(average_purity, params=guess, m=cliffords)
+    curve_cliffords = np.linspace(cliffords[0], cliffords[-1], CURVE_POINTS)
+    curves = PurityCurves(
+        cliffords,
+        purities,
+        curve_cliffords,
+        model.eval(result.params, m=curve_cliffords),
+        result.best_fit,
+    )
+    return {
+        "purity_fidelity": Fit(result.params["p"].value, np.nan),
+        "curves": Fit(curves),
+    }
 
-    def analyse(self) -> Fits:
-        """Fits an exponential decay to the purity, averaged over the seeds, against the number of Cliffords.
 
-        Returns:
-            ``purity_fidelity``, the purity's decay per Clifford, and ``analysis``, this
-            object, to plot.
-        """
-        # Identify and store relevant coordinates and initialize data storage
-        self.number_cliffords_coord, self.seed_coord = self._identify_coords()
-        self.number_of_repetitions = self.dataset.sizes[self.seed_coord]
-        self.number_of_cliffords = np.unique(
-            self.dataset[self.number_cliffords_coord].values[:-3]
-        )
+def plot_purity_benchmarking(
+    axis: Axes, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
+) -> None:
+    """Draws each seed's purity, numbered, and the fitted decay.
 
-        self.normalized_data_dict = {}
-        self.purity_results_dict = {}
-        self.fit_n_cliffords, self.fit_y, self.fidelity, self.fit_report = (
-            None,
-            None,
-            None,
-            None,
-        )
+    Args:
+        axis: the axis to draw on.
+        _s21: unused; part of the ``plot`` signature.
+        fits: the qubit's fits; nothing is drawn if empty.
+        _session: unused; part of the ``plot`` signature.
+    """
+    if not fits:
+        return
+    curves = fits["curves"].value
+    for seed, purities in enumerate(curves.purities):
+        axis.plot(curves.cliffords, purities, alpha=0.2)
+        axis.annotate(f"{seed}", (curves.cliffords[-1], purities[-1]))
+    axis.plot(
+        curves.curve_cliffords,
+        curves.curve,
+        "ro-",
+        lw=2.5,
+        label=f"p = {fits['purity_fidelity'].value:.3f}",
+    )
+    axis.plot(curves.cliffords, curves.best_fit, ls="dashed", color="black")
+    axis.set_ylabel("Purity")
+    axis.set_xlabel("Number of Cliffords")
+    axis.grid()
 
-        # Process and normalize the purity data
-        self._process_and_normalize_data()
-        self._fit_data()
 
-        return {"purity_fidelity": Fit(self.fidelity, np.nan), "analysis": Fit(self)}
+def _find_coord(array: xr.DataArray, part: str) -> str:
+    """The array's coordinate whose name holds ``part``; recorded datasets differ in the suffix."""
+    return next(str(coord) for coord in array.coords if part in str(coord))
 
-    def _identify_coords(self):
-        """
-        Identify the coordinates related to the number of Cliffords and seed.
-        """
-        number_cliffords_coord = None
-        seed_coord = None
 
-        for coord in self.dataset.coords:
-            if "cliffords" in coord:
-                number_cliffords_coord = coord
-            elif "seed" in coord:
-                seed_coord = coord
+def _get_normalised(measurements: np.ndarray) -> np.ndarray:
+    """A seed's measurements rotated and scaled so its |0> calibration is 0 and its |1> is 1."""
+    data = measurements[:-CALIBRATION_POINTS]
+    calibration_0, calibration_1 = measurements[-3], measurements[-2]
+    rotation = np.exp(-1j * np.angle(calibration_1 - calibration_0))
+    rotated = (data - calibration_0) * rotation
+    scale = (calibration_1 * rotation - calibration_0 * rotation).real
+    return rotated.real / scale
 
-        return number_cliffords_coord, seed_coord
 
-    def _process_and_normalize_data(self):
-        """
-        Process and normalize purity data for each repetition, and calculate the purity per index.
-        """
-        for repetition_index in range(self.number_of_repetitions):
-            measurements = self._get_magnitudes(repetition_index)
-            data = measurements[:-3]  # Data excluding calibration points
-            calibration_0, calibration_1 = measurements[-3], measurements[-2]
-
-            # Normalize and rotate data
-            displacement_vector = calibration_1 - calibration_0
-            data_translated_to_zero = data - calibration_0
-
-            rotation_angle = np.angle(displacement_vector)
-            rotated_data = data_translated_to_zero * np.exp(-1j * rotation_angle)
-            rotated_0 = calibration_0 * np.exp(-1j * rotation_angle)
-            rotated_1 = calibration_1 * np.exp(-1j * rotation_angle)
-            normalization = (rotated_1 - rotated_0).real
-            normalized_data = rotated_data.real / normalization
-
-            # Calculate purity for each acquisition index
-            purity_per_index = []
-            for i in range(len(normalized_data) // 3):
-                # Extract values for the Pauli operators
-                x_1, y_1, z_1 = normalized_data[3 * i : 3 * (i + 1)]
-                x_exp = 2 * x_1 - 1
-                y_exp = 2 * y_1 - 1
-                z_exp = 2 * z_1 - 1
-
-                # Calculate purity
-                purity_per_index.append(x_exp**2 + y_exp**2 + z_exp**2)
-
-            # Store normalized data and purity results
-            self.normalized_data_dict[repetition_index] = normalized_data
-            self.purity_results_dict[repetition_index] = purity_per_index
-
-    def _get_magnitudes(self, indx):
-        magnitudes = self.S21[self.data_var].isel({self.seed_coord: indx})
-        return magnitudes.values.flatten()
-
-    def _fit_data(self):
-        """
-        Fit the exponential decay model to the averaged purity data.
-        """
-        # Calculate the average purity across all repetitions
-        sum_purity = np.sum(list(self.purity_results_dict.values()), axis=0)
-        avg_purity = sum_purity / len(self.purity_results_dict)
-
-        sum = np.sum([arr for arr in self.normalized_data_dict.values()], axis=0)
-        self.sum = sum / len(self.normalized_data_dict)
-
-        logger.info(self.sum)
-        logger.info(avg_purity)
-
-        # Initialize the exponential decay model
-        model = ExpDecayModel()
-        n_cliffords = np.array(self.number_of_cliffords)
-
-        # Generate initial parameter guesses and fit the model to the data
-        guess = model.guess(
-            data=avg_purity,
-            m=n_cliffords,
-            amplitude=avg_purity[0],
-            offset=avg_purity[-4],
-        )
-        fit_result = model.fit(avg_purity, params=guess, m=n_cliffords)
-
-        # Generate fitted values for plotting
-        self.fit_n_cliffords = np.linspace(n_cliffords[0], n_cliffords[-1], 400)
-        self.fit_y = model.eval(fit_result.params, m=self.fit_n_cliffords)
-        self.fidelity = fit_result.params["p"].value
-
-        # Store fit results and report
-        self.fit_results = fit_result
-        self.fit_report = fit_result.fit_report()
-
-    def plotter(self, ax: Axes):
-        """
-        Plot the normalized data and fitted exponential decay curve.
-
-        Args:
-            ax: the axis to draw on.
-        """
-        # Plot normalized data for each repetition with low transparency
-        for repetition_index, real_values in self.purity_results_dict.items():
-            ax.plot(self.number_of_cliffords, real_values, alpha=0.2)
-            ax.annotate(
-                f"{repetition_index}", (self.number_of_cliffords[-1], real_values[-1])
-            )
-
-        # Plot the fitted curve and add labels
-        ax.plot(
-            self.fit_n_cliffords,
-            self.fit_y,
-            "ro-",
-            lw=2.5,
-            label=f"p = {self.fidelity:.3f}",
-        )
-        ax.plot(
-            self.number_of_cliffords,
-            self.fit_results.best_fit,
-            ls="dashed",
-            color="black",
-        )
-        ax.set_ylabel("Purity")
-        ax.set_xlabel("Number of Cliffords")
-        ax.grid()
+def _get_purities(normalised: np.ndarray) -> list[float]:
+    """Each Clifford sequence's purity, from its normalised X, Y and Z measurements in turn."""
+    purities = []
+    for index in range(len(normalised) // 3):
+        x, y, z = 2 * normalised[3 * index : 3 * (index + 1)] - 1
+        purities.append(x**2 + y**2 + z**2)
+    return purities

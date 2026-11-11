@@ -18,8 +18,9 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.figure import Figure
 
-from tergite_tuner.lib.spec import CouplerAnalysis, Fits, get_fits_from_result
+from tergite_tuner.lib.spec import Fit, Fits, get_coupler_data, get_fits_from_result
 from tergite_tuner.lib.utils.analysis_models import ExpDecayModel
 from tergite_tuner.lib.utils.classification_functions import calculate_probabilities
 
@@ -42,198 +43,92 @@ class DecayFits(NamedTuple):
     curve_ideal: np.ndarray
 
 
-class CZRBCouplerAnalysis(CouplerAnalysis):
-    """Finds a coupler's CZ fidelity from two-qubit randomized benchmarking, standard and interleaved."""
+class TwoQubitDecays(NamedTuple):
+    """The two-qubit populations and their fitted decays, to plot.
 
-    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
-        super().__init__(dataset, session, **keywords)
-        self.single_model = ExpDecayModel(inverted=False)
+    Attributes:
+        p00: the probability of |00> per number of Cliffords, seed and mode.
+        chi_1: the probability of staying in the computational subspace, likewise.
+        curve_cliffords: the numbers of Cliffords the curves are evaluated at.
+        standard: the decays of the standard sequences.
+        interleaved: the decays of the sequences interleaved with the CZ, if measured.
+        nakamura_fidelity: the CZ's fidelity from the leakage and reduced ideal decays.
+        coords: the names of the ``cliffords``, ``seed`` and ``interleave``
+            coordinates.
+    """
 
-    def state_probabilities(self, c_qubit_state: int, t_qubit_state: int):
-        """The probability of a two-qubit state, as the product of each qubit's.
+    p00: xr.DataArray
+    chi_1: xr.DataArray
+    curve_cliffords: np.ndarray
+    standard: DecayFits
+    interleaved: DecayFits | None
+    nakamura_fidelity: float
+    coords: dict[str, str]
 
-        Args:
-            c_qubit_state: the control's state.
-            t_qubit_state: the target's state.
 
-        Returns:
-            The state's probability over the Clifford counts, seeds and modes.
-        """
-        c_state_probs = self.control_qubit_probabilities.sel({"state": c_qubit_state})
-        t_state_probs = self.target_qubit_probabilities.sel({"state": t_qubit_state})
-        return c_state_probs * t_state_probs
+def analyse_cz_rb(dataset: xr.Dataset, session: "SessionContext") -> Fits:
+    """Fits the decays of |00> and of the computational subspace over the number of Cliffords.
 
-    def analyse(self) -> Fits | None:
-        """Fits the decays of |00> and of the computational subspace over the number of Cliffords.
+    Args:
+        dataset: the coupler's variables, saved in real and imaginary parts.
+        session: the session, whose device state holds the discriminators.
 
-        Returns:
-            The fit ``cz_fidelity``, marked ``failed`` if it, or Nakamura's fidelity,
-            is not finite, as without interleaved sequences.
-        """
-        self._find_coords()
-        self.control_qubit_probabilities = calculate_probabilities(
-            self.control_qubit_data_var, self.session.state
-        )
-        self.target_qubit_probabilities = calculate_probabilities(
-            self.target_qubit_data_var, self.session.state
-        )
-        self.P00 = self.state_probabilities(0, 0)
-        self.P01 = self.state_probabilities(0, 1)
-        self.P10 = self.state_probabilities(1, 0)
-        self.P11 = self.state_probabilities(1, 1)
+    Returns:
+        The fit ``cz_fidelity``, marked ``failed`` if it, or Nakamura's fidelity,
+        is not finite, as without interleaved sequences, and, to plot, the
+        ``decays``.
 
-        mean_00 = self.P00.mean(self.seed_coord)
-        # the probability of staying in the computational subspace
-        mean_chi_1 = sum(
-            probabilities.mean(self.seed_coord)
-            for probabilities in (self.P00, self.P01, self.P10, self.P11)
-        )
-        self.fit_n_cliffords = np.linspace(
-            self.number_cliffords[0], self.number_cliffords[-1], CURVE_POINTS
-        )
-        self.standard = self._fit_decays(mean_00, mean_chi_1, is_interleaved=False)
-        self.interleaved = None
-        if True in self.interleave_modes:
-            self.interleaved = self._fit_decays(
-                mean_00, mean_chi_1, is_interleaved=True
-            )
+    Raises:
+        ValueError: if the dataset has a coordinate other than the Cliffords, the
+            seeds, the loops and the interleave modes.
+    """
+    data = get_coupler_data(dataset, session)
+    coords = _find_coords(data.s21)
+    control = calculate_probabilities(data.control, session.state)
+    target = calculate_probabilities(data.target, session.state)
+    populations = [
+        control.sel({"state": control_state}) * target.sel({"state": target_state})
+        for control_state, target_state in ((0, 0), (0, 1), (1, 0), (1, 1))
+    ]
+    cliffords = data.s21[coords["cliffords"]].values
+    standard, interleaved = _fit_modes(
+        populations,
+        cliffords,
+        coords,
+        is_interleaved=True in data.s21[coords["interleave"]].values,
+    )
+    cz_fidelity, nakamura_fidelity = get_cz_fidelities(standard, interleaved)
+    is_successful = bool(np.isfinite([cz_fidelity, nakamura_fidelity]).all())
+    decays = TwoQubitDecays(
+        p00=populations[0],
+        chi_1=populations[0] + populations[1] + populations[2] + populations[3],
+        curve_cliffords=np.linspace(cliffords[0], cliffords[-1], CURVE_POINTS),
+        standard=standard,
+        interleaved=interleaved,
+        nakamura_fidelity=nakamura_fidelity,
+        coords=coords,
+    )
+    analysis_result = {"cz_fidelity": {"value": cz_fidelity, "error": 0}}
+    return {
+        **get_fits_from_result(analysis_result, is_successful),
+        "decays": Fit(decays),
+    }
 
-        self.cz_fidelity, self.average_fidelity_nakamura = get_cz_fidelities(
-            self.standard, self.interleaved
-        )
-        analysis_succesful = bool(
-            np.isfinite([self.cz_fidelity, self.average_fidelity_nakamura]).all()
-        )
-        analysis_result = {"cz_fidelity": {"value": self.cz_fidelity, "error": 0}}
-        return get_fits_from_result(analysis_result, analysis_succesful)
 
-    def _find_coords(self) -> None:
-        for coord in self.S21.coords:
-            coord = str(coord)
-            if "cliffords" in coord:
-                self.number_cliffords_coord = coord
-                self.number_cliffords = self.S21[coord].values
-            elif "seed" in coord:
-                self.seed_coord = coord
-            elif "loops" in coord:
-                self.loops_coord = coord
-            elif "interleave" in coord:
-                self.interleave_modes_coord = coord
-                self.interleave_modes = self.S21[coord].values
-            else:
-                raise ValueError
+def plot_cz_rb(fits: Fits) -> list[Figure]:
+    """The |00> decays, and the leakage and reduced ideal decays.
 
-    def _fit_decays(
-        self, mean_00: xr.DataArray, mean_chi_1: xr.DataArray, is_interleaved: bool
-    ) -> DecayFits:
-        """The decays of |00>, of the computational subspace and of the reduced ideal probability, in one mode."""
-        mode = {self.interleave_modes_coord: is_interleaved}
-        mean_00 = mean_00.sel(mode)
-        mean_chi_1 = mean_chi_1.sel(mode)
-        reduced_ideal = mean_00 - mean_chi_1 / COMPUTATIONAL_SPACE_DIMENSION
-        results = [
-            self._fit_decay(data) for data in (mean_00, mean_chi_1, reduced_ideal)
-        ]
-        fit_00, fit_chi_1, fit_ideal = results
-        return DecayFits(
-            p=fit_00.params["p"].value,
-            lambda_L=fit_chi_1.params["p"].value,
-            AM=fit_chi_1.params["A"].value,
-            lambda_r=fit_ideal.params["p"].value,
-            curve_00=self._get_curve(fit_00),
-            curve_chi_1=self._get_curve(fit_chi_1),
-            curve_ideal=self._get_curve(fit_ideal),
-        )
+    Args:
+        fits: the coupler's fits.
 
-    def _fit_decay(self, data: xr.DataArray) -> Any:
-        guess = self.single_model.guess(data=data.values, m=self.number_cliffords)
-        return self.single_model.fit(data.values, params=guess, m=self.number_cliffords)
-
-    def _get_curve(self, result: Any) -> np.ndarray:
-        return self.single_model.eval(result.params, m=self.fit_n_cliffords)
-
-    def plotter(self, figures_dictionary):
-        """Draws the |00> decays, and the leakage and reduced ideal decays.
-
-        Args:
-            figures_dictionary: takes the coupler's figure, under the coupler's name.
-        """
-        figure, (decay_axis, leakage_axis) = plt.subplots(ncols=2)
-        self._plot_decays(decay_axis)
-        self._plot_leakage(leakage_axis)
-        figures_dictionary[self.coupler] = [figure]
-
-    def _plot_decays(self, axis: Any) -> None:
-        """Each seed's |00> probability and its fitted decay, interleaved dotted."""
-        styles = {
-            "x": self.number_cliffords_coord,
-            "hue": self.seed_coord,
-            "alpha": 0.2,
-        }
-        axis.plot(
-            self.fit_n_cliffords,
-            self.standard.curve_00,
-            color="red",
-            lw=3,
-            label=rf"$p_{{SRB}}$: {self.standard.p:.3f}",
-        )
-        self.P00.sel({self.interleave_modes_coord: False}).plot(ax=axis, **styles)
-        title = ""
-        if self.interleaved is not None:
-            self.P00.sel({self.interleave_modes_coord: True}).plot(
-                ax=axis, ls=":", **styles
-            )
-            axis.plot(
-                self.fit_n_cliffords,
-                self.interleaved.curve_00,
-                color="magenta",
-                lw=3,
-                label=f"$p_{{IRB}}$: {self.interleaved.p:.3f}",
-            )
-            title = rf"CZ fidelity = {self.cz_fidelity:.3f}"
-        axis.set_ylabel(r"State |00$\rangle$ probability")
-        axis.axhline(0.25, color="black")
-        axis.legend()
-        axis.set_title(title)
-
-    def _plot_leakage(self, axis: Any) -> None:
-        """Each seed's computational-subspace and reduced ideal probabilities, and Nakamura's fitted decays."""
-        styles = {
-            "x": self.number_cliffords_coord,
-            "hue": self.seed_coord,
-            "alpha": 0.2,
-        }
-        chi_1 = self.P00 + self.P01 + self.P10 + self.P11
-        modes = [(False, self.standard, "SRB", "teal", "orchid")]
-        if self.interleaved is not None:
-            modes.append((True, self.interleaved, "IRB", "orange", "aqua"))
-        for is_interleaved, *_ in modes:
-            mode = {self.interleave_modes_coord: is_interleaved}
-            chi_1.sel(mode).plot(ax=axis, **styles)
-            reduced_ideal = (
-                self.P00.sel(mode) - chi_1.sel(mode) / COMPUTATIONAL_SPACE_DIMENSION
-            )
-            reduced_ideal.plot(ax=axis, **styles)
-        for _, decays, name, chi_1_colour, _ in modes:
-            axis.plot(
-                self.fit_n_cliffords,
-                decays.curve_chi_1,
-                color=chi_1_colour,
-                lw=3,
-                label=_get_leakage_label(decays, name),
-            )
-        for _, decays, name, _, ideal_colour in modes:
-            axis.plot(
-                self.fit_n_cliffords,
-                decays.curve_ideal,
-                color=ideal_colour,
-                lw=3,
-                label=rf"$\lambda_r^{{{name}}}$: {decays.lambda_r:.4f}",
-            )
-        axis.legend()
-        axis.set_title(
-            f"CZ fidelity (Nakamura paper): {self.average_fidelity_nakamura:0.3f}"
-        )
+    Returns:
+        The coupler's one figure.
+    """
+    decays = fits["decays"].value
+    figure, (decay_axis, leakage_axis) = plt.subplots(ncols=2)
+    _plot_decays(decay_axis, decays, fits["cz_fidelity"].value)
+    _plot_leakage(leakage_axis, decays)
+    return [figure]
 
 
 def get_cz_fidelities(
@@ -276,3 +171,144 @@ def _get_leakage_label(decays: DecayFits, name: str) -> str:
 def _get_ratio(numerator: float, denominator: float) -> float:
     """``numerator / denominator``, or NaN for a standard decay fitted to zero."""
     return numerator / denominator if denominator else np.nan
+
+
+def _find_coords(s21: xr.Dataset) -> dict[str, str]:
+    """The names of the Cliffords, seed, loops and interleave mode coordinates.
+
+    Raises:
+        ValueError: if the dataset has any other coordinate.
+    """
+    coords = {}
+    for coord in s21.coords:
+        coord = str(coord)
+        for part in ("cliffords", "seed", "loops", "interleave"):
+            if part in coord:
+                coords[part] = coord
+                break
+        else:
+            raise ValueError(f"Unexpected coordinate: {coord}")
+    return coords
+
+
+def _fit_modes(
+    populations: list[xr.DataArray],
+    cliffords: np.ndarray,
+    coords: dict[str, str],
+    is_interleaved: bool,
+) -> tuple[DecayFits, DecayFits | None]:
+    """The standard sequences' decays, and the interleaved ones' if measured."""
+    model = ExpDecayModel(inverted=False)
+    curve_cliffords = np.linspace(cliffords[0], cliffords[-1], CURVE_POINTS)
+    mean_00 = populations[0].mean(coords["seed"])
+    # the probability of staying in the computational subspace
+    mean_chi_1 = sum(population.mean(coords["seed"]) for population in populations)
+    modes = (False, True) if is_interleaved else (False,)
+    fitted = [
+        _fit_decays(
+            model,
+            mean_00.sel({coords["interleave"]: mode}),
+            mean_chi_1.sel({coords["interleave"]: mode}),
+            cliffords,
+            curve_cliffords,
+        )
+        for mode in modes
+    ]
+    return fitted[0], fitted[1] if is_interleaved else None
+
+
+def _fit_decays(
+    model: ExpDecayModel,
+    mean_00: xr.DataArray,
+    mean_chi_1: xr.DataArray,
+    cliffords: np.ndarray,
+    curve_cliffords: np.ndarray,
+) -> DecayFits:
+    """The decays of |00>, of the computational subspace and of the reduced ideal probability, in one mode."""
+    reduced_ideal = mean_00 - mean_chi_1 / COMPUTATIONAL_SPACE_DIMENSION
+    results = []
+    for data in (mean_00, mean_chi_1, reduced_ideal):
+        guess = model.guess(data=data.values, m=cliffords)
+        results.append(model.fit(data.values, params=guess, m=cliffords))
+    fit_00, fit_chi_1, fit_ideal = results
+    return DecayFits(
+        p=fit_00.params["p"].value,
+        lambda_L=fit_chi_1.params["p"].value,
+        AM=fit_chi_1.params["A"].value,
+        lambda_r=fit_ideal.params["p"].value,
+        curve_00=model.eval(fit_00.params, m=curve_cliffords),
+        curve_chi_1=model.eval(fit_chi_1.params, m=curve_cliffords),
+        curve_ideal=model.eval(fit_ideal.params, m=curve_cliffords),
+    )
+
+
+def _plot_decays(axis: Any, decays: TwoQubitDecays, cz_fidelity: float) -> None:
+    """Each seed's |00> probability and its fitted decay, interleaved dotted."""
+    interleave = decays.coords["interleave"]
+    styles = {
+        "x": decays.coords["cliffords"],
+        "hue": decays.coords["seed"],
+        "alpha": 0.2,
+    }
+    axis.plot(
+        decays.curve_cliffords,
+        decays.standard.curve_00,
+        color="red",
+        lw=3,
+        label=rf"$p_{{SRB}}$: {decays.standard.p:.3f}",
+    )
+    decays.p00.sel({interleave: False}).plot(ax=axis, **styles)
+    title = ""
+    if decays.interleaved is not None:
+        decays.p00.sel({interleave: True}).plot(ax=axis, ls=":", **styles)
+        axis.plot(
+            decays.curve_cliffords,
+            decays.interleaved.curve_00,
+            color="magenta",
+            lw=3,
+            label=f"$p_{{IRB}}$: {decays.interleaved.p:.3f}",
+        )
+        title = rf"CZ fidelity = {cz_fidelity:.3f}"
+    axis.set_ylabel(r"State |00$\rangle$ probability")
+    axis.axhline(0.25, color="black")
+    axis.legend()
+    axis.set_title(title)
+
+
+def _plot_leakage(axis: Any, decays: TwoQubitDecays) -> None:
+    """Each seed's computational-subspace and reduced ideal probabilities, and Nakamura's fitted decays."""
+    interleave = decays.coords["interleave"]
+    styles = {
+        "x": decays.coords["cliffords"],
+        "hue": decays.coords["seed"],
+        "alpha": 0.2,
+    }
+    modes = [(False, decays.standard, "SRB", "teal", "orchid")]
+    if decays.interleaved is not None:
+        modes.append((True, decays.interleaved, "IRB", "orange", "aqua"))
+    for is_interleaved, *_ in modes:
+        mode = {interleave: is_interleaved}
+        decays.chi_1.sel(mode).plot(ax=axis, **styles)
+        reduced_ideal = (
+            decays.p00.sel(mode)
+            - decays.chi_1.sel(mode) / COMPUTATIONAL_SPACE_DIMENSION
+        )
+        reduced_ideal.plot(ax=axis, **styles)
+    for _, mode_decays, name, chi_1_colour, _ in modes:
+        axis.plot(
+            decays.curve_cliffords,
+            mode_decays.curve_chi_1,
+            color=chi_1_colour,
+            lw=3,
+            label=_get_leakage_label(mode_decays, name),
+        )
+    for _, mode_decays, name, _, ideal_colour in modes:
+        axis.plot(
+            decays.curve_cliffords,
+            mode_decays.curve_ideal,
+            color=ideal_colour,
+            lw=3,
+            label=rf"$\lambda_r^{{{name}}}$: {mode_decays.lambda_r:.4f}",
+        )
+    axis.legend()
+    axis.set_title(f"CZ fidelity (Nakamura paper): {decays.nakamura_fidelity:0.3f}")

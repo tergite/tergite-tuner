@@ -23,7 +23,8 @@ from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.analysis import (
     analyse_three_state_ro_amplitude,
     analyse_two_state_ro_amplitude,
-    plot_ro_amplitude,
+    plot_three_state_ro_amplitude,
+    plot_two_state_ro_amplitude,
 )
 from tergite_tuner.lib.nodes.readout.ro_amplitude_optimization.measurement import (
     ROAmplitudeOptimizationMeasurement,
@@ -144,6 +145,7 @@ def _get_spec(
     states: int,
     amplitudes: SweepFn,
     analyse: Callable[..., Fits],
+    plot: Callable[..., None],
     fields: tuple[str, ...],
 ) -> NodeSpec:
     return NodeSpec(
@@ -157,7 +159,7 @@ def _get_spec(
             "ro_amplitudes": amplitudes,
         },
         get_dummy_s21=get_dummy_s21,
-        plot=plot_ro_amplitude,
+        plot=plot,
         loops=LOOPS,
         plot_rows=3,
     )
@@ -171,6 +173,7 @@ RO_AMPLITUDE_SPECS = {
             2,
             partial(get_amplitudes, low=1 / 4, high=1.2, points=45),
             analyse_two_state_ro_amplitude,
+            plot_two_state_ro_amplitude,
             TWO_STATE_FIELDS,
         ),
         _get_spec(
@@ -178,6 +181,7 @@ RO_AMPLITUDE_SPECS = {
             3,
             partial(get_amplitudes, low=1 / 2.5, high=1.4, points=30),
             analyse_three_state_ro_amplitude,
+            plot_three_state_ro_amplitude,
             THREE_STATE_FIELDS,
         ),
         _get_spec(
@@ -185,6 +189,7 @@ RO_AMPLITUDE_SPECS = {
             3,
             get_optimal_amplitude,
             analyse_three_state_ro_amplitude,
+            plot_three_state_ro_amplitude,
             THREE_STATE_FIELDS,
         ),
     )

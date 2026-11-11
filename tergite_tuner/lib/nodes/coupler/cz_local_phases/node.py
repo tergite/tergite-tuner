@@ -21,7 +21,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.analysis import (
-    CZLocalPhasesCouplerAnalysis,
+    analyse_cz_local_phases,
+    plot_cz_local_phases,
 )
 from tergite_tuner.lib.nodes.coupler.cz_local_phases.measurement import (
     CZLocalPhasesMeasurement,
@@ -30,9 +31,8 @@ from tergite_tuner.lib.nodes.coupler.utils import get_coupler_keywords, get_rand
 from tergite_tuner.lib.spec import (
     NodeSpec,
     get_class_schedule,
-    get_coupler_analyser,
+    get_coupler_figure_saver,
     get_fixed_sweep,
-    save_coupler_figures,
 )
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -63,7 +63,7 @@ CZ_LOCAL_PHASES_SPECS = {
         name=NodeEnum.CZ_LOCAL_PHASES,
         element="coupler",
         get_schedule=get_class_schedule(CZLocalPhasesMeasurement),
-        analyse=get_coupler_analyser(CZLocalPhasesCouplerAnalysis),
+        analyse=analyse_cz_local_phases,
         qois={
             "cz_dynamic_control": "cz_dynamic_control",
             "cz_dynamic_target": "cz_dynamic_target",
@@ -77,6 +77,6 @@ CZ_LOCAL_PHASES_SPECS = {
         loops=LOOPS,
         qubit_sweeps=frozenset({"local_phases"}),
         get_schedule_keywords=get_coupler_keywords,
-        save_details=save_coupler_figures,
+        save_details=get_coupler_figure_saver(plot_cz_local_phases),
     )
 }

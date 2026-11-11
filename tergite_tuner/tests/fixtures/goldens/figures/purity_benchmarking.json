@@ -1,0 +1,307 @@
+{
+ "purity_benchmarking": {
+  "axes": [
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [
+     {
+      "alpha": 0.2,
+      "color": "#1f77b4ff",
+      "label": null,
+      "linestyle": "-",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        0.0,
+        0.9285475622995104
+       ],
+       [
+        2.0,
+        0.9129775279823472
+       ],
+       [
+        4.0,
+        0.9142630663681632
+       ],
+       [
+        8.0,
+        0.9770714860041632
+       ],
+       [
+        16.0,
+        0.902896618325568
+       ],
+       [
+        128.0,
+        0.6287426323399821
+       ],
+       [
+        256.0,
+        0.5487802236439565
+       ],
+       [
+        512.0,
+        0.14114324876081344
+       ]
+      ]
+     },
+     {
+      "alpha": null,
+      "color": "#ff0000ff",
+      "label": "p = 0.997",
+      "linestyle": "-",
+      "linewidth": 2.5,
+      "marker": "o",
+      "markersize": 6.0,
+      "xy": {
+       "columns": [
+        {
+         "max": 512.0,
+         "mean": 256.0,
+         "min": 0.0,
+         "nans": 0,
+         "std": 148.17163612191194
+        },
+        {
+         "max": 0.9444026005760315,
+         "mean": 0.4972529663230376,
+         "min": 0.21979930276060577,
+         "nans": 0,
+         "std": 0.20620385974023342
+        }
+       ],
+       "shape": [
+        400,
+        2
+       ]
+      }
+     },
+     {
+      "alpha": null,
+      "color": "#000000ff",
+      "label": null,
+      "linestyle": "--",
+      "linewidth": 1.5,
+      "marker": "None",
+      "markersize": 6.0,
+      "xy": [
+       [
+        0.0,
+        0.9444026005760315
+       ],
+       [
+        2.0,
+        0.939039815574548
+       ],
+       [
+        4.0,
+        0.9337074831183743
+       ],
+       [
+        8.0,
+        0.9231334851254596
+       ],
+       [
+        16.0,
+        0.9023433764797951
+       ],
+       [
+        128.0,
+        0.6559556214651439
+       ],
+       [
+        256.0,
+        0.45560842071569524
+       ],
+       [
+        512.0,
+        0.21979930276060577
+       ]
+      ]
+     }
+    ],
+    "patches": [],
+    "position": [
+     0.125,
+     0.10999999999999999,
+     0.775,
+     0.6666666666666666
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [
+     {
+      "color": "#000000ff",
+      "position": [
+       512.0,
+       0.14114324876081344
+      ],
+      "size": 10.0,
+      "text": "0",
+      "weight": "normal"
+     }
+    ],
+    "titles": {
+     "center": {
+      "color": "#000000ff",
+      "size": 12.0,
+      "text": "Qubit q06",
+      "weight": "normal"
+     }
+    },
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "Number of Cliffords",
+     "weight": "normal"
+    },
+    "xlim": [
+     -25.6,
+     537.6
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "Purity",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.09934683689864596,
+     1.0188678978663306
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.125,
+     0.8466666666666667,
+     0.03875000000000001,
+     0.033333333333333326
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.16375,
+     0.8466666666666667,
+     0.6975,
+     0.033333333333333326
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   },
+   {
+    "collections": [],
+    "images": [],
+    "is_axis_on": true,
+    "legend": null,
+    "lines": [],
+    "patches": [],
+    "position": [
+     0.8612500000000001,
+     0.8466666666666667,
+     0.03875000000000006,
+     0.033333333333333326
+    ],
+    "scales": [
+     "linear",
+     "linear"
+    ],
+    "texts": [],
+    "titles": {},
+    "xlabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "xlim": [
+     0.0,
+     1.0
+    ],
+    "ylabel": {
+     "color": "#000000ff",
+     "size": 10.0,
+     "text": "",
+     "weight": "normal"
+    },
+    "ylim": [
+     0.0,
+     1.0
+    ]
+   }
+  ],
+  "size": [
+   16.0,
+   16.8
+  ],
+  "texts": []
+ }
+}

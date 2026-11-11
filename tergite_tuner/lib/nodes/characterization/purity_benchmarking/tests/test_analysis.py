@@ -13,74 +13,42 @@
 
 
 import numpy as np
-import xarray as xr
-from lmfit.model import ModelResult
+import pytest
 from matplotlib.figure import Figure
 
 from tergite_tuner.config.session import SessionContext
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.analysis import (
-    PurityBenchmarkingQubitAnalysis,
+    analyse_purity_benchmarking,
+    plot_purity_benchmarking,
 )
 from tergite_tuner.tests.utils.datasets import get_s21
 
 _HDF_FILENAME = "dataset_purity_benchmarking_0.hdf5"
 
 
-def test_initialization(node_data_dir):
-    file_path = node_data_dir / _HDF_FILENAME
-    with xr.open_dataset(file_path) as dataset:
-        analysis = PurityBenchmarkingQubitAnalysis(
-            get_s21(file_path, "q06"), SessionContext()
-        )
-        analysis.analyse()
-        # Check that the analysis object has the expected attributes
-        assert hasattr(analysis, "purity_results_dict")
-        assert hasattr(analysis, "normalized_data_dict")
-
-        assert analysis.number_of_repetitions == dataset.sizes.get("seed", 1)
+@pytest.fixture
+def fits(node_data_dir):
+    return analyse_purity_benchmarking(
+        get_s21(node_data_dir / _HDF_FILENAME, "q06"), SessionContext()
+    )
 
 
-def test_run_fitting(node_data_dir):
-    file_path = node_data_dir / _HDF_FILENAME
-    with xr.open_dataset(file_path):
-        analysis = PurityBenchmarkingQubitAnalysis(
-            get_s21(file_path, "q06"), SessionContext()
-        )
-        analysis.analyse()
-        # Verify the average purity result is within the expected range
-
-        assert 0.7 < np.average(list(analysis.purity_results_dict.values())) < 0.8
-
-        # Trim the dataset to only 5 Cliffords before running the fitting so it will fit the model
-        analysis.number_of_cliffords = analysis.number_of_cliffords[:5]
-        for key in analysis.purity_results_dict.keys():
-            analysis.purity_results_dict[key] = analysis.purity_results_dict[key][:5]
-        fidelity = analysis.analyse()["purity_fidelity"].value
-
-        # Verify that the fitting results are valid
-        assert isinstance(fidelity, float)
-        assert fidelity > 0.99
-        assert 0 <= fidelity <= 1.002
-        assert isinstance(analysis.fit_results, ModelResult)
+def test_purity_decays_by_its_fitted_fidelity_per_clifford(fits):
+    assert fits["purity_fidelity"].value == pytest.approx(0.9971567106)
 
 
-def test_plotter(node_data_dir):
-    file_path = node_data_dir / _HDF_FILENAME
-    with xr.open_dataset(file_path):
-        analysis = PurityBenchmarkingQubitAnalysis(
-            get_s21(file_path, "q06"), SessionContext()
-        )
-        analysis.analyse()
+def test_purity_is_averaged_from_each_seed(fits):
+    purities = fits["curves"].value.purities
 
-        # Trim the dataset to only 5 Cliffords before plotting, same reason as above
-        analysis.number_of_cliffords = analysis.number_of_cliffords[:5]
-        for key in analysis.purity_results_dict.keys():
-            analysis.purity_results_dict[key] = analysis.purity_results_dict[key][:5]
+    assert len(purities) == 1
+    assert 0.7 < np.average(purities) < 0.8
 
-        analysis.analyse()
-        fig = Figure()
-        ax = fig.subplots()
-        analysis.plotter(ax)
 
-        # Check that three lines were plotted (data and fit)
-        assert len(ax.lines) == 3
+def test_plot_draws_the_seeds_and_the_fitted_decay(fits):
+    axis = Figure().subplots()
+
+    plot_purity_benchmarking(axis, None, fits, None)
+
+    # the seed's purities, the fitted curve and the fit at the measured points
+    assert len(axis.lines) == 3
+    assert axis.lines[1].get_label() == "p = 0.997"

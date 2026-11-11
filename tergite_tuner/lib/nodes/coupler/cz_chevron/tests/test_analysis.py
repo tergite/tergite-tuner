@@ -16,9 +16,10 @@ import pytest
 import xarray as xr
 
 from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import (
-    CZChevronCouplerAnalysis,
+    analyse_cz_chevron,
     get_chevron_leads,
     get_durations_in_ns,
+    plot_cz_chevron,
 )
 from tergite_tuner.lib.spec import is_failed
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
@@ -38,16 +39,11 @@ def test_cz_chevron_analysis_good_data(session_context, node_data_dir):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            number_of_working_points = 3
-
-            # Run the single coupler analysis
-            analysis = CZChevronCouplerAnalysis(
+            qoi = analyse_cz_chevron(
                 get_coupler_dataset(dataset, "q13_q14", "cz_chevron"),
                 session_context,
                 phase_path="via_20",
-                number_of_working_points=number_of_working_points,
             )
-            qoi = analysis.analyse()
             cz_working_frequencies = eval(qoi["cz_working_frequencies"].value)
             cz_working_durations_in_ns = eval(qoi["cz_working_durations_in_ns"].value)
 
@@ -66,13 +62,11 @@ def test_cz_chevron_analysis_bad_data(session_context, node_data_dir):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            # Run the single coupler analysis
-            analysis = CZChevronCouplerAnalysis(
+            qoi = analyse_cz_chevron(
                 get_coupler_dataset(dataset, "q14_q15", "cz_chevron"),
                 session_context,
                 phase_path="via_20",
             )
-            qoi = analysis.analyse()
 
             # Make sure that the analysis returns as unsuccessful
             assert is_failed(qoi)
@@ -84,29 +78,20 @@ def test_cz_chevron_analysis_bad_data(session_context, node_data_dir):
 )
 def test_plotting(session_context, node_data_dir):
     """
-    Test that the plotter produces a faceted figure
+    Test that the plot produces a faceted figure
     """
     state_file = node_data_dir / _STATE_FILENAME
     with loaded_state(session_context, state_file):
         # Load dataset
         file_path = node_data_dir / "dataset_cz_chevron_0.hdf5"
         with xr.open_dataset(file_path) as dataset:
-            number_of_working_points = 3
-            figures_dictionary = {}
-
-            # Run the single coupler analysis
-            analysis = CZChevronCouplerAnalysis(
-                get_coupler_dataset(dataset, "q13_q14", "cz_chevron"),
-                session_context,
-                phase_path="via_20",
-                number_of_working_points=number_of_working_points,
+            (faceted_graph_fig,) = plot_cz_chevron(
+                analyse_cz_chevron(
+                    get_coupler_dataset(dataset, "q13_q14", "cz_chevron"),
+                    session_context,
+                    phase_path="via_20",
+                )
             )
-            analysis.analyse()
-            analysis.plotter(figures_dictionary)
-
-            assert "q13_q14" in figures_dictionary
-
-            faceted_graph_fig = figures_dictionary["q13_q14"][0]
 
             # the faceted graph has 7 axis: 6 for the probabilty heatmaps and one for the colorbar
             assert len(faceted_graph_fig.get_axes()) == 7
