@@ -22,7 +22,8 @@ import numpy as np
 from scipy.stats import multivariate_normal
 
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.analysis import (
-    CZParametrizationCouplerAnalysis,
+    analyse_cz_parametrization,
+    plot_cz_parametrization,
 )
 from tergite_tuner.lib.nodes.coupler.cz_parametrization.measurement import (
     CZParametrizationMeasurement,
@@ -36,9 +37,8 @@ from tergite_tuner.lib.nodes.coupler.utils import (
 from tergite_tuner.lib.spec import (
     NodeSpec,
     get_class_schedule,
-    get_coupler_analyser,
+    get_coupler_figure_saver,
     get_fixed_sweep,
-    save_coupler_figures,
 )
 from tergite_tuner.lib.utils.classification_functions import generate_iq_shots
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -128,7 +128,7 @@ CZ_PARAMETRIZATION_SPECS = {
         name=NodeEnum.CZ_PARAMETRIZATION,
         element="coupler",
         get_schedule=get_class_schedule(CZParametrizationMeasurement),
-        analyse=get_coupler_analyser(CZParametrizationCouplerAnalysis),
+        analyse=analyse_cz_parametrization,
         get_analysis_keywords=get_analysis_keywords,
         qois={
             "cz_pulse_frequency": "cz_pulse_frequency",
@@ -143,6 +143,6 @@ CZ_PARAMETRIZATION_SPECS = {
         loops=LOOPS,
         external_sweeps={"dc_currents": get_parking_current},
         set_external=set_dc_currents,
-        save_details=save_coupler_figures,
+        save_details=get_coupler_figure_saver(plot_cz_parametrization),
     )
 }

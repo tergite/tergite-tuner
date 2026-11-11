@@ -20,7 +20,10 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import CZChevronCouplerAnalysis
+from tergite_tuner.lib.nodes.coupler.cz_chevron.analysis import (
+    analyse_cz_chevron,
+    plot_cz_chevron,
+)
 from tergite_tuner.lib.nodes.coupler.cz_chevron.measurement import CZChevronMeasurement
 from tergite_tuner.lib.nodes.coupler.utils import (
     get_coupler_value,
@@ -30,8 +33,7 @@ from tergite_tuner.lib.nodes.coupler.utils import (
 from tergite_tuner.lib.spec import (
     NodeSpec,
     get_class_schedule,
-    get_coupler_analyser,
-    save_coupler_figures,
+    get_coupler_figure_saver,
 )
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -39,7 +41,6 @@ if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
 
 LOOPS = 512 // 4
-WORKING_POINTS = 15
 
 
 def get_frequencies(coupler: str, session: "SessionContext") -> np.ndarray:
@@ -79,12 +80,9 @@ def get_analysis_keywords(coupler: str, session: "SessionContext") -> dict[str, 
         session: the session, whose device state holds the coupler's phase path.
 
     Returns:
-        The coupler's ``phase_path`` and the ``number_of_working_points``.
+        The coupler's ``phase_path``.
     """
-    return {
-        "phase_path": get_phase_path(coupler, session),
-        "number_of_working_points": WORKING_POINTS,
-    }
+    return {"phase_path": get_phase_path(coupler, session)}
 
 
 def get_dummy_s21(
@@ -108,7 +106,7 @@ CZ_CHEVRON_SPECS = {
         name=NodeEnum.CZ_CHEVRON,
         element="coupler",
         get_schedule=get_class_schedule(CZChevronMeasurement),
-        analyse=get_coupler_analyser(CZChevronCouplerAnalysis),
+        analyse=analyse_cz_chevron,
         get_analysis_keywords=get_analysis_keywords,
         qois={
             "cz_working_frequencies": "cz_working_frequencies",
@@ -118,6 +116,6 @@ CZ_CHEVRON_SPECS = {
         get_dummy_s21=get_dummy_s21,
         loops=LOOPS,
         outer_sweeps={"cz_pulse_frequencies": get_frequencies},
-        save_details=save_coupler_figures,
+        save_details=get_coupler_figure_saver(plot_cz_chevron),
     )
 }

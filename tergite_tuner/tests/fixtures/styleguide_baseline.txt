@@ -97,10 +97,6 @@ type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.__i
 type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.guess
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.single_qubit_T2_echo
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
-type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.apply_sinusoidal_slices_fit
-type-hints: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationAnalysis.calculate_probabilities
-type-hints: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.detect_peaks
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.detect_peaks
@@ -164,12 +160,10 @@ verb: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.
 verb: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
 verb: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/coupler/cz_calibration/measurement.py::CZCalibrationMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/coupler/cz_chevron/analysis.py::CZChevronCouplerAnalysis.plotter
 verb: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::CZChevronMeasurement.cz_chevron
 verb: tergite_tuner/lib/nodes/coupler/cz_chevron/measurement.py::CZChevronMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/analysis.py::CZParametrizationCouplerAnalysis.plotter
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.cz_parametrization
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter

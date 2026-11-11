@@ -85,9 +85,7 @@ RECORDED_DATASETS = {
     "cz_chevron": GoldenCase(
         NodeEnum.CZ_CHEVRON,
         "coupler/cz_chevron/tests/data/dataset_cz_chevron_0.hdf5",
-        analysis_keywords={
-            "q13_q14": {"phase_path": "via_20", "number_of_working_points": 3}
-        },
+        analysis_keywords={"q13_q14": {"phase_path": "via_20"}},
     ),
     "cz_local_phases": GoldenCase(
         NodeEnum.CZ_LOCAL_PHASES,
