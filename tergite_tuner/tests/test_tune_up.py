@@ -10,9 +10,13 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import dataclasses
+from unittest.mock import Mock
 
 import pytest
 
+from tergite_tuner.backend.spi import SpiDAC
+from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.runs import DEFAULT_NODES, run_dummy_node
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -47,3 +51,62 @@ def test_unkept_data_files_delete_only_the_runs_folder(
     )
 
     assert sorted(data_dir.rglob("*")) == [earlier_file.parent, earlier_file]
+
+
+def test_a_failed_measurement_resets_its_external_settings(
+    session_context, tmp_path, monkeypatch
+):
+    """An external setting, such as a coupler's DC current, is left as the last point
+    set it otherwise"""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "tergite_tuner.lib.run.run_schedule", Mock(side_effect=TimeoutError("cluster"))
+    )
+    reset_external = Mock()
+    spec = dataclasses.replace(
+        DEFAULT_NODE_SPECS[NodeEnum.T1], reset_external=reset_external
+    )
+    session = session_context.model_copy(update={"node_specs": {NodeEnum.T1: spec}})
+
+    with pytest.raises(TimeoutError):
+        run_dummy_node(NodeEnum.T1, session, tmp_path)
+
+    reset_external.assert_called_once()
+
+
+def test_unkept_data_files_of_a_failed_run_are_deleted(
+    session_context, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "tergite_tuner.lib.run.run_schedule", Mock(side_effect=TimeoutError("cluster"))
+    )
+    data_dir = tmp_path / "out"
+
+    with pytest.raises(TimeoutError):
+        run_dummy_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY,
+            session_context,
+            data_dir,
+            keep_data_files=False,
+        )
+
+    assert list(data_dir.rglob("*")) == []
+
+
+@pytest.mark.parametrize(
+    "node",
+    [NodeEnum.RESONATOR_SPECTROSCOPY_VS_CURRENT, NodeEnum.COUPLER_ANTICROSSING],
+    ids=lambda node: node.value,
+)
+def test_a_recalibration_leaves_the_couplers_currents_as_they_are(
+    node, session_context, tmp_path, monkeypatch
+):
+    """A recalibration sets no current, so the couplers stay at their parking currents"""
+    monkeypatch.chdir(tmp_path)
+    set_dac_current = Mock()
+    monkeypatch.setattr(SpiDAC, "set_dac_current", set_dac_current)
+
+    run_dummy_node(node, session_context, tmp_path)
+
+    set_dac_current.assert_not_called()

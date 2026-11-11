@@ -80,8 +80,11 @@ def set_dc_currents(
 
 
 def reset_dc_currents(hardware: "Hardware") -> None:
-    logger.info("Final Operation")
-    hardware.spi.set_dac_current(dict.fromkeys(hardware.spi.dacs_dictionary, 0))
+    """Sets every coupler's current to 0 after a sweep of currents, unless recalibrating,
+    which sets none and leaves them at their parking currents."""
+    if not hardware.session.is_recalibration:
+        logger.info("Final Operation")
+        hardware.spi.set_dac_current(dict.fromkeys(hardware.spi.dacs_dictionary, 0))
 
 
 def get_random_shots(
