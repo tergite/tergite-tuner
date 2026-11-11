@@ -103,9 +103,6 @@ tergite_tuner/lib/nodes/__init__.py: UP006 Use `tuple` instead of `Tuple` for ty
 tergite_tuner/lib/nodes/__init__.py: UP035 Import from `collections.abc` instead: `Mapping`
 tergite_tuner/lib/nodes/__init__.py: UP035 `typing.Tuple` is deprecated, use `tuple` instead
 tergite_tuner/lib/nodes/characterization/all_xy/measurement.py: ARG002 Unused method argument: `XY_index`
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/analysis.py: C416 Unnecessary list comprehension (rewrite using `list()`)
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
-tergite_tuner/lib/nodes/characterization/purity_benchmarking/tests/test_analysis.py: SIM118 Use `key in dict` instead of `key in dict.keys()`
 tergite_tuner/lib/nodes/characterization/randomized_benchmarking/tests/test_measurement.py: E713 Test for membership should be `not in`
 tergite_tuner/lib/nodes/characterization/t2/analysis.py: SIM910 Use `kws.get("x")` instead of `kws.get("x", None)`
 tergite_tuner/lib/nodes/coupler/cz_calibration/analysis.py: B905 `zip()` without an explicit `strict=` parameter

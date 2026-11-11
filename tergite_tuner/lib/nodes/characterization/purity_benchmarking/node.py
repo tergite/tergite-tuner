@@ -19,17 +19,13 @@ import numpy as np
 
 from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.analysis import (
-    PurityBenchmarkingQubitAnalysis,
+    analyse_purity_benchmarking,
+    plot_purity_benchmarking,
 )
 from tergite_tuner.lib.nodes.characterization.purity_benchmarking.measurement import (
     PurityBenchmarkingMeasurement,
 )
-from tergite_tuner.lib.spec import (
-    NodeSpec,
-    get_class_analyser,
-    get_fixed_sweep,
-    plot_class_analysis,
-)
+from tergite_tuner.lib.spec import NodeSpec, get_fixed_sweep
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
 if TYPE_CHECKING:
@@ -91,11 +87,11 @@ PURITY_BENCHMARKING_SPECS = {
         name=NodeEnum.PURITY_BENCHMARKING,
         element="qubit",
         get_schedule=get_schedule,
-        analyse=get_class_analyser(PurityBenchmarkingQubitAnalysis),
+        analyse=analyse_purity_benchmarking,
         qois={"purity_fidelity": "purity_fidelity"},
         sweeps={"number_of_cliffords": get_fixed_sweep(CLIFFORDS)},
         get_dummy_s21=get_dummy_s21,
-        plot=plot_class_analysis,
+        plot=plot_purity_benchmarking,
         schedule_keywords={"repetitions": REPETITIONS},
         outer_sweeps={"seeds": get_fixed_sweep(np.arange(SEEDS, dtype=np.int32))},
     )

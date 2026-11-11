@@ -290,35 +290,6 @@ def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
     return get_schedule
 
 
-def get_class_analyser(
-    analysis_cls: type[ElementAnalysis],
-) -> Callable[[xr.DataArray, "SessionContext"], Fits | None]:
-    """An ``analyse`` that builds an ``analysis_cls`` for the element and runs it.
-
-    Args:
-        analysis_cls: the element analysis to run.
-
-    Returns:
-        A ``NodeSpec.analyse`` taking the element's S21 and the session.
-    """
-    return lambda s21, session: analysis_cls(s21, session).analyse()
-
-
-def plot_class_analysis(
-    axis: Any, _s21: xr.DataArray, fits: Fits, _session: "SessionContext"
-) -> None:
-    """A ``plot`` for the analysis object an ``ElementAnalysis`` puts in its fits.
-
-    Args:
-        axis: the axis to draw on.
-        _s21: unused; part of the ``plot`` signature.
-        fits: the element's fits, whose ``analysis`` draws itself; nothing is drawn if empty.
-        _session: unused; part of the ``plot`` signature.
-    """
-    if fits:
-        fits["analysis"].value.plotter(axis)
-
-
 def get_fixed_sweep(values: np.ndarray) -> SweepFn:
     """A sweep over the same ``values`` for every element.
 
