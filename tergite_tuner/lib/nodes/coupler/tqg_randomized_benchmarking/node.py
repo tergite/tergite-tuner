@@ -21,7 +21,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.analysis import (
-    CZRBCouplerAnalysis,
+    analyse_cz_rb,
+    plot_cz_rb,
 )
 from tergite_tuner.lib.nodes.coupler.tqg_randomized_benchmarking.measurement import (
     CZRBMeasurement,
@@ -30,9 +31,8 @@ from tergite_tuner.lib.nodes.coupler.utils import get_coupler_keywords, get_rand
 from tergite_tuner.lib.spec import (
     NodeSpec,
     get_class_schedule,
-    get_coupler_analyser,
+    get_coupler_figure_saver,
     get_fixed_sweep,
-    save_coupler_figures,
 )
 from tergite_tuner.utils.types.node_enum import NodeEnum
 
@@ -65,7 +65,7 @@ CZ_RB_SPECS = {
         name=NodeEnum.CZ_RB,
         element="coupler",
         get_schedule=get_class_schedule(CZRBMeasurement),
-        analyse=get_coupler_analyser(CZRBCouplerAnalysis),
+        analyse=analyse_cz_rb,
         qois={"cz_fidelity": "cz_fidelity"},
         sweeps={
             "number_of_cliffords": get_fixed_sweep(CLIFFORDS),
@@ -75,6 +75,6 @@ CZ_RB_SPECS = {
         loops=LOOPS,
         outer_sweeps={"seeds": get_fixed_sweep(np.arange(SEEDS, dtype=np.int32))},
         get_schedule_keywords=get_coupler_keywords,
-        save_details=save_coupler_figures,
+        save_details=get_coupler_figure_saver(plot_cz_rb),
     )
 }

@@ -101,8 +101,6 @@ type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnt
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.detect_peaks
 type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.align_cliffords.pad_operations
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
@@ -168,8 +166,6 @@ verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParam
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
 verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.plotter
-verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/analysis.py::CZRBCouplerAnalysis.state_probabilities
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::MotzoiParameterMeasurement.schedule_function
