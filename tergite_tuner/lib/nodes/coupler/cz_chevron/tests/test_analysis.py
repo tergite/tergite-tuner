@@ -78,7 +78,7 @@ def test_cz_chevron_analysis_bad_data(session_context, node_data_dir):
 )
 def test_plotting(session_context, node_data_dir):
     """
-    Test that the plotter produces a faceted figure
+    Test that the plot produces a faceted figure
     """
     state_file = node_data_dir / _STATE_FILENAME
     with loaded_state(session_context, state_file):

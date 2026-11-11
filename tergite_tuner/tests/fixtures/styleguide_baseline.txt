@@ -97,13 +97,7 @@ type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.__i
 type-hints: tergite_tuner/lib/nodes/characterization/t2/analysis.py::T2Model.guess
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2EchoMeasurement.single_qubit_T2_echo
 type-hints: tergite_tuner/lib/nodes/characterization/t2/measurement.py::T2Measurement.single_qubit_T2
-type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.detect_peaks
-type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
-type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.detect_peaks
-type-hints: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
 type-hints: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.align_cliffords.pad_operations
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.__init__
-type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/analysis.py::QubitSpectroscopyMaxThresholdQubitAnalysis.process_qubit
 type-hints: tergite_tuner/lib/nodes/qubit_control/spectroscopy/measurement.py::TwoTonesMultidimMeasurement.__init__
 type-hints: tergite_tuner/lib/nodes/readout/punchout/measurement.py::PunchoutMeasurement.__init__
 type-hints: tergite_tuner/lib/nodes/readout/resonator_spectroscopy/measurement.py::ResonatorSpectroscopyMeasurement.__init__
@@ -164,8 +158,6 @@ verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPha
 verb: tergite_tuner/lib/nodes/coupler/cz_local_phases/measurement.py::CZLocalPhasesMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.cz_parametrization
 verb: tergite_tuner/lib/nodes/coupler/cz_parametrization/measurement.py::CZParametrizationMeasurement.schedule_function
-verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::CouplerAnticrossingAnalysis.plotter
-verb: tergite_tuner/lib/nodes/coupler/spectroscopy/analysis.py::ResonatorSpectroscopyVsCurrentCouplerAnalysis.plotter
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.ro_shot
 verb: tergite_tuner/lib/nodes/coupler/tqg_randomized_benchmarking/measurement.py::CZRBMeasurement.schedule_function
 verb: tergite_tuner/lib/nodes/qubit_control/motzoi_parameter/measurement.py::MotzoiParameterMeasurement.schedule_function

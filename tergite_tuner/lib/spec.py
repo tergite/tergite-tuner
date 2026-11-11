@@ -133,45 +133,6 @@ class NodeSpec:
     ) = None
 
 
-class CouplerAnalysis:
-    """Base of the coupler analyses: one coupler's variables, saved in real and imaginary parts.
-
-    ``keywords`` become attributes, as the node's analysis keywords for the coupler.
-    """
-
-    def __init__(self, dataset: xr.Dataset, session: "SessionContext", **keywords: Any):
-        self.session = session
-        self.name = dataset.attrs["node"]
-        self.coupler = dataset.attrs["coupler"]
-        self.control_qubit, self.target_qubit = (
-            session.device_config.get_control_target_qubit_pair_by_coupler(self.coupler)
-        )
-        self.dataset = dataset
-        self.coord = dataset.coords
-        self.data_var = list(dataset.data_vars)[0]
-        self.S21 = dataset.isel(ReIm=0) + 1j * dataset.isel(ReIm=1)
-        for var in self.S21.data_vars:
-            self.S21[var].attrs = dataset[var].attrs
-        self.magnitudes = np.abs(self.S21)
-        for var in self.S21.data_vars.values():
-            if var.attrs["qubit"] == self.control_qubit:
-                self.control_qubit_data_var = var
-            elif var.attrs["qubit"] == self.target_qubit:
-                self.target_qubit_data_var = var
-            else:
-                raise ValueError("No control or target qubits")
-        for name, value in keywords.items():
-            setattr(self, name, value)
-
-    def analyse(self) -> Fits | None:
-        """Fits the coupler's dataset.
-
-        Returns:
-            The coupler's fits, or None if its analysis failed.
-        """
-        raise NotImplementedError
-
-
 def get_fits_from_result(
     result: Mapping[str, Mapping[str, Any]], is_successful: bool
 ) -> Fits | None:
@@ -202,38 +163,6 @@ def is_failed(fits: Fits | None) -> bool:
         True if the analysis failed.
     """
     return fits is None or "failed" in fits
-
-
-def get_coupler_analyser(
-    analysis_cls: type[CouplerAnalysis],
-) -> Callable[..., Fits | None]:
-    """An ``analyse`` that builds an ``analysis_cls`` for the coupler and keeps its figures in the fits.
-
-    The figures are drawn here so the analysis, as large as the dataset, is freed before they are saved.
-
-    Args:
-        analysis_cls: the coupler analysis to run.
-
-    Returns:
-        A ``NodeSpec.analyse`` taking the coupler's dataset, the session and its
-        analysis keywords.
-    """
-
-    def analyse(
-        dataset: xr.Dataset, session: "SessionContext", **keywords: Any
-    ) -> Fits | None:
-        analysis = analysis_cls(dataset, session, **keywords)
-        fits = analysis.analyse()
-        if fits is None:
-            return None
-        figures = {}
-        analysis.plotter(figures_dictionary=figures)
-        for figure in figures.get(analysis.coupler, []):
-            # out of pyplot's registry, so a run that saves no plots does not keep them open
-            plt.close(figure)
-        return {**fits, "figures": Fit(figures.get(analysis.coupler, []))}
-
-    return analyse
 
 
 def get_coupler_data(dataset: xr.Dataset, session: "SessionContext") -> CouplerData:
@@ -301,27 +230,6 @@ def get_coupler_figure_saver(
             plt.close(figure)
 
     return save
-
-
-def save_coupler_figures(
-    dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
-) -> None:
-    """Saves the figures in the fits as ``<node>_<coupler>_<index>_preview.png``.
-
-    Args:
-        dataset: the coupler's dataset, which names the node and the coupler.
-        fits: the coupler's fits, whose ``figures`` are saved; nothing is saved if empty.
-        data_path: the node's data folder.
-        _session: unused; part of the ``save_details`` signature.
-    """
-    if not fits:
-        return
-    _save_figures(
-        fits["figures"].value,
-        dataset.attrs["node"],
-        dataset.attrs["coupler"],
-        data_path,
-    )
 
 
 def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:

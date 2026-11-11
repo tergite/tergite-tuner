@@ -11,6 +11,10 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 - Added goldens of what each node's saved figures draw for its recorded dataset, checked by `test_figure_goldens.py`: each axis's artists, labels, limits, colours and sizes, where the reanalysis goldens pin only the stored values
 
+### Changed
+
+- [BREAKING] Changed every node's analysis to a function that returns its fits and what its plot draws, removing `ElementAnalysis`, `CouplerAnalysis`, `get_class_analyser`, `get_coupler_analyser`, `plot_class_analysis` and `save_coupler_figures`; a coupler node's figures are drawn from its fits by `get_coupler_figure_saver` as they are saved, so a run with `save_plot` off no longer draws them
+
 ### Fixed
 
 - Fixed CZ chevron keeping a working point whose sine fit stopped unconverged at lmfit's 10,000 evaluations: where it stopped differed from run to run, so the recorded q13_q14 chevron's last point came out as 284 ns, near 0 ns or not at all; such fits are now rejected

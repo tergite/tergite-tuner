@@ -17,7 +17,8 @@ import xarray as xr
 from matplotlib import pyplot as plt
 
 from tergite_tuner.lib.nodes.coupler.spectroscopy.analysis import (
-    ResonatorSpectroscopyVsCurrentCouplerAnalysis,
+    analyse_resonator_spectroscopy_vs_current,
+    plot_resonator_spectroscopy_vs_current,
 )
 from tergite_tuner.tests.utils.datasets import get_coupler_dataset
 
@@ -55,15 +56,12 @@ def test_get_crossings(
     with xr.open_dataset(dataset_path) as ds:
         ds = xr.merge(ds[var] for var in [f"y{q1}", f"y{q2}"])
         ds.attrs["coupler"] = coupler
-        a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        qoi = analyse_resonator_spectroscopy_vs_current(
             get_coupler_dataset(ds, coupler, "name"), session_context
         )
-        qoi = a.analyse()
 
-        q1_crossings = _get_crossing_for_qubit(qoi, q1)
-        q2_crossings = _get_crossing_for_qubit(qoi, q2)
-        assert q1_crossings == pytest.approx(q1_crossings, abs=1e-6)
-        assert q2_crossings == pytest.approx(q2_crossings, abs=1e-6)
+        assert _get_crossing_for_qubit(qoi, q1) == pytest.approx(q1_crossings, abs=1e-6)
+        assert _get_crossing_for_qubit(qoi, q2) == pytest.approx(q2_crossings, abs=1e-6)
 
 
 def test_coupler_plot_is_created(node_data_dir, session_context):
@@ -73,18 +71,14 @@ def test_coupler_plot_is_created(node_data_dir, session_context):
         coupler = "q06_q07"
         ds = xr.merge(ds[var] for var in ["yq06", "yq07"])
         ds.attrs["coupler"] = coupler
-        a = ResonatorSpectroscopyVsCurrentCouplerAnalysis(
+        qoi = analyse_resonator_spectroscopy_vs_current(
             get_coupler_dataset(ds, coupler, "name"), session_context
         )
-        a.analyse()
 
         figure_path = node_data_dir / "name.png"
         figure_path.unlink(missing_ok=True)
 
-        figures_dictionary = {}
-        a.plotter(figures_dictionary)
-        fig_list = figures_dictionary[coupler]
-        fig = fig_list[0]
+        (fig,) = plot_resonator_spectroscopy_vs_current(qoi)
         fig.savefig(figure_path)
         plt.close()
 

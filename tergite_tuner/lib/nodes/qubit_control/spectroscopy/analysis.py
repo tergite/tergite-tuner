@@ -13,10 +13,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""
-Module containing classes that model, fit and plot data
-from a qubit (two tone) spectroscopy experiment.
-"""
+"""Qubit (two-tone) spectroscopy's analysis: the qubit's frequency at the amplitude that shows it best."""
 
 from typing import TYPE_CHECKING
 
@@ -25,57 +22,9 @@ import xarray as xr
 from matplotlib.axes import Axes
 
 from tergite_tuner.lib.spec import Fit, Fits, get_coord_name
-from tergite_tuner.utils.logging import logger
 
 if TYPE_CHECKING:
     from tergite_tuner.config.session import SessionContext
-
-# TODO: this is flagged for removal
-
-
-class QubitSpectroscopyMaxThresholdQubitAnalysis:
-    """
-    Analysis that finds the maximum value in qubit spectroscopy data.
-    """
-
-    SIGNIFICANCE_THRESHOLD = 2.7
-
-    # TODO: this is not necessary. Repace with scipy,find_peaks prominence
-
-    def __init__(self, qubit_specs_dataarray):
-        self.qubit_specs_dataarray = qubit_specs_dataarray
-
-    def process_qubit(self):
-        """The frequency of the spectroscopy's maximum, if it stands out from the rest.
-
-        Returns:
-            The frequency, or NaN if the maximum is less than
-            ``SIGNIFICANCE_THRESHOLD`` standard deviations above the mean.
-        """
-        for coord in self.qubit_specs_dataarray:
-            if "frequencies" in coord:
-                self.frequencies_coord = coord
-                self.frequencies = self.qubit_specs_dataarray[
-                    self.frequencies_coord
-                ].values
-
-        self.max_value = self.qubit_specs_dataarray.max()
-
-        mean_value = self.qubit_specs_dataarray.mean().item()
-        std_value = self.qubit_specs_dataarray.std().item()
-
-        self.max_significance = abs((self.max_value - mean_value) / std_value)
-
-        if self.max_significance < self.SIGNIFICANCE_THRESHOLD:
-            logger.warning(
-                "This spectroscopy doeas not have a proper maximum, it is ok if this is in a transition region in the coupler spectroscopy"
-            )
-            self.freq = np.nan
-        else:
-            self.freq = self.qubit_specs_dataarray.idxmax().item()
-        self.uncertainty = None
-
-        return self.freq
 
 
 def analyse_qubit_spectroscopy(
