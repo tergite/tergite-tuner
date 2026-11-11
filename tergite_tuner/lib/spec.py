@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 
 from tergite_tuner.backend import ExtendedTransmon, Schedule
 from tergite_tuner.utils.types.node_enum import NodeEnum
@@ -44,6 +45,26 @@ class Fit(NamedTuple):
 
 
 Fits = Mapping[str, Fit]
+
+
+class CouplerData(NamedTuple):
+    """One coupler's dataset, as the coupler analyses read it.
+
+    Attributes:
+        coupler: the coupler.
+        control_qubit: the coupler's control qubit.
+        target_qubit: the coupler's target qubit.
+        s21: both qubits' complex S21, a variable each.
+        control: the control qubit's complex S21.
+        target: the target qubit's complex S21.
+    """
+
+    coupler: str
+    control_qubit: str
+    target_qubit: str
+    s21: xr.Dataset
+    control: xr.DataArray
+    target: xr.DataArray
 
 
 @dataclass(frozen=True)
@@ -215,6 +236,73 @@ def get_coupler_analyser(
     return analyse
 
 
+def get_coupler_data(dataset: xr.Dataset, session: "SessionContext") -> CouplerData:
+    """A coupler's dataset, saved in real and imaginary parts, as complex S21 per qubit.
+
+    Args:
+        dataset: the coupler's variables, which name the coupler.
+        session: the session, whose device config names the coupler's control and
+            target qubits.
+
+    Returns:
+        The coupler's data.
+
+    Raises:
+        ValueError: if a variable is of neither of the coupler's qubits.
+    """
+    coupler = dataset.attrs["coupler"]
+    control_qubit, target_qubit = (
+        session.device_config.get_control_target_qubit_pair_by_coupler(coupler)
+    )
+    s21 = dataset.isel(ReIm=0) + 1j * dataset.isel(ReIm=1)
+    for var in s21.data_vars:
+        s21[var].attrs = dataset[var].attrs
+    variables = {}
+    for var in s21.data_vars.values():
+        if var.attrs["qubit"] not in (control_qubit, target_qubit):
+            raise ValueError("No control or target qubits")
+        variables[var.attrs["qubit"]] = var
+    return CouplerData(
+        coupler,
+        control_qubit,
+        target_qubit,
+        s21,
+        variables[control_qubit],
+        variables[target_qubit],
+    )
+
+
+def get_coupler_figure_saver(
+    draw: Callable[[Fits], list[Figure]],
+) -> Callable[[xr.Dataset, Fits, Path, "SessionContext"], None]:
+    """A ``save_details`` that draws a coupler's figures from its fits and saves them.
+
+    Each figure is saved as ``<node>_<coupler>_<index>_preview.png``, then closed.
+
+    Args:
+        draw: the coupler's figures, given its fits.
+
+    Returns:
+        A ``NodeSpec.save_details`` taking the coupler's dataset, which names the node
+        and the coupler, its fits, the node's data folder and the session; it saves
+        nothing if the fits are empty.
+    """
+
+    def save(
+        dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
+    ) -> None:
+        if not fits:
+            return
+        figures = draw(fits)
+        _save_figures(
+            figures, dataset.attrs["node"], dataset.attrs["coupler"], data_path
+        )
+        for figure in figures:
+            plt.close(figure)
+
+    return save
+
+
 def save_coupler_figures(
     dataset: xr.Dataset, fits: Fits, data_path: Path, _session: "SessionContext"
 ) -> None:
@@ -228,20 +316,12 @@ def save_coupler_figures(
     """
     if not fits:
         return
-    name, coupler = dataset.attrs["node"], dataset.attrs["coupler"]
-    for index, figure in enumerate(fits["figures"].value):
-        geometry = figure.axes[0].get_gridspec().get_geometry()
-        nrows, ncols = geometry
-        if geometry == (2, 3):
-            figure.set_size_inches(14, 9)
-        elif geometry == (1, 1):
-            figure.set_size_inches(9, 6)
-        elif geometry == (1, 2):
-            figure.set_size_inches(12, 8)
-        else:
-            figure.set_size_inches(ncols * 6, nrows * 4)
-        path = data_path / f"{name}_{coupler}_{index}_preview.png"
-        figure.savefig(path, bbox_inches="tight", dpi=100)
+    _save_figures(
+        fits["figures"].value,
+        dataset.attrs["node"],
+        dataset.attrs["coupler"],
+        data_path,
+    )
 
 
 def get_class_schedule(measurement_cls: type) -> Callable[..., Schedule]:
@@ -312,3 +392,22 @@ def get_coord_name(quantity: str, element: str) -> str:
         The coordinate's name, such as ``mw_amplitudesq00``.
     """
     return f"{quantity}{element}"
+
+
+def _save_figures(
+    figures: list[Figure], name: str, coupler: str, data_path: Path
+) -> None:
+    """Saves a coupler's figures as ``<node>_<coupler>_<index>_preview.png``, sized by their grid."""
+    for index, figure in enumerate(figures):
+        geometry = figure.axes[0].get_gridspec().get_geometry()
+        nrows, ncols = geometry
+        if geometry == (2, 3):
+            figure.set_size_inches(14, 9)
+        elif geometry == (1, 1):
+            figure.set_size_inches(9, 6)
+        elif geometry == (1, 2):
+            figure.set_size_inches(12, 8)
+        else:
+            figure.set_size_inches(ncols * 6, nrows * 4)
+        path = data_path / f"{name}_{coupler}_{index}_preview.png"
+        figure.savefig(path, bbox_inches="tight", dpi=100)
