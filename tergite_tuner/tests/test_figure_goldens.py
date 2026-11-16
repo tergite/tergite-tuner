@@ -40,9 +40,10 @@ from tergite_tuner.tests.utils.state import loaded_state
 GOLDENS_DIR = Path(get_fixture_path("goldens", "figures"))
 # the resonator fits these figures draw differ between macOS's Accelerate and Linux's
 # OpenBLAS: their frequencies by ~1e-6, their curves by up to 1.4% and the spread of
-# their frequencies over the currents by up to 0.7%; the artists and labels stay exact
+# their frequencies over the currents by up to 0.7%, and between Linux runners the standard
+# run's curves by over 0.1%; the artists and labels stay exact
 LOOSE_TOLERANCES = {
-    "standard_run_resonator_spectroscopy": 1e-3,
+    "standard_run_resonator_spectroscopy": 5e-3,
     "punchout": 2e-2,
     "resonator_spectroscopy_vs_current": 2e-2,
 }
