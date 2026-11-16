@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from qblox_instruments import Cluster
 from qblox_instruments.types import ClusterType
 from qcodes.instrument import Instrument
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
@@ -42,15 +43,18 @@ COORDINATOR_NAME = "lab_ic"
 
 
 class Hardware:
-    """The cluster the nodes measure on, its instrument coordinator and, for couplers, the SPI rack.
+    """The cluster the nodes measure on, its instrument coordinator, for couplers the SPI rack,
+    and the caller's quantum device, if any, whose elements the nodes run on.
 
-    A cluster or coordinator passed in belongs to the caller: it is used as is, never reset
-    and never closed. One the tuner opens itself is closed by :meth:`close`.
+    A cluster, coordinator or quantum device passed in belongs to the caller: it is used as
+    is, never reset and never closed. One the tuner opens itself is closed by :meth:`close`.
 
     Args:
         session: the session whose cluster config, mode and attenuations to use.
         cluster: an already-connected cluster to measure on, instead of opening one.
         coordinator: an instrument coordinator that already holds ``cluster``'s component.
+        quantum_device: the caller's quantum device, whose elements each node sets from the
+            session's state while it runs and sets back afterwards.
 
     Raises:
         InstrumentNameTakenError: the tuner would open a cluster or coordinator whose name
@@ -63,8 +67,10 @@ class Hardware:
         session: "SessionContext",
         cluster: Cluster | None = None,
         coordinator: InstrumentCoordinator | None = None,
+        quantum_device: QuantumDevice | None = None,
     ) -> None:
         self.session = session
+        self.quantum_device = quantum_device
         self.is_cluster_owned = cluster is None
         self.is_coordinator_owned = coordinator is None
         self.cluster = cluster

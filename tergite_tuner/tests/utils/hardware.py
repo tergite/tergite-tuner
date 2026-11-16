@@ -16,6 +16,12 @@ from contextlib import contextmanager
 from qblox_instruments import Cluster
 from qblox_instruments.types import ClusterType
 
+from tergite_tuner.backend import (
+    ExtendedCompositeSquareEdge,
+    ExtendedTransmon,
+    QuantumDevice,
+)
+
 
 @contextmanager
 def open_dummy_cluster(session):
@@ -38,3 +44,20 @@ def open_dummy_cluster(session):
 def get_cluster_name(session):
     """The name of the session's first cluster."""
     return next(iter(session.cluster_config.hardware_description))
+
+
+@contextmanager
+def open_host_device(qubits, couplers, transmon_type=ExtendedTransmon):
+    """A quantum device of the qubits and couplers, built as a caller would; closed on exit."""
+    device = QuantumDevice("host")
+    transmons = [transmon_type(qubit) for qubit in qubits]
+    edges = [ExtendedCompositeSquareEdge(*coupler.split("_")) for coupler in couplers]
+    for transmon in transmons:
+        device.add_element(transmon)
+    for edge in edges:
+        device.add_edge(edge)
+    try:
+        yield device
+    finally:
+        for instrument in [*edges, *transmons, device]:
+            instrument.close()

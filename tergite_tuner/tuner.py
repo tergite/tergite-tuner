@@ -25,7 +25,12 @@ from typing import Any, List, Optional, Tuple, TypeVar, Union, Unpack
 import networkx as nx
 
 from tergite_tuner import read_result
-from tergite_tuner.backend import Cluster, Hardware, InstrumentCoordinator
+from tergite_tuner.backend import (
+    Cluster,
+    Hardware,
+    InstrumentCoordinator,
+    QuantumDevice,
+)
 from tergite_tuner.config.session import SessionContext, SessionOptions
 from tergite_tuner.export import CalibrationResults
 from tergite_tuner.lib import run
@@ -152,6 +157,7 @@ def run_node(
     keep_data_files: bool = True,
     cluster: Cluster | None = None,
     coordinator: InstrumentCoordinator | None = None,
+    quantum_device: QuantumDevice | None = None,
     **session_options: Unpack[SessionOptions],
 ) -> Tuple[SessionContext, CalibrationResults]:
     """Run only one node in the calibration sequence
@@ -165,6 +171,10 @@ def run_node(
         cluster: an already-connected cluster to measure on; the tuner neither resets nor
             closes it. Without one, the tuner opens the session's cluster and closes it when done.
         coordinator: an instrument coordinator holding ``cluster``'s component, to run on.
+        quantum_device: the caller's quantum device, whose ``ExtendedTransmon`` and
+            ``ExtendedCompositeSquareEdge`` elements, or subclasses, the nodes run on. Each node
+            sets them from the session's state and sets them back when it ends; the tuner
+            never closes them. Without one, the tuner builds and closes its own elements.
         **session_options: Optional session options
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
 
@@ -182,6 +192,7 @@ def run_node(
         keep_data_files=keep_data_files,
         cluster=cluster,
         coordinator=coordinator,
+        quantum_device=quantum_device,
     )
     return session, read_result(session)
 
@@ -193,6 +204,7 @@ def tune_device(
     keep_data_files: bool = True,
     cluster: Cluster | None = None,
     coordinator: InstrumentCoordinator | None = None,
+    quantum_device: QuantumDevice | None = None,
     **session_options: Unpack[SessionOptions],
 ) -> Tuple[SessionContext, CalibrationResults]:
     """Run the full calibration pipeline up to ``target_node``.
@@ -210,6 +222,10 @@ def tune_device(
         cluster: an already-connected cluster to measure on; the tuner neither resets nor
             closes it. Without one, the tuner opens the session's cluster and closes it when done.
         coordinator: an instrument coordinator holding ``cluster``'s component, to run on.
+        quantum_device: the caller's quantum device, whose ``ExtendedTransmon`` and
+            ``ExtendedCompositeSquareEdge`` elements, or subclasses, the nodes run on. Each node
+            sets them from the session's state and sets them back when it ends; the tuner
+            never closes them. Without one, the tuner builds and closes its own elements.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
 
@@ -226,6 +242,7 @@ def tune_device(
         keep_data_files=keep_data_files,
         cluster=cluster,
         coordinator=coordinator,
+        quantum_device=quantum_device,
     )
     results = read_result(session)
     return session, results
@@ -270,6 +287,7 @@ def _tune(
     keep_data_files: bool = True,
     cluster: Cluster | None = None,
     coordinator: InstrumentCoordinator | None = None,
+    quantum_device: QuantumDevice | None = None,
 ) -> None:
     """Runs only ``node``, or every node up to the session's target node; without
     ``keep_data_files``, deletes the run's folder however the run ends."""
@@ -278,7 +296,7 @@ def _tune(
     run_path = get_unique_data_path(session.data_dir, "run")
     setup_logging(session.stdout_log_level, session.file_log_level, run_path)
     try:
-        _run_nodes(session, run_path, node, cluster, coordinator)
+        _run_nodes(session, run_path, node, cluster, coordinator, quantum_device)
     except BaseException:
         if not keep_data_files:
             _delete_run_folder(session, run_path)
@@ -292,10 +310,11 @@ def _run_nodes(
     node: NodeEnum | None,
     cluster: Cluster | None,
     coordinator: InstrumentCoordinator | None,
+    quantum_device: QuantumDevice | None,
 ) -> None:
     """Connects the hardware and runs only ``node``, or every node up to the session's
     target node, writing into ``run_path``; closes what the tuner opened however it ends."""
-    hardware = Hardware(session, cluster, coordinator)
+    hardware = Hardware(session, cluster, coordinator, quantum_device)
     try:
         _run_on(hardware, session, run_path, node)
     finally:

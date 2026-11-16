@@ -1,4 +1,3 @@
-tergite_tuner/backend/device.py: RET504 Unnecessary assignment to `transmon` before `return` statement
 tergite_tuner/backend/edge.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/edge.py: ARG002 Unused method argument: `kwargs`
 tergite_tuner/backend/edge.py: ARG002 Unused method argument: `kwargs`

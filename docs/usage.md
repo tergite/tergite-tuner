@@ -69,6 +69,23 @@ session, results = tune_device(env_file=".env", cluster=cluster)
 The tuner measures on it as is: it never resets or closes it. Pass `coordinator=` too if
 you have an instrument coordinator that already holds the cluster's component.
 
+## Use a quantum device you already hold
+
+The tuner builds its transmons and coupler edges under the qubits' and couplers' names, and
+closes them when each node ends. If your process already holds elements by those names, as
+tergite-backend does, pass their quantum device instead. Its elements must be
+`ExtendedTransmon` and `ExtendedCompositeSquareEdge` from `tergite_tuner.backend`, or
+subclasses of them:
+
+```python
+session, results = tune_device(
+    env_file=".env", cluster=cluster, quantum_device=quantum_device
+)
+```
+
+Each node sets the elements from the session's state while it runs, and sets them back as
+they were when it ends, whether it succeeds or fails. The tuner never closes them.
+
 ## Run one node
 
 ```python
