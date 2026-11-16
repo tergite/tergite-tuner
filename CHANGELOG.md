@@ -7,6 +7,8 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.12] - 2026-11-16
+
 ### Added
 
 - Added `cluster` and `coordinator` arguments to `tune_device` and `run_node`, to run on a cluster the caller already holds; the tuner neither resets nor closes it
