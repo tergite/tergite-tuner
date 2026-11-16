@@ -7,6 +7,16 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ## [Unreleased]
 
+## [2026.10.0-rc.12] - 2026-11-16
+
+### Added
+
+- Added `cluster` and `coordinator` arguments to `tune_device` and `run_node`, to run on a cluster the caller already holds; the tuner neither resets nor closes it
+
+### Changed
+
+- [BREAKING] Changed the tuner to close the cluster and SPI rack it opens when a run ends, and to raise `InstrumentNameTakenError` when the cluster's name is taken, instead of closing every cluster in the process, tergite-backend's included
+
 ## [2026.10.0-rc.11] - 2026-11-11
 
 ### Added
