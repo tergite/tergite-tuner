@@ -12,6 +12,7 @@
 """The entry points called the ways docs/usage.md shows."""
 
 import dataclasses
+import json
 import re
 import shutil
 
@@ -31,7 +32,11 @@ from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
-from tergite_tuner.tests.utils.hardware import get_cluster_name, open_dummy_cluster
+from tergite_tuner.tests.utils.hardware import (
+    get_cluster_name,
+    open_dummy_cluster,
+    open_host_device,
+)
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.enums import MeasurementMode
 
@@ -169,6 +174,34 @@ def test_run_node_leaves_a_passed_in_cluster_open(session_context, tmp_path):
 
         assert Instrument.exist(cluster.name)
         assert not Instrument.exist("lab_ic")
+
+
+def test_run_node_runs_on_a_passed_in_quantum_device_and_sets_it_back(
+    session_context, tmp_path
+):
+    session = _get_dummy_session(session_context, tmp_path)
+    ExtendedTransmon.close_all()
+    with (
+        loaded_state(session, STATE_FILE),
+        open_host_device(session.qubits, session.couplers) as host_device,
+    ):
+        q00 = host_device.get_element("q00")
+        q00.clock_freqs.readout(7e9)
+
+        run_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY,
+            session=session,
+            refresh_session=False,
+            quantum_device=host_device,
+        )
+
+        assert q00.clock_freqs.readout() == 7e9
+        assert Instrument.exist("q00")
+
+    measured_device = json.loads(
+        next(tmp_path.glob("**/resonator_spectroscopy.json")).read_text()
+    )
+    assert measured_device["q00"]["data"]["clock_freqs"]["readout"] != 7e9
 
 
 def test_tune_device_closes_its_own_cluster_when_a_node_raises(

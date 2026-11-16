@@ -70,6 +70,13 @@ recalibrating. A cluster or coordinator passed to `tune_device` or `run_node` be
 caller: it is used as is, never reset or closed. The tuner never closes an instrument it did
 not open: a name already taken in the process raises `InstrumentNameTakenError`.
 
+**The device.** Each node runs on a quantum device that `open_node_device` builds from the
+session's state and closes when the node ends. A quantum device passed to `tune_device` or
+`run_node` lends its elements instead, which must be `ExtendedTransmon` and
+`ExtendedCompositeSquareEdge`, or subclasses: each node sets them from the state and sets
+every parameter back when it ends, however it ends, and never closes them; the tuner
+builds and closes the elements the device lacks.
+
 **Modes.** `cluster_mode` is `real`; `dummy`, a dummy cluster whose acquisitions are replaced
 by each node's `generate_dummy_dataset`; or `re_analyse`, no hardware, where `reanalyse` runs a
 node's analysis on recorded data. `spi_mode` is `real` or `dummy`.

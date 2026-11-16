@@ -12,14 +12,16 @@
 # that they have been altered from the originals.
 
 import json
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from qcodes.instrument import InstrumentBase
+from qcodes.parameters import Parameter
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
+from quantify_scheduler.json_utils import SchedulerJSONEncoder
 
-from tergite_tuner.backend import transmon as transmon_module
 from tergite_tuner.backend.edge import ExtendedCompositeSquareEdge
 from tergite_tuner.backend.transmon import ExtendedTransmon
 from tergite_tuner.utils.logging import logger
@@ -49,6 +51,86 @@ def configure_device(
 
     device.hardware_config(session.cluster_config)
     return device
+
+
+@contextmanager
+def open_node_device(
+    name: str,
+    qubits: list[str],
+    couplers: list[str],
+    session: "SessionContext",
+    host_device: QuantumDevice | None = None,
+) -> Iterator[QuantumDevice]:
+    """A node's quantum device of ``qubits`` and the couplers among them, set from the session's state.
+
+    The node runs on ``host_device``'s own elements where it has them: each is set from the
+    state while the context lasts, then set back as it was, however the context ends, and
+    never closed. The tuner builds the elements it lacks, or all of them without a
+    ``host_device``, and closes those when the context ends.
+
+    Args:
+        name: the device's name, the node's.
+        qubits: the qubits to measure.
+        couplers: the session's couplers; only those between two of ``qubits`` are added.
+        session: the session whose state the elements are set from.
+        host_device: the caller's quantum device, whose elements to run on.
+
+    Yields:
+        The node's quantum device.
+
+    Raises:
+        TypeError: one of ``host_device``'s elements is not an ``ExtendedTransmon`` or
+            ``ExtendedCompositeSquareEdge``, or a subclass.
+    """
+    if host_device is None:
+        device = configure_device(name, qubits, couplers, session)
+        try:
+            yield device
+        finally:
+            close_device_resources(device)
+        return
+
+    device = QuantumDevice(name)
+    settings: list[tuple[Parameter, Any]] = []
+    built: list[InstrumentBase] = []
+    try:
+        for channel, qubit in enumerate(qubits):
+            transmon = _find_host_element(host_device, qubit, ExtendedTransmon)
+            if transmon is None:
+                transmon = _load_transmon(
+                    session.state.get_record("transmons", qubit),
+                    qubit=qubit,
+                    channel=channel,
+                )
+                built.append(transmon)
+            else:
+                settings.extend(_get_settings(transmon))
+                _set_transmon(
+                    transmon, session.state.get_record("transmons", qubit), channel
+                )
+            device.add_element(transmon)
+
+        for coupler in _get_couplers_among(couplers or [], qubits):
+            edge = _find_host_element(host_device, coupler, ExtendedCompositeSquareEdge)
+            if edge is None:
+                edge = _load_coupler(
+                    session.state.get_record("couplers", coupler), coupler=coupler
+                )
+                built.append(edge)
+            else:
+                settings.extend(_get_settings(edge))
+                _set_coupler(
+                    edge, session.state.get_record("couplers", coupler), coupler
+                )
+            device.add_edge(edge)
+
+        device.hardware_config(session.cluster_config)
+        yield device
+    finally:
+        _set_parameters(settings)
+        for instrument in reversed(built):
+            instrument.close()
+        device.close()
 
 
 def close_device_resources(device: QuantumDevice):
@@ -106,29 +188,7 @@ def _load_transmon(
 ) -> ExtendedTransmon:
     """The qubit's transmon, with its record's nested sections over the defaults, measuring on ``channel``."""
     transmon = ExtendedTransmon(qubit)
-    transmon_config = {k: v for k, v in record.items() if isinstance(v, dict)}
-
-    # get the transmon template in dictionary form
-    serialized_transmon = json.dumps(transmon, cls=SchedulerJSONEncoder)
-    decoded_transmon = json.loads(serialized_transmon)
-    decoded_transmon["name"] = qubit
-
-    for k, v in decoded_transmon["data"].items():
-        if isinstance(v, dict) and k in transmon_config:
-            v.update(transmon_config[k])
-        if "measure" in k:
-            v.update({"acq_channel": channel})
-
-    encoded_transmon = json.dumps(decoded_transmon)
-
-    # free the transmon
-    transmon.close()
-
-    # create a transmon with the same name but with updated config
-    transmon = json.loads(
-        encoded_transmon, cls=SchedulerJSONDecoder, modules=[transmon_module]
-    )
-
+    _set_transmon(transmon, record, channel)
     return transmon
 
 
@@ -140,6 +200,29 @@ def _load_coupler(
     coupler_edge = ExtendedCompositeSquareEdge(
         parent_element_name=control, child_element_name=target
     )
+    _set_coupler(coupler_edge, record, coupler)
+    return coupler_edge
+
+
+def _set_transmon(
+    transmon: ExtendedTransmon, record: Mapping[str, Any], channel: int
+) -> None:
+    """Sets ``transmon``'s submodules from its record's nested sections, measuring on ``channel``."""
+    for name, submodule in transmon.submodules.items():
+        section = record.get(name)
+        values = dict(section) if isinstance(section, Mapping) else {}
+        if "measure" in name:
+            values["acq_channel"] = channel
+        for key, value in values.items():
+            if key in submodule.parameters:
+                submodule.parameters[key](value)
+
+
+def _set_coupler(
+    coupler_edge: ExtendedCompositeSquareEdge, record: Mapping[str, Any], coupler: str
+) -> None:
+    """Sets the edge of ``coupler`` (``qXX_qXX``) from its record's values."""
+    control, _ = coupler.split(sep="_")
 
     attrs_map = {
         "cz_pulse_frequency": coupler_edge.clock_freqs.cz_freq,
@@ -175,4 +258,43 @@ def _load_coupler(
     except (KeyError, ValueError, TypeError):
         logger.warning("Invalid Control and Target")
 
-    return coupler_edge
+
+def _get_settings(instrument: InstrumentBase) -> list[tuple[Parameter, Any]]:
+    """Each settable parameter of ``instrument`` and of its submodules, with its value."""
+    settings = [
+        (parameter, parameter.get())
+        for parameter in instrument.parameters.values()
+        if parameter.settable and parameter.gettable
+    ]
+    for submodule in instrument.submodules.values():
+        if isinstance(submodule, InstrumentBase):
+            settings.extend(_get_settings(submodule))
+    return settings
+
+
+def _set_parameters(settings: list[tuple[Parameter, Any]]) -> None:
+    """Sets each parameter to its value."""
+    for parameter, value in settings:
+        parameter.set(value)
+
+
+def _find_host_element[T](
+    host_device: QuantumDevice, name: str, element_type: type[T]
+) -> T | None:
+    """``host_device``'s transmon or edge of ``name``, or ``None`` if it has none.
+
+    Raises:
+        TypeError: the element is not an ``element_type``.
+    """
+    if name in host_device.elements():
+        element = host_device.get_element(name)
+    elif name in host_device.edges():
+        element = host_device.get_edge(name)
+    else:
+        return None
+    if not isinstance(element, element_type):
+        raise TypeError(
+            f"{element.name} is a {type(element).__name__}; the tuner runs only on "
+            f"{element_type.__name__} and its subclasses"
+        )
+    return element

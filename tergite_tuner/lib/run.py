@@ -28,9 +28,8 @@ from tergite_tuner.backend import (
     Hardware,
     QuantumDevice,
     Schedule,
-    close_device_resources,
     compile_schedule,
-    configure_device,
+    open_node_device,
     run_schedule,
     save_serial_device,
 )
@@ -59,15 +58,16 @@ def calibrate(
 ) -> dict[str, Fits | None]:
     """Measures ``spec``'s node, unless re-analysing, then analyses and stores it."""
     if session.cluster_mode != MeasurementMode.re_analyse:
-        device = configure_device(
-            spec.name.value, get_qubits(spec, session), session.couplers, session
-        )
-        try:
+        with open_node_device(
+            spec.name.value,
+            get_qubits(spec, session),
+            session.couplers,
+            session,
+            hardware.quantum_device,
+        ) as device:
             dataset = measure(spec, hardware, device, session)
             save_serial_device(device, data_path)
             save_dataset(dataset, spec.name.value, data_path)
-        finally:
-            close_device_resources(device)
     fits = analyse_node(spec, data_path, session, should_save_plot)
     logger.info("analysis completed")
     return fits

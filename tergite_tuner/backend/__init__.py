@@ -47,6 +47,7 @@ from .device import (
     QuantumDevice,
     close_device_resources,
     configure_device,
+    open_node_device,
     save_serial_device,
 )
 from .edge import ExtendedCompositeSquareEdge
@@ -91,6 +92,7 @@ __all__ = [
     "compile_schedule",
     "configure_device",
     "long_square_pulse",
+    "open_node_device",
     "run_schedule",
     "save_serial_device",
     "set_output_attenuations",
