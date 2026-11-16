@@ -189,6 +189,18 @@ def test_tune_device_closes_its_own_cluster_when_a_node_raises(
     assert not Instrument.exist("lab_ic")
 
 
+def test_run_node_closes_its_spi_rack(session_context, tmp_path):
+    session = _get_dummy_session(session_context, tmp_path, couplers=["q00_q01"])
+    open_before = set(Instrument._all_instruments)
+    with loaded_state(session, STATE_FILE):
+        ExtendedTransmon.close_all()
+        run_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY, session=session, refresh_session=False
+        )
+
+    assert set(Instrument._all_instruments) <= open_before
+
+
 def _get_dummy_session(session: SessionContext, data_dir, **updates) -> SessionContext:
     return session.model_copy(
         update={

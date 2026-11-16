@@ -13,7 +13,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Changed
 
-- [BREAKING] Changed the tuner to close the cluster it opens when a run ends, and to raise `InstrumentNameTakenError` when the cluster's name is taken, instead of closing every cluster in the process, tergite-backend's included
+- [BREAKING] Changed the tuner to close the cluster and SPI rack it opens when a run ends, and to raise `InstrumentNameTakenError` when the cluster's name is taken, instead of closing every cluster in the process, tergite-backend's included
 
 ## [2026.10.0-rc.11] - 2026-11-11
 

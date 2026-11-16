@@ -95,7 +95,10 @@ class Hardware:
             raise
 
     def close(self) -> None:
-        """Closes the cluster and coordinator the tuner opened, leaving the caller's open."""
+        """Closes the cluster, coordinator and SPI rack the tuner opened, leaving the caller's open."""
+        if self.spi is not None:
+            self.spi.close_spi_rack()
+            self.spi = None
         if self.is_coordinator_owned and self.coordinator is not None:
             for name in list(self.coordinator.components()):
                 component = self.coordinator.get_component(name)
