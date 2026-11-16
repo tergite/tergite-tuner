@@ -174,7 +174,8 @@ def run_node(
         quantum_device: the caller's quantum device, whose ``ExtendedTransmon`` and
             ``ExtendedCompositeSquareEdge`` elements, or subclasses, the nodes run on. Each node
             sets them from the session's state and sets them back when it ends; the tuner
-            never closes them. Without one, the tuner builds and closes its own elements.
+            never closes them. It builds and closes those the device lacks, or all of them
+            without one.
         **session_options: Optional session options
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
 
@@ -225,7 +226,8 @@ def tune_device(
         quantum_device: the caller's quantum device, whose ``ExtendedTransmon`` and
             ``ExtendedCompositeSquareEdge`` elements, or subclasses, the nodes run on. Each node
             sets them from the session's state and sets them back when it ends; the tuner
-            never closes them. Without one, the tuner builds and closes its own elements.
+            never closes them. It builds and closes those the device lacks, or all of them
+            without one.
         **session_options: optional keyword arguments to override config settings.
             See `<tergite_tuner.config.session.SessionContext>`_ for details.
 

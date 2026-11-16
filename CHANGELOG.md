@@ -9,7 +9,7 @@ and this project follows versions of format `{year}.{month}.{patch_number}`.
 
 ### Added
 
-- Added a `quantum_device` argument to `tune_device` and `run_node`, to run on the caller's own transmons and coupler edges, which each node sets from the session's state and sets back when it ends; tergite-backend had to remove its transmons before a recalibration and reload them afterwards, as the tuner's took the same names
+- Added a `quantum_device` argument to `tune_device` and `run_node`, to run on the caller's own transmons and coupler edges, which each node sets from the session's state and sets back when it ends, building those it lacks; tergite-backend had to remove its transmons before a recalibration and reload them afterwards, as the tuner's took the same names
 
 ## [2026.10.0-rc.12] - 2026-11-16
 

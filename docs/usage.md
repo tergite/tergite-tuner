@@ -84,7 +84,8 @@ session, results = tune_device(
 ```
 
 Each node sets the elements from the session's state while it runs, and sets them back as
-they were when it ends, whether it succeeds or fails. The tuner never closes them.
+they were when it ends, whether it succeeds or fails. The tuner never closes them. It
+builds the elements your device lacks, as it would without one, and closes those.
 
 ## Run one node
 

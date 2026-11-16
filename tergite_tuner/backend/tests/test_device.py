@@ -156,6 +156,30 @@ def test_open_node_device_sets_the_host_elements_back(session_context):
         assert not Instrument.exist("node")
 
 
+def test_open_node_device_builds_the_elements_the_host_lacks(session_context):
+    ExtendedTransmon.close_all()
+    with (
+        loaded_state(session_context, state_file),
+        open_host_device(DEFAULT_TEST_QUBITS[:1], []) as host_device,
+    ):
+        with open_node_device(
+            "node",
+            DEFAULT_TEST_QUBITS,
+            DEFAULT_TEST_COUPLERS,
+            session_context,
+            host_device,
+        ) as device:
+            assert device.get_element("q00") is host_device.get_element("q00")
+            assert math.isclose(
+                device.get_edge("q00_q01").coupler_parameters.parking_current(),
+                0.00065,
+            )
+
+        assert Instrument.exist("q00")
+        assert not Instrument.exist("q01")
+        assert not Instrument.exist("q00_q01")
+
+
 def test_open_node_device_rejects_a_host_transmon_of_another_type(session_context):
     ExtendedTransmon.close_all()
     with (

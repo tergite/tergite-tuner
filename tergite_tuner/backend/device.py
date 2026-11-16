@@ -63,10 +63,10 @@ def open_node_device(
 ) -> Iterator[QuantumDevice]:
     """A node's quantum device of ``qubits`` and the couplers among them, set from the session's state.
 
-    Without ``host_device``, the tuner builds the elements and closes them when the context
-    ends. With one, the node runs on the host's own elements: each is set from the state
-    while the context lasts, then set back as it was, however the context ends. The host's
-    elements are never closed.
+    The node runs on ``host_device``'s own elements where it has them: each is set from the
+    state while the context lasts, then set back as it was, however the context ends, and
+    never closed. The tuner builds the elements it lacks, or all of them without a
+    ``host_device``, and closes those when the context ends.
 
     Args:
         name: the device's name, the node's.
@@ -79,8 +79,7 @@ def open_node_device(
         The node's quantum device.
 
     Raises:
-        KeyError: ``host_device`` lacks one of the qubits or couplers.
-        TypeError: one of its elements is not an ``ExtendedTransmon`` or
+        TypeError: one of ``host_device``'s elements is not an ``ExtendedTransmon`` or
             ``ExtendedCompositeSquareEdge``, or a subclass.
     """
     if host_device is None:
@@ -93,28 +92,44 @@ def open_node_device(
 
     device = QuantumDevice(name)
     settings: list[tuple[Parameter, Any]] = []
+    built: list[InstrumentBase] = []
     try:
         for channel, qubit in enumerate(qubits):
-            transmon = host_device.get_element(qubit)
-            _raise_if_not_a(transmon, ExtendedTransmon)
-            settings.extend(_get_settings(transmon))
-            _set_transmon(
-                transmon, session.state.get_record("transmons", qubit), channel
-            )
+            transmon = _find_host_element(host_device, qubit, ExtendedTransmon)
+            if transmon is None:
+                transmon = _load_transmon(
+                    session.state.get_record("transmons", qubit),
+                    qubit=qubit,
+                    channel=channel,
+                )
+                built.append(transmon)
+            else:
+                settings.extend(_get_settings(transmon))
+                _set_transmon(
+                    transmon, session.state.get_record("transmons", qubit), channel
+                )
             device.add_element(transmon)
 
         for coupler in _get_couplers_among(couplers or [], qubits):
-            edge = host_device.get_edge(coupler)
-            _raise_if_not_a(edge, ExtendedCompositeSquareEdge)
-            settings.extend(_get_settings(edge))
-            _set_coupler(edge, session.state.get_record("couplers", coupler), coupler)
+            edge = _find_host_element(host_device, coupler, ExtendedCompositeSquareEdge)
+            if edge is None:
+                edge = _load_coupler(
+                    session.state.get_record("couplers", coupler), coupler=coupler
+                )
+                built.append(edge)
+            else:
+                settings.extend(_get_settings(edge))
+                _set_coupler(
+                    edge, session.state.get_record("couplers", coupler), coupler
+                )
             device.add_edge(edge)
 
         device.hardware_config(session.cluster_config)
         yield device
     finally:
-        for parameter, value in settings:
-            parameter.set(value)
+        _set_parameters(settings)
+        for instrument in reversed(built):
+            instrument.close()
         device.close()
 
 
@@ -257,10 +272,29 @@ def _get_settings(instrument: InstrumentBase) -> list[tuple[Parameter, Any]]:
     return settings
 
 
-def _raise_if_not_a(element: InstrumentBase, element_type: type) -> None:
-    """Raises ``TypeError`` unless ``element`` is an ``element_type``."""
+def _set_parameters(settings: list[tuple[Parameter, Any]]) -> None:
+    """Sets each parameter to its value."""
+    for parameter, value in settings:
+        parameter.set(value)
+
+
+def _find_host_element[T](
+    host_device: QuantumDevice, name: str, element_type: type[T]
+) -> T | None:
+    """``host_device``'s transmon or edge of ``name``, or ``None`` if it has none.
+
+    Raises:
+        TypeError: the element is not an ``element_type``.
+    """
+    if name in host_device.elements():
+        element = host_device.get_element(name)
+    elif name in host_device.edges():
+        element = host_device.get_edge(name)
+    else:
+        return None
     if not isinstance(element, element_type):
         raise TypeError(
             f"{element.name} is a {type(element).__name__}; the tuner runs only on "
             f"{element_type.__name__} and its subclasses"
         )
+    return element

@@ -74,7 +74,8 @@ not open: a name already taken in the process raises `InstrumentNameTakenError`.
 session's state and closes when the node ends. A quantum device passed to `tune_device` or
 `run_node` lends its elements instead, which must be `ExtendedTransmon` and
 `ExtendedCompositeSquareEdge`, or subclasses: each node sets them from the state and sets
-every parameter back when it ends, however it ends, and never closes them.
+every parameter back when it ends, however it ends, and never closes them; the tuner
+builds and closes the elements the device lacks.
 
 **Modes.** `cluster_mode` is `real`; `dummy`, a dummy cluster whose acquisitions are replaced
 by each node's `generate_dummy_dataset`; or `re_analyse`, no hardware, where `reanalyse` runs a
