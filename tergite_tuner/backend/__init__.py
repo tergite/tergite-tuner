@@ -11,12 +11,14 @@
 # that they have been altered from the originals.
 """Everything the tuner takes from the scheduler; the rest of the package imports it from here."""
 
+from qblox_instruments import Cluster
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox.operations.pulse_factories import (
     long_square_pulse,
 )
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import Loop, LoopOperation
 from quantify_scheduler.operations.gate_library import (
@@ -57,6 +59,7 @@ __all__ = [
     "BinMode",
     "CZ",
     "ClockResource",
+    "Cluster",
     "CompiledSchedule",
     "DRAGPulse",
     "ExtendedCompositeSquareEdge",
@@ -64,6 +67,7 @@ __all__ = [
     "H",
     "Hardware",
     "IdlePulse",
+    "InstrumentCoordinator",
     "Loop",
     "LoopOperation",
     "Measure",

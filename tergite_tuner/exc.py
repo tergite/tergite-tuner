@@ -17,3 +17,7 @@ class TunerError(Exception):
 
 class ClusterUnreachableError(TunerError):
     """The Qblox cluster refused the connection."""
+
+
+class InstrumentNameTakenError(TunerError):
+    """An instrument the tuner would open has a name another open instrument holds."""

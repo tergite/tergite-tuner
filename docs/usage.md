@@ -55,6 +55,20 @@ You can also build a session yourself with `SessionContext.from_env()`.
 
 `keep_data_files=False` deletes the run's data folder when it is done.
 
+## Use a cluster you already hold
+
+The tuner opens the session's cluster, and its `lab_ic` instrument coordinator, and closes
+both when the run ends, whether it succeeds or fails. If your process already holds the
+cluster, as tergite-backend does, pass it instead; QCoDeS lets only one instrument hold a
+name, so the tuner raises `tergite_tuner.exc.InstrumentNameTakenError` rather than open a second one:
+
+```python
+session, results = tune_device(env_file=".env", cluster=cluster)
+```
+
+The tuner measures on it as is: it never resets or closes it. Pass `coordinator=` too if
+you have an instrument coordinator that already holds the cluster's component.
+
 ## Run one node
 
 ```python

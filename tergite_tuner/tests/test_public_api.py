@@ -16,6 +16,7 @@ import re
 import shutil
 
 import pytest
+from qcodes.instrument import Instrument
 
 from tergite_tuner import (
     CalibrationResults,
@@ -30,6 +31,7 @@ from tergite_tuner.backend import ExtendedTransmon
 from tergite_tuner.config.types import SpiConfig
 from tergite_tuner.lib.nodes import DEFAULT_NODE_SPECS
 from tergite_tuner.tests.utils.fixtures import get_fixture_path
+from tergite_tuner.tests.utils.hardware import get_cluster_name, open_dummy_cluster
 from tergite_tuner.tests.utils.state import loaded_state
 from tergite_tuner.utils.types.enums import MeasurementMode
 
@@ -151,6 +153,40 @@ def test_reanalyse_analyses_a_recorded_dataset(session_context, tmp_path):
     assert returned_session.cluster_mode == MeasurementMode.re_analyse
     assert isinstance(results, CalibrationResults)
     assert statuses == ["calibrated", "calibrated"]
+
+
+def test_run_node_leaves_a_passed_in_cluster_open(session_context, tmp_path):
+    session = _get_dummy_session(session_context, tmp_path)
+    # close_all closes every QCoDeS instrument, so it runs before the cluster opens
+    ExtendedTransmon.close_all()
+    with loaded_state(session, STATE_FILE), open_dummy_cluster(session) as cluster:
+        run_node(
+            NodeEnum.RESONATOR_SPECTROSCOPY,
+            session=session,
+            refresh_session=False,
+            cluster=cluster,
+        )
+
+        assert Instrument.exist(cluster.name)
+        assert not Instrument.exist("lab_ic")
+
+
+def test_tune_device_closes_its_own_cluster_when_a_node_raises(
+    session_context, tmp_path, monkeypatch
+):
+    def calibrate(*_args, **_kwargs):
+        raise RuntimeError("node failed")
+
+    monkeypatch.setattr(tuner.run, "calibrate", calibrate)
+    session = _get_dummy_session(
+        session_context, tmp_path, target_node=NodeEnum.RESONATOR_SPECTROSCOPY
+    )
+    with loaded_state(session, STATE_FILE), pytest.raises(RuntimeError):
+        ExtendedTransmon.close_all()
+        tune_device(session=session, refresh_session=False)
+
+    assert not Instrument.exist(get_cluster_name(session))
+    assert not Instrument.exist("lab_ic")
 
 
 def _get_dummy_session(session: SessionContext, data_dir, **updates) -> SessionContext:

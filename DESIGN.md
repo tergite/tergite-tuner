@@ -64,6 +64,12 @@ flowchart TD
    the successful fits to the state fields the node's `qois` name, and marks each element
    `calibrated` or `not_calibrated`. With `save_plot`, `plot_elements` plots them.
 
+**The cluster.** `Hardware` opens the session's cluster and the `lab_ic` coordinator, and
+`_run_nodes` closes them when the run ends, however it ends; it resets a real cluster unless
+recalibrating. A cluster or coordinator passed to `tune_device` or `run_node` belongs to the
+caller: it is used as is, never reset or closed. The tuner never closes an instrument it did
+not open: a name already taken in the process raises `InstrumentNameTakenError`.
+
 **Modes.** `cluster_mode` is `real`; `dummy`, a dummy cluster whose acquisitions are replaced
 by each node's `generate_dummy_dataset`; or `re_analyse`, no hardware, where `reanalyse` runs a
 node's analysis on recorded data. `spi_mode` is `real` or `dummy`.
